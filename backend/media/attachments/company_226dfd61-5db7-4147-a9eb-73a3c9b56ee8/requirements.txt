@@ -1,0 +1,3 @@
+Lumeo CRM Integration Requirements
+1. Active Directory Sync
+2. Custom Invoicing Template

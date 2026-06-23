@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Virtual environments
+.venv/
+backend/env/
+backend/.venv/
+
+# Environment files
+backend/.env
+frontend/.env
+frontend/.env.local
+.env
+
+# IDE files
+.idea/
+.vscode/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+
+# Django static collection output
+backend/staticfiles/
+
+# Docker: TLS certificates (never commit private keys)
+nginx/ssl/
+
+# Docker: persistent data (created at runtime)
+postgres_data/
+redis_data/
+
+# Docker: local compose overrides with secrets
+docker-compose.override.yml

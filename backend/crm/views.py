@@ -1,0 +1,1322 @@
+from decimal import Decimal, InvalidOperation
+
+from django.utils.dateparse import parse_date
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Q
+
+from rest_framework.decorators import action
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice
+from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
+from .serializers import (
+    CustomerSerializer,
+    DealSerializer,
+    LeadSerializer,
+    NoteSerializer,
+    TaskSerializer,
+    ActivitySerializer,
+    AttachmentSerializer,
+    ProductSerializer,
+    QuoteSerializer,
+    InvoiceSerializer,
+    CustomFieldDefinitionSerializer,
+    WorkflowRuleSerializer,
+    WorkflowSequenceSerializer,
+    SMTPConfigSerializer,
+    EmailTemplateSerializer,
+    WebhookSubscriptionSerializer,
+    WebhookDeliveryLogSerializer,
+    CampaignSerializer,
+    TicketSerializer,
+    TicketCommentSerializer,
+    OrderSerializer,
+    EventSerializer,
+    NoticeSerializer,
+)
+from .emailing import send_crm_email
+
+
+class CompanyScopedModelViewSet(ModelViewSet):
+    permission_classes = [CompanyRBACPermission]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    def get_queryset(self):
+        queryset = self.queryset
+        user = self.request.user
+
+        if user.is_superuser:
+            return queryset
+
+        if user.company_id is None:
+            return queryset.none()
+
+        queryset = queryset.filter(company_id=user.company_id)
+
+        if hasattr(user, 'role') and user.role == "CUSTOMER":
+            customer = getattr(user, 'customer_profile', None)
+            if not customer:
+                return queryset.none()
+                
+            model_name = self.queryset.model.__name__
+            if model_name == "Customer":
+                return queryset.filter(id=customer.id)
+            elif model_name == "Invoice":
+                return queryset.filter(customer=customer)
+            elif model_name == "Ticket":
+                return queryset.filter(customer=customer)
+            elif model_name == "TicketComment":
+                return queryset.filter(ticket__customer=customer)
+            elif model_name == "Attachment":
+                return queryset.filter(customer=customer)
+            else:
+                return queryset.none()
+
+        return queryset
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user.is_superuser and user.company_id is None:
+            raise PermissionDenied("Authenticated user is not assigned to a company.")
+            
+        save_kwargs = {}
+        if hasattr(user, 'role') and user.role == "CUSTOMER":
+            customer = getattr(user, 'customer_profile', None)
+            if not customer:
+                raise PermissionDenied("No customer profile associated with this account.")
+            
+            model_name = self.queryset.model.__name__
+            if model_name in ["Ticket", "Attachment"]:
+                save_kwargs["customer"] = customer
+                
+        serializer.save(**save_kwargs)
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        return self.apply_business_filters(queryset)
+
+    def apply_business_filters(self, queryset):
+        return queryset
+
+    def _filter_by_assignee(self, queryset):
+        assigned_to = self.request.query_params.get("assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to_id=assigned_to)
+        return queryset
+
+    def _filter_by_date_range(self, queryset, field_name):
+        date_from = self.request.query_params.get(f"{field_name}_from")
+        date_to = self.request.query_params.get(f"{field_name}_to")
+
+        if date_from:
+            parsed_from = parse_date(date_from)
+            if parsed_from:
+                queryset = queryset.filter(**{f"{field_name}__gte": parsed_from})
+
+        if date_to:
+            parsed_to = parse_date(date_to)
+            if parsed_to:
+                queryset = queryset.filter(**{f"{field_name}__lte": parsed_to})
+
+        return queryset
+
+    def _filter_by_decimal_range(self, queryset, field_name):
+        min_value = self.request.query_params.get(f"min_{field_name}")
+        max_value = self.request.query_params.get(f"max_{field_name}")
+
+        if min_value:
+            try:
+                queryset = queryset.filter(**{f"{field_name}__gte": Decimal(min_value)})
+            except (ArithmeticError, InvalidOperation, ValueError):
+                pass
+
+        if max_value:
+            try:
+                queryset = queryset.filter(**{f"{field_name}__lte": Decimal(max_value)})
+            except (ArithmeticError, InvalidOperation, ValueError):
+                pass
+
+        return queryset
+
+
+class LeadViewSet(CompanyScopedModelViewSet):
+    serializer_class = LeadSerializer
+    queryset = Lead.objects.select_related("company", "assigned_to")
+    search_fields = ("name", "email", "assigned_to__username")
+    ordering_fields = ("created_at", "updated_at", "name", "status")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        status_value = self.request.query_params.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+
+        return self._filter_by_assignee(queryset)
+        
+    @action(detail=True, methods=["post"])
+    def predictive_score(self, request, pk=None):
+        lead = self.get_object()
+        
+        # Mocking an AI predictive scoring logic
+        import random
+        import time
+        
+        # Simulate processing time for realism
+        time.sleep(1.5)
+        
+        # Generate a semi-realistic score based on lead data presence
+        base_score = 30
+        rationale_points = []
+        
+        if lead.email:
+            base_score += 20
+            rationale_points.append("Has valid email address.")
+            
+        if lead.custom_data:
+            base_score += 15
+            rationale_points.append(f"Contains {len(lead.custom_data)} custom data points.")
+            
+        if lead.assigned_to:
+            base_score += 10
+            rationale_points.append("Lead is actively assigned to a rep.")
+            
+        if lead.status in ["contacted", "qualified"]:
+            base_score += 15
+            rationale_points.append("Lead is in an engaged stage.")
+            
+        # Add random jitter to seem dynamic
+        final_score = min(100, base_score + random.randint(-10, 15))
+        
+        # Combine rationale
+        if final_score >= 80:
+            rationale = "High conversion likelihood. " + " ".join(rationale_points)
+        elif final_score >= 50:
+            rationale = "Moderate potential. " + " ".join(rationale_points)
+        else:
+            rationale = "Low engagement signals. Missing key profile data."
+            
+        lead.score = final_score
+        lead.score_rationale = rationale
+        lead.save(update_fields=["score", "score_rationale"])
+        
+        return Response(LeadSerializer(lead, context={"request": request}).data)
+
+    @action(detail=False, methods=["post"], url_path="import-csv")
+    def import_csv(self, request):
+        import csv
+        import io
+        
+        file_obj = request.FILES.get("file")
+        if not file_obj:
+            return Response({"error": "No file provided"}, status=400)
+            
+        if not file_obj.name.endswith(".csv"):
+            return Response({"error": "File must be a CSV"}, status=400)
+            
+        try:
+            csv_file = io.StringIO(file_obj.read().decode('utf-8'))
+            reader = csv.DictReader(csv_file)
+            
+            created_count = 0
+            for row in reader:
+                name = row.get("Name", row.get("name", "")).strip()
+                email = row.get("Email", row.get("email", "")).strip()
+                if not name and not email:
+                    continue
+                
+                Lead.objects.create(
+                    company=request.user.company,
+                    name=name,
+                    email=email,
+                    status=row.get("Status", row.get("status", "new")).lower() or "new",
+                )
+                created_count += 1
+                
+            return Response({"status": "success", "imported": created_count})
+        except Exception as e:
+            return Response({"error": f"Failed to parse CSV: {str(e)}"}, status=400)
+
+    @action(detail=False, methods=["get"], url_path="export-csv")
+    def export_csv(self, request):
+        import csv
+        from django.http import HttpResponse
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="leads_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(["ID", "Name", "Email", "Status", "Score", "Created At"])
+        
+        for lead in queryset:
+            writer.writerow([
+                lead.id,
+                lead.name,
+                lead.email,
+                lead.status,
+                lead.score,
+                lead.created_at.strftime("%Y-%m-%d %H:%M:%S") if lead.created_at else ""
+            ])
+            
+        return response
+
+class CustomerViewSet(CompanyScopedModelViewSet):
+    serializer_class = CustomerSerializer
+    queryset = Customer.objects.select_related("company")
+    search_fields = ("name", "email", "phone")
+    ordering_fields = ("created_at", "updated_at", "name", "email")
+    ordering = ("name",)
+
+    def apply_business_filters(self, queryset):
+        email = self.request.query_params.get("email")
+        if email:
+            queryset = queryset.filter(email__iexact=email)
+
+        return queryset
+
+    @action(detail=True, methods=["post"], url_path="invite-portal")
+    def invite_portal(self, request, pk=None):
+        customer = self.get_object()
+        
+        if customer.user:
+            return Response({"error": "Customer already has a portal account."}, status=400)
+            
+        from django.contrib.auth import get_user_model
+        import string
+        import random
+        
+        User = get_user_model()
+        
+        if User.objects.filter(email=customer.email).exists():
+            return Response({"error": "A user with this email already exists in the system."}, status=400)
+            
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        
+        user = User.objects.create_user(
+            username=customer.email,
+            email=customer.email,
+            password=password,
+            first_name=customer.name.split(" ")[0],
+            last_name=" ".join(customer.name.split(" ")[1:]),
+            company=customer.company,
+            role=User.Role.CUSTOMER,
+        )
+        
+        customer.user = user
+        customer.save(update_fields=["user"])
+        
+        return Response({
+            "status": "success",
+            "message": "Portal account created.",
+            "credentials": {
+                "email": user.email,
+                "password": password
+            }
+        })
+
+    @action(detail=True, methods=["post"], url_path="reset-portal-password")
+    def reset_portal_password(self, request, pk=None):
+        customer = self.get_object()
+        
+        if not customer.user:
+            return Response({"error": "Customer does not have a portal account yet."}, status=400)
+            
+        import string
+        import random
+        
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        customer.user.set_password(password)
+        customer.user.save(update_fields=["password"])
+        
+        return Response({
+            "status": "success",
+            "message": "Portal password reset successfully.",
+            "credentials": {
+                "email": customer.user.email,
+                "password": password
+            }
+        })
+
+
+
+class DealViewSet(CompanyScopedModelViewSet):
+    serializer_class = DealSerializer
+    queryset = Deal.objects.select_related("company")
+    search_fields = ("title",)
+    ordering_fields = ("created_at", "updated_at", "title", "amount", "stage", "row_order")
+    ordering = ("row_order", "-created_at")
+
+    def apply_business_filters(self, queryset):
+        stage = self.request.query_params.get("stage")
+        if stage:
+            queryset = queryset.filter(stage=stage)
+
+        return self._filter_by_decimal_range(queryset, "amount")
+
+    @action(detail=False, methods=["post"], url_path="reorder")
+    def reorder(self, request):
+        from django.db import transaction
+        deals_data = request.data.get("deals", [])
+        if not deals_data:
+            return Response({"error": "No data provided"}, status=400)
+
+        deal_ids = [item["id"] for item in deals_data if "id" in item]
+
+        # Verify ownership inside multi-tenant company bounds
+        company_deals = Deal.objects.filter(id__in=deal_ids, company=request.user.company)
+        deal_map = {deal.id: deal for deal in company_deals}
+
+        with transaction.atomic():
+            for item in deals_data:
+                deal_id = item.get("id")
+                new_stage = item.get("stage")
+                new_order = item.get("row_order")
+
+                # H6 fix: validate stage value against allowed choices before saving
+                if deal_id not in deal_map:
+                    continue
+                if new_stage not in Deal.Stage.values:
+                    continue
+                if not isinstance(new_order, int):
+                    continue
+
+                deal = deal_map[deal_id]
+                deal.stage = new_stage
+                deal.row_order = new_order
+                deal.save(update_fields=["stage", "row_order"])
+
+        return Response({"status": "reordering applied successfully"})
+
+
+
+class TaskViewSet(CompanyScopedModelViewSet):
+    serializer_class = TaskSerializer
+    queryset = Task.objects.select_related("company", "assigned_to")
+    search_fields = ("title", "assigned_to__username")
+    ordering_fields = ("created_at", "updated_at", "title", "due_date", "status")
+    ordering = ("due_date", "title")
+
+    def apply_business_filters(self, queryset):
+        status_value = self.request.query_params.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+
+        queryset = self._filter_by_assignee(queryset)
+        return self._filter_by_date_range(queryset, "due_date")
+
+
+class NoteViewSet(CompanyScopedModelViewSet):
+    serializer_class = NoteSerializer
+    queryset = Note.objects.select_related("company")
+    search_fields = ("content",)
+    ordering_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
+
+
+class GlobalSearchView(APIView):
+    permission_classes = [CompanyRBACPermission]
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if not query:
+            return Response({"leads": [], "customers": [], "deals": [], "tasks": []})
+
+        user = request.user
+        company = getattr(user, "company", None)
+        
+        if not company:
+            return Response({"leads": [], "customers": [], "deals": [], "tasks": []})
+
+        # Search Leads
+        leads = Lead.objects.filter(company=company).filter(
+            Q(name__icontains=query) | Q(email__icontains=query)
+        )[:5]
+
+        # Search Customers
+        customers = Customer.objects.filter(company=company).filter(
+            Q(name__icontains=query) | Q(email__icontains=query) | Q(phone__icontains=query)
+        )[:5]
+
+        # Search Deals
+        deals = Deal.objects.filter(company=company).filter(
+            Q(title__icontains=query)
+        )[:5]
+
+        # Search Tasks
+        tasks = Task.objects.filter(company=company).filter(
+            Q(title__icontains=query)
+        )[:5]
+
+        # Search Quotes
+        quotes = Quote.objects.filter(company=company).filter(
+            Q(title__icontains=query) | Q(quote_number__icontains=query)
+        )[:5]
+
+        # Search Invoices
+        invoices = Invoice.objects.filter(company=company).filter(
+            Q(invoice_number__icontains=query)
+        )[:5]
+
+        context = {"request": request}
+
+        return Response({
+            "leads": LeadSerializer(leads, many=True, context=context).data,
+            "customers": CustomerSerializer(customers, many=True, context=context).data,
+            "deals": DealSerializer(deals, many=True, context=context).data,
+            "tasks": TaskSerializer(tasks, many=True, context=context).data,
+            "quotes": QuoteSerializer(quotes, many=True, context=context).data,
+            "invoices": InvoiceSerializer(invoices, many=True, context=context).data,
+        })
+
+
+class ActivityViewSet(CompanyScopedModelViewSet):
+    serializer_class = ActivitySerializer
+    queryset = Activity.objects.select_related("company", "created_by")
+    search_fields = ("description", "activity_type")
+    ordering_fields = ("created_at",)
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        lead_id = self.request.query_params.get("lead")
+        deal_id = self.request.query_params.get("deal")
+        customer_id = self.request.query_params.get("customer")
+        
+        if lead_id:
+            queryset = queryset.filter(lead_id=lead_id)
+        if deal_id:
+            queryset = queryset.filter(deal_id=deal_id)
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+            
+        return queryset
+
+class AttachmentViewSet(CompanyScopedModelViewSet):
+    serializer_class = AttachmentSerializer
+    queryset = Attachment.objects.select_related("company", "uploaded_by")
+    search_fields = ("file_name",)
+    ordering_fields = ("created_at", "file_name", "file_size")
+    ordering = ("-created_at",)
+
+    # M6 fix: Allowed MIME types whitelist — reject executables and scripts
+    ALLOWED_MIME_TYPES = {
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain",
+        "text/csv",
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "image/svg+xml",
+        "application/zip",
+        "application/x-zip-compressed",
+    }
+    MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+    def create(self, request, *args, **kwargs):
+        file_obj = request.FILES.get("file")
+        if file_obj:
+            # Size check
+            if file_obj.size > self.MAX_FILE_SIZE_BYTES:
+                from rest_framework.response import Response
+                return Response(
+                    {"file": f"File too large. Maximum allowed size is 10 MB. Your file is {file_obj.size / (1024*1024):.1f} MB."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # MIME type check
+            content_type = getattr(file_obj, "content_type", "")
+            if content_type not in self.ALLOWED_MIME_TYPES:
+                from rest_framework.response import Response
+                return Response(
+                    {"file": f"File type '{content_type}' is not allowed. Please upload a document, image, or spreadsheet."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        return super().create(request, *args, **kwargs)
+
+    def apply_business_filters(self, queryset):
+        lead_id = self.request.query_params.get("lead")
+        deal_id = self.request.query_params.get("deal")
+        customer_id = self.request.query_params.get("customer")
+
+        
+        if lead_id:
+            queryset = queryset.filter(lead_id=lead_id)
+        if deal_id:
+            queryset = queryset.filter(deal_id=deal_id)
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+            
+        return queryset
+
+class ProductViewSet(CompanyScopedModelViewSet):
+    serializer_class = ProductSerializer
+    queryset = Product.objects.select_related("company")
+    search_fields = ("name", "sku", "description")
+    ordering_fields = ("name", "price", "created_at")
+    ordering = ("-created_at",)
+
+
+def generate_pdf_response(instance, doc_type="Invoice"):
+    from django.http import HttpResponse
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    import io
+    import urllib.request
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    comp = instance.company
+    template = comp.invoice_template if hasattr(comp, 'invoice_template') else "template1"
+    
+    # Theme colors based on template
+    if template == "template1":  # Modern Blue
+        primary_color = colors.HexColor("#2563EB")
+        table_header_bg = colors.HexColor("#EFF6FF")
+        title_align = 0
+    elif template == "template2":  # Classic Minimal
+        primary_color = colors.HexColor("#1A1714")
+        table_header_bg = colors.white
+        title_align = 1 # Center
+    elif template == "template3":  # Bold Accent
+        primary_color = colors.HexColor("#EF4444")
+        table_header_bg = colors.HexColor("#FEF2F2")
+        title_align = 2 # Right
+    elif template == "template4":  # Edge Sidebar (Dark header)
+        primary_color = colors.HexColor("#1F2937")
+        table_header_bg = colors.HexColor("#F3F4F6")
+        title_align = 0
+    else:  # Clean Corporate
+        primary_color = colors.HexColor("#0F172A")
+        table_header_bg = colors.HexColor("#F8FAFC")
+        title_align = 0
+
+    title_style = ParagraphStyle(
+        'DocTitle', parent=styles['Heading1'], fontSize=24, leading=28, textColor=primary_color, alignment=title_align
+    )
+    meta_label_style = ParagraphStyle(
+        'MetaLabel', parent=styles['Normal'], fontSize=10, leading=14, textColor=primary_color
+    )
+    meta_value_style = ParagraphStyle(
+        'MetaVal', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#1A1714")
+    )
+    bold_style = ParagraphStyle('BoldText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14)
+    
+    # Header Section
+    header_data = []
+    
+    # Logo
+    logo = ""
+    if comp.invoice_logo:
+        # In a real app we might fetch or use local path. For safety in reportlab we just skip or put a placeholder if it's a URL
+        pass 
+        
+    doc_number = getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))
+    
+    title_text = f"<b>{doc_type.upper()}</b>"
+    if template == "template2":
+        header_data = [[Paragraph(title_text, title_style)], [Paragraph(f"#{doc_number}", ParagraphStyle('C', alignment=1))]]
+        header_table = Table(header_data, colWidths=[500])
+    else:
+        left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
+        right_p = Paragraph(f"{title_text}<br/>#{doc_number}", ParagraphStyle('R', alignment=2, fontSize=12))
+        if template == "template3":
+            header_data = [[right_p, left_p]]
+        else:
+            header_data = [[left_p, right_p]]
+        header_table = Table(header_data, colWidths=[250, 250])
+        
+    header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
+    story.append(header_table)
+    story.append(Spacer(1, 20))
+    
+    # Billing Info
+    cust_name = ""
+    cust_company = ""
+    cust_email = ""
+    cust_phone = ""
+    cust_address = ""
+    
+    customer = getattr(instance, 'customer', instance.deal.customer if instance.deal else None)
+    if customer:
+        if comp.show_client_name: cust_name = f"<b>{customer.name}</b><br/>"
+        if comp.show_client_company_name and hasattr(customer, 'company'): cust_company = f"{customer.company.name}<br/>"
+        if comp.show_client_email: cust_email = f"{customer.email}<br/>"
+        if comp.show_client_phone and hasattr(customer, 'phone'): cust_phone = f"{customer.phone}<br/>"
+        if comp.show_client_address and customer.custom_data.get('address'): cust_address = f"{customer.custom_data.get('address')}<br/>"
+    else:
+        cust_name = "<b>Customer Record</b>"
+        
+    recipient_text = f"{cust_name}{cust_company}{cust_email}{cust_phone}{cust_address}"
+    sender_text = f"<b>{comp.name}</b><br/>Lumeo Workspace Member"
+    if comp.tax_id and comp.show_tax_number_on_invoice:
+        sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
+        
+    billing_data = [
+        [Paragraph("<b>FROM</b>", meta_label_style), Paragraph("<b>TO</b>", meta_label_style)],
+        [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
+    ]
+    billing_table = Table(billing_data, colWidths=[250, 250])
+    billing_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 10)]))
+    story.append(billing_table)
+    story.append(Spacer(1, 20))
+    
+    # Items Table
+    table_data = [[
+        Paragraph("<b>Item & Description</b>", bold_style),
+        Paragraph("<b>Qty</b>", bold_style),
+        Paragraph("<b>Rate</b>", bold_style),
+        Paragraph("<b>Tax</b>", bold_style),
+        Paragraph("<b>Total</b>", bold_style)
+    ]]
+    for item in instance.items.all():
+        table_data.append([
+            Paragraph(f"<b>{item.name}</b><br/><font color='#666666'>{item.description}</font>", styles['Normal']),
+            Paragraph(str(item.quantity), styles['Normal']),
+            Paragraph(f"Rs. {item.unit_price:,.2f}", styles['Normal']),
+            Paragraph(f"{item.tax_rate}%", styles['Normal']),
+            Paragraph(f"Rs. {item.total:,.2f}", styles['Normal'])
+        ])
+    
+    table_data.append(["", "", "", Paragraph("<b>Subtotal:</b>", styles['Normal']), Paragraph(f"Rs. {instance.subtotal:,.2f}", styles['Normal'])])
+    table_data.append(["", "", "", Paragraph("<b>Tax:</b>", styles['Normal']), Paragraph(f"Rs. {instance.tax_amount:,.2f}", styles['Normal'])])
+    table_data.append(["", "", "", Paragraph("<b>Total:</b>", bold_style), Paragraph(f"Rs. {instance.total:,.2f}", bold_style)])
+    
+    items_table = Table(table_data, colWidths=[200, 40, 85, 75, 100])
+    ts = [
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BACKGROUND', (0,0), (-1,0), table_header_bg),
+        ('BOTTOMPADDING', (0,0), (-1,0), 8),
+        ('TOPPADDING', (0,0), (-1,0), 8),
+    ]
+    if template == "template5":
+        ts.extend([('GRID', (0,0), (-1,-4), 1, colors.HexColor("#E5E7EB"))])
+    else:
+        ts.extend([
+            ('LINEBELOW', (0,0), (-1,0), 1, primary_color if template=="template3" else colors.HexColor("#E5E7EB")),
+            ('LINEBELOW', (0,1), (-1,-4), 0.5, colors.HexColor("#F3F4F6")),
+        ])
+    items_table.setStyle(TableStyle(ts))
+    story.append(items_table)
+    story.append(Spacer(1, 30))
+    
+    # Terms & Signature
+    footer_data = []
+    terms_p = []
+    if comp.invoice_terms:
+        terms_p.append(Paragraph("<b>Terms & Conditions</b>", bold_style))
+        terms_p.append(Paragraph(comp.invoice_terms.replace('\n', '<br/>'), styles['Normal']))
+    if comp.invoice_other_information:
+        terms_p.append(Spacer(1, 10))
+        terms_p.append(Paragraph("<b>Other Information</b>", bold_style))
+        terms_p.append(Paragraph(comp.invoice_other_information.replace('\n', '<br/>'), styles['Normal']))
+        
+    sig_p = []
+    if comp.show_authorised_signatory:
+        sig_p.append(Spacer(1, 20))
+        if comp.authorised_signatory_signature:
+            sig_p.append(Paragraph("<i>[Signature Image Placeholder]</i>", styles['Normal']))
+        sig_p.append(Paragraph("<b>Authorised Signatory</b>", styles['Normal']))
+        
+    if terms_p or sig_p:
+        story.append(Table([[terms_p, sig_p]], colWidths=[350, 150]))
+    
+    doc.build(story)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{doc_type}_{doc_number}.pdf"'
+    return response
+
+
+class QuoteViewSet(CompanyScopedModelViewSet):
+    serializer_class = QuoteSerializer
+    queryset = Quote.objects.select_related("company", "deal").prefetch_related("items")
+    search_fields = ("quote_number", "title")
+    ordering_fields = ("created_at", "total")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        deal_id = self.request.query_params.get("deal")
+        if deal_id:
+            queryset = queryset.filter(deal_id=deal_id)
+        return queryset
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        quote = self.get_object()
+        return generate_pdf_response(quote, doc_type="Quote")
+
+
+class InvoiceViewSet(CompanyScopedModelViewSet):
+    serializer_class = InvoiceSerializer
+    queryset = Invoice.objects.select_related("company", "deal", "customer").prefetch_related("items")
+    search_fields = ("invoice_number",)
+    ordering_fields = ("created_at", "total", "due_date")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        deal_id = self.request.query_params.get("deal")
+        customer_id = self.request.query_params.get("customer")
+        if deal_id:
+            queryset = queryset.filter(deal_id=deal_id)
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+        return queryset
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        invoice = self.get_object()
+        return generate_pdf_response(invoice, doc_type="Invoice")
+
+
+class CustomFieldDefinitionViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = CustomFieldDefinitionSerializer
+    queryset = CustomFieldDefinition.objects.select_related("company")
+    search_fields = ("label", "name")
+    ordering_fields = ("label", "created_at")
+    ordering = ("label",)
+
+    def apply_business_filters(self, queryset):
+        model_name = self.request.query_params.get("model_name")
+        if model_name:
+            queryset = queryset.filter(model_name=model_name)
+        return queryset
+
+
+class WorkflowRuleViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = WorkflowRuleSerializer
+    queryset = WorkflowRule.objects.select_related("company")
+    search_fields = ("name",)
+    ordering_fields = ("name", "created_at")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        trigger_event = self.request.query_params.get("trigger_event")
+        if trigger_event:
+            queryset = queryset.filter(trigger_event=trigger_event)
+        return queryset
+
+
+class WorkflowSequenceViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = WorkflowSequenceSerializer
+    queryset = WorkflowSequence.objects.select_related("company").prefetch_related(
+        "steps",
+        "steps__email_template",
+    )
+    search_fields = ("name",)
+    ordering_fields = ("name", "created_at")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        trigger_event = self.request.query_params.get("trigger_event")
+        if trigger_event:
+            queryset = queryset.filter(trigger_event=trigger_event)
+        return queryset
+
+
+import hmac
+import hashlib
+import json
+import requests
+
+class SMTPConfigViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = SMTPConfigSerializer
+    queryset = SMTPConfig.objects.select_related("company")
+
+
+class EmailTemplateViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = EmailTemplateSerializer
+    queryset = EmailTemplate.objects.select_related("company")
+    search_fields = ("name", "subject")
+    ordering = ("name",)
+
+
+class WebhookSubscriptionViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = WebhookSubscriptionSerializer
+    queryset = WebhookSubscription.objects.select_related("company")
+    search_fields = ("target_url",)
+    ordering = ("-created_at",)
+
+    @action(detail=True, methods=["post"], url_path="test-event")
+    def test_event(self, request, pk=None):
+        subscription = self.get_object()
+        
+        from django.utils import timezone as dj_timezone
+        payload = {
+            "event": "webhook.test",
+            "message": "This is a test event from Lumeo CRM integrations panel.",
+            # H3 fix: timestamp must be an ISO datetime string, not the company name
+            "timestamp": dj_timezone.now().isoformat(),
+            "test": True,
+        }
+        
+        signature = hmac.new(
+            subscription.secret_token.encode("utf-8"),
+            json.dumps(payload).encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+        
+        headers = {
+            "Content-Type": "application/json",
+            "X-Lumeo-Signature": signature
+        }
+        
+        try:
+            res = requests.post(subscription.target_url, json=payload, headers=headers, timeout=5)
+            log = WebhookDeliveryLog.objects.create(
+                subscription=subscription,
+                event_type="webhook.test",
+                payload=payload,
+                response_status=res.status_code,
+                response_body=res.text[:1000]
+            )
+        except Exception as e:
+            log = WebhookDeliveryLog.objects.create(
+                subscription=subscription,
+                event_type="webhook.test",
+                payload=payload,
+                response_status=500,
+                response_body=str(e)
+            )
+
+        serializer = WebhookDeliveryLogSerializer(log)
+        return Response(serializer.data)
+
+
+from rest_framework.viewsets import ReadOnlyModelViewSet
+
+class WebhookDeliveryLogViewSet(ReadOnlyModelViewSet):
+    # M9 fix: use ReadOnlyModelViewSet — logs must never be mutated via API
+    serializer_class = WebhookDeliveryLogSerializer
+    permission_classes = [IsAuthenticated, CompanyRBACPermission]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return WebhookDeliveryLog.objects.all()
+        if user.company_id is None:
+            return WebhookDeliveryLog.objects.none()
+        return WebhookDeliveryLog.objects.filter(subscription__company_id=user.company_id)
+
+
+class EmailSendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        subject = request.data.get("subject", "").strip()
+        body = request.data.get("body", "").strip()
+        lead_id = request.data.get("lead_id")
+        customer_id = request.data.get("customer_id")
+        deal_id = request.data.get("deal_id")
+        to_email = request.data.get("to_email", "").strip()
+
+        if not subject:
+            return Response({"error": "Subject is required."}, status=400)
+        if not body:
+            return Response({"error": "Email body is required."}, status=400)
+
+        lead = None
+        customer = None
+        deal = None
+        if lead_id:
+            lead = Lead.objects.filter(company=request.user.company, id=lead_id).first()
+        elif customer_id:
+            customer = Customer.objects.filter(company=request.user.company, id=customer_id).first()
+        elif deal_id:
+            deal = Deal.objects.filter(company=request.user.company, id=deal_id).first()
+
+        try:
+            send_crm_email(
+                company=request.user.company,
+                subject_template=subject,
+                body_template=body,
+                lead=lead,
+                customer=customer,
+                deal=deal,
+                to_email=to_email,
+                actor_user=request.user,
+            )
+        except Exception as e:
+            return Response({"error": f"Failed to send email: {str(e)}"}, status=400)
+
+        return Response({"message": "Email sent successfully."}, status=200)
+
+from .models import EmailAccount, EmailMessage as CRMEmailMessage
+from .serializers import EmailAccountSerializer, EmailMessageSerializer
+
+class EmailAccountViewSet(CompanyScopedModelViewSet):
+    serializer_class = EmailAccountSerializer
+    queryset = EmailAccount.objects.select_related("company", "user")
+    
+    @action(detail=False, methods=["post"], url_path="connect")
+    def connect(self, request):
+        provider = request.data.get("provider")
+        if provider not in ["google", "outlook"]:
+            return Response({"error": "Invalid provider"}, status=400)
+            
+        import uuid
+        email_address = request.data.get("email_address", f"{request.user.username}@{provider}.com")
+        
+        account, created = EmailAccount.objects.update_or_create(
+            user=request.user,
+            email_address=email_address,
+            defaults={
+                "company": request.user.company,
+                "provider": provider,
+                "access_token": f"mock_access_{uuid.uuid4().hex}",
+                "refresh_token": f"mock_refresh_{uuid.uuid4().hex}",
+                "is_active": True
+            }
+        )
+        return Response(EmailAccountSerializer(account, context={"request": request}).data)
+
+class EmailMessageViewSet(CompanyScopedModelViewSet):
+    serializer_class = EmailMessageSerializer
+    queryset = CRMEmailMessage.objects.select_related("company", "account", "lead", "customer")
+    search_fields = ("subject", "body_text", "from_address")
+    ordering_fields = ("received_at", "created_at")
+    ordering = ("-received_at",)
+
+from .models import CalendarAccount, BookingLink
+from .serializers import CalendarAccountSerializer, BookingLinkSerializer
+
+class CampaignViewSet(CompanyScopedModelViewSet):
+    serializer_class = CampaignSerializer
+    queryset = Campaign.objects.select_related("company", "created_by")
+    search_fields = ("name", "subject")
+    ordering_fields = ("created_at", "name", "status")
+    ordering = ("-created_at",)
+
+    @action(detail=True, methods=["post"], url_path="send")
+    def send_campaign(self, request, pk=None):
+        import time
+        from django.utils import timezone as dj_timezone
+
+        campaign = self.get_object()
+        if campaign.status != Campaign.Status.DRAFT:
+            return Response({"error": "Only draft campaigns can be sent."}, status=400)
+
+        # Basic recipient filtering
+        recipients = []
+        if campaign.target_audience == "all_leads":
+            recipients = Lead.objects.filter(company=request.user.company, email__isnull=False).exclude(email="")
+        elif campaign.target_audience == "qualified_leads":
+            recipients = Lead.objects.filter(company=request.user.company, status="qualified", email__isnull=False).exclude(email="")
+        elif campaign.target_audience == "all_customers":
+            recipients = Customer.objects.filter(company=request.user.company, email__isnull=False).exclude(email="")
+        else:
+            recipients = Lead.objects.filter(company=request.user.company, email__isnull=False).exclude(email="")
+
+        if not recipients:
+            return Response({"error": "No valid recipients found for this audience."}, status=400)
+
+        campaign.status = Campaign.Status.SENDING
+        campaign.save(update_fields=["status"])
+
+        sent_count = 0
+        failed_count = 0
+        for rec in recipients:
+            try:
+                send_crm_email(
+                    company=request.user.company,
+                    subject_template=campaign.subject,
+                    body_template=campaign.body_html,
+                    lead=rec if isinstance(rec, Lead) else None,
+                    customer=rec if isinstance(rec, Customer) else None,
+                    to_email=rec.email,
+                    actor_user=request.user,
+                )
+                sent_count += 1
+            except Exception:
+                failed_count += 1
+
+            time.sleep(0.1)
+
+        campaign.sent_count = sent_count
+        campaign.failed_count = failed_count
+        campaign.sent_at = dj_timezone.now()
+        campaign.status = Campaign.Status.COMPLETED
+        campaign.save(update_fields=["sent_count", "failed_count", "sent_at", "status"])
+
+        return Response({
+            "message": "Campaign sent successfully",
+            "sent": sent_count,
+            "failed": failed_count
+        })
+
+class CalendarAccountViewSet(CompanyScopedModelViewSet):
+    serializer_class = CalendarAccountSerializer
+    queryset = CalendarAccount.objects.select_related("company", "user")
+    
+    @action(detail=False, methods=["post"], url_path="connect")
+    def connect(self, request):
+        provider = request.data.get("provider")
+        if provider not in ["google", "outlook", "apple"]:
+            return Response({"error": "Invalid provider"}, status=400)
+            
+        import uuid
+        account_email = request.data.get("account_email", f"{request.user.username}@{provider}.com")
+        
+        account, created = CalendarAccount.objects.update_or_create(
+            user=request.user,
+            account_email=account_email,
+            defaults={
+                "company": request.user.company,
+                "provider": provider,
+                "is_active": True
+            }
+        )
+        return Response(CalendarAccountSerializer(account, context={"request": request}).data)
+
+class BookingLinkViewSet(CompanyScopedModelViewSet):
+    serializer_class = BookingLinkSerializer
+    queryset = BookingLink.objects.select_related("company", "user")
+    lookup_field = "slug"
+
+from rest_framework.permissions import AllowAny
+
+class PublicBookingView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request, slug):
+        link = BookingLink.objects.filter(slug=slug, is_active=True).select_related("user", "company").first()
+        if not link:
+            return Response({"error": "Booking link not found"}, status=404)
+            
+        return Response({
+            "name": link.name,
+            "description": link.description,
+            "duration_minutes": link.duration_minutes,
+            "user_name": link.user.get_full_name() or link.user.username,
+            "company_name": link.company.name
+        })
+        
+    def post(self, request, slug):
+        link = BookingLink.objects.filter(slug=slug, is_active=True).first()
+        if not link:
+            return Response({"error": "Booking link not found"}, status=404)
+            
+        # In a real system, we'd use Calendar API to book the event
+        # Here we mock it by creating an Activity/Task
+        name = request.data.get("name")
+        email = request.data.get("email")
+        date_str = request.data.get("date")
+        time_str = request.data.get("time")
+        
+        if not all([name, email, date_str, time_str]):
+            return Response({"error": "Missing required fields"}, status=400)
+            
+        # Create a lead if doesn't exist
+        lead, _ = Lead.objects.get_or_create(
+            company=link.company,
+            email=email,
+            defaults={"name": name, "assigned_to": link.user}
+        )
+        
+        description = f"Meeting booked by {name} ({email}) for {date_str} at {time_str} ({link.duration_minutes} mins)."
+        
+        Activity.objects.create(
+            company=link.company,
+            lead=lead,
+            activity_type=Activity.ActivityType.MEETING,
+            description=description,
+            created_by=link.user
+        )
+        
+        return Response({"message": "Booking successful", "description": description})
+
+class AIAssistantView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        action = request.data.get("action")
+        context = request.data.get("context", "")
+        
+        import time
+        time.sleep(1.5) # Simulate AI processing time
+        
+        if action == "draft_email":
+            prompt = request.data.get("prompt", "")
+            draft = f"Hi there,\n\nFollowing up regarding {prompt if prompt else 'our recent discussion'}. "
+            draft += "I wanted to see if you had any further thoughts or questions on how we can help you move forward.\n\n"
+            draft += "Let me know when you'd have a few minutes to connect.\n\nBest,\n" + request.user.first_name
+            return Response({"result": draft})
+            
+        elif action == "summarize":
+            if not context:
+                return Response({"error": "No context provided for summarization"}, status=400)
+            
+            # Simple mock summarization
+            sentences = context.split(".")
+            summary = " ".join(sentences[:2]) + ("..." if len(sentences) > 2 else ".")
+            summary = f"**AI Summary:**\n{summary.strip()}\n\n*Key takeaways:*\n- Customer showed interest\n- Next steps required"
+            return Response({"result": summary})
+            
+        return Response({"error": "Unknown action"}, status=400)
+
+class TicketViewSet(CompanyScopedModelViewSet):
+    serializer_class = TicketSerializer
+    queryset = Ticket.objects.select_related("company", "customer", "assigned_to").prefetch_related("comments", "comments__author")
+    search_fields = ("subject", "description")
+    ordering_fields = ("created_at", "updated_at", "status", "priority")
+    ordering = ("-created_at",)
+    filterset_fields = ("status", "priority", "assigned_to", "customer")
+
+class TicketCommentViewSet(ModelViewSet):
+    serializer_class = TicketCommentSerializer
+    queryset = TicketComment.objects.select_related("ticket", "author")
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(ticket__company=self.request.user.company)
+
+    def perform_create(self, serializer):
+        ticket_id = self.kwargs.get("ticket_pk")
+        ticket = get_object_or_404(Ticket, pk=ticket_id, company=self.request.user.company)
+        serializer.save(author=self.request.user, ticket=ticket)
+
+class QuoteViewSet(CompanyScopedModelViewSet):
+    serializer_class = QuoteSerializer
+    queryset = Quote.objects.select_related("company", "deal").prefetch_related("items")
+    search_fields = ("quote_number", "title")
+    ordering_fields = ("created_at", "updated_at", "status", "total")
+    ordering = ("-created_at",)
+    filterset_fields = ("status", "deal")
+
+class InvoiceViewSet(CompanyScopedModelViewSet):
+    serializer_class = InvoiceSerializer
+    queryset = Invoice.objects.select_related("company", "deal", "customer").prefetch_related("items")
+    search_fields = ("invoice_number",)
+    ordering_fields = ("created_at", "updated_at", "status", "issue_date", "due_date", "total")
+    ordering = ("-created_at",)
+    filterset_fields = ("status", "deal", "customer")
+
+class PublicQuoteView(APIView):
+    permission_classes = []
+
+    def get(self, request, token):
+        quote = get_object_or_404(Quote, public_token=token)
+        serializer = QuoteSerializer(quote)
+        return Response(serializer.data)
+
+    def post(self, request, token):
+        quote = get_object_or_404(Quote, public_token=token)
+        
+        signature_data = request.data.get("signature_data")
+        signed_by_name = request.data.get("signed_by_name")
+        
+        if not signature_data or not signed_by_name:
+            return Response({"error": "Signature and name are required"}, status=400)
+
+        quote.signature_data = signature_data
+        quote.signed_by_name = signed_by_name
+        quote.signed_at = dj_timezone.now()
+        quote.signed_by_ip = request.META.get('REMOTE_ADDR')
+        quote.status = Quote.Status.ACCEPTED
+        quote.save(update_fields=["signature_data", "signed_by_name", "signed_at", "signed_by_ip", "status"])
+
+        return Response({"message": "Quote signed successfully"})
+
+class PublicInvoiceView(APIView):
+    permission_classes = []
+
+    def get(self, request, token):
+        invoice = get_object_or_404(Invoice, public_token=token)
+        serializer = InvoiceSerializer(invoice)
+        return Response(serializer.data)
+
+    def post(self, request, token):
+        invoice = get_object_or_404(Invoice, public_token=token)
+        
+        signature_data = request.data.get("signature_data")
+        signed_by_name = request.data.get("signed_by_name")
+        
+        if not signature_data or not signed_by_name:
+            return Response({"error": "Signature and name are required"}, status=400)
+
+        invoice.signature_data = signature_data
+        invoice.signed_by_name = signed_by_name
+        invoice.signed_at = dj_timezone.now()
+        invoice.signed_by_ip = request.META.get('REMOTE_ADDR')
+        # We don't automatically set Invoice to PAID, because they still need to pay.
+        invoice.save(update_fields=["signature_data", "signed_by_name", "signed_at", "signed_by_ip"])
+
+        return Response({"message": "Invoice signed successfully"})
+
+
+# ── Orders ───────────────────────────────────────────────────────────────────
+
+class OrderViewSet(CompanyScopedModelViewSet):
+    serializer_class = OrderSerializer
+    queryset = Order.objects.select_related("company", "customer", "created_by").prefetch_related("items")
+    search_fields = ("order_number", "customer__name")
+    ordering_fields = ("created_at", "total", "status")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        status_val = self.request.query_params.get("status")
+        if status_val:
+            queryset = queryset.filter(status=status_val)
+        customer_id = self.request.query_params.get("customer")
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+        return queryset
+
+
+# ── Events ───────────────────────────────────────────────────────────────────
+
+class EventViewSet(CompanyScopedModelViewSet):
+    serializer_class = EventSerializer
+    queryset = Event.objects.select_related("company", "organizer")
+    search_fields = ("title", "description", "location")
+    ordering_fields = ("start_time", "created_at", "title")
+    ordering = ("start_time",)
+
+    def apply_business_filters(self, queryset):
+        is_virtual = self.request.query_params.get("is_virtual")
+        if is_virtual is not None:
+            queryset = queryset.filter(is_virtual=is_virtual.lower() in ("true", "1"))
+        upcoming = self.request.query_params.get("upcoming")
+        if upcoming:
+            from django.utils import timezone as dj_tz
+            queryset = queryset.filter(start_time__gte=dj_tz.now())
+        return queryset
+
+
+# ── Notice Board ─────────────────────────────────────────────────────────────
+
+class NoticeViewSet(CompanyScopedModelViewSet):
+    serializer_class = NoticeSerializer
+    queryset = Notice.objects.select_related("company", "author")
+    search_fields = ("title", "content")
+    ordering_fields = ("created_at", "is_pinned", "title")
+    ordering = ("-is_pinned", "-created_at")
+
+    def apply_business_filters(self, queryset):
+        pinned = self.request.query_params.get("pinned")
+        if pinned is not None:
+            queryset = queryset.filter(is_pinned=pinned.lower() in ("true", "1"))
+        return queryset
