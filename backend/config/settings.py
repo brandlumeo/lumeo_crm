@@ -86,7 +86,7 @@ if not DEBUG and SECRET_KEY == 'unsafe-dev-secret-key-change-me':
         "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
     )
 
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost', 'lumeo-crm-backend.onrender.com', 'lumeo.estgrp.in'])
 
 # Razorpay Subscription Credentials
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', 'rzp_test_placeholder_key_id')
@@ -246,6 +246,8 @@ CORS_ALLOWED_ORIGINS = env_list(
         'http://localhost:3002',
         'http://127.0.0.1:5173',
         'http://localhost:5173',
+        'https://lumeo-crm-backend.onrender.com',
+        'https://lumeo.estgrp.in',
     ]
 )
 
@@ -260,6 +262,8 @@ CSRF_TRUSTED_ORIGINS = env_list(
         'http://localhost:3002',
         'http://127.0.0.1:5173',
         'http://localhost:5173',
+        'https://lumeo-crm-backend.onrender.com',
+        'https://lumeo.estgrp.in',
     ]
 )
 
