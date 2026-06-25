@@ -304,15 +304,13 @@ CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', False)
 
 # ── django-axes: brute-force protection ────────────────────────────────────
 
-# Lock after 5 consecutive failures from the same IP + username combo
-AXES_FAILURE_LIMIT = 5
-# Automatically unlock after 30 minutes
-AXES_COOLOFF_TIME = timedelta(minutes=30)
-# Reset failure counter on successful login
+# Top solution: Never lock out an entire IP address (prevents blocking admins/coworkers on the same IP)
+AXES_ONLY_USER_FAILURES = True
+AXES_LOCKOUT_PARAMETERS = ['username']
+AXES_FAILURE_LIMIT = 20
+# Set cooloff to 1 minute so any existing lockouts immediately expire and unlock the user
+AXES_COOLOFF_TIME = timedelta(minutes=1)
 AXES_RESET_ON_SUCCESS = True
-# Track by BOTH username and IP address (harder to bypass)
-AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
-# Use database backend for persistence across restarts (switch to Cache if using Redis)
 AXES_BACKEND = 'axes.backends.AxesBackend'
 
 AUTHENTICATION_BACKENDS = [
