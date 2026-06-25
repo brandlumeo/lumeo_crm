@@ -87,6 +87,8 @@ if not DEBUG and SECRET_KEY == 'unsafe-dev-secret-key-change-me':
     )
 
 ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost', 'lumeo-crm-backend.onrender.com', 'lumeo.estgrp.in'])
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Razorpay Subscription Credentials
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', 'rzp_test_placeholder_key_id')
