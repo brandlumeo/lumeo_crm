@@ -11,6 +11,10 @@ class CurrentCompanyView(APIView):
 
     def get(self, request):
         company = getattr(request.user, "company", None)
+        if company is None and request.user.is_superuser:
+            from .models import Company
+            company = Company.objects.first()
+
         if company is None:
             return Response(
                 {"detail": "Authenticated user is not assigned to a company."},
@@ -22,6 +26,10 @@ class CurrentCompanyView(APIView):
 
     def put(self, request):
         company = getattr(request.user, "company", None)
+        if company is None and request.user.is_superuser:
+            from .models import Company
+            company = Company.objects.first()
+
         if company is None:
             return Response(
                 {"detail": "Authenticated user is not assigned to a company."},
