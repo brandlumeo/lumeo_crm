@@ -482,7 +482,10 @@ class InviteMemberView(APIView):
         from .tasks import send_invite_email
         inviter_name = request.user.get_full_name() or request.user.username
         company_name = request.user.company.name if request.user.company else "Lumeo CRM"
-        send_invite_email.delay(email, inviter_name, company_name, invite_url)
+        try:
+            send_invite_email.delay(email, inviter_name, company_name, invite_url)
+        except Exception:
+            pass
 
         return Response(TeamInvitationSerializer(invite).data, status=status.HTTP_201_CREATED)
 
