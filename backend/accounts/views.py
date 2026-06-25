@@ -31,7 +31,7 @@ def _cookie_kwargs(max_age: int, is_production: bool) -> dict:
     """Returns cookie attributes that are Secure in production."""
     return {
         "httponly": True,
-        "samesite": "Lax",
+        "samesite": "None" if is_production else "Lax",
         "path": "/",
         "max_age": max_age,
         # Secure=True requires HTTPS — only set in production
@@ -65,7 +65,7 @@ def _set_auth_cookies(response: Response, refresh: RefreshToken) -> None:
         COOKIE_SESSION_NAME,
         "1",
         httponly=False,
-        samesite="Lax",
+        samesite="None" if is_prod else "Lax",
         path="/",
         max_age=max_age,
         secure=is_prod,
@@ -317,32 +317,40 @@ class RegisterView(APIView):
         except DjangoValidationError as e:
             return Response({"detail": " ".join(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
-        with transaction.atomic():
-            from companies.models import Company
-            company = Company.objects.create(
-                name=company_name,
-                status=Company.Status.TRIAL,
-                trial_ends_at=timezone.now() + timedelta(days=14),
-            )
+        try:
+            with transaction.atomic():
+                from companies.models import Company
+                company = Company.objects.create(
+                    name=company_name,
+                    status=Company.Status.TRIAL,
+                    trial_ends_at=timezone.now() + timedelta(days=14),
+                )
 
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name,
-                company=company,
-                role=User.Role.ADMIN,
-            )
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    company=company,
+                    role=User.Role.ADMIN,
+                )
+        except DjangoValidationError as e:
+            return Response({"detail": " ".join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": f"Registration failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create welcome notification (which will automatically send an email)
-            from notifications.models import Notification
+        # Create welcome notification outside transaction.atomic so email/Celery errors don't rollback user creation
+        from notifications.models import Notification
+        try:
             Notification.objects.create(
                 user=user,
                 notification_type=Notification.Type.GENERAL,
                 title="Welcome to Lumeo CRM!",
                 body=f"Hi {first_name}, welcome to Lumeo! Your workspace '{company_name}' is ready. Get started by inviting your team."
             )
+        except Exception:
+            pass
 
         refresh = RefreshToken.for_user(user)
         response = Response({"access": str(refresh.access_token)}, status=status.HTTP_201_CREATED)
