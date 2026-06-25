@@ -42,6 +42,8 @@ from django.dispatch import receiver
 
 @receiver(post_save, sender=Notification)
 def trigger_notification_email(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if created and instance.user.email:
         from .tasks import send_notification_email
         send_notification_email.delay(

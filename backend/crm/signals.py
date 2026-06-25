@@ -66,6 +66,8 @@ def dispatch_webhook_async(company, event_type, payload):
 
 @receiver(pre_save, sender=Deal)
 def deal_pre_save(sender, instance, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if instance.pk:
         try:
             instance._old_stage = sender.objects.only('stage').get(pk=instance.pk).stage
@@ -76,6 +78,8 @@ def deal_pre_save(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Deal)
 def deal_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     old_stage = getattr(instance, '_old_stage', None)
     new_stage = instance.stage
 
@@ -122,6 +126,8 @@ def deal_post_save(sender, instance, created, **kwargs):
 
 @receiver(pre_save, sender=Lead)
 def lead_pre_save(sender, instance, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if instance.pk:
         try:
             instance._old_status = sender.objects.only('status').get(pk=instance.pk).status
@@ -132,6 +138,8 @@ def lead_pre_save(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Lead)
 def lead_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     old_status = getattr(instance, '_old_status', None)
     new_status = instance.status
 
@@ -181,6 +189,8 @@ def trigger_workflows(instance, trigger_event):
 
 @receiver(post_save, sender=Task)
 def task_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if created:
         for u in get_users_to_notify(instance):
             if getattr(u, 'notify_task_deadline', True):
