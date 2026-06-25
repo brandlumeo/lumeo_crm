@@ -89,6 +89,19 @@ if not DEBUG and SECRET_KEY == 'unsafe-dev-secret-key-change-me':
 ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost', 'lumeo-crm-backend.onrender.com', 'lumeo.estgrp.in'])
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.estgrp\.in$",
+    r"^http://localhost:.*$",
+    r"^http://127\.0\.0\.1:.*$",
+]
+CSRF_TRUSTED_ORIGINS = [
+    'https://lumeo-crm-exjs.vercel.app',
+    'https://lumeo.estgrp.in',
+    'https://lumeo-crm-backend.onrender.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
 
 # Razorpay Subscription Credentials
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', 'rzp_test_placeholder_key_id')
@@ -100,13 +113,16 @@ RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', '')
 FRONTEND_URL = env('FRONTEND_URL', 'http://localhost:3000')
 
 # ── Production security (auto-enabled when DEBUG=False) ──────────────────────
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000          # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     X_FRAME_OPTIONS = 'DENY'
 
