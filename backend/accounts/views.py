@@ -450,23 +450,12 @@ class InviteMemberView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "User with this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if already invited
-        if TeamInvitation.objects.filter(company=request.user.company, email=email, is_accepted=False).exists():
-            return Response({"error": "An active invite for this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # H4 fix: delete expired/old invite for this email to avoid unique_together IntegrityError on re-invite
+        # If an unaccepted invite already exists (e.g. from an earlier failed email or localhost), delete it so we can create a fresh invite and send a new email
         TeamInvitation.objects.filter(
             company=request.user.company,
             email=email,
             is_accepted=False,
-        ).exclude(is_accepted=False).delete()  # delete expired-but-not-accepted records
-        # Simpler: just delete ALL pending (expired or not) before creating new
-        TeamInvitation.objects.filter(
-            company=request.user.company,
-            email=email,
-        ).filter(
-            is_accepted=False
-        ).extra(where=["expires_at < NOW()"]).delete()
+        ).delete()
 
         invite = TeamInvitation.objects.create(
             company=request.user.company,
