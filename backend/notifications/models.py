@@ -46,8 +46,11 @@ def trigger_notification_email(sender, instance, created, **kwargs):
         return
     if created and instance.user.email:
         from .tasks import send_notification_email
-        send_notification_email.delay(
-            to_email=instance.user.email,
-            title=instance.title,
-            body=instance.body
-        )
+        try:
+            send_notification_email.delay(
+                to_email=instance.user.email,
+                title=instance.title,
+                body=instance.body
+            )
+        except Exception:
+            pass
