@@ -179,11 +179,14 @@ export function storeTokens(tokens: TokenPair): void {
   if (!isBrowser()) return;
   // Only store the access token — refresh token lives in HttpOnly cookie
   sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+  // Set the lumeo_session indicator cookie on the frontend domain so Next.js middleware detects it across decoupled domains
+  document.cookie = "lumeo_session=1; path=/; max-age=2592000; SameSite=Lax; Secure";
 }
 
 export async function clearSession(): Promise<void> {
   if (!isBrowser()) return;
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  document.cookie = "lumeo_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
   // Tell backend to clear the HttpOnly refresh cookie
   try {
     await axios.post(
