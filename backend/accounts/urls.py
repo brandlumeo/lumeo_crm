@@ -23,4 +23,5 @@ urlpatterns = [
     # Password reset (unauthenticated)
     path("password-reset/", views.PasswordResetRequestView.as_view(), name="password_reset_request"),
     path("password-reset/confirm/", views.PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
+    path("contact-support/", views.ContactSupportView.as_view(), name="contact_support"),
 ]

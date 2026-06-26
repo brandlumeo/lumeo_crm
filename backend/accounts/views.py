@@ -640,3 +640,47 @@ class PasswordResetConfirmView(APIView):
         logger.info(f"Password reset successful for user {user.email}")
 
         return Response({"detail": "Password reset successfully. You can now sign in."})
+
+
+class ContactSupportView(APIView):
+    """
+    POST /api/v1/accounts/contact-support/
+    Sends a support email from a verified logged-in user to the platform support email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        subject = request.data.get("subject", "").strip()
+        message = request.data.get("message", "").strip()
+
+        if not subject or not message:
+            return Response(
+                {"detail": "Subject and message are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+        company_name = user.company.name if user.company else "No Company Assigned"
+        
+        full_subject = f"🛠️ Support Request: {subject} [from {user.username}]"
+        full_body = (
+            f"New support request received from Lumeo CRM dashboard.\n\n"
+            f"─── Client Details ───\n"
+            f"• Name: {user.first_name} {user.last_name}\n"
+            f"• Username/Email: {user.username} / {user.email}\n"
+            f"• Company Workspace: {company_name}\n\n"
+            f"─── Message ───\n"
+            f"{message}\n"
+        )
+
+        from notifications.tasks import send_notification_email
+        from django.conf import settings
+        admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'support@crm.estgrp.in')
+
+        send_notification_email.delay(
+            to_email=admin_email,
+            title=full_subject,
+            body=full_body
+        )
+
+        return Response({"detail": "Support message sent successfully."}, status=status.HTTP_200_OK)

@@ -14,6 +14,7 @@ import { SearchPalette } from "./search-palette";
 import { AttendanceWidget } from "./attendance-widget";
 import { Sidebar } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
+import { SupportModal } from "./support-modal";
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -160,6 +161,7 @@ export function Topbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const current = titles[pathname] ?? "Lumeo";
@@ -175,6 +177,15 @@ export function Topbar() {
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Listen to open-support-modal custom event
+  useEffect(() => {
+    function handleOpenSupport() {
+      setSupportOpen(true);
+    }
+    window.addEventListener("open-support-modal", handleOpenSupport);
+    return () => window.removeEventListener("open-support-modal", handleOpenSupport);
   }, []);
 
   // Close mobile menu when pathname changes
@@ -252,16 +263,15 @@ export function Topbar() {
 
         <ThemeToggle />
 
-        <a
-          href="https://mail.google.com/mail/?view=cm&fs=1&to=support@crm.estgrp.in"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setSupportOpen(true)}
           className="hidden md:grid w-8 h-8 border border-line bg-paper rounded-md place-items-center text-ink-2 hover:bg-bone-2 transition-colors"
           aria-label="Contact Support"
           title="Contact Support"
         >
           <HelpCircle className="w-[15px] h-[15px]" strokeWidth={1.6} />
-        </a>
+        </button>
 
         <button
           type="button"
@@ -302,6 +312,8 @@ export function Topbar() {
         </div>
       </div>
     )}
+    <SupportModal open={supportOpen} setOpen={setSupportOpen} />
     </>
   );
 }
+
