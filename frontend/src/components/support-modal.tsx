@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, CheckCircle2, Send, Building2, User2, Mail } from "lucide-react";
 import { useCurrentUser, useCurrentCompany } from "@/lib/queries";
-import { getAuthToken } from "@/lib/api";
+import { getAccessToken } from "@/lib/api";
 
 export function SupportModal({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
   const { data: user } = useCurrentUser();
@@ -28,7 +28,7 @@ export function SupportModal({ open, setOpen }: { open: boolean; setOpen: (v: bo
     setError("");
 
     try {
-      const token = getAuthToken();
+      const token = getAccessToken();
       const res = await fetch(
         process.env.NEXT_PUBLIC_API_URL
           ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/contact-support/`
