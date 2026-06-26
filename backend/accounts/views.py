@@ -677,10 +677,13 @@ class ContactSupportView(APIView):
         from django.conf import settings
         admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'support@crm.estgrp.in')
 
-        send_notification_email.delay(
-            to_email=admin_email,
-            title=full_subject,
-            body=full_body
-        )
+        try:
+            send_notification_email.delay(
+                to_email=admin_email,
+                title=full_subject,
+                body=full_body
+            )
+        except Exception as exc:
+            logger.exception("Contact support email dispatch failed: %s", exc)
 
         return Response({"detail": "Support message sent successfully."}, status=status.HTTP_200_OK)

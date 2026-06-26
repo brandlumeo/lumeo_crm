@@ -137,9 +137,12 @@ def send_notification_email(self, to_email: str, title: str, body: str):
             message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[to_email],
-            fail_silently=False,
+            fail_silently=True,
         )
         logger.info(f"Notification email sent to {to_email}")
     except Exception as exc:
         logger.exception("send_notification_email failed: %s", exc)
-        raise self.retry(exc=exc)
+        try:
+            raise self.retry(exc=exc)
+        except Exception:
+            pass
