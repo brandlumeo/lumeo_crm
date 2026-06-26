@@ -227,7 +227,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     ...(mounted && user?.is_superuser ? [{ label: "SaaS Admin", href: "/saas", icon: Layers }] : []),
     ...(onClose ? [
       { label: "Inbox", href: "#" as any, icon: Inbox },
-      { label: "Contact Support", href: "mailto:support@crm.estgrp.in" as any, icon: HelpCircle },
+      { label: "Contact Support", href: "https://mail.google.com/mail/?view=cm&fs=1&to=support@crm.estgrp.in" as any, target: "_blank", icon: HelpCircle },
       { label: "Sign Out", onClick: handleLogout, icon: LogOut },
     ] : []),
   ];

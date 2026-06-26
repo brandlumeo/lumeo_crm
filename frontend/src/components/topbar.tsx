@@ -253,7 +253,9 @@ export function Topbar() {
         <ThemeToggle />
 
         <a
-          href="mailto:support@crm.estgrp.in"
+          href="https://mail.google.com/mail/?view=cm&fs=1&to=support@crm.estgrp.in"
+          target="_blank"
+          rel="noopener noreferrer"
           className="hidden md:grid w-8 h-8 border border-line bg-paper rounded-md place-items-center text-ink-2 hover:bg-bone-2 transition-colors"
           aria-label="Contact Support"
           title="Contact Support"
