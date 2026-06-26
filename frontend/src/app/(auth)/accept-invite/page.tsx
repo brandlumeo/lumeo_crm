@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -8,8 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 
-import { acceptInvite, storeTokens } from "@/lib/api";
-import { useQueryClient } from "@tanstack/react-query";
+import { acceptInvite, fetchInviteDetails, storeTokens } from "@/lib/api";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 const acceptSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -18,8 +18,6 @@ const acceptSchema = z.object({
 });
 
 type AcceptForm = z.infer<typeof acceptSchema>;
-
-import { Suspense } from "react";
 
 function AcceptInviteForm() {
   const router = useRouter();
@@ -32,10 +30,24 @@ function AcceptInviteForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AcceptForm>({
     resolver: zodResolver(acceptSchema),
   });
+
+  const { data: inviteDetails, isLoading: isLoadingInvite } = useQuery({
+    queryKey: ["invite-details", token],
+    queryFn: () => fetchInviteDetails(token!),
+    enabled: Boolean(token),
+  });
+
+  useEffect(() => {
+    if (inviteDetails) {
+      if (inviteDetails.first_name) setValue("first_name", inviteDetails.first_name);
+      if (inviteDetails.last_name) setValue("last_name", inviteDetails.last_name);
+    }
+  }, [inviteDetails, setValue]);
 
   const onSubmit = async (data: AcceptForm) => {
     if (!token) {
@@ -65,13 +77,26 @@ function AcceptInviteForm() {
     );
   }
 
+  if (isLoadingInvite) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-muted mb-4" />
+        <p className="text-sm text-muted">Loading invitation details...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-[360px]">
       <div className="mb-10 text-center">
         <h1 className="text-[28px] font-serif text-ink tracking-tight mb-2">
-          Join Workspace
+          Join {inviteDetails?.company_name || "Workspace"}
         </h1>
-        <p className="text-[13px] text-muted">
+        <p className="text-[14px] text-ink font-medium mt-1">
+          {inviteDetails?.designation ? `Invited as ${inviteDetails.designation}` : "Team Invitation"}
+          {inviteDetails?.department ? ` (${inviteDetails.department})` : ""}
+        </p>
+        <p className="text-[13px] text-muted mt-2">
           Set up your account details to accept the invitation.
         </p>
       </div>

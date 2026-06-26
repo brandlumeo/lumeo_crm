@@ -147,6 +147,8 @@ export interface UserProfile extends UserSummary {
   email: string;
   company: CompanySummary | null;
   avatar: string | null;
+  designation?: string;
+  department?: string;
   timezone: string;
   prefix: string | null;
   mobile: string | null;
@@ -350,6 +352,11 @@ export interface UnreadCount {
 export interface TeamInvitation {
   id: number;
   email: string;
+  first_name?: string;
+  last_name?: string;
+  designation?: string;
+  department?: string;
+  personal_message?: string;
   role: string;
   is_accepted: boolean;
   created_at: string;

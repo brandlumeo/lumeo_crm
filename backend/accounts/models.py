@@ -38,6 +38,8 @@ class User(AbstractUser):
         default="UTC",
         help_text="User's preferred timezone.",
     )
+    designation = models.CharField(max_length=100, blank=True, null=True, help_text="User's job title or designation.")
+    department = models.CharField(max_length=100, blank=True, null=True, help_text="Department the user belongs to.")
     prefix = models.CharField(max_length=10, blank=True, null=True)
     mobile = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
@@ -131,6 +133,11 @@ class TeamInvitation(models.Model):
         related_name="invitations",
     )
     email = models.EmailField(db_index=True)
+    first_name = models.CharField(max_length=150, blank=True, null=True)
+    last_name = models.CharField(max_length=150, blank=True, null=True)
+    designation = models.CharField(max_length=100, blank=True, null=True)
+    department = models.CharField(max_length=100, blank=True, null=True)
+    personal_message = models.TextField(blank=True, null=True)
     role = models.CharField(
         max_length=20,
         choices=User.Role.choices,

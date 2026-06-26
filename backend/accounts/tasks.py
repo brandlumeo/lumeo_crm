@@ -26,13 +26,18 @@ def _make_email(subject: str, plain: str, html: str, to: str) -> EmailMultiAlter
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_invite_email(self, to_email: str, inviter_name: str, company_name: str, invite_url: str):
+def send_invite_email(self, to_email: str, inviter_name: str, company_name: str, invite_url: str, recipient_name: str = "", designation: str = "", department: str = "", personal_message: str = ""):
     """Send a team invitation email to the new member."""
     subject = f"You're invited to join {company_name} on Lumeo CRM"
 
-    plain = f"""Hi,
+    greeting = f"Hi {recipient_name}," if recipient_name else "Hi,"
+    role_info = f" as {designation}" if designation else ""
+    dept_info = f" in the {department} department" if department else ""
+    msg_info = f"\n\nMessage from {inviter_name}:\n{personal_message}" if personal_message else ""
 
-{inviter_name} has invited you to join {company_name} on Lumeo CRM.
+    plain = f"""{greeting}
+
+{inviter_name} has invited you to join {company_name} on Lumeo CRM{role_info}{dept_info}.{msg_info}
 
 Accept your invitation here:
 {invite_url}
@@ -41,6 +46,16 @@ This link expires in 7 days. If you didn't expect this invitation, you can safel
 
 — The Lumeo Team
 """
+
+    html_greeting = f"Hi <strong>{recipient_name}</strong>," if recipient_name else "Hi,"
+    html_role_info = f" as <strong>{designation}</strong>" if designation else ""
+    html_dept_info = f" in the <strong>{department}</strong> department" if department else ""
+    html_msg = f"""
+            <div style="background:#F4EFE6;border-left:4px solid #FF5B1F;padding:16px 20px;border-radius:0 8px 8px 0;margin:0 0 24px;">
+              <p style="font-size:13px;color:#8B8580;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px;">Message from {inviter_name}</p>
+              <p style="font-size:15px;color:#1A1714;margin:0;font-style:italic;">"{personal_message}"</p>
+            </div>
+""" if personal_message else ""
 
     html = f"""
 <!DOCTYPE html>
@@ -70,9 +85,10 @@ This link expires in 7 days. If you didn't expect this invitation, you can safel
               You've been invited.
             </h1>
             <p style="font-size:15px;color:#4A4540;line-height:1.6;margin:0 0 24px;">
-              <strong>{inviter_name}</strong> has invited you to join
-              <strong>{company_name}</strong> on Lumeo CRM.
+              {html_greeting} <strong>{inviter_name}</strong> has invited you to join
+              <strong>{company_name}</strong> on Lumeo CRM{html_role_info}{html_dept_info}.
             </p>
+            {html_msg}
             <table cellpadding="0" cellspacing="0">
               <tr>
                 <td style="background:#1A1714;border-radius:8px;padding:14px 28px;">

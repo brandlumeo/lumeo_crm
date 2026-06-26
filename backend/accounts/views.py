@@ -434,6 +434,11 @@ class InviteMemberView(APIView):
 
         email = request.data.get("email")
         role = request.data.get("role", "employee")
+        first_name = request.data.get("first_name", "")
+        last_name = request.data.get("last_name", "")
+        designation = request.data.get("designation", "")
+        department = request.data.get("department", "")
+        personal_message = request.data.get("personal_message", "")
 
         # Managers cannot invite admins or other managers
         if request.user.role not in [User.Role.OWNER, User.Role.ADMIN]:
@@ -460,6 +465,11 @@ class InviteMemberView(APIView):
         invite = TeamInvitation.objects.create(
             company=request.user.company,
             email=email,
+            first_name=first_name,
+            last_name=last_name,
+            designation=designation,
+            department=department,
+            personal_message=personal_message,
             role=role,
             invited_by=request.user
         )
@@ -471,8 +481,9 @@ class InviteMemberView(APIView):
         from .tasks import send_invite_email
         inviter_name = request.user.get_full_name() or request.user.username
         company_name = request.user.company.name if request.user.company else "Lumeo CRM"
+        recipient_name = f"{first_name} {last_name}".strip()
         try:
-            send_invite_email.delay(email, inviter_name, company_name, invite_url)
+            send_invite_email.delay(email, inviter_name, company_name, invite_url, recipient_name, designation, department, personal_message)
         except Exception:
             pass
 
@@ -481,6 +492,28 @@ class InviteMemberView(APIView):
 
 class AcceptInviteView(APIView):
     permission_classes = [AllowAny]
+
+    def get(self, request):
+        token = request.query_params.get("token")
+        if not token:
+            return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            invite = TeamInvitation.objects.get(token=token, is_accepted=False)
+        except TeamInvitation.DoesNotExist:
+            return Response({"error": "Invalid or expired invite token"}, status=status.HTTP_404_NOT_FOUND)
+
+        if invite.is_expired:
+            return Response({"error": "Invite has expired"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "email": invite.email,
+            "first_name": invite.first_name or "",
+            "last_name": invite.last_name or "",
+            "designation": invite.designation or "",
+            "department": invite.department or "",
+            "company_name": invite.company.name if invite.company else "",
+            "role": invite.role,
+        })
 
     def post(self, request):
         token = request.data.get("token")
@@ -512,6 +545,8 @@ class AcceptInviteView(APIView):
                 password=password,
                 first_name=first_name,
                 last_name=last_name,
+                designation=invite.designation,
+                department=invite.department,
                 company=invite.company,
                 role=invite.role,
             )

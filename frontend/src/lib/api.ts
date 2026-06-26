@@ -585,11 +585,21 @@ export async function fetchTeam(): Promise<TeamData> {
   return data;
 }
 
-export async function inviteTeamMember(email: string, role: string): Promise<TeamInvitation> {
-  const { data } = await api.post<TeamInvitation>(endpoints.invites, {
-    email,
-    role,
-  });
+export async function inviteTeamMember(payload: {
+  email: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+  designation?: string;
+  department?: string;
+  personal_message?: string;
+}): Promise<TeamInvitation> {
+  const { data } = await api.post<TeamInvitation>(endpoints.invites, payload);
+  return data;
+}
+
+export async function fetchInviteDetails(token: string): Promise<any> {
+  const { data } = await axios.get(apiBaseUrl + endpoints.acceptInvite, { params: { token } });
   return data;
 }
 

@@ -18,6 +18,11 @@ export default function TeamPage() {
   const { data: company } = useCurrentCompany();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFirstName, setInviteFirstName] = useState("");
+  const [inviteLastName, setInviteLastName] = useState("");
+  const [inviteDesignation, setInviteDesignation] = useState("");
+  const [inviteDepartment, setInviteDepartment] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
   const [inviteRole, setInviteRole] = useState("employee");
 
   const [mounted, setMounted] = useState(false);
@@ -31,13 +36,26 @@ export default function TeamPage() {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: (vars: { email: string; role: string }) =>
-      inviteTeamMember(vars.email, vars.role),
+    mutationFn: (vars: {
+      email: string;
+      role: string;
+      first_name?: string;
+      last_name?: string;
+      designation?: string;
+      department?: string;
+      personal_message?: string;
+    }) => inviteTeamMember(vars),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team"] });
       setIsInviteOpen(false);
       setInviteEmail("");
+      setInviteFirstName("");
+      setInviteLastName("");
+      setInviteDesignation("");
+      setInviteDepartment("");
+      setInviteMessage("");
       setInviteRole("employee");
+      toast.success("Team invitation sent successfully.");
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to invite user.");
@@ -113,6 +131,13 @@ export default function TeamPage() {
                         )}
                       </div>
                       <div className="text-[13px] text-muted">{user.email || user.username}</div>
+                      {(user.designation || user.department) && (
+                        <div className="flex items-center gap-2 mt-1 text-[12px] text-muted/80 font-serif italic">
+                          {user.designation && <span>{user.designation}</span>}
+                          {user.designation && user.department && <span>•</span>}
+                          {user.department && <span>{user.department}</span>}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
@@ -154,7 +179,17 @@ export default function TeamPage() {
                         <Mail className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-ink">{invite.email}</div>
+                        <div className="text-sm font-medium text-ink">
+                          {invite.first_name || invite.last_name ? `${invite.first_name || ""} ${invite.last_name || ""}`.trim() : invite.email}
+                          {(invite.first_name || invite.last_name) && <span className="text-[13px] text-muted font-normal ml-2">({invite.email})</span>}
+                        </div>
+                        {(invite.designation || invite.department) && (
+                          <div className="flex items-center gap-2 mt-0.5 text-[12px] text-muted/80 font-serif italic">
+                            {invite.designation && <span>{invite.designation}</span>}
+                            {invite.designation && invite.department && <span>•</span>}
+                            {invite.department && <span>{invite.department}</span>}
+                          </div>
+                        )}
                         <div className="text-[12px] text-muted mt-0.5">
                           {invite.is_expired ? (
                             <span className="text-red-500">Expired</span>
@@ -196,14 +231,49 @@ export default function TeamPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                inviteMutation.mutate({ email: inviteEmail, role: inviteRole });
+                inviteMutation.mutate({
+                  email: inviteEmail,
+                  role: inviteRole,
+                  first_name: inviteFirstName,
+                  last_name: inviteLastName,
+                  designation: inviteDesignation,
+                  department: inviteDepartment,
+                  personal_message: inviteMessage,
+                });
               }}
-              className="p-5"
+              className="p-5 max-h-[85vh] overflow-y-auto"
             >
               <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={inviteFirstName}
+                      onChange={(e) => setInviteFirstName(e.target.value)}
+                      placeholder="Sarah"
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={inviteLastName}
+                      onChange={(e) => setInviteLastName(e.target.value)}
+                      placeholder="Connor"
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[13px] font-medium text-ink mb-1.5">
-                    Email address
+                    Email address *
                   </label>
                   <input
                     type="email"
@@ -214,9 +284,37 @@ export default function TeamPage() {
                     className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Designation / Title
+                    </label>
+                    <input
+                      type="text"
+                      value={inviteDesignation}
+                      onChange={(e) => setInviteDesignation(e.target.value)}
+                      placeholder="Senior Sales Executive"
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Department
+                    </label>
+                    <input
+                      type="text"
+                      value={inviteDepartment}
+                      onChange={(e) => setInviteDepartment(e.target.value)}
+                      placeholder="Sales"
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[13px] font-medium text-ink mb-1.5">
-                    Role
+                    Role *
                   </label>
                   <select
                     value={inviteRole}
@@ -245,6 +343,19 @@ export default function TeamPage() {
                       );
                     })}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">
+                    Personalized Welcome Message
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={inviteMessage}
+                    onChange={(e) => setInviteMessage(e.target.value)}
+                    placeholder="Welcome to the team! Here is your workspace access."
+                    className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors resize-none"
+                  />
                 </div>
               </div>
               <div className="mt-8 flex justify-end gap-3">
