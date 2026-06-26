@@ -128,7 +128,12 @@ import type { ListParams, CampaignInput, TicketInput, TicketCommentInput } from 
 const fiveMinutes = 5 * 60 * 1000;
 
 function authenticated() {
-  return Boolean(getAccessToken());
+  // In a hybrid auth pattern (access token in sessionStorage, refresh token in HttpOnly cookie),
+  // getAccessToken() is null when a user opens a new tab or returns after closing the browser.
+  // If we return false here, useQuery stays in isPending:true forever and never attempts a fetch,
+  // which prevents Axios interceptors from performing a silent token refresh or redirecting to /login.
+  // Returning true ensures Axios fires, attempts silent refresh, and redirects to /login on failure.
+  return typeof window !== "undefined";
 }
 
 export function useCurrentUser() {
