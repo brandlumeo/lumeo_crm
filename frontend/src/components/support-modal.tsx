@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, CheckCircle2, Send, Building2, User2, Mail } from "lucide-react";
 import { useCurrentUser, useCurrentCompany } from "@/lib/queries";
-import { getAccessToken } from "@/lib/api";
+import { sendContactSupport } from "@/lib/api";
 
 export function SupportModal({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
   const { data: user } = useCurrentUser();
@@ -28,29 +28,10 @@ export function SupportModal({ open, setOpen }: { open: boolean; setOpen: (v: bo
     setError("");
 
     try {
-      const token = getAccessToken();
-      const res = await fetch(
-        process.env.NEXT_PUBLIC_API_URL
-          ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/contact-support/`
-          : "/api/v1/accounts/contact-support/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ subject, message }),
-        }
-      );
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to send support message. Please try again.");
-      }
-
+      await sendContactSupport({ subject, message });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      setError(err?.response?.data?.detail || err.message || "Failed to send support message. Please try again.");
     } finally {
       setLoading(false);
     }

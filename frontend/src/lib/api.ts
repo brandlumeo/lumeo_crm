@@ -798,6 +798,11 @@ export async function fetchWebhookDeliveryLogs() {
   return fetchAllPages<WebhookDeliveryLog>(endpoints.webhookLogs);
 }
 
+export async function sendContactSupport(payload: { subject: string; message: string }) {
+  const { data } = await api.post<{ detail: string }>("/accounts/contact-support/", payload);
+  return data;
+}
+
 export async function sendEmail(payload: EmailSendInput) {
   const { data } = await api.post<{ status: string; to: string; subject: string }>(endpoints.emailsSend, payload);
   return data;
