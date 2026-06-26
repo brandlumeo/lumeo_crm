@@ -331,7 +331,7 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', False)
 EMAIL_USE_SSL = env_bool('EMAIL_USE_SSL', False)    # For Resend port 465
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', 'noreply@crm-saas.local')
-ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', 'support@crm.estgrp.in')
+ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', 'brandlumeollp@gmail.com')
 
 
 # Internationalization
