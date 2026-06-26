@@ -203,8 +203,9 @@ class VerifySubscriptionView(APIView):
 
         # Send email alert to founder
         from notifications.tasks import send_notification_email
+        admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'brandlumeollp@gmail.com')
         send_notification_email.delay(
-            to_email="support.lumeo-crm@gmail.com",
+            to_email=admin_email,
             title=f"🤑 New Subscription: {company.name} upgraded to {plan_key.upper()}!",
             body=f"Great news! {request.user.email} from {company.name} just purchased the {plan_key.upper()} ({billing_period}) plan."
         )
@@ -271,6 +272,14 @@ class RazorpayWebhookView(APIView):
                     company = sub.company
                     company.status = "active"
                     company.save(update_fields=["status"])
+
+                    from notifications.tasks import send_notification_email
+                    admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'brandlumeollp@gmail.com')
+                    send_notification_email.delay(
+                        to_email=admin_email,
+                        title=f"💳 Subscription Charged: {company.name}",
+                        body=f"Razorpay webhook confirmed successful charge for subscription {sub_id}.\nCompany: {company.name}\nPlan: {sub.plan}"
+                    )
 
                     logger.info(f"Webhook subscription.charged processed for {sub_id}")
                 except Subscription.DoesNotExist:

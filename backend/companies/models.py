@@ -420,7 +420,7 @@ class PlatformSettings(models.Model):
     
     # Keys / Configs (In reality, these should be encrypted or in env vars, but this is for demo UI)
     stripe_public_key = models.CharField(max_length=255, blank=True)
-    support_email = models.EmailField(default='support@lumeo.com')
+    support_email = models.EmailField(default='support@crm.estgrp.in')
     
     updated_at = models.DateTimeField(auto_now=True)
 

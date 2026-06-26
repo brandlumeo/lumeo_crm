@@ -109,7 +109,7 @@ This link expires in 7 days. If you didn't expect this invitation, you can safel
           <td style="background:#F4EFE6;padding:20px 36px;border-top:1px solid #E8E0D0;">
             <p style="font-size:12px;color:#8B8580;margin:0 0 8px;">
                Need help? Reach out to our human team at 
-               <a href="mailto:support.lumeo-crm@gmail.com" style="color:#FF5B1F;text-decoration:none;">support.lumeo-crm@gmail.com</a>
+               <a href="mailto:support@crm.estgrp.in" style="color:#FF5B1F;text-decoration:none;">support@crm.estgrp.in</a>
             </p>
             <p style="font-size:11px;color:#8B8580;margin:0;">© 2026 Lumeo CRM. All rights reserved.</p>
           </td>
@@ -206,7 +206,7 @@ This link expires in 1 hour. If you didn't request a password reset, you can saf
           <td style="background:#F4EFE6;padding:20px 36px;border-top:1px solid #E8E0D0;">
             <p style="font-size:12px;color:#8B8580;margin:0 0 8px;">
                Need help? Reach out to our human team at 
-               <a href="mailto:support.lumeo-crm@gmail.com" style="color:#FF5B1F;text-decoration:none;">support.lumeo-crm@gmail.com</a>
+               <a href="mailto:support@crm.estgrp.in" style="color:#FF5B1F;text-decoration:none;">support@crm.estgrp.in</a>
             </p>
             <p style="font-size:11px;color:#8B8580;margin:0;">© 2026 Lumeo CRM. All rights reserved.</p>
           </td>

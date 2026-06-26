@@ -342,12 +342,20 @@ class RegisterView(APIView):
 
         # Create welcome notification outside transaction.atomic so email/Celery errors don't rollback user creation
         from notifications.models import Notification
+        from notifications.tasks import send_notification_email
+        from django.conf import settings
         try:
             Notification.objects.create(
                 user=user,
                 notification_type=Notification.Type.GENERAL,
                 title="Welcome to Lumeo CRM!",
                 body=f"Hi {first_name}, welcome to Lumeo! Your workspace '{company_name}' is ready. Get started by inviting your team."
+            )
+            admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'brandlumeollp@gmail.com')
+            send_notification_email.delay(
+                to_email=admin_email,
+                title=f"🚀 New User Registration: {first_name} {last_name} ({company_name})",
+                body=f"A new user has registered on Lumeo CRM!\n\nName: {first_name} {last_name}\nEmail: {email}\nCompany: {company_name}"
             )
         except Exception:
             pass

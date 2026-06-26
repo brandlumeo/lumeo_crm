@@ -253,7 +253,7 @@ export function Topbar() {
         <ThemeToggle />
 
         <a
-          href="mailto:support.lumeo-crm@gmail.com"
+          href="mailto:support@crm.estgrp.in"
           className="hidden md:grid w-8 h-8 border border-line bg-paper rounded-md place-items-center text-ink-2 hover:bg-bone-2 transition-colors"
           aria-label="Contact Support"
           title="Contact Support"
