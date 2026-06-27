@@ -285,17 +285,18 @@ CSRF_TRUSTED_ORIGINS = env_list(
     ]
 )
 
+import ssl
 REDIS_URL = env('REDIS_URL', 'redis://127.0.0.1:6379/1')
 if REDIS_URL.startswith('rediss://') and 'ssl_cert_reqs' not in REDIS_URL:
-    REDIS_URL += ('&ssl_cert_reqs=CERT_NONE' if '?' in REDIS_URL else '?ssl_cert_reqs=CERT_NONE')
+    REDIS_URL += ('&ssl_cert_reqs=none' if '?' in REDIS_URL else '?ssl_cert_reqs=none')
 
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', REDIS_URL)
 CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', REDIS_URL)
 
 if CELERY_BROKER_URL.startswith('rediss://'):
-    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': 'CERT_NONE'}
+    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
 if CELERY_RESULT_BACKEND.startswith('rediss://'):
-    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': 'CERT_NONE'}
+    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
 
 # C7 fix: Default to True — ensures emails execute synchronously and reliably without requiring a separate active Celery worker service in production.
 # Set CELERY_TASK_ALWAYS_EAGER=False in your live .env only if you have an active dedicated Celery worker service running.

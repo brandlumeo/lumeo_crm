@@ -303,7 +303,7 @@ export default function CustomersPage() {
               <p className="text-sm text-muted">
                 Share these credentials with the customer so they can log into the Client Portal.
               </p>
-              <div className="p-4 bg-black rounded border border-white/10 font-mono text-sm space-y-2">
+              <div className="p-4 bg-black text-white rounded border border-white/10 font-mono text-sm space-y-2">
                 <div><strong>Email:</strong> {credentials.email}</div>
                 <div><strong>Password:</strong> {credentials.password}</div>
               </div>

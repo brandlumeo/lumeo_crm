@@ -131,10 +131,10 @@ class CookieTokenObtainView(APIView):
                         message=f"Hi {user.first_name or user.username},\n\nYour security verification code is: {code}\nThis code will expire in 5 minutes.",
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         recipient_list=[user.email],
-                        fail_silently=True,
+                        fail_silently=False,
                     )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.error("Failed to send 2FA email to %s: %s", user.email, exc)
                 
                 email_parts = user.email.split("@")
                 masked_email = email_parts[0][0] + "***" + email_parts[0][-1] + "@" + email_parts[1] if len(email_parts[0]) > 2 else user.email
