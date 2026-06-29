@@ -46,11 +46,24 @@ def trigger_notification_email(sender, instance, created, **kwargs):
         return
     if created and instance.user.email:
         from .tasks import send_notification_email
+        from django.conf import settings
+        import threading
         try:
-            send_notification_email.delay(
-                to_email=instance.user.email,
-                title=instance.title,
-                body=instance.body
-            )
+            if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+                threading.Thread(
+                    target=send_notification_email.delay,
+                    kwargs={
+                        'to_email': instance.user.email,
+                        'title': instance.title,
+                        'body': instance.body
+                    },
+                    daemon=True
+                ).start()
+            else:
+                send_notification_email.delay(
+                    to_email=instance.user.email,
+                    title=instance.title,
+                    body=instance.body
+                )
         except Exception:
             pass
