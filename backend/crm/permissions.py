@@ -30,6 +30,8 @@ class CompanyRBACPermission(BasePermission):
         
         role_data = next((r for r in roles if r.get("id") == role_id), None)
         if not role_data:
+            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
+                return True
             return request.method in SAFE_METHODS
             
         if role_data.get("isAdmin"):
@@ -66,6 +68,14 @@ class CompanyRBACPermission(BasePermission):
         
         role_data = next((r for r in roles if r.get("id") == role_id), None)
         if not role_data:
+            if request.user.role == User.Role.MANAGER:
+                return True
+            if request.user.role == User.Role.STAFF:
+                if request.method in SAFE_METHODS:
+                    return True
+                if hasattr(obj, "assigned_to_id") and obj.assigned_to_id is not None:
+                    return obj.assigned_to_id == request.user.id
+                return False
             return request.method in SAFE_METHODS
             
         if role_data.get("isAdmin"):
