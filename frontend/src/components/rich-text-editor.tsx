@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Bold, Italic, List, ListOrdered, Strikethrough, Heading2 } from "lucide-react";
 import DOMPurify from "dompurify";
+import { useEffect } from "react";
 
 interface RichTextEditorProps {
   value: string;
@@ -31,6 +32,15 @@ export function RichTextEditor({ value, onChange, placeholder = "Start typing...
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      // Avoid resetting if the editor is completely empty and value is empty string,
+      // because getHTML() might return '<p></p>' when empty.
+      if (value === "" && editor.isEmpty) return;
+      editor.commands.setContent(value);
+    }
+  }, [value, editor]);
 
   if (!editor) {
     return <div className="h-[140px] w-full border border-line rounded-md bg-paper animate-pulse" />;
