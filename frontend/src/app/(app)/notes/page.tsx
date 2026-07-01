@@ -149,7 +149,8 @@ export default function NotesPage() {
                           e.stopPropagation();
                           setNoteToDelete(note.id);
                         }}
-                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors !block !opacity-100 !visible"
+                        style={{ display: "flex", visibility: "visible", opacity: 1 }}
                         title="Delete note"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
