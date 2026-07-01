@@ -11,6 +11,7 @@ import { PageShell } from "@/components/page-shell";
 import { createNote, updateNote, deleteNote } from "@/lib/api";
 import { useNotePage } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { RichTextEditor, RichTextDisplay } from "@/components/rich-text-editor";
 
@@ -22,6 +23,10 @@ export default function NotesPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<{ content: string; [key: string]: any }>({ content: "" });
   const [editingId, setEditingId] = useState<number | null>(null);
+  
+  // Modals state
+  const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -63,8 +68,12 @@ export default function NotesPage() {
     mutationFn: deleteNote,
     onSuccess: () => {
       toast.success("Note deleted.");
+      setNoteToDelete(null);
       invalidate();
     },
+    onError: () => {
+      setNoteToDelete(null);
+    }
   });
 
   const rows = data?.results ?? [];
@@ -138,9 +147,7 @@ export default function NotesPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm("Are you sure you want to delete this note?")) {
-                            deleteMutation.mutate(note.id);
-                          }
+                          setNoteToDelete(note.id);
                         }}
                         className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
                         title="Delete note"
@@ -172,7 +179,7 @@ export default function NotesPage() {
             onSubmit={(event) => {
               event.preventDefault();
               if (editingId) {
-                updateMutation.mutate({ id: editingId, data: form });
+                setShowEditConfirm(true);
               } else {
                 createMutation.mutate(form);
               }
@@ -227,6 +234,37 @@ export default function NotesPage() {
           </form>
         </div>
       </div>
+
+      <ConfirmationModal
+        open={noteToDelete !== null}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (noteToDelete !== null) {
+            deleteMutation.mutate(noteToDelete);
+          }
+        }}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete Note"
+        variant="danger"
+        loading={deleteMutation.isPending}
+      />
+
+      <ConfirmationModal
+        open={showEditConfirm}
+        onClose={() => setShowEditConfirm(false)}
+        onConfirm={() => {
+          if (editingId) {
+            updateMutation.mutate({ id: editingId, data: form });
+            setShowEditConfirm(false);
+          }
+        }}
+        title="Save Changes"
+        description="Are you sure you want to update this note's content? The previous version will be permanently replaced."
+        confirmText="Save changes"
+        variant="warning"
+        loading={updateMutation.isPending}
+      />
     </PageShell>
   );
 }
