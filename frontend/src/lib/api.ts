@@ -469,6 +469,15 @@ export async function createNote(payload: NoteInput) {
   return data;
 }
 
+export async function updateNote(id: number, payload: Partial<NoteInput>) {
+  const { data } = await api.patch<Note>(`${endpoints.notes}${id}/`, payload);
+  return data;
+}
+
+export async function deleteNote(id: number) {
+  await api.delete(`${endpoints.notes}${id}/`);
+}
+
 export async function fetchActivities(params?: ListParams) {
   return listPage<Activity>(endpoints.activities, params);
 }

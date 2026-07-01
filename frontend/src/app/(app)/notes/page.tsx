@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, NotebookPen } from "lucide-react";
+import { FileText, NotebookPen, Pencil, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
-import { createNote } from "@/lib/api";
+import { createNote, updateNote, deleteNote } from "@/lib/api";
 import { useNotePage } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
 import { SkeletonTable } from "@/components/skeleton-table";
@@ -20,6 +21,7 @@ export default function NotesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<{ content: string; [key: string]: any }>({ content: "" });
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -32,13 +34,36 @@ export default function NotesPage() {
     ordering: "-updated_at",
   });
 
-  const mutation = useMutation({
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["crm"] });
+    void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
+  };
+
+  const createMutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
       setForm({ content: "" });
-      void queryClient.invalidateQueries({ queryKey: ["crm"] });
-      void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
-      void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
+      toast.success("Note created.");
+      invalidate();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: { id: number; data: Partial<any> }) => updateNote(payload.id, payload.data),
+    onSuccess: () => {
+      setForm({ content: "" });
+      setEditingId(null);
+      toast.success("Note updated.");
+      invalidate();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteNote,
+    onSuccess: () => {
+      toast.success("Note deleted.");
+      invalidate();
     },
   });
 
@@ -93,6 +118,38 @@ export default function NotesPage() {
                   header: "Updated",
                   render: (note) => formatDateTime(note.updated_at),
                 },
+                {
+                  key: "actions",
+                  header: "",
+                  className: "w-[90px] text-right",
+                  render: (note) => (
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingId(note.id);
+                          setForm({ content: note.content });
+                        }}
+                        className="p-1.5 text-muted hover:text-ink hover:bg-bone rounded transition-colors"
+                        title="Edit note"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm("Are you sure you want to delete this note?")) {
+                            deleteMutation.mutate(note.id);
+                          }
+                        }}
+                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                        title="Delete note"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ),
+                },
               ]}
               rows={rows}
               count={data?.count ?? 0}
@@ -103,10 +160,10 @@ export default function NotesPage() {
           )}
         </div>
 
-        <div className="card animate-rise">
+        <div className="card animate-rise h-fit sticky top-[104px]">
           <div className="card-head">
             <div className="card-title">
-              New note
+              {editingId ? "Edit note" : "New note"}
               <span className="card-title-meta">Workspace context</span>
             </div>
           </div>
@@ -114,7 +171,11 @@ export default function NotesPage() {
             className="p-5 space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
-              mutation.mutate(form);
+              if (editingId) {
+                updateMutation.mutate({ id: editingId, data: form });
+              } else {
+                createMutation.mutate(form);
+              }
             }}
           >
             <div>
@@ -126,15 +187,38 @@ export default function NotesPage() {
               />
             </div>
 
-            {mutation.isError ? (
+            {createMutation.isError || updateMutation.isError ? (
               <div className="chip chip-warning justify-center">
-                Could not create note. Check the data and try again.
+                Could not save note. Check the data and try again.
               </div>
             ) : null}
 
-            <button type="submit" disabled={mutation.isPending} className="btn btn-primary w-full justify-center">
-              {mutation.isPending ? "Creating..." : "Create note"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="btn btn-primary flex-1 justify-center"
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? "Saving..."
+                  : editingId
+                  ? "Save changes"
+                  : "Create note"}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm({ content: "" });
+                  }}
+                  className="btn btn-secondary px-3"
+                  title="Cancel editing"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
 
             <div className="surface-muted p-4 text-[12px] text-muted flex items-start gap-2">
               <NotebookPen className="w-4 h-4 mt-0.5 text-ink-2" />
