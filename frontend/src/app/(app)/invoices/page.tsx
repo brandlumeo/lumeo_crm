@@ -144,6 +144,17 @@ export default function InvoicesPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to delete this invoice?")) {
+                              deleteMutation.mutate(invoice.id);
+                            }
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-line"
+                          title="Delete Invoice"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => downloadInvoicePdf(invoice.id, invoice.invoice_number)}
                           className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
                           title="Download PDF"

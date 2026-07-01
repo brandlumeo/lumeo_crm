@@ -654,13 +654,16 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     cust_phone = ""
     cust_address = ""
     
-    customer = getattr(instance, 'customer', instance.deal.customer if instance.deal else None)
-    if customer:
-        if comp.show_client_name: cust_name = f"<b>{customer.name}</b><br/>"
-        if comp.show_client_company_name and hasattr(customer, 'company'): cust_company = f"{customer.company.name}<br/>"
-        if comp.show_client_email: cust_email = f"{customer.email}<br/>"
-        if comp.show_client_phone and hasattr(customer, 'phone'): cust_phone = f"{customer.phone}<br/>"
-        if comp.show_client_address and customer.custom_data.get('address'): cust_address = f"{customer.custom_data.get('address')}<br/>"
+    customer_obj = getattr(instance, 'customer', None)
+    if not customer_obj and getattr(instance, 'deal', None):
+        customer_obj = getattr(instance.deal, 'customer', getattr(instance.deal, 'lead', None))
+    
+    if customer_obj:
+        if comp.show_client_name: cust_name = f"<b>{getattr(customer_obj, 'name', '')}</b><br/>"
+        if comp.show_client_company_name and hasattr(customer_obj, 'company'): cust_company = f"{customer_obj.company.name}<br/>"
+        if comp.show_client_email: cust_email = f"{getattr(customer_obj, 'email', '')}<br/>"
+        if comp.show_client_phone and hasattr(customer_obj, 'phone'): cust_phone = f"{customer_obj.phone}<br/>"
+        if comp.show_client_address and getattr(customer_obj, 'custom_data', {}).get('address'): cust_address = f"{customer_obj.custom_data.get('address')}<br/>"
     else:
         cust_name = "<b>Customer Record</b>"
         
