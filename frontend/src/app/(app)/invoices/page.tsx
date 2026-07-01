@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useInvoices, useCreateInvoice, useDeleteInvoice, useCustomerPage, useDealPage } from "@/lib/queries";
-import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage } from "@/lib/queries";
+import { downloadInvoicePdf } from "@/lib/api";
+import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2 } from "lucide-react";
 
 export default function InvoicesPage() {
   const { data, isLoading } = useInvoices();
@@ -11,12 +12,14 @@ export default function InvoicesPage() {
   
   const createMutation = useCreateInvoice();
   const deleteMutation = useDeleteInvoice();
+  const updateMutation = useUpdateInvoice();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newInvoice, setNewInvoice] = useState<{ customer_id: number | null, deal_id: number | null, due_date: string }>({ 
+  const [newInvoice, setNewInvoice] = useState<{ customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
     customer_id: null, 
     deal_id: null, 
-    due_date: "" 
+    due_date: "",
+    items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
   });
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
@@ -28,16 +31,23 @@ export default function InvoicesPage() {
     e.preventDefault();
     if (!newInvoice.customer_id) return;
     
-    const payload: any = { customer: newInvoice.customer_id };
+    // Filter out items without a name
+    const validItems = newInvoice.items.filter(item => item.name.trim() !== "");
+
+    const payload: any = { customer: newInvoice.customer_id, items: validItems };
     if (newInvoice.deal_id) payload.deal = newInvoice.deal_id;
     if (newInvoice.due_date) payload.due_date = newInvoice.due_date;
     
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewInvoice({ customer_id: null, deal_id: null, due_date: "" });
+        setNewInvoice({ customer_id: null, deal_id: null, due_date: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
       }
     });
+  };
+
+  const handleStatusChange = (id: number, status: string) => {
+    updateMutation.mutate({ id, payload: { status } });
   };
 
   const copyToClipboard = (token: string) => {
@@ -107,14 +117,23 @@ export default function InvoicesPage() {
                       <div className="font-medium text-ink">{invoice.invoice_number}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                        invoice.status === 'paid' ? 'bg-emerald-100 text-emerald-800' :
-                        invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                        invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                        'bg-slate-100 text-slate-800'
-                      }`}>
-                        {invoice.status}
-                      </span>
+                      <select
+                        value={invoice.status}
+                        onChange={(e) => handleStatusChange(invoice.id, e.target.value)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize outline-none transition-colors border cursor-pointer ${
+                          invoice.status === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 focus:border-emerald-400' :
+                          invoice.status === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-200 focus:border-blue-400' :
+                          invoice.status === 'overdue' ? 'bg-red-100 text-red-800 border-red-200 focus:border-red-400' :
+                          invoice.status === 'void' ? 'bg-slate-200 text-slate-800 border-slate-300 focus:border-slate-400' :
+                          'bg-slate-100 text-slate-800 border-slate-200 focus:border-slate-400'
+                        }`}
+                      >
+                        <option value="draft">Draft</option>
+                        <option value="sent">Sent</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="void">Void</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4 font-medium text-ink">
                       ${parseFloat(invoice.total).toFixed(2)}
@@ -124,6 +143,13 @@ export default function InvoicesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => downloadInvoicePdf(invoice.id, invoice.invoice_number)}
+                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                          title="Download PDF"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => window.open(`/public/invoice/${invoice.public_token}`, '_blank')}
                           className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
@@ -154,13 +180,14 @@ export default function InvoicesPage() {
       
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-5 border-b border-line flex justify-between items-center bg-bone">
               <h2 className="text-lg font-semibold text-ink">New Invoice</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-ink text-xl font-light">&times;</button>
             </div>
-            <form onSubmit={handleCreate} id="create-invoice-form" className="p-5 space-y-4">
-              <div>
+            <form onSubmit={handleCreate} id="create-invoice-form" className="p-5 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                 <label className="block text-sm font-medium text-ink mb-1.5">Customer *</label>
                 <select
                   required
@@ -189,32 +216,123 @@ export default function InvoicesPage() {
                 </select>
               </div>
 
+              </div>
+
+              {/* Line Items */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Due Date (Optional)</label>
-                <input
-                  type="date"
-                  value={newInvoice.due_date}
-                  onChange={(e) => setNewInvoice({ ...newInvoice, due_date: e.target.value })}
-                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                />
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-ink">Line Items</h3>
+                  <button
+                    type="button"
+                    onClick={() => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] })}
+                    className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add Item
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {newInvoice.items.map((item, index) => (
+                    <div key={index} className="flex items-start gap-2 sm:gap-3 p-3 bg-bone-2 rounded-lg border border-line/50">
+                      <div className="flex-1 space-y-3">
+                        <input
+                          required
+                          type="text"
+                          placeholder="Item description"
+                          value={item.name}
+                          onChange={(e) => {
+                            const newItems = [...newInvoice.items];
+                            newItems[index].name = e.target.value;
+                            setNewInvoice({ ...newInvoice, items: newItems });
+                          }}
+                          className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        />
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-20">
+                            <input
+                              required
+                              type="number"
+                              min="1"
+                              placeholder="Qty"
+                              value={item.quantity || ""}
+                              onChange={(e) => {
+                                const newItems = [...newInvoice.items];
+                                newItems[index].quantity = parseInt(e.target.value) || 0;
+                                setNewInvoice({ ...newInvoice, items: newItems });
+                              }}
+                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              required
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="Price"
+                              value={item.unit_price || ""}
+                              onChange={(e) => {
+                                const newItems = [...newInvoice.items];
+                                newItems[index].unit_price = parseFloat(e.target.value) || 0;
+                                setNewInvoice({ ...newInvoice, items: newItems });
+                              }}
+                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                            />
+                          </div>
+                          <div className="w-20">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="Tax %"
+                              value={item.tax_rate || ""}
+                              onChange={(e) => {
+                                const newItems = [...newInvoice.items];
+                                newItems[index].tax_rate = parseFloat(e.target.value) || 0;
+                                setNewInvoice({ ...newInvoice, items: newItems });
+                              }}
+                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newItems = newInvoice.items.filter((_, i) => i !== index);
+                          setNewInvoice({ ...newInvoice, items: newItems });
+                        }}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors mt-1"
+                        disabled={newInvoice.items.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </form>
-            <div className="p-5 border-t border-line bg-bone flex justify-end gap-3 mt-auto">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-md transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                form="create-invoice-form"
-                type="submit"
-                disabled={createMutation.isPending || !newInvoice.customer_id}
-                className="bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
-              >
-                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Invoice"}
-              </button>
+            <div className="p-5 border-t border-line bg-bone flex justify-between items-center mt-auto">
+              <div className="text-sm font-medium text-ink">
+                Total: ${newInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0).toFixed(2)}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  form="create-invoice-form"
+                  type="submit"
+                  disabled={createMutation.isPending || !newInvoice.customer_id}
+                  className="bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                >
+                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Invoice"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
