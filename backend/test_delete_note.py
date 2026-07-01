@@ -1,6 +1,7 @@
 import os
 import django
 import sys
+import re
 from django.conf import settings
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -14,36 +15,32 @@ from crm.models import Note
 def run_test():
     company, _ = Company.objects.get_or_create(name="Test Company")
     
-    # Ensure secondary admin role exists in company roles
-    company.roles = [
-        {"id": "secondary_admin", "name": "Secondary Admin", "isAdmin": False, "permissions": {"notes": {"Delete": "All"}}}
-    ]
-    company.save()
-
-    # Create secondary admin user
+    # Manager is Secondary Admin
     user, _ = User.objects.get_or_create(
-        email="secadmin@example.com",
+        email="test_manager@example.com",
         defaults={
-            "username": "secadmin",
-            "role": "secondary_admin",
+            "username": "test_manager",
+            "role": "manager",
             "company": company,
+            "password": "password123",
         }
     )
     user.set_password("password123")
     user.save()
 
-    # Create Note
-    note = Note.objects.create(company=company, content="Test note to delete")
-    
-    print(f"Created note {note.id}")
-    
-    client = APIClient()
+    client = APIClient(SERVER_NAME="localhost")
     client.force_authenticate(user=user)
     
-    response = client.delete(f'/api/v1/crm/notes/{note.id}/')
+    response = client.post('/api/v1/crm/notes/', data={"content": "Hello World!"})
     
-    print(f"DELETE status code: {response.status_code}")
-    print(f"Note exists in DB? {Note.objects.filter(id=note.id).exists()}")
+    print(f"POST status code: {response.status_code}")
+    if response.status_code != 201:
+        content = response.content.decode()
+        match = re.search(r'<title>(.*?)</title>', content)
+        if match:
+            print("EXCEPTION:", match.group(1))
+        else:
+            print("RESPONSE:", content[:500])
 
 if __name__ == "__main__":
     run_test()

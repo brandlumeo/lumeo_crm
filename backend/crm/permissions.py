@@ -37,7 +37,14 @@ class CompanyRBACPermission(BasePermission):
         if role_data.get("isAdmin"):
             return True
             
-        perm_value = role_data.get("permissions", {}).get(module_name, {}).get(action, "None")
+        perms = role_data.get("permissions", {})
+        if module_name not in perms:
+            # Fallback if the module was added after custom roles were saved
+            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
+                return True
+            return request.method in SAFE_METHODS
+            
+        perm_value = perms.get(module_name, {}).get(action, "None")
         if perm_value == "None":
             return False
             
@@ -68,20 +75,23 @@ class CompanyRBACPermission(BasePermission):
         
         role_data = next((r for r in roles if r.get("id") == role_id), None)
         if not role_data:
-            if request.user.role == User.Role.MANAGER:
+            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
                 return True
-            if request.user.role == User.Role.STAFF:
-                if request.method in SAFE_METHODS:
-                    return True
-                if hasattr(obj, "assigned_to_id") and obj.assigned_to_id is not None:
-                    return obj.assigned_to_id == request.user.id
-                return False
             return request.method in SAFE_METHODS
             
         if role_data.get("isAdmin"):
             return True
             
-        perm_value = role_data.get("permissions", {}).get(module_name, {}).get(action, "None")
+        perms = role_data.get("permissions", {})
+        if module_name not in perms:
+            # Fallback if the module was added after custom roles were saved
+            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
+                if request.user.role == User.Role.STAFF and action == "Delete":
+                    return False
+                return True
+            return request.method in SAFE_METHODS
+            
+        perm_value = perms.get(module_name, {}).get(action, "None")
         if perm_value == "None":
             return False
             
