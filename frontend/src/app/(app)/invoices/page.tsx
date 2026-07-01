@@ -5,9 +5,9 @@ import { useInvoices, useCreateInvoice, useDeleteInvoice, useCustomerPage, useDe
 import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink } from "lucide-react";
 
 export default function InvoicesPage() {
-  const { data, isLoading } = useInvoices({ page_size: 100 });
-  const { data: customerData } = useCustomerPage({ page_size: 100 });
-  const { data: dealData } = useDealPage({ page_size: 100 });
+  const { data, isLoading } = useInvoices();
+  const { data: customerData } = useCustomerPage({});
+  const { data: dealData } = useDealPage({});
   
   const createMutation = useCreateInvoice();
   const deleteMutation = useDeleteInvoice();
