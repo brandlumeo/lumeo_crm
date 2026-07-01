@@ -1,26 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { useInvoices, useCreateInvoice, useDeleteInvoice } from "@/lib/queries";
+import { useInvoices, useCreateInvoice, useDeleteInvoice, useCustomerPage, useDealPage } from "@/lib/queries";
 import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink } from "lucide-react";
 
 export default function InvoicesPage() {
-  const { data, isLoading } = useInvoices();
+  const { data, isLoading } = useInvoices({ page_size: 100 });
+  const { data: customerData } = useCustomerPage({ page_size: 100 });
+  const { data: dealData } = useDealPage({ page_size: 100 });
+  
   const createMutation = useCreateInvoice();
   const deleteMutation = useDeleteInvoice();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newInvoice, setNewInvoice] = useState({ invoice_number: `INV-${Math.floor(Math.random() * 10000)}`, customer_id: null });
+  const [newInvoice, setNewInvoice] = useState<{ customer_id: number | null, deal_id: number | null, due_date: string }>({ 
+    customer_id: null, 
+    deal_id: null, 
+    due_date: "" 
+  });
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   const invoices = data?.results || [];
+  const customers = customerData?.results || [];
+  const deals = dealData?.results || [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newInvoice.customer_id) return;
+    
     createMutation.mutate(newInvoice as any, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewInvoice({ invoice_number: `INV-${Math.floor(Math.random() * 10000)}`, customer_id: null });
+        setNewInvoice({ customer_id: null, deal_id: null, due_date: "" });
       }
     });
   };
@@ -142,14 +153,42 @@ export default function InvoicesPage() {
               <h2 className="text-lg font-semibold text-ink">New Invoice</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-ink text-xl font-light">&times;</button>
             </div>
-            <form onSubmit={handleCreate} className="p-5 space-y-4">
+            <form onSubmit={handleCreate} id="create-invoice-form" className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Invoice Number</label>
-                <input
+                <label className="block text-sm font-medium text-ink mb-1.5">Customer *</label>
+                <select
                   required
-                  type="text"
-                  value={newInvoice.invoice_number}
-                  onChange={(e) => setNewInvoice({ ...newInvoice, invoice_number: e.target.value })}
+                  value={newInvoice.customer_id || ""}
+                  onChange={(e) => setNewInvoice({ ...newInvoice, customer_id: parseInt(e.target.value) || null })}
+                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                >
+                  <option value="">Select a customer</option>
+                  {customers.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1.5">Deal (Optional)</label>
+                <select
+                  value={newInvoice.deal_id || ""}
+                  onChange={(e) => setNewInvoice({ ...newInvoice, deal_id: parseInt(e.target.value) || null })}
+                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                >
+                  <option value="">Select a deal</option>
+                  {deals.map((d: any) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1.5">Due Date (Optional)</label>
+                <input
+                  type="date"
+                  value={newInvoice.due_date}
+                  onChange={(e) => setNewInvoice({ ...newInvoice, due_date: e.target.value })}
                   className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                 />
               </div>
@@ -163,9 +202,10 @@ export default function InvoicesPage() {
                 Cancel
               </button>
               <button
-                onClick={handleCreate}
-                disabled={createMutation.isPending}
-                className="bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                form="create-invoice-form"
+                type="submit"
+                disabled={createMutation.isPending || !newInvoice.customer_id}
+                className="bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
               >
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Invoice"}
               </button>
