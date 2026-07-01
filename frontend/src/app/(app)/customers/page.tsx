@@ -64,7 +64,7 @@ export default function CustomersPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (ids: number[]) => {
+    mutationFn: async (ids: string[]) => {
       await Promise.all(ids.map((id) => deleteCustomer(id)));
     },
     onSuccess: () => {
@@ -229,7 +229,7 @@ export default function CustomersPage() {
                 {
                   label: "Delete",
                   variant: "danger",
-                  onClick: (ids) => deleteMutation.mutate(ids as number[]),
+                  onClick: (ids) => deleteMutation.mutate(ids),
                 },
               ]}
             />

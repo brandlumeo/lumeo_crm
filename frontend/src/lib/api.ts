@@ -438,7 +438,7 @@ export async function createCustomer(payload: CustomerInput) {
   return data;
 }
 
-export async function deleteCustomer(id: number) {
+export async function deleteCustomer(id: number | string) {
   await api.delete(`${endpoints.customers}${id}/`);
 }
 
