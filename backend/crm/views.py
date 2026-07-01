@@ -413,6 +413,7 @@ class TaskViewSet(CompanyScopedModelViewSet):
 
 
 class NoteViewSet(CompanyScopedModelViewSet):
+    permission_module = "notes"
     serializer_class = NoteSerializer
     queryset = Note.objects.select_related("company")
     search_fields = ("content",)

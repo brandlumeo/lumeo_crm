@@ -1,28 +1,49 @@
 import os
 import django
-import re
+import sys
+from django.conf import settings
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from accounts.models import User
-from crm.models import Note
 from rest_framework.test import APIClient
+from accounts.models import User, Company
+from crm.models import Note
 
-admin_user = User.objects.filter(role="admin").first()
-note = Note.objects.filter(company=admin_user.company).first()
-if not note:
-    note = Note.objects.create(company=admin_user.company, content="Test note to delete")
+def run_test():
+    company, _ = Company.objects.get_or_create(name="Test Company")
+    
+    # Ensure secondary admin role exists in company roles
+    company.roles = [
+        {"id": "secondary_admin", "name": "Secondary Admin", "isAdmin": False, "permissions": {"notes": {"Delete": "All"}}}
+    ]
+    company.save()
 
-client = APIClient(SERVER_NAME="testserver")
-client.force_authenticate(user=admin_user)
-response = client.delete(f"/api/v1/crm/notes/{note.id}/", HTTP_HOST="testserver")
-if response.status_code != 204:
-    content = response.content.decode()
-    match = re.search(r'<title>(.*?)</title>', content)
-    if match:
-        print("EXCEPTION:", match.group(1))
-    else:
-        print("RESPONSE:", content[:500])
-else:
-    print("SUCCESS 204")
+    # Create secondary admin user
+    user, _ = User.objects.get_or_create(
+        email="secadmin@example.com",
+        defaults={
+            "username": "secadmin",
+            "role": "secondary_admin",
+            "company": company,
+        }
+    )
+    user.set_password("password123")
+    user.save()
+
+    # Create Note
+    note = Note.objects.create(company=company, content="Test note to delete")
+    
+    print(f"Created note {note.id}")
+    
+    client = APIClient()
+    client.force_authenticate(user=user)
+    
+    response = client.delete(f'/api/v1/crm/notes/{note.id}/')
+    
+    print(f"DELETE status code: {response.status_code}")
+    print(f"Note exists in DB? {Note.objects.filter(id=note.id).exists()}")
+
+if __name__ == "__main__":
+    run_test()

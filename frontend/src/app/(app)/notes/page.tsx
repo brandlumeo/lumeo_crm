@@ -72,6 +72,7 @@ export default function NotesPage() {
       invalidate();
     },
     onError: () => {
+      toast.error("Failed to delete note. You might not have permission.");
       setNoteToDelete(null);
     }
   });
