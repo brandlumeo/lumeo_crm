@@ -48,8 +48,9 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <>
+      <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Invoices</h1>
           <p className="text-muted text-sm mt-1">Bill your clients and collect e-signatures or payments securely.</p>
@@ -149,7 +150,8 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
-
+    </div>
+      
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
@@ -217,6 +219,6 @@ export default function InvoicesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
