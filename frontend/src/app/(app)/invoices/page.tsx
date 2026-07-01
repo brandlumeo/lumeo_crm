@@ -28,7 +28,11 @@ export default function InvoicesPage() {
     e.preventDefault();
     if (!newInvoice.customer_id) return;
     
-    createMutation.mutate(newInvoice as any, {
+    const payload: any = { customer_id: newInvoice.customer_id };
+    if (newInvoice.deal_id) payload.deal_id = newInvoice.deal_id;
+    if (newInvoice.due_date) payload.due_date = newInvoice.due_date;
+    
+    createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
         setNewInvoice({ customer_id: null, deal_id: null, due_date: "" });
@@ -147,7 +151,7 @@ export default function InvoicesPage() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
             <div className="p-5 border-b border-line flex justify-between items-center bg-bone">
               <h2 className="text-lg font-semibold text-ink">New Invoice</h2>
