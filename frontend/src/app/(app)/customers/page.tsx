@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
-import { createCustomer, inviteCustomerToPortal } from "@/lib/api";
+import { createCustomer, inviteCustomerToPortal, deleteCustomer } from "@/lib/api";
 import { useCustomerPage, useResetCustomerPassword } from "@/lib/queries";
 import type { CustomerInput } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
@@ -60,6 +60,20 @@ export default function CustomersPage() {
     mutationFn: inviteCustomerToPortal,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm", "customers"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await Promise.all(ids.map((id) => deleteCustomer(id)));
+    },
+    onSuccess: () => {
+      toast.success("Customers deleted successfully.");
+      void queryClient.invalidateQueries({ queryKey: ["crm"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || "Failed to delete customers");
     },
   });
 
@@ -215,7 +229,7 @@ export default function CustomersPage() {
                 {
                   label: "Delete",
                   variant: "danger",
-                  onClick: (ids) => toast.error(`Deleted ${ids.length} customers.`),
+                  onClick: (ids) => deleteMutation.mutate(ids as number[]),
                 },
               ]}
             />

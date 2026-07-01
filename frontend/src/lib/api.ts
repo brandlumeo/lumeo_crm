@@ -438,6 +438,10 @@ export async function createCustomer(payload: CustomerInput) {
   return data;
 }
 
+export async function deleteCustomer(id: number) {
+  await api.delete(`${endpoints.customers}${id}/`);
+}
+
 export async function inviteCustomerToPortal(id: number) {
   const { data } = await api.post<{ status: string; message: string; credentials: { email: string; password: string } }>(
     `${endpoints.customers}${id}/invite-portal/`
