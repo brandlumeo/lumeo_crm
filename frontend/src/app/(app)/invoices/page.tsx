@@ -178,7 +178,7 @@ export default function InvoicesPage() {
                 >
                   <option value="">Select a deal</option>
                   {deals.map((d: any) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>{d.title}</option>
                   ))}
                 </select>
               </div>
