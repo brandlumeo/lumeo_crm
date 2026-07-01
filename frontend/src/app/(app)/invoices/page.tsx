@@ -28,8 +28,8 @@ export default function InvoicesPage() {
     e.preventDefault();
     if (!newInvoice.customer_id) return;
     
-    const payload: any = { customer_id: newInvoice.customer_id };
-    if (newInvoice.deal_id) payload.deal_id = newInvoice.deal_id;
+    const payload: any = { customer: newInvoice.customer_id };
+    if (newInvoice.deal_id) payload.deal = newInvoice.deal_id;
     if (newInvoice.due_date) payload.due_date = newInvoice.due_date;
     
     createMutation.mutate(payload, {
