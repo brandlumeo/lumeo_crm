@@ -458,6 +458,8 @@ class QuoteSerializer(CompanyScopedSerializer):
             "company_id",
             "deal",
             "deal_id",
+            "customer",
+            "customer_id",
             "quote_number",
             "title",
             "status",

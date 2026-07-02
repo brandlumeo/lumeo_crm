@@ -420,6 +420,13 @@ class Quote(models.Model):
         blank=True,
         related_name="quotes",
     )
+    customer = models.ForeignKey(
+        "Customer",
+        on_delete=models.CASCADE,
+        related_name="quotes",
+        null=True,
+        blank=True,
+    )
     quote_number = models.CharField(max_length=50, unique=True, db_index=True)
     title = models.CharField(max_length=255)
     status = models.CharField(
