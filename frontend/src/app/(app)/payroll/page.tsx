@@ -16,13 +16,16 @@ import {
   useUpdatePayroll,
   useDeletePayroll,
   useCurrentUser,
+  useTeam,
 } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 export default function PayrollPage() {
   const { data: user } = useCurrentUser();
   const isManager = user?.role === "owner" || user?.role === "admin";
   const { data: payrolls = [], isLoading } = usePayrolls(isManager);
+  const { data: team = [] } = useTeam();
 
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollMutation = useUpdatePayroll();
@@ -52,11 +55,15 @@ export default function PayrollPage() {
       },
       {
         onSuccess: () => {
+          toast.success("Salary slip generated!");
           setEmployeeId("");
           setBasic("");
           setAllowances("");
           setDeductions("");
         },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.detail || "Failed to generate salary slip. Please check inputs.");
+        }
       }
     );
   };
@@ -195,15 +202,20 @@ export default function PayrollPage() {
             <form onSubmit={handleCreate} className="flex flex-col gap-3.5">
               
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Employee UUID</label>
-                <input
-                  type="text"
+                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Select Employee</label>
+                <select
                   required
-                  placeholder="Paste Employee ID..."
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
                   className="bg-paper border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none"
-                />
+                >
+                  <option value="">-- Choose Employee --</option>
+                  {team.map((member: any) => (
+                    <option key={member.id} value={member.id}>
+                      {member.first_name} {member.last_name} ({member.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1139,6 +1139,16 @@ export function useDeletePayroll() {
 // ----------------------------------------------------------------------
 // Holiday API Hooks
 // ----------------------------------------------------------------------
+export function useTeam() {
+  return useQuery<any[]>({
+    queryKey: ["team"],
+    queryFn: async () => {
+      const res = await api.get("/accounts/team/");
+      return res.data.users || [];
+    },
+  });
+}
+
 export function useHolidays() {
   return useQuery<any[]>({
     queryKey: ["holidays"],
