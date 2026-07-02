@@ -661,7 +661,8 @@ export async function createInvoice(payload: InvoiceInput) {
 }
 
 export async function downloadQuotePdf(id: number, quoteNumber: string) {
-  const response = await api.get(`${endpoints.quotes}${id}/pdf/`, {
+  const timestamp = new Date().getTime();
+  const response = await api.get(`${endpoints.quotes}${id}/pdf/?t=${timestamp}`, {
     responseType: "blob",
   });
   const blob = new Blob([response.data], { type: "application/pdf" });
@@ -675,7 +676,8 @@ export async function downloadQuotePdf(id: number, quoteNumber: string) {
 }
 
 export async function downloadInvoicePdf(id: number, invoiceNumber: string) {
-  const response = await api.get(`${endpoints.invoices}${id}/pdf/`, {
+  const timestamp = new Date().getTime();
+  const response = await api.get(`${endpoints.invoices}${id}/pdf/?t=${timestamp}`, {
     responseType: "blob",
   });
   const blob = new Blob([response.data], { type: "application/pdf" });
