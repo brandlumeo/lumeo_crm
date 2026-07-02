@@ -19,7 +19,7 @@ import {
   useTeam,
 } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function PayrollPage() {
   const { data: user } = useCurrentUser();
