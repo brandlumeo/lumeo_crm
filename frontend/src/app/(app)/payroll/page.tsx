@@ -18,7 +18,7 @@ import {
   useCurrentUser,
   useTeam,
 } from "@/lib/queries";
-import { cn } from "@/lib/utils";
+import { cn, formatINR } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function PayrollPage() {
@@ -138,10 +138,10 @@ export default function PayrollPage() {
                       <td className="py-3 font-semibold text-ink-2">
                         {new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'short' })} {slip.year}
                       </td>
-                      <td className="py-3 text-muted">${Number(slip.basic_salary).toFixed(2)}</td>
-                      <td className="py-3 text-emerald-600">+${Number(slip.allowances).toFixed(2)}</td>
-                      <td className="py-3 text-red-500">-${Number(slip.deductions).toFixed(2)}</td>
-                      <td className="py-3 font-bold text-[14px]">${Number(slip.net_salary).toFixed(2)}</td>
+                      <td className="py-3 text-muted">{formatINR(Number(slip.basic_salary))}</td>
+                      <td className="py-3 text-emerald-600">+{formatINR(Number(slip.allowances))}</td>
+                      <td className="py-3 text-red-500">-{formatINR(Number(slip.deductions))}</td>
+                      <td className="py-3 font-bold text-[14px]">{formatINR(Number(slip.net_salary))}</td>
                       <td className="py-3">
                         <span
                           className={cn(
@@ -244,7 +244,7 @@ export default function PayrollPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Basic Salary ($)</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Basic Salary (₹)</label>
                 <input
                   type="number"
                   step="0.01"
