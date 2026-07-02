@@ -609,43 +609,33 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         title_align = 0
 
     title_style = ParagraphStyle(
-        'DocTitle', parent=styles['Heading1'], fontSize=24, leading=28, textColor=primary_color, alignment=title_align
+        'DocTitle', parent=styles['Heading1'], fontSize=22, leading=26, textColor=primary_color, alignment=0
     )
+    
     meta_label_style = ParagraphStyle(
-        'MetaLabel', parent=styles['Normal'], fontSize=10, leading=14, textColor=primary_color
+        'MetaLabel', parent=styles['Normal'], fontSize=9, leading=13, textColor=colors.HexColor("#6B7280")
     )
     meta_value_style = ParagraphStyle(
-        'MetaVal', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#1A1714")
+        'MetaVal', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#111827")
     )
     bold_style = ParagraphStyle('BoldText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14)
     
     # Header Section
-    header_data = []
-    
-    # Logo
-    logo = ""
-    if comp.invoice_logo:
-        # In a real app we might fetch or use local path. For safety in reportlab we just skip or put a placeholder if it's a URL
-        pass 
-        
     doc_number = getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))
     
-    title_text = f"<b>{doc_type.upper()}</b>"
-    if template == "template2":
-        header_data = [[Paragraph(title_text, title_style)], [Paragraph(f"#{doc_number}", ParagraphStyle('C', alignment=1))]]
-        header_table = Table(header_data, colWidths=[500])
-    else:
-        left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
-        right_p = Paragraph(f"{title_text}<br/>#{doc_number}", ParagraphStyle('R', alignment=2, fontSize=12))
-        if template == "template3":
-            header_data = [[right_p, left_p]]
-        else:
-            header_data = [[left_p, right_p]]
-        header_table = Table(header_data, colWidths=[250, 250])
-        
-    header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 0)]))
+    left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
+    
+    right_p_style = ParagraphStyle('RightHeader', alignment=2)
+    right_p = Paragraph(
+        f"<font size=24 color='{primary_color.hexval()}'><b>{doc_type.upper()}</b></font><br/>"
+        f"<font size=12 color='#6B7280'>#{doc_number}</font>", 
+        right_p_style
+    )
+    
+    header_table = Table([[left_p, right_p]], colWidths=[270, 230])
+    header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 10)]))
     story.append(header_table)
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 25))
     
     # Billing Info
     cust_name = ""
@@ -737,6 +727,8 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         ('BACKGROUND', (0,0), (-1,0), table_header_bg),
         ('BOTTOMPADDING', (0,0), (-1,0), 8),
         ('TOPPADDING', (0,0), (-1,0), 8),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+        ('TOPPADDING', (0,1), (-1,-1), 8),
     ]
     if template == "template5":
         ts.extend([('GRID', (0,0), (-1,-4), 1, colors.HexColor("#E5E7EB"))])
@@ -753,8 +745,15 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     footer_data = []
     terms_p = []
     if comp.invoice_terms:
-        terms_p.append(Paragraph("<b>Terms & Conditions</b>", bold_style))
+        # Avoid showing "Terms & Conditions" if it's just a polite note
+        clean_terms = comp.invoice_terms.strip().lower()
+        if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!"]:
+            heading = "Notes"
+        else:
+            heading = "Terms & Conditions"
+        terms_p.append(Paragraph(f"<b>{heading}</b>", bold_style))
         terms_p.append(Paragraph(comp.invoice_terms.replace('\n', '<br/>'), styles['Normal']))
+    
     if comp.invoice_other_information:
         terms_p.append(Spacer(1, 10))
         terms_p.append(Paragraph("<b>Other Information</b>", bold_style))
