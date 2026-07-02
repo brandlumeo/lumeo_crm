@@ -483,7 +483,9 @@ class QuoteSerializer(CompanyScopedSerializer):
         
         # Auto generate quote number
         import uuid
-        validated_data["quote_number"] = f"QT-{uuid.uuid4().hex[:8].upper()}"
+        user = self.context.get("request").user
+        prefix = getattr(user.company, "quote_prefix", "QT-") if user and hasattr(user, "company") else "QT-"
+        validated_data["quote_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
         
         quote = super().create(validated_data)
         
@@ -564,7 +566,9 @@ class InvoiceSerializer(CompanyScopedSerializer):
         
         # Auto generate invoice number
         import uuid
-        validated_data["invoice_number"] = f"INV-{uuid.uuid4().hex[:8].upper()}"
+        user = self.context.get("request").user
+        prefix = getattr(user.company, "invoice_prefix", "INV-") if user and hasattr(user, "company") else "INV-"
+        validated_data["invoice_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
         
         invoice = super().create(validated_data)
         
