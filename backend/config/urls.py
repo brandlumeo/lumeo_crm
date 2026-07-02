@@ -44,5 +44,13 @@ urlpatterns = [
     path('api/v1/saas/', include('crm.saas_urls')),
 ]
 
+from django.urls import re_path
+from django.views.static import serve
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Fallback to serve media files through Django in production (e.g. on Render without Nginx)
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
