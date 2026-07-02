@@ -668,7 +668,15 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         cust_name = "<b>Customer Record</b>"
         
     recipient_text = f"{cust_name}{cust_company}{cust_email}{cust_phone}{cust_address}"
-    sender_text = f"<b>{comp.name}</b><br/>Lumeo Workspace Member"
+        
+    currency_symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': 'Rs. '}
+    curr = currency_symbols.get(comp.currency, f"{comp.currency} ")
+    
+    sender_text = f"<b>{comp.name}</b>"
+    address_parts = [p for p in [comp.address_line1, comp.address_line2, comp.city, comp.state, comp.postal_code, comp.country] if p]
+    if address_parts:
+        sender_text += f"<br/>{', '.join(address_parts)}"
+
     if comp.tax_id and comp.show_tax_number_on_invoice:
         sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
         
@@ -676,31 +684,52 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         [Paragraph("<b>FROM</b>", meta_label_style), Paragraph("<b>TO</b>", meta_label_style)],
         [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
     ]
-    billing_table = Table(billing_data, colWidths=[250, 250])
+    
+    # Add Meta Info (Dates & Status)
+    meta_info_data = []
+    if getattr(instance, 'issue_date', None):
+        meta_info_data.append([Paragraph("<b>Issue Date:</b>", meta_label_style), Paragraph(instance.issue_date.strftime('%b %d, %Y'), meta_value_style)])
+    if getattr(instance, 'due_date', None):
+        meta_info_data.append([Paragraph("<b>Due Date:</b>", meta_label_style), Paragraph(instance.due_date.strftime('%b %d, %Y'), meta_value_style)])
+    if getattr(instance, 'status', None) and comp.show_status_on_invoice:
+        meta_info_data.append([Paragraph("<b>Status:</b>", meta_label_style), Paragraph(instance.status.title(), meta_value_style)])
+    
+    if meta_info_data:
+        meta_table = Table(meta_info_data, colWidths=[80, 170])
+        meta_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
+        billing_data[0].append(Paragraph("<b>INFO</b>", meta_label_style))
+        billing_data[1].append(meta_table)
+        billing_table = Table(billing_data, colWidths=[180, 180, 140])
+    else:
+        billing_table = Table(billing_data, colWidths=[250, 250])
+        
     billing_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 10)]))
     story.append(billing_table)
     story.append(Spacer(1, 20))
     
     # Items Table
+    right_bold = ParagraphStyle('RightBold', parent=bold_style, alignment=2)
+    right_normal = ParagraphStyle('RightNormal', parent=styles['Normal'], alignment=2)
+    
     table_data = [[
         Paragraph("<b>Item & Description</b>", bold_style),
-        Paragraph("<b>Qty</b>", bold_style),
-        Paragraph("<b>Rate</b>", bold_style),
-        Paragraph("<b>Tax</b>", bold_style),
-        Paragraph("<b>Total</b>", bold_style)
+        Paragraph("<b>Qty</b>", right_bold),
+        Paragraph("<b>Rate</b>", right_bold),
+        Paragraph("<b>Tax</b>", right_bold),
+        Paragraph("<b>Total</b>", right_bold)
     ]]
     for item in instance.items.all():
         table_data.append([
             Paragraph(f"<b>{item.name}</b><br/><font color='#666666'>{item.description}</font>", styles['Normal']),
-            Paragraph(str(item.quantity), styles['Normal']),
-            Paragraph(f"Rs. {item.unit_price:,.2f}", styles['Normal']),
-            Paragraph(f"{item.tax_rate}%", styles['Normal']),
-            Paragraph(f"Rs. {item.total:,.2f}", styles['Normal'])
+            Paragraph(str(item.quantity), right_normal),
+            Paragraph(f"{curr}{item.unit_price:,.2f}", right_normal),
+            Paragraph(f"{item.tax_rate}%", right_normal),
+            Paragraph(f"{curr}{item.total:,.2f}", right_normal)
         ])
     
-    table_data.append(["", "", "", Paragraph("<b>Subtotal:</b>", styles['Normal']), Paragraph(f"Rs. {instance.subtotal:,.2f}", styles['Normal'])])
-    table_data.append(["", "", "", Paragraph("<b>Tax:</b>", styles['Normal']), Paragraph(f"Rs. {instance.tax_amount:,.2f}", styles['Normal'])])
-    table_data.append(["", "", "", Paragraph("<b>Total:</b>", bold_style), Paragraph(f"Rs. {instance.total:,.2f}", bold_style)])
+    table_data.append(["", "", "", Paragraph("<b>Subtotal:</b>", right_normal), Paragraph(f"{curr}{instance.subtotal:,.2f}", right_normal)])
+    table_data.append(["", "", "", Paragraph("<b>Tax:</b>", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)])
+    table_data.append(["", "", "", Paragraph("<b>Total:</b>", right_bold), Paragraph(f"{curr}{instance.total:,.2f}", right_bold)])
     
     items_table = Table(table_data, colWidths=[200, 40, 85, 75, 100])
     ts = [
