@@ -609,11 +609,11 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         title_align = 0
 
     title_style = ParagraphStyle(
-        'DocTitle', parent=styles['Heading1'], fontSize=22, leading=26, textColor=primary_color, alignment=0
+        'DocTitle', parent=styles['Heading1'], fontSize=16, leading=20, textColor=primary_color, alignment=0
     )
     
     meta_label_style = ParagraphStyle(
-        'MetaLabel', parent=styles['Normal'], fontSize=9, leading=13, textColor=colors.HexColor("#6B7280")
+        'MetaLabel', parent=styles['Normal'], fontSize=8, leading=12, textColor=colors.HexColor("#9CA3AF")
     )
     meta_value_style = ParagraphStyle(
         'MetaVal', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#111827")
@@ -627,15 +627,19 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     right_p_style = ParagraphStyle('RightHeader', alignment=2)
     right_p = Paragraph(
-        f"<font size=28 color='{primary_color.hexval()}'><b>{doc_type.upper()}</b></font><br/>"
-        f"<font size=13 color='#9CA3AF'><b>#{doc_number}</b></font>", 
+        f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/>"
+        f"<font size=10 color='#6B7280'>#{doc_number}</font>", 
         right_p_style
     )
     
-    header_table = Table([[left_p, right_p]], colWidths=[270, 230])
-    header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 10)]))
+    header_table = Table([[left_p, right_p]], colWidths=[250, 250])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'), 
+        ('BOTTOMPADDING', (0,0), (-1,-1), 15),
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor("#E5E7EB"))
+    ]))
     story.append(header_table)
-    story.append(Spacer(1, 25))
+    story.append(Spacer(1, 20))
     
     # Billing Info
     cust_name = ""
@@ -675,94 +679,74 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
     ]
     
-    # Add Meta Info (Dates & Status)
-    meta_info_data = []
-    if getattr(instance, 'issue_date', None):
-        meta_info_data.append([Paragraph("<b>Issue Date:</b>", meta_label_style), Paragraph(f"<b>{instance.issue_date.strftime('%b %d, %Y')}</b>", meta_value_style)])
-    if getattr(instance, 'due_date', None):
-        meta_info_data.append([Paragraph("<b>Due Date:</b>", meta_label_style), Paragraph(f"<b>{instance.due_date.strftime('%b %d, %Y')}</b>", meta_value_style)])
-    if getattr(instance, 'status', None) and comp.show_status_on_invoice:
-        meta_info_data.append([Paragraph("<b>Status:</b>", meta_label_style), Paragraph(f"<b>{instance.status.title()}</b>", meta_value_style)])
-    
-    if meta_info_data:
-        meta_table = Table(meta_info_data, colWidths=[80, 110])
-        meta_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
-        billing_data[0].append(Paragraph("<b>INVOICE DETAILS</b>", meta_label_style))
-        billing_data[1].append(meta_table)
-        billing_table = Table(billing_data, colWidths=[180, 180, 140])
-    else:
-        billing_table = Table(billing_data, colWidths=[250, 250])
-        
+    billing_table = Table(billing_data, colWidths=[250, 250])
     billing_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'), 
-        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F9FAFB")),
-        ('LEFTPADDING', (0,0), (-1,-1), 15),
-        ('RIGHTPADDING', (0,0), (-1,-1), 15),
-        ('TOPPADDING', (0,0), (-1,-1), 15),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
     ]))
     story.append(billing_table)
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 30))
     
     # Items Table
-    right_bold = ParagraphStyle('RightBold', parent=bold_style, alignment=2)
-    right_normal = ParagraphStyle('RightNormal', parent=styles['Normal'], alignment=2)
-    right_bold_white = ParagraphStyle('RightBoldWhite', parent=bold_style, alignment=2, textColor=colors.white)
+    left_normal = ParagraphStyle('LeftNormal', parent=styles['Normal'], alignment=0)
+    left_label = ParagraphStyle('LeftLabel', parent=meta_label_style, alignment=0, fontName='Helvetica-Bold')
     
     table_data = [[
-        Paragraph("<b>ITEM & DESCRIPTION</b>", meta_label_style),
-        Paragraph("<b>QTY</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2)),
-        Paragraph("<b>RATE</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2)),
-        Paragraph("<b>TAX</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2)),
-        Paragraph("<b>AMOUNT</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2))
+        Paragraph("<b>Item & Description</b>", left_label),
+        Paragraph("<b>Qty</b>", left_label),
+        Paragraph("<b>Rate</b>", left_label),
+        Paragraph("<b>Amount</b>", left_label)
     ]]
     for item in instance.items.all():
         table_data.append([
-            Paragraph(f"<b>{item.name}</b><br/><font color='#666666'>{item.description}</font>", styles['Normal']),
-            Paragraph(str(item.quantity), right_normal),
-            Paragraph(f"{curr}{item.unit_price:,.2f}", right_normal),
-            Paragraph(f"{item.tax_rate}%", right_normal),
-            Paragraph(f"{curr}{item.total:,.2f}", right_normal)
+            Paragraph(f"{item.name}<br/><font color='#666666'>{item.description}</font>", styles['Normal']),
+            Paragraph(str(item.quantity), left_normal),
+            Paragraph(f"{curr}{item.unit_price:,.2f}", left_normal),
+            Paragraph(f"{curr}{item.total:,.2f}", left_normal)
         ])
     
-    table_data.append(["", "", "", Paragraph("<b>Subtotal:</b>", right_normal), Paragraph(f"{curr}{instance.subtotal:,.2f}", right_normal)])
-    table_data.append(["", "", "", Paragraph("<b>Tax:</b>", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)])
-    table_data.append(["", "", "", Paragraph("<b>Total:</b>", right_bold_white), Paragraph(f"{curr}{instance.total:,.2f}", right_bold_white)])
-    
-    items_table = Table(table_data, colWidths=[200, 40, 85, 75, 100])
+    items_table = Table(table_data, colWidths=[240, 50, 100, 110])
     ts = [
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('TOPPADDING', (0,0), (-1,0), 12),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 10),
-        ('TOPPADDING', (0,1), (-1,-1), 10),
-        ('LINEBELOW', (0,0), (-1,0), 1.5, primary_color),
-        ('BACKGROUND', (3, -1), (4, -1), primary_color),
-        ('BOTTOMPADDING', (3, -1), (4, -1), 12),
-        ('TOPPADDING', (3, -1), (4, -1), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 10),
+        ('TOPPADDING', (0,0), (-1,0), 10),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 12),
+        ('TOPPADDING', (0,1), (-1,-1), 12),
+        ('LINEABOVE', (0,0), (-1,0), 0.5, colors.HexColor("#E5E7EB")),
+        ('LINEBELOW', (0,0), (-1,0), 0.5, colors.HexColor("#E5E7EB")),
     ]
-    if template == "template5":
-        ts.extend([('GRID', (0,1), (-1,-4), 0.5, colors.HexColor("#E5E7EB"))])
-    else:
-        ts.extend([
-            ('LINEBELOW', (0,1), (-1,-4), 0.5, colors.HexColor("#F3F4F6")),
-        ])
     items_table.setStyle(TableStyle(ts))
     story.append(items_table)
-    story.append(Spacer(1, 30))
+    story.append(Spacer(1, 20))
+    
+    # Totals Section
+    right_normal = ParagraphStyle('RightNormal', parent=styles['Normal'], alignment=2)
+    right_total = ParagraphStyle('RightTotal', parent=bold_style, alignment=2, textColor=primary_color, fontSize=11)
+    
+    totals_data = [
+        [Paragraph("Subtotal:", right_normal), Paragraph(f"{curr}{instance.subtotal:,.2f}", right_normal)],
+        [Paragraph("Tax:", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)],
+        [Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{instance.total:,.2f}</b>", right_total)]
+    ]
+    totals_table = Table(totals_data, colWidths=[380, 120])
+    totals_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(totals_table)
+    story.append(Spacer(1, 40))
     
     # Terms & Signature
     footer_data = []
     terms_p = []
     if comp.invoice_terms:
-        # Avoid showing "Terms & Conditions" if it's just a polite note
         clean_terms = comp.invoice_terms.strip().lower()
         if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!"]:
-            heading = "Notes"
+            terms_p.append(Paragraph(f"<font color='#9CA3AF'>Notes: {comp.invoice_terms}</font>", styles['Normal']))
         else:
-            heading = "Terms & Conditions"
-        terms_p.append(Paragraph(f"<b>{heading}</b>", bold_style))
-        terms_p.append(Paragraph(comp.invoice_terms.replace('\n', '<br/>'), styles['Normal']))
+            terms_p.append(Paragraph("<b>Terms & Conditions</b>", bold_style))
+            terms_p.append(Paragraph(comp.invoice_terms.replace('\n', '<br/>'), styles['Normal']))
     
     if comp.invoice_other_information:
         terms_p.append(Spacer(1, 10))
