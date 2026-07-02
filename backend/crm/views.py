@@ -752,8 +752,9 @@ class QuoteViewSet(CompanyScopedModelViewSet):
     serializer_class = QuoteSerializer
     queryset = Quote.objects.select_related("company", "deal").prefetch_related("items")
     search_fields = ("quote_number", "title")
-    ordering_fields = ("created_at", "total")
+    ordering_fields = ("created_at", "updated_at", "status", "total")
     ordering = ("-created_at",)
+    filterset_fields = ("status", "deal")
 
     def apply_business_filters(self, queryset):
         deal_id = self.request.query_params.get("deal")
@@ -771,8 +772,9 @@ class InvoiceViewSet(CompanyScopedModelViewSet):
     serializer_class = InvoiceSerializer
     queryset = Invoice.objects.select_related("company", "deal", "customer").prefetch_related("items")
     search_fields = ("invoice_number",)
-    ordering_fields = ("created_at", "total", "due_date")
+    ordering_fields = ("created_at", "updated_at", "status", "issue_date", "due_date", "total")
     ordering = ("-created_at",)
+    filterset_fields = ("status", "deal", "customer")
 
     def apply_business_filters(self, queryset):
         deal_id = self.request.query_params.get("deal")
@@ -1204,21 +1206,7 @@ class TicketCommentViewSet(ModelViewSet):
         ticket = get_object_or_404(Ticket, pk=ticket_id, company=self.request.user.company)
         serializer.save(author=self.request.user, ticket=ticket)
 
-class QuoteViewSet(CompanyScopedModelViewSet):
-    serializer_class = QuoteSerializer
-    queryset = Quote.objects.select_related("company", "deal").prefetch_related("items")
-    search_fields = ("quote_number", "title")
-    ordering_fields = ("created_at", "updated_at", "status", "total")
-    ordering = ("-created_at",)
-    filterset_fields = ("status", "deal")
 
-class InvoiceViewSet(CompanyScopedModelViewSet):
-    serializer_class = InvoiceSerializer
-    queryset = Invoice.objects.select_related("company", "deal", "customer").prefetch_related("items")
-    search_fields = ("invoice_number",)
-    ordering_fields = ("created_at", "updated_at", "status", "issue_date", "due_date", "total")
-    ordering = ("-created_at",)
-    filterset_fields = ("status", "deal", "customer")
 
 class PublicQuoteView(APIView):
     permission_classes = []
