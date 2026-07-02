@@ -243,7 +243,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const trialProgress = getTrialProgress(company?.created_at, company?.trial_ends_at);
 
   return (
-    <aside className="bg-paper border-r border-line p-3.5 flex flex-col gap-5 sticky top-0 h-screen w-[240px] shrink-0 overflow-y-auto self-start">
+    <aside className="print:hidden bg-paper border-r border-line p-3.5 flex flex-col gap-5 sticky top-0 h-screen w-[240px] shrink-0 overflow-y-auto self-start">
       <div className="flex items-center justify-between px-2 pb-3.5 border-b border-line-2">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 bg-ink rounded-md grid place-items-center text-bone font-serif italic text-[20px] leading-none pb-0.5">

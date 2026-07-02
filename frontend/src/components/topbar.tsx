@@ -201,7 +201,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="flex flex-wrap items-center gap-3.5 px-4 md:px-7 py-3.5 border-b border-line bg-bone sticky top-0 z-50">
+      <header className="print:hidden flex flex-wrap items-center gap-3.5 px-4 md:px-7 py-3.5 border-b border-line bg-bone sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileMenuOpen(true)}

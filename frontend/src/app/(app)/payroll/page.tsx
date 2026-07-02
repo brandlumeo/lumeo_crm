@@ -11,7 +11,7 @@ import {
   Download,
 } from "lucide-react";
 import {
-  usePayrolls,
+  usePayrolls, useCurrentCompany,
   useCreatePayroll,
   useUpdatePayroll,
   useDeletePayroll,
@@ -38,6 +38,9 @@ export default function PayrollPage() {
   const [basic, setBasic] = useState("");
   const [allowances, setAllowances] = useState("");
   const [deductions, setDeductions] = useState("");
+  const [selectedSlipId, setSelectedSlipId] = useState<string | null>(null);
+
+  const { data: company } = useCurrentCompany();
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,9 +78,11 @@ export default function PayrollPage() {
     });
   };
 
-  // Very naive print stub
   const printSlip = (id: string) => {
-    window.print();
+    setSelectedSlipId(id);
+    setTimeout(() => {
+      window.print();
+    }, 300);
   };
 
   if (isLoading) {
@@ -90,7 +95,8 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="p-7 pb-16 max-w-[1200px] flex flex-col gap-8 animate-rise">
+    <>
+    <div className="p-7 pb-16 max-w-[1200px] flex flex-col gap-8 animate-rise print:hidden">
       <div className="flex flex-col gap-1">
         <h1 className="font-serif text-[32px] tracking-tight">Payroll & Salary Slips</h1>
         <p className="text-[13.5px] text-muted">
@@ -291,5 +297,79 @@ export default function PayrollPage() {
         )}
       </div>
     </div>
+    
+    {/* PRINT VIEW */}
+    <div className="hidden print:block absolute inset-0 bg-white z-[999] p-10 font-sans text-ink">
+      {payrolls.filter((s: any) => s.id === selectedSlipId).map((slip: any) => (
+        <div key={`print-${slip.id}`} className="max-w-3xl mx-auto border border-line-2 p-10 rounded-lg bg-white">
+          <div className="flex justify-between items-start border-b border-line pb-6 mb-8">
+            <div className="flex flex-col gap-1">
+              <div className="font-serif text-[28px] leading-none font-bold text-ink">
+                {company?.name || "Lumeo CRM"}
+              </div>
+              <div className="text-sm text-muted">
+                Company Address
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold tracking-tight mb-1 text-ink-2">SALARY SLIP</div>
+              <div className="text-sm font-medium">
+                {new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long' })} {slip.year}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
+            <div>
+              <div className="text-muted text-[11px] uppercase tracking-wider mb-1">Employee Details</div>
+              <div className="font-medium text-lg mb-1">{slip.user_full_name}</div>
+              <div className="text-muted">{slip.user_email}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-muted text-[11px] uppercase tracking-wider mb-1">Payment Status</div>
+              <div className="font-medium capitalize text-lg text-emerald-600">{slip.status}</div>
+            </div>
+          </div>
+
+          <div className="border border-line rounded-lg overflow-hidden mb-8">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-bone text-muted uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th className="py-3 px-4 font-medium border-b border-line">Description</th>
+                  <th className="py-3 px-4 font-medium border-b border-line text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-2">
+                <tr>
+                  <td className="py-3 px-4">Basic Salary</td>
+                  <td className="py-3 px-4 text-right font-medium">{formatINR(Number(slip.basic_salary))}</td>
+                </tr>
+                {slip.allowances > 0 && (
+                  <tr>
+                    <td className="py-3 px-4">Allowances</td>
+                    <td className="py-3 px-4 text-right font-medium text-emerald-600">+{formatINR(Number(slip.allowances))}</td>
+                  </tr>
+                )}
+                {slip.deductions > 0 && (
+                  <tr>
+                    <td className="py-3 px-4">Deductions</td>
+                    <td className="py-3 px-4 text-right font-medium text-red-500">-{formatINR(Number(slip.deductions))}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <div className="bg-bone/50 border-t border-line px-4 py-4 flex justify-between items-center">
+              <div className="font-serif font-bold text-lg">Net Pay</div>
+              <div className="font-bold text-2xl tracking-tight">{formatINR(Number(slip.net_salary))}</div>
+            </div>
+          </div>
+
+          <div className="text-center text-xs text-muted mt-16 pt-8 border-t border-line-2">
+            This is a computer generated document and does not require a signature.
+          </div>
+        </div>
+      ))}
+    </div>
+    </>
   );
 }
