@@ -38,7 +38,6 @@ export default function PayrollPage() {
   const [basic, setBasic] = useState("");
   const [allowances, setAllowances] = useState("");
   const [deductions, setDeductions] = useState("");
-  const [selectedSlipId, setSelectedSlipId] = useState<string | null>(null);
 
   const { data: company } = useCurrentCompany();
 
@@ -79,10 +78,114 @@ export default function PayrollPage() {
   };
 
   const printSlip = (id: string) => {
-    setSelectedSlipId(id);
-    setTimeout(() => {
-      window.print();
-    }, 300);
+    const slip = payrolls.find((s: any) => s.id === id);
+    if (!slip) return;
+
+    const monthName = new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long' });
+    const companyName = company?.name || "Lumeo CRM";
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Salary Slip - ${slip.user_full_name} - ${monthName} ${slip.year}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1714; background: #fff; padding: 40px; font-size: 14px; }
+    .slip { max-width: 720px; margin: 0 auto; border: 1px solid #ddd4c0; border-radius: 12px; overflow: hidden; }
+    .header { padding: 32px 36px; border-bottom: 1px solid #ddd4c0; display: flex; justify-content: space-between; align-items: flex-start; background: #faf6ee; }
+    .company-name { font-family: Georgia, serif; font-size: 26px; font-weight: bold; color: #1a1714; margin-bottom: 4px; }
+    .company-sub { font-size: 12px; color: #7a6f5f; }
+    .slip-title { text-align: right; }
+    .slip-title h2 { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; color: #3d362d; margin-bottom: 4px; }
+    .slip-title .period { font-size: 13px; color: #7a6f5f; }
+    .employee-section { padding: 24px 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-bottom: 1px solid #ece8d8; background: #fff; }
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #7a6f5f; margin-bottom: 4px; }
+    .value { font-size: 15px; font-weight: 600; color: #1a1714; }
+    .sub-value { font-size: 12px; color: #7a6f5f; margin-top: 2px; }
+    .status-paid { color: #2f6b3a; }
+    .status-published { color: #2a4e8c; }
+    table { width: 100%; border-collapse: collapse; }
+    .table-wrapper { border: 1px solid #ddd4c0; border-radius: 8px; overflow: hidden; margin: 24px 36px; }
+    thead { background: #f4efe6; }
+    thead th { padding: 10px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #7a6f5f; font-weight: 600; border-bottom: 1px solid #ddd4c0; }
+    thead th:last-child { text-align: right; }
+    tbody tr td { padding: 12px 16px; border-bottom: 1px solid #ece8d8; color: #1a1714; }
+    tbody tr:last-child td { border-bottom: none; }
+    td:last-child { text-align: right; font-weight: 600; }
+    .allowance { color: #2f6b3a; }
+    .deduction { color: #c0392b; }
+    .net-pay-row { background: #f4efe6; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #ddd4c0; }
+    .net-pay-label { font-family: Georgia, serif; font-size: 16px; font-weight: bold; }
+    .net-pay-amount { font-size: 22px; font-weight: 800; color: #1a1714; }
+    .footer { margin: 0 36px 28px; padding-top: 20px; border-top: 1px solid #ece8d8; text-align: center; font-size: 11px; color: #7a6f5f; }
+    .generated-on { font-size: 10px; color: #aaa; margin-top: 6px; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="slip">
+    <div class="header">
+      <div>
+        <div class="company-name">${companyName}</div>
+        <div class="company-sub">Salary Slip Document</div>
+      </div>
+      <div class="slip-title">
+        <h2>SALARY SLIP</h2>
+        <div class="period">${monthName} ${slip.year}</div>
+      </div>
+    </div>
+
+    <div class="employee-section">
+      <div>
+        <div class="label">Employee Name</div>
+        <div class="value">${slip.user_full_name || 'N/A'}</div>
+        <div class="sub-value">${slip.user_email || ''}</div>
+      </div>
+      <div style="text-align: right">
+        <div class="label">Payment Status</div>
+        <div class="value ${slip.status === 'paid' ? 'status-paid' : 'status-published'}">${(slip.status || '').charAt(0).toUpperCase() + (slip.status || '').slice(1)}</div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Description</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Basic Salary</td>
+            <td>&#8377; ${Number(slip.basic_salary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          </tr>
+          ${Number(slip.allowances) > 0 ? `<tr><td>Allowances</td><td class="allowance">+ &#8377; ${Number(slip.allowances).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>` : ''}
+          ${Number(slip.deductions) > 0 ? `<tr><td>Deductions</td><td class="deduction">&#8722; &#8377; ${Number(slip.deductions).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>` : ''}
+        </tbody>
+      </table>
+      <div class="net-pay-row">
+        <span class="net-pay-label">Net Pay</span>
+        <span class="net-pay-amount">&#8377; ${Number(slip.net_salary).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      This is a computer-generated document and does not require a physical signature.
+      <div class="generated-on">Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+    </div>
+  </div>
+  <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }<\/script>
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=700');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+    }
   };
 
   if (isLoading) {
@@ -96,7 +199,7 @@ export default function PayrollPage() {
 
   return (
     <>
-    <div className="p-7 pb-16 max-w-[1200px] flex flex-col gap-8 animate-rise print:hidden">
+    <div className="p-7 pb-16 max-w-[1200px] flex flex-col gap-8 animate-rise">
       <div className="flex flex-col gap-1">
         <h1 className="font-serif text-[32px] tracking-tight">Payroll & Salary Slips</h1>
         <p className="text-[13.5px] text-muted">
@@ -296,79 +399,6 @@ export default function PayrollPage() {
           </div>
         )}
       </div>
-    </div>
-    
-    {/* PRINT VIEW */}
-    <div className="hidden print:block absolute inset-0 bg-white z-[999] p-10 font-sans text-ink">
-      {payrolls.filter((s: any) => s.id === selectedSlipId).map((slip: any) => (
-        <div key={`print-${slip.id}`} className="max-w-3xl mx-auto border border-line-2 p-10 rounded-lg bg-white">
-          <div className="flex justify-between items-start border-b border-line pb-6 mb-8">
-            <div className="flex flex-col gap-1">
-              <div className="font-serif text-[28px] leading-none font-bold text-ink">
-                {company?.name || "Lumeo CRM"}
-              </div>
-              <div className="text-sm text-muted">
-                Company Address
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xl font-bold tracking-tight mb-1 text-ink-2">SALARY SLIP</div>
-              <div className="text-sm font-medium">
-                {new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long' })} {slip.year}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
-            <div>
-              <div className="text-muted text-[11px] uppercase tracking-wider mb-1">Employee Details</div>
-              <div className="font-medium text-lg mb-1">{slip.user_full_name}</div>
-              <div className="text-muted">{slip.user_email}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-muted text-[11px] uppercase tracking-wider mb-1">Payment Status</div>
-              <div className="font-medium capitalize text-lg text-emerald-600">{slip.status}</div>
-            </div>
-          </div>
-
-          <div className="border border-line rounded-lg overflow-hidden mb-8">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-bone text-muted uppercase text-[11px] tracking-wider">
-                <tr>
-                  <th className="py-3 px-4 font-medium border-b border-line">Description</th>
-                  <th className="py-3 px-4 font-medium border-b border-line text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-2">
-                <tr>
-                  <td className="py-3 px-4">Basic Salary</td>
-                  <td className="py-3 px-4 text-right font-medium">{formatINR(Number(slip.basic_salary))}</td>
-                </tr>
-                {slip.allowances > 0 && (
-                  <tr>
-                    <td className="py-3 px-4">Allowances</td>
-                    <td className="py-3 px-4 text-right font-medium text-emerald-600">+{formatINR(Number(slip.allowances))}</td>
-                  </tr>
-                )}
-                {slip.deductions > 0 && (
-                  <tr>
-                    <td className="py-3 px-4">Deductions</td>
-                    <td className="py-3 px-4 text-right font-medium text-red-500">-{formatINR(Number(slip.deductions))}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            <div className="bg-bone/50 border-t border-line px-4 py-4 flex justify-between items-center">
-              <div className="font-serif font-bold text-lg">Net Pay</div>
-              <div className="font-bold text-2xl tracking-tight">{formatINR(Number(slip.net_salary))}</div>
-            </div>
-          </div>
-
-          <div className="text-center text-xs text-muted mt-16 pt-8 border-t border-line-2">
-            This is a computer generated document and does not require a signature.
-          </div>
-        </div>
-      ))}
     </div>
     </>
   );
