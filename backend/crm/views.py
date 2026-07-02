@@ -625,12 +625,26 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
     
+    meta_info = f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/><font size=10 color='#6B7280'>#{doc_number}</font><br/><br/>"
+    
+    # Add title for Quote
+    if doc_type == "Quote" and getattr(instance, 'title', None):
+        meta_info += f"<font size=10 color='#111827'><b>{instance.title}</b></font><br/>"
+        
+    # Add Dates
+    if doc_type == "Invoice":
+        issue_date = getattr(instance, 'issue_date', None)
+        due_date = getattr(instance, 'due_date', None)
+        if issue_date: meta_info += f"<font size=9 color='#6B7280'>Issue Date:</font> <font size=9 color='#111827'>{issue_date}</font><br/>"
+        if due_date: meta_info += f"<font size=9 color='#6B7280'>Due Date:</font> <font size=9 color='#111827'>{due_date}</font><br/>"
+    else:
+        created_at = getattr(instance, 'created_at', None)
+        valid_until = getattr(instance, 'valid_until', None)
+        if created_at: meta_info += f"<font size=9 color='#6B7280'>Date:</font> <font size=9 color='#111827'>{created_at.strftime('%Y-%m-%d')}</font><br/>"
+        if valid_until: meta_info += f"<font size=9 color='#6B7280'>Valid Until:</font> <font size=9 color='#111827'>{valid_until}</font><br/>"
+        
     right_p_style = ParagraphStyle('RightHeader', alignment=2)
-    right_p = Paragraph(
-        f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/>"
-        f"<font size=10 color='#6B7280'>#{doc_number}</font>", 
-        right_p_style
-    )
+    right_p = Paragraph(meta_info, right_p_style)
     
     header_table = Table([[left_p, right_p]], colWidths=[250, 250])
     header_table.setStyle(TableStyle([
@@ -674,8 +688,11 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if comp.tax_id and comp.show_tax_number_on_invoice:
         sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
         
+    from_label = "BILLED FROM" if doc_type == "Invoice" else "PREPARED BY"
+    to_label = "BILLED TO" if doc_type == "Invoice" else "PREPARED FOR"
+    
     billing_data = [
-        [Paragraph("<b>BILLED FROM</b>", meta_label_style), Paragraph("<b>BILLED TO</b>", meta_label_style)],
+        [Paragraph(f"<b>{from_label}</b>", meta_label_style), Paragraph(f"<b>{to_label}</b>", meta_label_style)],
         [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
     ]
     
@@ -740,13 +757,15 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     # Terms & Signature
     footer_data = []
     terms_p = []
-    if comp.invoice_terms:
-        clean_terms = comp.invoice_terms.strip().lower()
+    terms_text = comp.invoice_terms
+    if terms_text:
+        clean_terms = terms_text.strip().lower()
         if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!"]:
-            terms_p.append(Paragraph(f"<font color='#9CA3AF'>Notes: {comp.invoice_terms}</font>", styles['Normal']))
+            terms_p.append(Paragraph(f"<font color='#9CA3AF'>Notes: {terms_text}</font>", styles['Normal']))
         else:
-            terms_p.append(Paragraph("<b>Terms & Conditions</b>", bold_style))
-            terms_p.append(Paragraph(comp.invoice_terms.replace('\n', '<br/>'), styles['Normal']))
+            terms_label = "Terms & Conditions" if doc_type == "Invoice" else "Quote Terms & Conditions"
+            terms_p.append(Paragraph(f"<b>{terms_label}</b>", bold_style))
+            terms_p.append(Paragraph(terms_text.replace('\n', '<br/>'), styles['Normal']))
     
     if comp.invoice_other_information:
         terms_p.append(Spacer(1, 10))
