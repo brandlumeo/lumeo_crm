@@ -444,11 +444,11 @@ export default function ProductsPage() {
       {isModalOpen && (
         <>
           <div className="modal-backdrop" onClick={() => setIsModalOpen(false)} />
-          <div className="modal-content animate-rise p-0 max-w-xl w-full">
+          <div className="fixed left-[50%] top-[50%] z-[60] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise">
             {/* Modal header */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-bone shrink-0">
               <div>
-                <div className="text-lg font-semibold text-ink">New Catalog Item</div>
+                <div className="text-base font-semibold text-ink">New Catalog Item</div>
                 <div className="text-xs text-muted mt-0.5">Add a service, subscription, or physical product.</div>
               </div>
               <button
@@ -459,77 +459,87 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} className="flex flex-col">
-              <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
-                <label>
-                  <span className="label">Product name *</span>
+            <form onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} className="flex flex-col min-h-0">
+              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar" style={{ maxHeight: "calc(90vh - 160px)" }}>
+
+                {/* Product Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">Product Name *</label>
                   <input
                     required
                     className="input"
                     value={form.name}
-                    onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Consulting Hour"
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="e.g. Consulting Hour"
+                    autoFocus
                   />
-                </label>
+                </div>
 
-                <label>
-                  <span className="label">Description (optional)</span>
+                {/* Description */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
                   <textarea
-                    rows={3}
-                    className="input resize-y"
+                    rows={2}
+                    className="input resize-none"
                     value={form.description || ""}
-                    onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                    placeholder="Details to show on quotes and invoices..."
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    placeholder="Details shown on quotes and invoices..."
                   />
-                </label>
+                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <label>
-                    <span className="label">SKU (optional)</span>
-                    <input
-                      className="input font-mono uppercase text-[12px]"
-                      value={form.sku}
-                      onChange={(event) => setForm((current) => ({ ...current, sku: event.target.value }))}
-                      placeholder="SVC-001"
-                    />
-                  </label>
-                  <label>
-                    <span className="label">Tax Rate (%) *</span>
+                {/* Price + Tax Rate - side by side */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="label">Price *</label>
+                    <div className="relative">
+                      <IndianRupee className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        className="input pl-9"
+                        value={form.price}
+                        onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                        placeholder="5000"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="label">Tax Rate (%) *</label>
                     <input
                       type="number"
                       step="0.01"
+                      min="0"
+                      max="100"
                       required
                       className="input"
                       value={form.tax_rate}
-                      onChange={(event) => setForm((current) => ({ ...current, tax_rate: event.target.value }))}
+                      onChange={(e) => setForm((f) => ({ ...f, tax_rate: e.target.value }))}
                       placeholder="18"
                     />
-                  </label>
+                  </div>
                 </div>
 
-                <label>
-                  <span className="label">Price *</span>
-                  <div className="relative">
-                    <IndianRupee className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      className="input pl-9 font-serif text-lg"
-                      value={form.price}
-                      onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
-                      placeholder="5000"
-                    />
-                  </div>
-                </label>
+                {/* SKU */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="label">SKU <span className="text-muted font-normal">(optional)</span></label>
+                  <input
+                    className="input font-mono uppercase text-[12px]"
+                    value={form.sku}
+                    onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                    placeholder="SVC-001"
+                  />
+                </div>
+
               </div>
 
               {/* Modal footer */}
-              <div className="px-6 py-4 border-t border-line bg-bone flex items-center justify-between shrink-0 rounded-b-xl">
+              <div className="px-6 py-4 border-t border-line bg-bone flex items-center justify-between shrink-0">
                 <div>
                   {createMut.isError && (
                     <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
-                      Could not create product.
+                      Could not create product. Please try again.
                     </span>
                   )}
                 </div>

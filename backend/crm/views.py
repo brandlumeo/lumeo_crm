@@ -565,8 +565,25 @@ class ProductViewSet(CompanyScopedModelViewSet):
     serializer_class = ProductSerializer
     queryset = Product.objects.select_related("company")
     search_fields = ("name", "sku", "description")
-    ordering_fields = ("name", "price", "created_at")
+    ordering_fields = ("name", "price", "tax_rate", "created_at", "is_active")
     ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        params = self.request.query_params
+
+        # Filter by active status
+        is_active = params.get("is_active")
+        if is_active is not None:
+            if is_active.lower() in ("true", "1"):
+                queryset = queryset.filter(is_active=True)
+            elif is_active.lower() in ("false", "0"):
+                queryset = queryset.filter(is_active=False)
+
+        # Filter by price range
+        queryset = self._filter_by_decimal_range(queryset, "price")
+        queryset = self._filter_by_decimal_range(queryset, "tax_rate")
+
+        return queryset
 
 
 def generate_pdf_response(instance, doc_type="Invoice"):
