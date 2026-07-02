@@ -367,9 +367,16 @@ export default function InvoicesPage() {
               <button
                 type="button"
                 onClick={() => {
-                  deleteMutation.mutate(deleteInvoiceId, {
-                    onSuccess: () => setDeleteInvoiceId(null)
-                  });
+                  if (deleteInvoiceId !== null) {
+                    deleteMutation.mutate(deleteInvoiceId, {
+                      onSuccess: () => setDeleteInvoiceId(null),
+                      onError: (err) => {
+                        console.error("Delete failed:", err);
+                        alert("Failed to delete invoice. Check console for details.");
+                        setDeleteInvoiceId(null);
+                      }
+                    });
+                  }
                 }}
                 disabled={deleteMutation.isPending}
                 className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
