@@ -755,22 +755,27 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     story.append(Spacer(1, 40))
     
     # Terms & Signature
-    footer_data = []
     terms_p = []
     terms_text = comp.invoice_terms
+    
+    notes_style = ParagraphStyle('Notes', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#6B7280"), fontName='Helvetica-Oblique')
+    info_val_style = ParagraphStyle('InfoVal', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#4B5563"), leading=13)
+    
     if terms_text:
         clean_terms = terms_text.strip().lower()
-        if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!"]:
-            terms_p.append(Paragraph(f"<font color='#9CA3AF'>Notes: {terms_text}</font>", styles['Normal']))
+        if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!", "thank you for your business"]:
+            terms_p.append(Paragraph(terms_text, notes_style))
         else:
             terms_label = "Terms & Conditions" if doc_type == "Invoice" else "Quote Terms & Conditions"
-            terms_p.append(Paragraph(f"<b>{terms_label}</b>", bold_style))
-            terms_p.append(Paragraph(terms_text.replace('\n', '<br/>'), styles['Normal']))
+            terms_p.append(Paragraph(f"<font color='#111827'><b>{terms_label}</b></font>", bold_style))
+            terms_p.append(Spacer(1, 6))
+            terms_p.append(Paragraph(terms_text.replace('\n', '<br/>'), info_val_style))
     
     if comp.invoice_other_information:
-        terms_p.append(Spacer(1, 10))
-        terms_p.append(Paragraph("<b>Other Information</b>", bold_style))
-        terms_p.append(Paragraph(comp.invoice_other_information.replace('\n', '<br/>'), styles['Normal']))
+        if terms_p: terms_p.append(Spacer(1, 15))
+        terms_p.append(Paragraph("<font color='#111827'><b>Other Information</b></font>", bold_style))
+        terms_p.append(Spacer(1, 6))
+        terms_p.append(Paragraph(comp.invoice_other_information.replace('\n', '<br/>'), info_val_style))
         
     sig_p = []
     if comp.show_authorised_signatory:
@@ -780,7 +785,11 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         sig_p.append(Paragraph("<b>Authorised Signatory</b>", styles['Normal']))
         
     if terms_p or sig_p:
-        story.append(Table([[terms_p, sig_p]], colWidths=[350, 150]))
+        footer_table = Table([[terms_p, sig_p]], colWidths=[350, 150])
+        footer_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP')
+        ]))
+        story.append(footer_table)
     
     doc.build(story)
     buffer.seek(0)
