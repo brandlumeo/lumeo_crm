@@ -627,8 +627,8 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     right_p_style = ParagraphStyle('RightHeader', alignment=2)
     right_p = Paragraph(
-        f"<font size=24 color='{primary_color.hexval()}'><b>{doc_type.upper()}</b></font><br/>"
-        f"<font size=12 color='#6B7280'>#{doc_number}</font>", 
+        f"<font size=28 color='{primary_color.hexval()}'><b>{doc_type.upper()}</b></font><br/>"
+        f"<font size=13 color='#9CA3AF'><b>#{doc_number}</b></font>", 
         right_p_style
     )
     
@@ -671,42 +671,50 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
         
     billing_data = [
-        [Paragraph("<b>FROM</b>", meta_label_style), Paragraph("<b>TO</b>", meta_label_style)],
+        [Paragraph("<b>BILLED FROM</b>", meta_label_style), Paragraph("<b>BILLED TO</b>", meta_label_style)],
         [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
     ]
     
     # Add Meta Info (Dates & Status)
     meta_info_data = []
     if getattr(instance, 'issue_date', None):
-        meta_info_data.append([Paragraph("<b>Issue Date:</b>", meta_label_style), Paragraph(instance.issue_date.strftime('%b %d, %Y'), meta_value_style)])
+        meta_info_data.append([Paragraph("<b>Issue Date:</b>", meta_label_style), Paragraph(f"<b>{instance.issue_date.strftime('%b %d, %Y')}</b>", meta_value_style)])
     if getattr(instance, 'due_date', None):
-        meta_info_data.append([Paragraph("<b>Due Date:</b>", meta_label_style), Paragraph(instance.due_date.strftime('%b %d, %Y'), meta_value_style)])
+        meta_info_data.append([Paragraph("<b>Due Date:</b>", meta_label_style), Paragraph(f"<b>{instance.due_date.strftime('%b %d, %Y')}</b>", meta_value_style)])
     if getattr(instance, 'status', None) and comp.show_status_on_invoice:
-        meta_info_data.append([Paragraph("<b>Status:</b>", meta_label_style), Paragraph(instance.status.title(), meta_value_style)])
+        meta_info_data.append([Paragraph("<b>Status:</b>", meta_label_style), Paragraph(f"<b>{instance.status.title()}</b>", meta_value_style)])
     
     if meta_info_data:
-        meta_table = Table(meta_info_data, colWidths=[80, 170])
+        meta_table = Table(meta_info_data, colWidths=[80, 110])
         meta_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
-        billing_data[0].append(Paragraph("<b>INFO</b>", meta_label_style))
+        billing_data[0].append(Paragraph("<b>INVOICE DETAILS</b>", meta_label_style))
         billing_data[1].append(meta_table)
         billing_table = Table(billing_data, colWidths=[180, 180, 140])
     else:
         billing_table = Table(billing_data, colWidths=[250, 250])
         
-    billing_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('BOTTOMPADDING', (0,0), (-1,-1), 10)]))
+    billing_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'), 
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F9FAFB")),
+        ('LEFTPADDING', (0,0), (-1,-1), 15),
+        ('RIGHTPADDING', (0,0), (-1,-1), 15),
+        ('TOPPADDING', (0,0), (-1,-1), 15),
+    ]))
     story.append(billing_table)
     story.append(Spacer(1, 20))
     
     # Items Table
     right_bold = ParagraphStyle('RightBold', parent=bold_style, alignment=2)
     right_normal = ParagraphStyle('RightNormal', parent=styles['Normal'], alignment=2)
+    right_bold_white = ParagraphStyle('RightBoldWhite', parent=bold_style, alignment=2, textColor=colors.white)
     
     table_data = [[
-        Paragraph("<b>Item & Description</b>", bold_style),
-        Paragraph("<b>Qty</b>", right_bold),
-        Paragraph("<b>Rate</b>", right_bold),
-        Paragraph("<b>Tax</b>", right_bold),
-        Paragraph("<b>Total</b>", right_bold)
+        Paragraph("<b>ITEM & DESCRIPTION</b>", meta_label_style),
+        Paragraph("<b>QTY</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2)),
+        Paragraph("<b>RATE</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2)),
+        Paragraph("<b>TAX</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2)),
+        Paragraph("<b>AMOUNT</b>", ParagraphStyle('RLabel', parent=meta_label_style, alignment=2))
     ]]
     for item in instance.items.all():
         table_data.append([
@@ -719,22 +727,24 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     table_data.append(["", "", "", Paragraph("<b>Subtotal:</b>", right_normal), Paragraph(f"{curr}{instance.subtotal:,.2f}", right_normal)])
     table_data.append(["", "", "", Paragraph("<b>Tax:</b>", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)])
-    table_data.append(["", "", "", Paragraph("<b>Total:</b>", right_bold), Paragraph(f"{curr}{instance.total:,.2f}", right_bold)])
+    table_data.append(["", "", "", Paragraph("<b>Total:</b>", right_bold_white), Paragraph(f"{curr}{instance.total:,.2f}", right_bold_white)])
     
     items_table = Table(table_data, colWidths=[200, 40, 85, 75, 100])
     ts = [
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('BACKGROUND', (0,0), (-1,0), table_header_bg),
-        ('BOTTOMPADDING', (0,0), (-1,0), 8),
-        ('TOPPADDING', (0,0), (-1,0), 8),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
-        ('TOPPADDING', (0,1), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('TOPPADDING', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 10),
+        ('TOPPADDING', (0,1), (-1,-1), 10),
+        ('LINEBELOW', (0,0), (-1,0), 1.5, primary_color),
+        ('BACKGROUND', (3, -1), (4, -1), primary_color),
+        ('BOTTOMPADDING', (3, -1), (4, -1), 12),
+        ('TOPPADDING', (3, -1), (4, -1), 12),
     ]
     if template == "template5":
-        ts.extend([('GRID', (0,0), (-1,-4), 1, colors.HexColor("#E5E7EB"))])
+        ts.extend([('GRID', (0,1), (-1,-4), 0.5, colors.HexColor("#E5E7EB"))])
     else:
         ts.extend([
-            ('LINEBELOW', (0,0), (-1,0), 1, primary_color if template=="template3" else colors.HexColor("#E5E7EB")),
             ('LINEBELOW', (0,1), (-1,-4), 0.5, colors.HexColor("#F3F4F6")),
         ])
     items_table.setStyle(TableStyle(ts))
