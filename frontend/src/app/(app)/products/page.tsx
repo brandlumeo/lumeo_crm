@@ -444,7 +444,7 @@ export default function ProductsPage() {
       {isModalOpen && (
         <>
           <div className="modal-backdrop" onClick={() => setIsModalOpen(false)} />
-          <div className="fixed left-[50%] top-[50%] z-[60] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise">
+          <div className="fixed left-[50%] top-[50%] z-[60] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg max-h-[90vh] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise">
             {/* Modal header */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-bone shrink-0">
               <div>
@@ -459,8 +459,8 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} className="flex flex-col min-h-0">
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar" style={{ maxHeight: "calc(90vh - 160px)" }}>
+            <form onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} className="flex flex-col min-h-0 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
 
                 {/* Product Name */}
                 <div className="flex flex-col gap-1.5">
