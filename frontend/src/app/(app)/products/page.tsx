@@ -442,11 +442,12 @@ export default function ProductsPage() {
 
       {/* ── Create product modal ── */}
       {isModalOpen && (
-        <>
-          <div className="modal-backdrop" onClick={() => setIsModalOpen(false)} />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
           <form 
             onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} 
-            className="fixed left-[50%] top-[50%] z-[60] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg max-h-[85vh] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+            className="relative w-full max-w-lg bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+            style={{ maxHeight: 'calc(100vh - 2rem)' }}
           >
             {/* Modal header */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-bone shrink-0">
@@ -567,7 +568,7 @@ export default function ProductsPage() {
               </div>
             </div>
           </form>
-        </>
+        </div>
       )}
     </PageShell>
   );
