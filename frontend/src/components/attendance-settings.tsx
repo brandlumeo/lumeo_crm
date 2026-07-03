@@ -6,7 +6,7 @@ import {
   Clock, Loader2, CheckCircle, XCircle, Shield, 
   Timer, HelpCircle, Plus, Edit, Trash2, X, RotateCw, Settings
 } from "lucide-react";
-import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
+import { useCurrentCompany, useCurrentUser, useTeam } from "@/lib/queries";
 import { updateCompany } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -32,11 +32,19 @@ type ShiftRotation = {
   status: string;
 };
 
+type AutomatedShift = {
+  id: string;
+  department: string;
+  employees: string[];
+  rotationName: string;
+};
+
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export function AttendanceSettingsForm() {
   const { data: company } = useCurrentCompany();
   const { data: user } = useCurrentUser();
+  const { data: teamData } = useTeam();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("rotation");
@@ -85,6 +93,14 @@ export function AttendanceSettingsForm() {
   const [rotationReplaceExisting, setRotationReplaceExisting] = useState(false);
   const [rotationSendNotification, setRotationSendNotification] = useState(false);
   const [rotationStatus, setRotationStatus] = useState("active");
+
+  // Automate Shifts State
+  const automatedShifts: AutomatedShift[] = company?.automated_shifts ?? [];
+  const [isAutomateModalOpen, setIsAutomateModalOpen] = useState(false);
+  
+  const [automateDepartment, setAutomateDepartment] = useState("");
+  const [automateEmployees, setAutomateEmployees] = useState<string[]>([]);
+  const [automateRotationName, setAutomateRotationName] = useState("");
 
   useEffect(() => {
     if (company) {
@@ -255,7 +271,12 @@ export function AttendanceSettingsForm() {
     if (confirm("Are you sure you want to remove this shift rotation?")) {
       const newRotations = [...rotations];
       newRotations.splice(index, 1);
-      mutation.mutate({ shift_rotations: newRotations });
+      mutation.mutate({ shift_rotations: newRotations }, {
+        onSuccess: () => {
+          setMsg({ type: "success", text: "Shift rotation deleted successfully." });
+          setTimeout(() => setMsg(null), 4000);
+        }
+      });
     }
   };
 
@@ -277,7 +298,43 @@ export function AttendanceSettingsForm() {
     } else {
       newRotations.push(rotationData);
     }
-    mutation.mutate({ shift_rotations: newRotations });
+    mutation.mutate({ shift_rotations: newRotations }, {
+      onSuccess: () => {
+        setIsRotationModalOpen(false);
+        setMsg({ type: "success", text: `Shift rotation ${editingRotationIndex !== null ? 'updated' : 'added'} successfully.` });
+        setTimeout(() => setMsg(null), 4000);
+      }
+    });
+  };
+
+  // Automate Shifts Handlers
+  const handleSaveAutomateModal = () => {
+    if (!automateRotationName) return;
+    const newAutomatedShifts = [...automatedShifts];
+    newAutomatedShifts.push({
+      id: Date.now().toString(),
+      department: automateDepartment,
+      employees: automateEmployees,
+      rotationName: automateRotationName
+    });
+    mutation.mutate({ automated_shifts: newAutomatedShifts }, {
+      onSuccess: () => {
+        setIsAutomateModalOpen(false);
+        setMsg({ type: "success", text: "Automated shift added successfully." });
+        setTimeout(() => setMsg(null), 4000);
+      }
+    });
+  };
+
+  const handleDeleteAutomatedShift = (index: number) => {
+    const newAutomatedShifts = [...automatedShifts];
+    newAutomatedShifts.splice(index, 1);
+    mutation.mutate({ automated_shifts: newAutomatedShifts }, {
+      onSuccess: () => {
+        setMsg({ type: "success", text: "Automated shift deleted successfully." });
+        setTimeout(() => setMsg(null), 4000);
+      }
+    });
   };
 
 
@@ -351,7 +408,7 @@ export function AttendanceSettingsForm() {
             <button onClick={handleOpenAddRotation} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
               <Plus className="w-4 h-4" /> Add New Shift Rotation
             </button>
-            <button onClick={() => alert("Automate Shifts feature coming soon!")} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+            <button onClick={() => setIsAutomateModalOpen(true)} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
               <Settings className="w-4 h-4" /> Automate Shifts
             </button>
             <button onClick={() => alert("Rotation run successfully initiated.")} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
@@ -703,6 +760,47 @@ export function AttendanceSettingsForm() {
                   </tbody>
                 </table>
                 
+                {/* Automated Shifts Table */}
+                {automatedShifts.length > 0 && (
+                  <div className="mt-12">
+                    <h4 className="text-[14px] font-semibold text-ink mb-4 px-2">Automated Shifts</h4>
+                    <table className="w-full text-left text-[13px] border-t border-line">
+                      <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                        <tr>
+                          <th className="py-4 px-6">Department</th>
+                          <th className="py-4 px-6 text-center">Employees</th>
+                          <th className="py-4 px-6">Rotation Name</th>
+                          <th className="py-4 px-6 text-right w-32">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {automatedShifts.map((shift, index) => (
+                          <tr key={shift.id} className="hover:bg-bone/30 transition-colors group">
+                            <td className="py-4 px-6 text-ink font-medium">{shift.department || "All"}</td>
+                            <td className="py-4 px-6 text-center text-muted">
+                              {shift.employees?.length} Employee(s)
+                            </td>
+                            <td className="py-4 px-6 text-ink font-medium">{shift.rotationName}</td>
+                            <td className="py-4 px-6 text-right">
+                              {isAdmin && (
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteAutomatedShift(index)}
+                                    className="flex items-center justify-center w-8 h-8 border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                
                 {/* Pagination Placeholder */}
                 <div className="border-t border-line px-6 py-4 flex items-center justify-between text-[13px] text-muted">
                   <div className="flex items-center gap-2">
@@ -957,6 +1055,104 @@ export function AttendanceSettingsForm() {
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Automate Shifts Modal */}
+      {isAutomateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 overflow-hidden animate-scale-in flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
+              <h3 className="text-[15px] font-semibold text-ink">
+                Add Automate Shift
+              </h3>
+              <button 
+                onClick={() => setIsAutomateModalOpen(false)}
+                className="text-muted hover:text-ink transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6 max-h-[60vh]">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium text-ink">Department</label>
+                  <select
+                    value={automateDepartment}
+                    onChange={(e) => setAutomateDepartment(e.target.value)}
+                    className="input w-full h-10 bg-white"
+                  >
+                    <option value="">--</option>
+                    {Array.from(new Set(teamData?.users?.map(u => u.department).filter(Boolean))).map(dept => (
+                      <option key={dept as string} value={dept as string}>{dept as string}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium text-ink flex items-center gap-1">
+                    Employees <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="border border-line rounded-lg max-h-48 overflow-y-auto p-2 bg-bone/30">
+                    {teamData?.users?.filter(u => !automateDepartment || u.department === automateDepartment).length === 0 ? (
+                      <div className="text-[13px] text-muted p-2">Nothing selected</div>
+                    ) : (
+                      teamData?.users?.filter(u => !automateDepartment || u.department === automateDepartment).map(user => (
+                        <label key={user.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={automateEmployees.includes(user.id.toString())}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAutomateEmployees([...automateEmployees, user.id.toString()]);
+                              } else {
+                                setAutomateEmployees(automateEmployees.filter(id => id !== user.id.toString()));
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-[13px] text-ink">{user.first_name} {user.last_name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-ink">Rotation Name <span className="text-rose-500">*</span></label>
+                <select
+                  value={automateRotationName}
+                  onChange={(e) => setAutomateRotationName(e.target.value)}
+                  className="input w-full h-10 bg-white"
+                >
+                  <option value="">Nothing selected</option>
+                  {rotations.map(rot => (
+                    <option key={rot.id} value={rot.name}>{rot.name}</option>
+                  ))}
+                </select>
+              </div>
+
+            </div>
+
+            <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-start gap-3 shrink-0">
+              <button
+                onClick={handleSaveAutomateModal}
+                disabled={mutation.isPending || !automateRotationName || automateEmployees.length === 0}
+                className="btn bg-rose-500 hover:bg-rose-600 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+              >
+                {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <CheckCircle className="w-4 h-4" /> Save
+              </button>
+              <button
+                onClick={() => setIsAutomateModalOpen(false)}
+                className="text-muted hover:text-ink text-[13px] transition-colors font-medium ml-2"
+              >
+                Cancel
               </button>
             </div>
           </div>

@@ -91,6 +91,7 @@ export interface CompanyDetail extends CompanySummary {
   attendance_reminder_status: boolean;
   employee_shifts: any[];
   shift_rotations: any[];
+  automated_shifts: any[];
   default_leave_quota: number;
   allow_half_day_leaves: boolean;
   require_leave_approval: boolean;

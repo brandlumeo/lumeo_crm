@@ -98,6 +98,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "attendance_reminder_status",
             "employee_shifts",
             "shift_rotations",
+            "automated_shifts",
             "default_leave_quota",
             "allow_half_day_leaves",
             "require_leave_approval",

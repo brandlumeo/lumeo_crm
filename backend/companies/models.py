@@ -315,6 +315,7 @@ class Company(models.Model):
     
     employee_shifts = models.JSONField(default=list, blank=True)
     shift_rotations = models.JSONField(default=list, blank=True)
+    automated_shifts = models.JSONField(default=list, blank=True)
     
     default_leave_quota = models.IntegerField(default=20, help_text="Default annual leave quota.")
     allow_half_day_leaves = models.BooleanField(default=True)
