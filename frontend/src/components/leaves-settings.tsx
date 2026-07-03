@@ -453,8 +453,8 @@ export function LeavesSettingsForm() {
 
       {/* Leave Type Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl my-8 overflow-hidden animate-scale-in flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in flex flex-col">
             
             <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
               <h3 className="text-[15px] font-semibold text-ink">
@@ -469,7 +469,7 @@ export function LeavesSettingsForm() {
             </div>
 
             {/* Modal Tabs */}
-            <div className="flex items-center overflow-x-auto border-b border-line px-2 bg-bone/10">
+            <div className="flex items-center overflow-x-auto border-b border-line px-2 bg-bone/10 shrink-0">
               {modalTabsList.map(tab => (
                 <button
                   key={tab.id}
@@ -486,7 +486,7 @@ export function LeavesSettingsForm() {
               ))}
             </div>
             
-            <div className="p-8 space-y-8 min-h-[350px]">
+            <div className="p-6 sm:p-8 space-y-8 overflow-y-auto min-h-[350px]">
               
               {modalTab === "general" && (
                 <div className="animate-fade-in space-y-6">
