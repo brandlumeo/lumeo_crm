@@ -343,10 +343,10 @@ export default function LeadsPage() {
       </div>
 
       {showImportModal && (
-        <>
-          <div className="modal-backdrop" onClick={() => setShowImportModal(false)} />
-          <div className="modal-content animate-rise">
-            <div className="p-6 border-b border-line flex items-center justify-between">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowImportModal(false)} />
+          <div className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+            <div className="p-6 border-b border-line flex items-center justify-between shrink-0">
               <h3 className="font-serif text-[18px] text-ink flex items-center gap-2">
                 <Upload className="w-5 h-5 text-accent" />
                 Import Leads
@@ -359,31 +359,33 @@ export default function LeadsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleImport} className="p-6 space-y-4">
-              <div className="bg-bone-2 border border-line rounded-lg p-4 space-y-3">
-                <p className="text-sm text-ink-2">
-                  Upload a CSV file to bulk import leads. Your CSV should have a header row and can contain the following columns:
-                </p>
-                <ul className="text-xs text-muted list-disc pl-4 space-y-1">
-                  <li><strong>Name</strong> (Required)</li>
-                  <li><strong>Email</strong> (Required)</li>
-                  <li><strong>Phone</strong> (Optional)</li>
-                  <li><strong>Status</strong> (Optional: new, contacted, qualified)</li>
-                </ul>
+            <form onSubmit={handleImport} className="flex flex-col flex-1 min-h-0">
+              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+                <div className="bg-bone-2 border border-line rounded-lg p-4 space-y-3">
+                  <p className="text-sm text-ink-2">
+                    Upload a CSV file to bulk import leads. Your CSV should have a header row and can contain the following columns:
+                  </p>
+                  <ul className="text-xs text-muted list-disc pl-4 space-y-1">
+                    <li><strong>Name</strong> (Required)</li>
+                    <li><strong>Email</strong> (Required)</li>
+                    <li><strong>Phone</strong> (Optional)</li>
+                    <li><strong>Status</strong> (Optional: new, contacted, qualified)</li>
+                  </ul>
+                </div>
+
+                <label className="block">
+                  <span className="label">CSV File</span>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    required
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-ink file:text-paper hover:file:bg-ink/90 file:cursor-pointer mt-2"
+                  />
+                </label>
               </div>
 
-              <label className="block">
-                <span className="label">CSV File</span>
-                <input
-                  type="file"
-                  accept=".csv"
-                  required
-                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                  className="block w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-ink file:text-paper hover:file:bg-ink/90 file:cursor-pointer"
-                />
-              </label>
-
-              <div className="border-t border-line pt-5 mt-6 flex justify-end gap-3">
+              <div className="p-6 border-t border-line bg-bone flex items-center justify-end gap-3 shrink-0">
                 <button type="button" onClick={() => setShowImportModal(false)} className="btn btn-secondary">
                   Cancel
                 </button>
@@ -398,7 +400,7 @@ export default function LeadsPage() {
               </div>
             </form>
           </div>
-        </>
+        </div>
       )}
     </PageShell>
   );

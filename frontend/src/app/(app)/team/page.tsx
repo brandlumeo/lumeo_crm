@@ -216,10 +216,10 @@ export default function TeamPage() {
 
       {/* Invite Modal */}
       {isInviteOpen && (
-        <>
-          <div className="modal-backdrop" onClick={() => setIsInviteOpen(false)} />
-          <div className="modal-content animate-in zoom-in-95 duration-200 p-0">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsInviteOpen(false)} />
+          <div className="relative w-full max-w-lg bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
               <h3 className="text-base font-medium text-ink">Invite new member</h3>
               <button
                 onClick={() => setIsInviteOpen(false)}
@@ -241,7 +241,7 @@ export default function TeamPage() {
                   personal_message: inviteMessage,
                 });
               }}
-              className="p-5 max-h-[85vh] overflow-y-auto"
+              className="p-5 flex-1 overflow-y-auto custom-scrollbar min-h-0"
             >
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -381,7 +381,7 @@ export default function TeamPage() {
               </div>
             </form>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
