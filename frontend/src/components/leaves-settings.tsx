@@ -523,7 +523,7 @@ export function LeavesSettingsForm() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
                       <label className="text-[13px] text-muted flex items-center gap-1">Leave Paid Status <HelpCircle className="w-3.5 h-3.5" /></label>
                       <select
@@ -553,6 +553,32 @@ export function LeavesSettingsForm() {
                           onChange={(e) => setTypeColor(e.target.value)} 
                           className="absolute inset-y-0 right-2 w-6 h-6 opacity-0 cursor-pointer" 
                         />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] text-muted flex items-center gap-1">Department <span className="text-rose-500">*</span> <HelpCircle className="w-3 h-3" /></label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={typeDepartments}
+                          onChange={(e) => setTypeDepartments(e.target.value)}
+                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          placeholder="e.g. HR, Management, IT..."
+                        />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] text-muted flex items-center gap-1">Designation <span className="text-rose-500">*</span> <HelpCircle className="w-3 h-3" /></label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={typeDesignations}
+                          onChange={(e) => setTypeDesignations(e.target.value)}
+                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          placeholder="e.g. Team Lead, Branch Manager..."
+                        />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                       </div>
                     </div>
                   </div>
@@ -675,36 +701,6 @@ export function LeavesSettingsForm() {
                     </div>
                     
                     <div className="space-y-1.5">
-                      <label className="text-[13px] text-muted flex items-center gap-1">Department <span className="text-rose-500">*</span> <HelpCircle className="w-3 h-3" /></label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={typeDepartments}
-                          onChange={(e) => setTypeDepartments(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
-                          placeholder="e.g. HR, Management, IT..."
-                        />
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] text-muted flex items-center gap-1">Designation <span className="text-rose-500">*</span> <HelpCircle className="w-3 h-3" /></label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={typeDesignations}
-                          onChange={(e) => setTypeDesignations(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
-                          placeholder="e.g. Team Lead, Branch Manager..."
-                        />
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1.5">
                       <label className="text-[13px] text-muted flex items-center gap-1">User Role <span className="text-rose-500">*</span> <HelpCircle className="w-3 h-3" /></label>
                       <div className="relative">
                         <input
@@ -718,6 +714,7 @@ export function LeavesSettingsForm() {
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
 
