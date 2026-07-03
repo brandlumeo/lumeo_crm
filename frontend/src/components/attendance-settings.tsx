@@ -1086,11 +1086,14 @@ export function AttendanceSettingsForm() {
                     onChange={(e) => setAutomateDepartment(e.target.value)}
                     className="input w-full h-10 bg-white"
                   >
-                    <option value="">--</option>
+                    <option value="">All Departments</option>
                     {Array.from(new Set(teamData?.map(u => u.department).filter(Boolean))).map(dept => (
                       <option key={dept as string} value={dept as string}>{dept as string}</option>
                     ))}
                   </select>
+                  <p className="text-[11px] text-muted">
+                    Derived from your team members' assigned departments.
+                  </p>
                 </div>
                 
                 <div className="space-y-1.5">
@@ -1115,7 +1118,11 @@ export function AttendanceSettingsForm() {
                             }}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
-                          <span className="text-[13px] text-ink">{user.first_name} {user.last_name}</span>
+                          <span className="text-[13px] text-ink">
+                            {user.first_name || user.last_name 
+                              ? `${user.first_name || ""} ${user.last_name || ""}`.trim() 
+                              : user.email || user.username || "Unknown User"}
+                          </span>
                         </label>
                       ))
                     )}
