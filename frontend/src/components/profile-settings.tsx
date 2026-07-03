@@ -31,6 +31,7 @@ export function ProfileForm() {
   const [password, setPassword] = useState("");
   
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
   const mutation = useMutation({
     mutationFn: updateProfile,
@@ -364,7 +365,10 @@ export function ProfileForm() {
                 <p className="text-[13px] text-muted">People to contact in case of an emergency.</p>
               </div>
             </div>
-            <button className="btn bg-ink hover:bg-ink-2 text-white h-9 px-4 rounded-lg text-[13px] bg-rose-500 hover:bg-rose-600 text-white flex items-center gap-2 shadow-sm border border-rose-600/50">
+            <button 
+              onClick={() => setShowEmergencyModal(true)}
+              className="btn bg-ink hover:bg-ink-2 text-white h-9 px-4 rounded-lg text-[13px] bg-rose-500 hover:bg-rose-600 text-white flex items-center gap-2 shadow-sm border border-rose-600/50"
+            >
               <Plus className="w-4 h-4" /> Create New
             </button>
           </div>
@@ -413,6 +417,71 @@ export function ProfileForm() {
           <div className="py-24 flex flex-col items-center justify-center text-muted bg-bone/10">
             <UploadCloud className="w-10 h-10 text-muted/30 mb-3" />
             <p className="text-[13px]">- No file uploaded. -</p>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Contact Modal */}
+      {showEmergencyModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowEmergencyModal(false)} />
+          <div className="relative w-full max-w-md bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+            <div className="p-5 border-b border-line flex items-center justify-between bg-bone/20 shrink-0">
+              <h3 className="font-serif text-[18px] text-ink flex items-center gap-2">
+                <HeartPulse className="w-5 h-5 text-rose-500" />
+                Add Emergency Contact
+              </h3>
+              <button
+                onClick={() => setShowEmergencyModal(false)}
+                className="p-1.5 hover:bg-bone-2 rounded-md border border-transparent hover:border-line text-muted hover:text-ink transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Contact Name</span>
+                  <input type="text" className="input" placeholder="e.g., John Doe" />
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Relationship</span>
+                  <select className="input">
+                    <option value="">Select Relationship</option>
+                    <option value="Spouse">Spouse</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Friend">Friend</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Mobile Number</span>
+                  <input type="tel" className="input" placeholder="e.g., +1 234 567 890" />
+                </label>
+                <label className="block">
+                  <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Email (Optional)</span>
+                  <input type="email" className="input" placeholder="e.g., john@example.com" />
+                </label>
+              </div>
+            </div>
+            <div className="p-5 border-t border-line bg-bone flex items-center justify-end gap-3 shrink-0">
+              <button 
+                onClick={() => setShowEmergencyModal(false)} 
+                className="btn btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowEmergencyModal(false);
+                  // In a real app, you would mutate/save here
+                }} 
+                className="btn bg-rose-500 hover:bg-rose-600 text-white text-sm"
+              >
+                Save Contact
+              </button>
+            </div>
           </div>
         </div>
       )}
