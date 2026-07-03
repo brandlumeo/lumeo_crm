@@ -580,7 +580,7 @@ export function AttendanceSettingsForm() {
               {isAdmin && (
                 <div className="pt-6">
                   <button
-                    onClick={handleSaveAttendance}
+                    onClick={handleSaveGeneral}
                     disabled={mutation.isPending}
                     className="btn bg-ink hover:bg-ink-2 text-white shadow-sm transition-all h-10 px-6 rounded font-medium flex items-center gap-2"
                   >
@@ -1087,7 +1087,7 @@ export function AttendanceSettingsForm() {
                     className="input w-full h-10 bg-white"
                   >
                     <option value="">--</option>
-                    {Array.from(new Set(teamData?.users?.map(u => u.department).filter(Boolean))).map(dept => (
+                    {Array.from(new Set(teamData?.map(u => u.department).filter(Boolean))).map(dept => (
                       <option key={dept as string} value={dept as string}>{dept as string}</option>
                     ))}
                   </select>
@@ -1098,10 +1098,10 @@ export function AttendanceSettingsForm() {
                     Employees <span className="text-rose-500">*</span>
                   </label>
                   <div className="border border-line rounded-lg max-h-48 overflow-y-auto p-2 bg-bone/30">
-                    {teamData?.users?.filter(u => !automateDepartment || u.department === automateDepartment).length === 0 ? (
+                    {teamData?.filter(u => !automateDepartment || u.department === automateDepartment).length === 0 ? (
                       <div className="text-[13px] text-muted p-2">Nothing selected</div>
                     ) : (
-                      teamData?.users?.filter(u => !automateDepartment || u.department === automateDepartment).map(user => (
+                      teamData?.filter(u => !automateDepartment || u.department === automateDepartment).map(user => (
                         <label key={user.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer">
                           <input 
                             type="checkbox" 
