@@ -71,6 +71,7 @@ class UserSerializer(serializers.ModelSerializer):
             "email_notifications",
             "slack_notifications",
             "push_notifications",
+            "emergency_contacts",
             "can_manage_team",
             "has_management_access",
             "is_superuser",

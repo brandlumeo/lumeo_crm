@@ -29,6 +29,7 @@ export function ProfileForm() {
   const [receiveEmailNotifications, setReceiveEmailNotifications] = useState(user?.receive_email_notifications ?? true);
   const [enableGoogleCalendar, setEnableGoogleCalendar] = useState(user?.enable_google_calendar ?? false);
   const [password, setPassword] = useState("");
+  const [newEmergencyContact, setNewEmergencyContact] = useState({ name: "", relationship: "", mobile: "", email: "" });
   
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
@@ -384,14 +385,41 @@ export function ProfileForm() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan={5} className="py-16 text-center text-muted">
-                    <div className="flex flex-col items-center justify-center">
-                      <HeartPulse className="w-8 h-8 text-muted/30 mb-3" />
-                      <p className="text-[13px]">- No record found. -</p>
-                    </div>
-                  </td>
-                </tr>
+                {user.emergency_contacts && user.emergency_contacts.length > 0 ? (
+                  user.emergency_contacts.map((contact, idx) => (
+                    <tr key={idx} className="border-b border-line hover:bg-bone/30 transition-colors">
+                      <td className="py-3 px-6 text-[13px] text-ink font-medium">{contact.name}</td>
+                      <td className="py-3 px-6 text-[13px] text-muted">{contact.email || "-"}</td>
+                      <td className="py-3 px-6 text-[13px] text-muted">{contact.mobile}</td>
+                      <td className="py-3 px-6 text-[13px] text-muted">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                          {contact.relationship}
+                        </span>
+                      </td>
+                      <td className="py-3 px-6 text-[13px] text-right">
+                        <button 
+                          onClick={() => {
+                            const newContacts = [...user.emergency_contacts];
+                            newContacts.splice(idx, 1);
+                            mutation.mutate({ emergency_contacts: newContacts } as any);
+                          }}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-16 text-center text-muted">
+                      <div className="flex flex-col items-center justify-center">
+                        <HeartPulse className="w-8 h-8 text-muted/30 mb-3" />
+                        <p className="text-[13px]">- No record found. -</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -442,11 +470,11 @@ export function ProfileForm() {
               <div className="space-y-4">
                 <label className="block">
                   <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Contact Name</span>
-                  <input type="text" className="input" placeholder="e.g., John Doe" />
+                  <input type="text" className="input" placeholder="e.g., John Doe" value={newEmergencyContact.name} onChange={(e) => setNewEmergencyContact({ ...newEmergencyContact, name: e.target.value })} />
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Relationship</span>
-                  <select className="input">
+                  <select className="input" value={newEmergencyContact.relationship} onChange={(e) => setNewEmergencyContact({ ...newEmergencyContact, relationship: e.target.value })}>
                     <option value="">Select Relationship</option>
                     <option value="Spouse">Spouse</option>
                     <option value="Parent">Parent</option>
@@ -457,11 +485,11 @@ export function ProfileForm() {
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Mobile Number</span>
-                  <input type="tel" className="input" placeholder="e.g., +1 234 567 890" />
+                  <input type="tel" className="input" placeholder="e.g., +1 234 567 890" value={newEmergencyContact.mobile} onChange={(e) => setNewEmergencyContact({ ...newEmergencyContact, mobile: e.target.value })} />
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-medium text-ink-2 block mb-1.5">Email (Optional)</span>
-                  <input type="email" className="input" placeholder="e.g., john@example.com" />
+                  <input type="email" className="input" placeholder="e.g., john@example.com" value={newEmergencyContact.email} onChange={(e) => setNewEmergencyContact({ ...newEmergencyContact, email: e.target.value })} />
                 </label>
               </div>
             </div>
@@ -474,8 +502,15 @@ export function ProfileForm() {
               </button>
               <button 
                 onClick={() => {
+                  if (!newEmergencyContact.name || !newEmergencyContact.mobile) {
+                    setProfileMsg({ type: "error", text: "Name and Mobile are required for an emergency contact." });
+                    return;
+                  }
+                  
+                  const updatedContacts = [...(user.emergency_contacts || []), newEmergencyContact];
+                  mutation.mutate({ emergency_contacts: updatedContacts } as any);
+                  setNewEmergencyContact({ name: "", relationship: "", mobile: "", email: "" });
                   setShowEmergencyModal(false);
-                  // In a real app, you would mutate/save here
                 }} 
                 className="btn bg-rose-500 hover:bg-rose-600 text-white text-sm"
               >

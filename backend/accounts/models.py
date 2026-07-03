@@ -58,6 +58,7 @@ class User(AbstractUser):
         default=False,
         help_text="Grant team management access to this staff member."
     )
+    emergency_contacts = models.JSONField(default=list, blank=True)
     two_factor_enabled = models.BooleanField(
         default=False,
         help_text="Designates whether this user has two-factor authentication enabled."

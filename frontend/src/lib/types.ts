@@ -164,6 +164,7 @@ export interface UserProfile extends UserSummary {
   email_notifications: Record<string, boolean>;
   slack_notifications: Record<string, boolean>;
   push_notifications: Record<string, boolean>;
+  emergency_contacts: any[];
   can_manage_team: boolean;
   has_management_access: boolean;
   is_superuser: boolean;
