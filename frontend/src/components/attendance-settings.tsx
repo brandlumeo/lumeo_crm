@@ -1081,30 +1081,32 @@ export function AttendanceSettingsForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium text-ink">Department</label>
-                  <select
+                  <input
+                    type="text"
+                    list="departments-list"
                     value={automateDepartment}
                     onChange={(e) => setAutomateDepartment(e.target.value)}
+                    placeholder="Type or select a department..."
                     className="input w-full h-10 bg-white"
-                  >
-                    <option value="">All Departments</option>
+                  />
+                  <datalist id="departments-list">
                     {Array.from(new Set(teamData?.map(u => u.department).filter(Boolean))).map(dept => (
-                      <option key={dept as string} value={dept as string}>{dept as string}</option>
+                      <option key={dept as string} value={dept as string} />
                     ))}
-                  </select>
-                  <p className="text-[11px] text-muted">
-                    Derived from your team members' assigned departments.
+                  </datalist>
+                  <p className="text-[11px] text-muted mt-1">
+                    Select a department to filter employees, or type a new one to categorize this shift.
                   </p>
                 </div>
-                
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium text-ink flex items-center gap-1">
                     Employees <span className="text-rose-500">*</span>
                   </label>
                   <div className="border border-line rounded-lg max-h-48 overflow-y-auto p-2 bg-bone/30">
-                    {teamData?.filter(u => !automateDepartment || u.department === automateDepartment).length === 0 ? (
-                      <div className="text-[13px] text-muted p-2">Nothing selected</div>
+                    {!teamData || teamData.length === 0 ? (
+                      <div className="text-[13px] text-muted p-2">No team members found</div>
                     ) : (
-                      teamData?.filter(u => !automateDepartment || u.department === automateDepartment).map(user => (
+                      teamData.map(user => (
                         <label key={user.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer">
                           <input 
                             type="checkbox" 
