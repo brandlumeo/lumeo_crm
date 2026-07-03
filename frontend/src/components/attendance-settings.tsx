@@ -26,6 +26,7 @@ type EmployeeShift = {
 type ShiftRotation = {
   id: string;
   name: string;
+  numberOfEmployees: number;
   replaceExisting: boolean;
   sendNotification: boolean;
   status: string;
@@ -80,6 +81,7 @@ export function AttendanceSettingsForm() {
   const [editingRotationIndex, setEditingRotationIndex] = useState<number | null>(null);
   
   const [rotationName, setRotationName] = useState("");
+  const [rotationEmployees, setRotationEmployees] = useState("0");
   const [rotationReplaceExisting, setRotationReplaceExisting] = useState(false);
   const [rotationSendNotification, setRotationSendNotification] = useState(false);
   const [rotationStatus, setRotationStatus] = useState("active");
@@ -112,17 +114,17 @@ export function AttendanceSettingsForm() {
     mutationFn: updateCompany,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["company", "current"] });
-      setMsg({ type: "success", text: "Settings updated successfully." });
+      setMsg({ type: "success", text: "Attendance settings updated successfully." });
       setTimeout(() => setMsg(null), 4000);
       setIsShiftModalOpen(false);
       setIsRotationModalOpen(false);
     },
     onError: () => {
-      setMsg({ type: "error", text: "Failed to update settings. Please try again." });
+      setMsg({ type: "error", text: "Failed to update attendance settings. Please try again." });
     },
   });
 
-  const handleSaveAttendance = () => {
+  const handleSaveGeneral = () => {
     mutation.mutate({
       office_start_time: officeStartTime,
       office_end_time: officeEndTime,
@@ -230,6 +232,7 @@ export function AttendanceSettingsForm() {
   const handleOpenAddRotation = () => {
     setEditingRotationIndex(null);
     setRotationName("");
+    setRotationEmployees("0");
     setRotationReplaceExisting(false);
     setRotationSendNotification(false);
     setRotationStatus("active");
@@ -240,6 +243,7 @@ export function AttendanceSettingsForm() {
     const r = rotations[index];
     setEditingRotationIndex(index);
     setRotationName(r.name);
+    setRotationEmployees((r.numberOfEmployees || 0).toString());
     setRotationReplaceExisting(r.replaceExisting);
     setRotationSendNotification(r.sendNotification);
     setRotationStatus(r.status);
@@ -262,6 +266,7 @@ export function AttendanceSettingsForm() {
     const rotationData: ShiftRotation = {
       id: editingRotationIndex !== null ? newRotations[editingRotationIndex].id : Date.now().toString(),
       name: rotationName,
+      numberOfEmployees: parseInt(rotationEmployees) || 0,
       replaceExisting: rotationReplaceExisting,
       sendNotification: rotationSendNotification,
       status: rotationStatus,
@@ -578,7 +583,7 @@ export function AttendanceSettingsForm() {
                           </td>
                           <td className="py-4 px-6 align-top">
                             <div className="flex flex-col items-end justify-start h-full gap-3">
-                              <label className="flex items-center gap-2 cursor-pointer group/radio">
+                              <label className="flex items-center gap-2 cursor-pointer w-fit group/radio">
                                 <input 
                                   type="radio" 
                                   name="defaultShift"
@@ -657,7 +662,7 @@ export function AttendanceSettingsForm() {
                       rotations.map((rotation, index) => (
                         <tr key={rotation.id} className="hover:bg-bone/30 transition-colors group">
                           <td className="py-4 px-6 text-ink font-medium">{rotation.name}</td>
-                          <td className="py-4 px-6 text-center text-muted">0</td>
+                          <td className="py-4 px-6 text-center text-muted">{rotation.numberOfEmployees || 0}</td>
                           <td className="py-4 px-6 text-center">
                             {rotation.replaceExisting ? <CheckCircle className="w-4 h-4 text-emerald-500 mx-auto" /> : <XCircle className="w-4 h-4 text-muted/50 mx-auto" />}
                           </td>
@@ -674,7 +679,7 @@ export function AttendanceSettingsForm() {
                           </td>
                           <td className="py-4 px-6 text-right">
                             {isAdmin && (
-                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-end gap-2">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditRotation(index)}
@@ -887,6 +892,18 @@ export function AttendanceSettingsForm() {
                   onChange={(e) => setRotationName(e.target.value)}
                   className="input w-full h-10 bg-white"
                   placeholder="e.g. Weekly Rotation"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium text-ink">No. of Employees</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={rotationEmployees}
+                  onChange={(e) => setRotationEmployees(e.target.value)}
+                  className="input w-full h-10 bg-white"
+                  placeholder="e.g. 5"
                 />
               </div>
 
