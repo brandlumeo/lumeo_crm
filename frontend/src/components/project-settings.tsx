@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  FolderGit2, Loader2, CheckCircle, XCircle, Shield, 
+import {
+  FolderGit2, Loader2, CheckCircle, XCircle, Shield, AlertTriangle,
   Hash, LayoutGrid, HelpCircle, Plus, Edit, Trash2, X, Circle, Tag
 } from "lucide-react";
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
@@ -47,6 +47,7 @@ export function ProjectSettingsForm() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, index: number | null, type: 'status' | 'category'}>({ isOpen: false, index: null, type: 'status' });
 
   useEffect(() => {
     if (company) {
@@ -95,11 +96,7 @@ export function ProjectSettingsForm() {
       alert("You cannot delete the default status. Please set another status as default first.");
       return;
     }
-    if (confirm("Are you sure you want to remove this project status?")) {
-      const newStatuses = [...statuses];
-      newStatuses.splice(index, 1);
-      mutation.mutate({ project_statuses: newStatuses });
-    }
+    setDeleteConfirmation({ isOpen: true, index, type: 'status' });
   };
 
   const handleSetDefaultStatus = (index: number) => {
@@ -150,11 +147,23 @@ export function ProjectSettingsForm() {
 
   const handleDeleteCategory = (index: number) => {
     if (!isAdmin) return;
-    if (confirm("Are you sure you want to remove this project category?")) {
+    setDeleteConfirmation({ isOpen: true, index, type: 'category' });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmation.index === null) return;
+    
+    if (deleteConfirmation.type === 'status') {
+      const newStatuses = [...statuses];
+      newStatuses.splice(deleteConfirmation.index, 1);
+      mutation.mutate({ project_statuses: newStatuses });
+    } else {
       const newCategories = [...categories];
-      newCategories.splice(index, 1);
+      newCategories.splice(deleteConfirmation.index, 1);
       mutation.mutate({ project_categories: newCategories });
     }
+    
+    setDeleteConfirmation({ isOpen: false, index: null, type: 'status' });
   };
 
   const handleSaveCategoryModal = () => {
@@ -589,6 +598,44 @@ export function ProjectSettingsForm() {
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+          <div 
+            className="absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity" 
+            onClick={() => setDeleteConfirmation({ isOpen: false, index: null, type: 'status' })} 
+          />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4 border border-rose-100">
+                <AlertTriangle className="w-7 h-7 text-rose-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-ink mb-2">Delete {deleteConfirmation.type === 'status' ? 'Status' : 'Category'}?</h3>
+              <p className="text-[14px] text-muted leading-relaxed">
+                Are you sure you want to remove this project {deleteConfirmation.type}? This action cannot be undone and may affect related projects.
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-bone/30 border-t border-line flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+              <button 
+                onClick={() => setDeleteConfirmation({ isOpen: false, index: null, type: 'status' })} 
+                className="w-full sm:w-auto flex-1 btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-10 px-4 rounded-xl font-medium text-[14px] transition-colors"
+                disabled={mutation.isPending}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete} 
+                disabled={mutation.isPending}
+                className="w-full sm:w-auto flex-1 btn bg-rose-500 hover:bg-rose-600 text-white shadow-sm h-10 px-4 rounded-xl font-medium flex items-center justify-center gap-2 text-[14px] transition-colors"
+              >
+                {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete
               </button>
             </div>
           </div>
