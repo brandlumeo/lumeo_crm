@@ -644,9 +644,13 @@ export default function OrdersPage() {
 
       {/* ── Create order modal ── */}
       {isModalOpen && (
-        <>
-          <div className="modal-backdrop" onClick={() => setIsModalOpen(false)} />
-          <div className="modal-content animate-rise p-0 max-w-2xl w-full">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          <form 
+            onSubmit={handleCreate} 
+            className="relative w-full max-w-2xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+            style={{ maxHeight: 'calc(100vh - 2rem)' }}
+          >
             {/* Modal header */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-bone shrink-0">
               <div>
@@ -654,6 +658,7 @@ export default function OrdersPage() {
                 <div className="text-xs text-muted mt-0.5">Order number will be auto-generated.</div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-md text-muted hover:text-ink hover:bg-bone-2 transition-colors"
               >
@@ -661,8 +666,7 @@ export default function OrdersPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="flex flex-col max-h-[80vh]">
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 min-h-0">
                 {/* Status + Notes */}
                 <div className="grid grid-cols-2 gap-4">
                   <label>
@@ -822,9 +826,8 @@ export default function OrdersPage() {
                   )}
                 </button>
               </div>
-            </form>
-          </div>
-        </>
+          </form>
+        </div>
       )}
     </PageShell>
   );
