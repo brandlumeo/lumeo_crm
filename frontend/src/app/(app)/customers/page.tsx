@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Phone, UserCircle2, Upload, X, Download } from "lucide-react";
+import { Phone, UserCircle2 } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
@@ -306,86 +306,7 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {showImportModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowImportModal(false)} />
-          <div className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
-            <div className="p-6 border-b border-line flex items-center justify-between shrink-0">
-              <h3 className="font-serif text-[18px] text-ink flex items-center gap-2">
-                <Upload className="w-5 h-5 text-accent" />
-                Import Customers
-              </h3>
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="p-1.5 hover:bg-bone-2 rounded-md border border-transparent hover:border-line text-muted hover:text-ink"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <form onSubmit={handleImport} className="flex flex-col flex-1 min-h-0">
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-                <div className="bg-bone-2 border border-line rounded-lg p-4 space-y-3">
-                  <p className="text-sm text-ink-2">
-                    Upload a CSV file to bulk import customers. Your CSV should have a header row and can contain the following columns:
-                  </p>
-                  <ul className="text-xs text-muted list-disc pl-4 space-y-1">
-                    <li><strong>Name</strong> (Required)</li>
-                    <li><strong>Email</strong> (Required)</li>
-                    <li><strong>Phone</strong> (Optional)</li>
-                    <li><strong>Company Name</strong> (Optional)</li>
-                  </ul>
-                  <a href="#" className="text-xs text-accent hover:underline flex items-center gap-1 inline-flex">
-                    <Download className="w-3 h-3" /> Download template CSV
-                  </a>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-ink">CSV File *</label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                      required
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label 
-                      htmlFor="file-upload"
-                      className="flex flex-col items-center justify-center w-full h-32 px-4 transition bg-bone border-2 border-line border-dashed rounded-lg appearance-none cursor-pointer hover:border-accent hover:bg-bone-2 focus:outline-none"
-                    >
-                      <span className="flex items-center space-x-2">
-                        <Upload className="w-6 h-6 text-muted" />
-                        <span className="font-medium text-ink-2">
-                          {importFile ? importFile.name : 'Click to drop a file or browse'}
-                        </span>
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 border-t border-line bg-bone flex items-center justify-end gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowImportModal(false)}
-                  className="btn btn-secondary text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={importMutation.isPending || !importFile}
-                  className="btn btn-primary text-sm"
-                >
-                  {importMutation.isPending ? 'Importing...' : 'Start Import'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {credentials && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
