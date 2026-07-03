@@ -444,7 +444,10 @@ export default function ProductsPage() {
       {isModalOpen && (
         <>
           <div className="modal-backdrop" onClick={() => setIsModalOpen(false)} />
-          <div className="fixed left-[50%] top-[50%] z-[60] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg max-h-[90vh] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise">
+          <form 
+            onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} 
+            className="fixed left-[50%] top-[50%] z-[60] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg max-h-[85vh] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+          >
             {/* Modal header */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-bone shrink-0">
               <div>
@@ -452,6 +455,7 @@ export default function ProductsPage() {
                 <div className="text-xs text-muted mt-0.5">Add a service, subscription, or physical product.</div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-md text-muted hover:text-ink hover:bg-bone-2 transition-colors"
               >
@@ -459,113 +463,110 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); createMut.mutate(form); }} className="flex flex-col min-h-0 overflow-hidden">
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+            <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+              {/* Product Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="label">Product Name *</label>
+                <input
+                  required
+                  className="input"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Consulting Hour"
+                  autoFocus
+                />
+              </div>
 
-                {/* Product Name */}
+              {/* Description */}
+              <div className="flex flex-col gap-1.5">
+                <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
+                <textarea
+                  rows={2}
+                  className="input resize-none"
+                  value={form.description || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Details shown on quotes and invoices..."
+                />
+              </div>
+
+              {/* Price + Tax Rate - side by side */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="label">Product Name *</label>
-                  <input
-                    required
-                    className="input"
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Consulting Hour"
-                    autoFocus
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
-                  <textarea
-                    rows={2}
-                    className="input resize-none"
-                    value={form.description || ""}
-                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    placeholder="Details shown on quotes and invoices..."
-                  />
-                </div>
-
-                {/* Price + Tax Rate - side by side */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Price *</label>
-                    <div className="relative">
-                      <IndianRupee className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        required
-                        className="input pl-9"
-                        value={form.price}
-                        onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                        placeholder="5000"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="label">Tax Rate (%) *</label>
+                  <label className="label">Price *</label>
+                  <div className="relative">
+                    <IndianRupee className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      max="100"
                       required
-                      className="input"
-                      value={form.tax_rate}
-                      onChange={(e) => setForm((f) => ({ ...f, tax_rate: e.target.value }))}
-                      placeholder="18"
+                      className="input pl-9"
+                      value={form.price}
+                      onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                      placeholder="5000"
                     />
                   </div>
                 </div>
-
-                {/* SKU */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="label">SKU <span className="text-muted font-normal">(optional)</span></label>
+                  <label className="label">Tax Rate (%) *</label>
                   <input
-                    className="input font-mono uppercase text-[12px]"
-                    value={form.sku}
-                    onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-                    placeholder="SVC-001"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    required
+                    className="input"
+                    value={form.tax_rate}
+                    onChange={(e) => setForm((f) => ({ ...f, tax_rate: e.target.value }))}
+                    placeholder="18"
                   />
                 </div>
-
               </div>
 
-              {/* Modal footer */}
-              <div className="px-6 py-4 border-t border-line bg-bone flex items-center justify-between shrink-0">
-                <div>
-                  {createMut.isError && (
-                    <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
-                      Could not create product. Please try again.
-                    </span>
+              {/* SKU */}
+              <div className="flex flex-col gap-1.5">
+                <label className="label">SKU <span className="text-muted font-normal">(optional)</span></label>
+                <input
+                  className="input font-mono uppercase text-[12px]"
+                  value={form.sku}
+                  onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                  placeholder="SVC-001"
+                />
+              </div>
+
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-4 border-t border-line bg-bone flex items-center justify-between shrink-0">
+              <div>
+                {createMut.isError && (
+                  <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
+                    Could not create product. Please try again.
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="btn btn-secondary text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMut.isPending}
+                  className="btn btn-primary text-sm gap-2"
+                >
+                  {createMut.isPending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                  ) : (
+                    <><Package className="w-4 h-4" /> Add to Catalog</>
                   )}
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="btn btn-secondary text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createMut.isPending}
-                    className="btn btn-primary text-sm gap-2"
-                  >
-                    {createMut.isPending ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
-                    ) : (
-                      <><Package className="w-4 h-4" /> Add to Catalog</>
-                    )}
-                  </button>
-                </div>
+                </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </>
       )}
     </PageShell>
