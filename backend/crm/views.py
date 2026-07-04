@@ -294,8 +294,48 @@ class CustomerViewSet(CompanyScopedModelViewSet):
         
         User = get_user_model()
         
-        if User.objects.filter(email=customer.email).exists():
-            return Response({"error": "A user with this email already exists in the system."}, status=400)
+        existing_user = User.objects.filter(email=customer.email).first()
+        if existing_user:
+            if existing_user.company != customer.company:
+                return Response({"error": "This email is already registered in another workspace. Please use a different email."}, status=400)
+            
+            customer.user = existing_user
+            customer.save(update_fields=["user"])
+            
+            # Send an email notifying them of the new access
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                
+                portal_url = "https://lumeo.estgrp.in/login"
+                message = (
+                    f"Hello {customer.name},\n\n"
+                    f"Your existing portal account has been linked to a new customer profile at {customer.company.name}.\n\n"
+                    f"You can log in at: {portal_url}\n"
+                    f"Email: {existing_user.email}\n"
+                    f"Password: (Your existing password)\n\n"
+                    f"Best regards,\n"
+                    f"{customer.company.name}"
+                )
+                
+                send_mail(
+                    subject=f"Portal Access Updated - {customer.company.name}",
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[customer.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Failed to send portal update email: {e}")
+
+            return Response({
+                "status": "success",
+                "message": "Existing user account linked.",
+                "credentials": {
+                    "email": existing_user.email,
+                    "password": "(Your existing password)"
+                }
+            })
             
         try:
             password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
