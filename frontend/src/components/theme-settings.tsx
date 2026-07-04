@@ -47,6 +47,30 @@ export function ThemeSettingsForm() {
       }
       const fontMap: Record<string, string> = { small: "13px", medium: "14px", large: "16px" };
       document.documentElement.style.fontSize = fontMap[fontSize] ?? "14px";
+      
+      const colors: Record<string, string> = {
+        orange: "255 91 31",
+        blue: "42 78 140",
+        violet: "124 58 237",
+        emerald: "5 150 105",
+        rose: "225 29 72",
+        amber: "217 119 6"
+      };
+      
+      const softColors: Record<string, string> = {
+        orange: "255 230 217",
+        blue: "216 226 242",
+        violet: "237 224 255",
+        emerald: "209 250 229",
+        rose: "255 228 230",
+        amber: "254 243 199"
+      };
+
+      if (colors[colorScheme]) {
+        document.documentElement.style.setProperty("--color-accent", colors[colorScheme]);
+        document.documentElement.style.setProperty("--color-accent-soft", softColors[colorScheme]);
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3500);
     }
