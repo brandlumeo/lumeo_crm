@@ -138,6 +138,7 @@ INSTALLED_APPS = [
     'companies',
     'accounts',
     'crm',
+    'anymail',
     'subscriptions',
     'notifications',
     'attendance',
@@ -320,10 +321,13 @@ AUTHENTICATION_BACKENDS = [
     'accounts.backends.EmailOrUsernameModelBackend',
 ]
 
+ANYMAIL = {
+    "RESEND_API_KEY": env('EMAIL_HOST_PASSWORD', ''),
+}
 
 EMAIL_BACKEND = env(
     'EMAIL_BACKEND',
-    'django.core.mail.backends.smtp.EmailBackend' if not DEBUG else 'django.core.mail.backends.console.EmailBackend',
+    'anymail.backends.resend.EmailBackend' if not DEBUG else 'django.core.mail.backends.console.EmailBackend',
 )
 EMAIL_HOST = env('EMAIL_HOST', 'localhost')
 EMAIL_PORT = env_int('EMAIL_PORT', 25)
