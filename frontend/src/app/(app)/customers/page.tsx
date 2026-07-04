@@ -135,7 +135,7 @@ export default function CustomersPage() {
                   setPage(1);
                 }}
                 className="input sm:w-[220px]"
-                placeholder="Exact email filter"
+                placeholder="Filter by email"
               />
             </div>
           </div>

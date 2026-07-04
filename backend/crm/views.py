@@ -277,7 +277,7 @@ class CustomerViewSet(CompanyScopedModelViewSet):
     def apply_business_filters(self, queryset):
         email = self.request.query_params.get("email")
         if email:
-            queryset = queryset.filter(email__iexact=email)
+            queryset = queryset.filter(email__icontains=email)
 
         return queryset
 
