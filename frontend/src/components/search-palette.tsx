@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Loader2, Users, Layers, CheckSquare, UserCircle2, LayoutDashboard, CreditCard, Settings, Navigation, FileText, Receipt } from "lucide-react";
+import { Search, X, Loader2, Users, Layers, CheckSquare, UserCircle2, LayoutDashboard, CreditCard, Settings, Navigation, FileText, Receipt, Package, Ticket as TicketIcon, ShoppingCart, CalendarDays } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 
@@ -71,7 +71,11 @@ export function SearchPalette({ open, setOpen }: { open: boolean; setOpen: (v: b
         data.deals.length > 0 ||
         data.tasks.length > 0 ||
         data.quotes.length > 0 ||
-        data.invoices.length > 0));
+        data.invoices.length > 0 ||
+        data.products.length > 0 ||
+        data.tickets.length > 0 ||
+        data.orders.length > 0 ||
+        data.events.length > 0));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4 sm:px-0">
@@ -286,6 +290,109 @@ export function SearchPalette({ open, setOpen }: { open: boolean; setOpen: (v: b
                         </div>
                       </div>
                       <span className="text-[11px] capitalize text-muted">{item.status}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {data?.products && data.products.length > 0 && (
+                <div>
+                  <div className="px-3 pb-2 pt-2 text-[10px] uppercase tracking-wider text-muted font-medium flex items-center gap-2">
+                    <Package className="w-3.5 h-3.5" /> Products
+                  </div>
+                  {data.products.map((item: any) => (
+                    <button
+                      key={`product-${item.id}`}
+                      onClick={() => navigateTo(`/products`)}
+                      className="w-full text-left px-3 py-2 text-[13px] hover:bg-bone-2 rounded-md transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <div className="font-medium text-ink group-hover:text-accent transition-colors">
+                          {item.name}
+                        </div>
+                        <div className="text-muted text-[11px] mt-0.5">
+                          SKU: {item.sku || "N/A"} • {formatINR(toNumber(item.price))}
+                        </div>
+                      </div>
+                      {item.is_active ? (
+                        <span className="text-[11px] capitalize text-emerald-600">Active</span>
+                      ) : (
+                        <span className="text-[11px] capitalize text-muted">Inactive</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {data?.tickets && data.tickets.length > 0 && (
+                <div>
+                  <div className="px-3 pb-2 pt-2 text-[10px] uppercase tracking-wider text-muted font-medium flex items-center gap-2">
+                    <TicketIcon className="w-3.5 h-3.5" /> Tickets
+                  </div>
+                  {data.tickets.map((item: any) => (
+                    <button
+                      key={`ticket-${item.id}`}
+                      onClick={() => navigateTo(`/tickets`)}
+                      className="w-full text-left px-3 py-2 text-[13px] hover:bg-bone-2 rounded-md transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <div className="font-medium text-ink group-hover:text-accent transition-colors">
+                          {item.subject}
+                        </div>
+                        <div className="text-muted text-[11px] mt-0.5">
+                          Priority: {item.priority}
+                        </div>
+                      </div>
+                      <span className="text-[11px] capitalize text-muted">{item.status}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {data?.orders && data.orders.length > 0 && (
+                <div>
+                  <div className="px-3 pb-2 pt-2 text-[10px] uppercase tracking-wider text-muted font-medium flex items-center gap-2">
+                    <ShoppingCart className="w-3.5 h-3.5" /> Orders
+                  </div>
+                  {data.orders.map((item: any) => (
+                    <button
+                      key={`order-${item.id}`}
+                      onClick={() => navigateTo(`/orders`)}
+                      className="w-full text-left px-3 py-2 text-[13px] hover:bg-bone-2 rounded-md transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <div className="font-medium text-ink group-hover:text-accent transition-colors">
+                          Order {item.order_number}
+                        </div>
+                        <div className="text-muted text-[11px] mt-0.5">
+                          {formatINR(toNumber(item.total))}
+                        </div>
+                      </div>
+                      <span className="text-[11px] capitalize text-muted">{item.status}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {data?.events && data.events.length > 0 && (
+                <div>
+                  <div className="px-3 pb-2 pt-2 text-[10px] uppercase tracking-wider text-muted font-medium flex items-center gap-2">
+                    <CalendarDays className="w-3.5 h-3.5" /> Events
+                  </div>
+                  {data.events.map((item: any) => (
+                    <button
+                      key={`event-${item.id}`}
+                      onClick={() => navigateTo(`/events`)}
+                      className="w-full text-left px-3 py-2 text-[13px] hover:bg-bone-2 rounded-md transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <div className="font-medium text-ink group-hover:text-accent transition-colors">
+                          {item.title}
+                        </div>
+                        <div className="text-muted text-[11px] mt-0.5">
+                          {new Date(item.start_time).toLocaleString()}
+                        </div>
+                      </div>
+                      {item.is_virtual && <span className="text-[11px] text-indigo-500">Virtual</span>}
                     </button>
                   ))}
                 </div>

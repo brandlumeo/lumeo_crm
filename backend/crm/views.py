@@ -465,6 +465,26 @@ class GlobalSearchView(APIView):
             Q(invoice_number__icontains=query)
         )[:5]
 
+        # Search Products
+        products = Product.objects.filter(company=company).filter(
+            Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
+        )[:5]
+
+        # Search Tickets
+        tickets = Ticket.objects.filter(company=company).filter(
+            Q(subject__icontains=query) | Q(description__icontains=query)
+        )[:5]
+
+        # Search Orders
+        orders = Order.objects.filter(company=company).filter(
+            Q(order_number__icontains=query) | Q(notes__icontains=query)
+        )[:5]
+
+        # Search Events
+        events = Event.objects.filter(company=company).filter(
+            Q(title__icontains=query) | Q(description__icontains=query)
+        )[:5]
+
         context = {"request": request}
 
         return Response({
@@ -474,6 +494,10 @@ class GlobalSearchView(APIView):
             "tasks": TaskSerializer(tasks, many=True, context=context).data,
             "quotes": QuoteSerializer(quotes, many=True, context=context).data,
             "invoices": InvoiceSerializer(invoices, many=True, context=context).data,
+            "products": ProductSerializer(products, many=True, context=context).data,
+            "tickets": TicketSerializer(tickets, many=True, context=context).data,
+            "orders": OrderSerializer(orders, many=True, context=context).data,
+            "events": EventSerializer(events, many=True, context=context).data,
         })
 
 

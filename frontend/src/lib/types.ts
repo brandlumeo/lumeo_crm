@@ -378,6 +378,10 @@ export interface SearchData {
   tasks: Task[];
   quotes: Quote[];
   invoices: Invoice[];
+  products: Product[];
+  tickets: Ticket[];
+  orders: any[]; // Order is missing, or maybe exported
+  events: any[]; // Event is missing or exported
 }
 
 export interface Activity {
