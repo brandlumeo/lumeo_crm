@@ -297,29 +297,62 @@ class CustomerViewSet(CompanyScopedModelViewSet):
         if User.objects.filter(email=customer.email).exists():
             return Response({"error": "A user with this email already exists in the system."}, status=400)
             
-        password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-        
-        user = User.objects.create_user(
-            username=customer.email,
-            email=customer.email,
-            password=password,
-            first_name=customer.name.split(" ")[0],
-            last_name=" ".join(customer.name.split(" ")[1:]),
-            company=customer.company,
-            role=User.Role.CUSTOMER,
-        )
-        
-        customer.user = user
-        customer.save(update_fields=["user"])
-        
-        return Response({
-            "status": "success",
-            "message": "Portal account created.",
-            "credentials": {
-                "email": user.email,
-                "password": password
-            }
-        })
+        try:
+            password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+            
+            user = User.objects.create_user(
+                username=customer.email,
+                email=customer.email,
+                password=password,
+                first_name=customer.name.split(" ")[0],
+                last_name=" ".join(customer.name.split(" ")[1:]),
+                company=customer.company,
+                role=User.Role.CUSTOMER,
+            )
+            
+            customer.user = user
+            customer.save(update_fields=["user"])
+
+            # Send email to the customer with their credentials
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                
+                portal_url = "https://lumeo.estgrp.in/login"
+                message = (
+                    f"Hello {customer.name},\n\n"
+                    f"A client portal account has been created for you at {customer.company.name}.\n\n"
+                    f"You can log in at: {portal_url}\n"
+                    f"Email: {user.email}\n"
+                    f"Password: {password}\n\n"
+                    f"Please change your password after your first login.\n\n"
+                    f"Best regards,\n"
+                    f"{customer.company.name}"
+                )
+                
+                send_mail(
+                    subject=f"Your Client Portal Access - {customer.company.name}",
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[customer.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                # We don't want to fail the whole process if email sending fails
+                print(f"Failed to send portal invite email: {e}")
+
+            return Response({
+                "status": "success",
+                "message": "Portal account created.",
+                "credentials": {
+                    "email": user.email,
+                    "password": password
+                }
+            })
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Failed to create user: {str(e)}"}, status=400)
 
     @action(detail=True, methods=["post"], url_path="reset-portal-password")
     def reset_portal_password(self, request, pk=None):
@@ -334,6 +367,32 @@ class CustomerViewSet(CompanyScopedModelViewSet):
         password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
         customer.user.set_password(password)
         customer.user.save(update_fields=["password"])
+        
+        try:
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            portal_url = "https://lumeo.estgrp.in/login"
+            message = (
+                f"Hello {customer.name},\n\n"
+                f"Your client portal password at {customer.company.name} has been reset.\n\n"
+                f"You can log in at: {portal_url}\n"
+                f"Email: {customer.user.email}\n"
+                f"New Password: {password}\n\n"
+                f"Please change your password after logging in.\n\n"
+                f"Best regards,\n"
+                f"{customer.company.name}"
+            )
+            
+            send_mail(
+                subject=f"Portal Password Reset - {customer.company.name}",
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[customer.user.email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Failed to send portal reset email: {e}")
         
         return Response({
             "status": "success",
