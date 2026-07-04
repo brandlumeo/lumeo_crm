@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage } from "@/lib/queries";
+import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany } from "@/lib/queries";
 import { downloadInvoicePdf } from "@/lib/api";
 import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InvoicesPage() {
+  const { data: company } = useCurrentCompany();
   const { data, isLoading } = useInvoices();
   const { data: customerData } = useCustomerPage({});
   const { data: dealData } = useDealPage({});
@@ -137,7 +139,7 @@ export default function InvoicesPage() {
                       </select>
                     </td>
                     <td className="px-6 py-4 font-medium text-ink">
-                      ${parseFloat(invoice.total).toFixed(2)}
+                      {formatCurrency(parseFloat(invoice.total), company?.currency)}
                     </td>
                     <td className="px-6 py-4 text-muted">
                       {invoice.issue_date}
@@ -322,7 +324,7 @@ export default function InvoicesPage() {
             </form>
             <div className="p-5 border-t border-line bg-bone flex justify-between items-center mt-auto">
               <div className="text-sm font-medium text-ink">
-                Total: ${newInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0).toFixed(2)}
+                Total: {formatCurrency(newInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), company?.currency)}
               </div>
               <div className="flex gap-3">
                 <button

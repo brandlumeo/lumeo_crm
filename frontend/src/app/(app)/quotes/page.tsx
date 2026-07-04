@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, useCustomerPage, useDealPage } from "@/lib/queries";
+import { useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, useCustomerPage, useDealPage, useCurrentCompany } from "@/lib/queries";
 import { downloadQuotePdf } from "@/lib/api";
 import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
+import { formatCurrency } from "@/lib/utils";
 
 export default function QuotesPage() {
+  const { data: company } = useCurrentCompany();
   const { data, isLoading } = useQuotes();
   const { data: customerData } = useCustomerPage({});
   const { data: dealData } = useDealPage({});
@@ -140,7 +142,7 @@ export default function QuotesPage() {
                       </select>
                     </td>
                     <td className="px-6 py-3 font-medium text-ink">
-                      ${parseFloat(quote.total).toFixed(2)}
+                      {formatCurrency(parseFloat(quote.total), company?.currency)}
                     </td>
                     <td className="px-6 py-3 text-muted">
                       {new Date(quote.created_at).toLocaleDateString()}
@@ -347,7 +349,7 @@ export default function QuotesPage() {
             </form>
             <div className="p-5 border-t border-line bg-bone flex justify-between items-center mt-auto">
               <div className="text-sm font-medium text-ink">
-                Total: ${newQuote.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0).toFixed(2)}
+                Total: {formatCurrency(newQuote.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), company?.currency)}
               </div>
               <div className="flex gap-3">
                 <button
