@@ -66,16 +66,16 @@ export function SearchPalette({ open, setOpen }: { open: boolean; setOpen: (v: b
   const hasResults =
     matchingLinks.length > 0 ||
     (data &&
-      (data.leads.length > 0 ||
-        data.customers.length > 0 ||
-        data.deals.length > 0 ||
-        data.tasks.length > 0 ||
-        data.quotes.length > 0 ||
-        data.invoices.length > 0 ||
-        data.products.length > 0 ||
-        data.tickets.length > 0 ||
-        data.orders.length > 0 ||
-        data.events.length > 0));
+      ((data.leads?.length ?? 0) > 0 ||
+        (data.customers?.length ?? 0) > 0 ||
+        (data.deals?.length ?? 0) > 0 ||
+        (data.tasks?.length ?? 0) > 0 ||
+        (data.quotes?.length ?? 0) > 0 ||
+        (data.invoices?.length ?? 0) > 0 ||
+        (data.products?.length ?? 0) > 0 ||
+        (data.tickets?.length ?? 0) > 0 ||
+        (data.orders?.length ?? 0) > 0 ||
+        (data.events?.length ?? 0) > 0));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4 sm:px-0">
