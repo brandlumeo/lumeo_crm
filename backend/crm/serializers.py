@@ -608,6 +608,23 @@ class CustomFieldDefinitionSerializer(CompanyScopedSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+        validators = []
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        
+        company = attrs.get('company')
+        model_name = attrs.get('model_name')
+        name = attrs.get('name')
+        
+        qs = CustomFieldDefinition.objects.filter(company=company, model_name=model_name, name=name)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+            
+        if qs.exists():
+            raise serializers.ValidationError({"custom_data": "Failed to create custom field. Make sure the name is unique."})
+            
+        return attrs
 
 
 class WorkflowRuleSerializer(CompanyScopedSerializer):
