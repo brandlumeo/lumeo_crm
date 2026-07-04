@@ -323,7 +323,7 @@ class CustomerViewSet(CompanyScopedModelViewSet):
                     message=message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[customer.email],
-                    fail_silently=True,
+                    fail_silently=False,
                 )
             except Exception as e:
                 print(f"Failed to send portal update email: {e}")
@@ -375,7 +375,7 @@ class CustomerViewSet(CompanyScopedModelViewSet):
                     message=message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[customer.email],
-                    fail_silently=True,
+                    fail_silently=False,
                 )
             except Exception as e:
                 # We don't want to fail the whole process if email sending fails
@@ -429,7 +429,7 @@ class CustomerViewSet(CompanyScopedModelViewSet):
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[customer.user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
         except Exception as e:
             print(f"Failed to send portal reset email: {e}")

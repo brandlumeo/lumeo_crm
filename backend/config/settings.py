@@ -323,7 +323,7 @@ AUTHENTICATION_BACKENDS = [
 
 EMAIL_BACKEND = env(
     'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend',
+    'django.core.mail.backends.smtp.EmailBackend' if not DEBUG else 'django.core.mail.backends.console.EmailBackend',
 )
 EMAIL_HOST = env('EMAIL_HOST', 'localhost')
 EMAIL_PORT = env_int('EMAIL_PORT', 25)
