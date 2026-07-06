@@ -348,7 +348,7 @@ export interface Notification {
 }
 
 export interface UnreadCount {
-  unread_count: number;
+  count: number;
 }
 
 export interface TeamInvitation {
