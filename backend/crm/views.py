@@ -1173,7 +1173,9 @@ class EmailAccountViewSet(CompanyScopedModelViewSet):
             return Response({"error": "Invalid provider"}, status=400)
             
         import uuid
-        email_address = request.data.get("email_address", f"{request.user.username}@{provider}.com")
+        username = request.user.username
+        default_email = username if "@" in username else f"{username}@{provider}.com"
+        email_address = request.data.get("email_address", default_email)
         
         account, created = EmailAccount.objects.update_or_create(
             user=request.user,
