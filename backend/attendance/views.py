@@ -90,7 +90,13 @@ class PunchInView(APIView):
         longitude = request.data.get("longitude")
         notes = request.data.get("notes", "")
 
-        # 3. Create log
+        # 3. Determine Shift Status (Assume 09:30 AM is standard shift start)
+        local_time = timezone.localtime(timezone.now())
+        shift_status = TimeLog.ShiftStatus.ON_TIME
+        if local_time.hour > 9 or (local_time.hour == 9 and local_time.minute > 45):
+            shift_status = TimeLog.ShiftStatus.LATE
+
+        # 4. Create log
         time_log = TimeLog.objects.create(
             user=request.user,
             company=request.user.company,
@@ -100,6 +106,7 @@ class PunchInView(APIView):
             latitude=latitude if latitude else None,
             longitude=longitude if longitude else None,
             notes=notes,
+            shift_status=shift_status,
         )
 
         serializer = TimeLogSerializer(time_log)
@@ -613,3 +620,11 @@ class HolidayDetailView(APIView):
             
         holiday.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class TimeLogAdminViewSet(ModelViewSet):
+    from rest_framework.viewsets import ModelViewSet
+    from accounts.permissions import CompanyRBACPermission
+    permission_classes = [CompanyRBACPermission]
+    serializer_class = TimeLogSerializer
+    def get_queryset(self):
+        return TimeLog.objects.filter(company=self.request.user.company).order_by('-clock_in')

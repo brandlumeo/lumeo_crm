@@ -37,8 +37,13 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.check_task_deadlines",
         "schedule": crontab(hour=7, minute=0),
     },
+    # Auto-close open shifts at midnight (23:59)
+    "auto-close-shifts": {
+        "task": "notifications.tasks.auto_close_shifts",
+        "schedule": crontab(hour=23, minute=59),
+    },
     # Process delayed workflow sequence steps every minute
-    "process-due-workflow-steps": {
+    "process-workflow-sequences": {
         "task": "crm.tasks.process_due_workflow_steps_task",
         "schedule": crontab(),
     },

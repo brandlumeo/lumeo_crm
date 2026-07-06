@@ -194,3 +194,47 @@ def check_task_deadlines(self):
         logger.exception('check_task_deadlines failed: %s', exc)
         raise self.retry(exc=exc)
 
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def auto_close_shifts(self):
+    """
+    Runs at midnight to close any open shifts from the previous day.
+    """
+    try:
+        from attendance.models import TimeLog, BreakLog
+        from notifications.models import Notification
+        from django.utils import timezone
+        import datetime
+
+        now = timezone.now()
+        
+        # Find logs where clock_out is null and clock_in was before today's date
+        # (Assuming midnight run, so anything from yesterday is auto-closed)
+        open_logs = TimeLog.objects.filter(clock_out__isnull=True)
+        count = 0
+
+        for log in open_logs:
+            # End active breaks
+            active_break = BreakLog.objects.filter(time_log=log, end_time__isnull=True).first()
+            if active_break:
+                active_break.end_time = now
+                active_break.save()
+            
+            # Close shift
+            log.clock_out = now
+            log.is_auto_closed = True
+            log.save()
+            
+            Notification.objects.create(
+                user=log.user,
+                notification_type=Notification.Type.GENERAL,
+                title="Shift Auto-Closed",
+                body=f"You forgot to clock out on {log.clock_in.strftime('%Y-%m-%d')}. Your shift has been auto-closed. Please request a time correction.",
+            )
+            count += 1
+
+        logger.info('auto_close_shifts: closed %d shifts', count)
+        return {'closed': count}
+    except Exception as exc:
+        logger.exception('auto_close_shifts failed: %s', exc)
+        raise self.retry(exc=exc)

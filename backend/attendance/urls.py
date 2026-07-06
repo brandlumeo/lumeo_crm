@@ -21,3 +21,8 @@ urlpatterns = [
     path("holidays/", views.HolidayListCreateView.as_view(), name="holiday_list_create"),
     path("holidays/<uuid:pk>/", views.HolidayDetailView.as_view(), name="holiday_detail"),
 ]
+
+from rest_framework.routers import DefaultRouter
+router = DefaultRouter()
+router.register(r"admin/timelogs", views.TimeLogAdminViewSet, basename="admin_timelogs")
+urlpatterns += router.urls

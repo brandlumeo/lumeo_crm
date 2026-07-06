@@ -37,7 +37,19 @@ class TimeLog(models.Model):
     longitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True
     )
+    class ShiftStatus(models.TextChoices):
+        ON_TIME = "on_time", "On Time"
+        LATE = "late", "Late"
+        OVERTIME = "overtime", "Overtime"
+
     notes = models.TextField(blank=True, null=True)
+    is_auto_closed = models.BooleanField(default=False, help_text="True if closed by midnight sweep")
+    shift_status = models.CharField(
+        max_length=20,
+        choices=ShiftStatus.choices,
+        default=ShiftStatus.ON_TIME,
+        db_index=True,
+    )
 
     class Meta:
         ordering = ("-clock_in",)
