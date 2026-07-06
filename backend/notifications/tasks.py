@@ -148,3 +148,49 @@ def send_notification_email(self, to_email: str, title: str, body: str):
                 raise self.retry(exc=exc)
         except Exception:
             pass
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def check_task_deadlines(self):
+    try:
+        from crm.models import Task
+        from notifications.models import Notification
+        from django.utils import timezone
+
+        today = timezone.now().date()
+        tasks = Task.objects.filter(
+            status__in=['todo', 'in_progress'],
+            due_date__lte=today,
+            assigned_to__isnull=False,
+            assigned_to__is_active=True,
+        ).select_related('assigned_to', 'company')
+
+        count = 0
+        for task in tasks:
+            user = task.assigned_to
+            if not getattr(user, 'notify_task_deadline', True):
+                continue
+
+            is_overdue = task.due_date < today
+            time_str = 'OVERDUE' if is_overdue else 'due today'
+            title = f'Task {time_str}: {task.title}'
+            body = f'Your task {task.title} is {time_str} ({task.due_date}). Please complete it or update the deadline.'
+
+            Notification.objects.create(
+                user=user,
+                notification_type=Notification.Type.TASK_DUE,
+                title=title,
+                body=body,
+            )
+
+            send_notification_email.delay(
+                to_email=user.email,
+                title=title,
+                body=body,
+            )
+            count += 1
+
+        logger.info('check_task_deadlines: notified %d tasks', count)
+        return {'notified': count}
+    except Exception as exc:
+        logger.exception('check_task_deadlines failed: %s', exc)
+        raise self.retry(exc=exc)
+

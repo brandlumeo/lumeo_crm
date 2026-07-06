@@ -32,6 +32,11 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.send_daily_digest",
         "schedule": crontab(hour=9, minute=0, day_of_week="1-5"),
     },
+    # Check for tasks due today or overdue daily at 07:00 UTC
+    "check-task-deadlines": {
+        "task": "notifications.tasks.check_task_deadlines",
+        "schedule": crontab(hour=7, minute=0),
+    },
     # Process delayed workflow sequence steps every minute
     "process-due-workflow-steps": {
         "task": "crm.tasks.process_due_workflow_steps_task",
