@@ -74,6 +74,7 @@ load_env_file(ENV_FILE)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY', 'unsafe-dev-secret-key-change-me')
+CRON_SECRET_KEY = env('CRON_SECRET_KEY', 'default_insecure_cron_key')
 
 # H1 fix: Default DEBUG to False — must explicitly set DEBUG=True in dev .env
 # SECURITY WARNING: don't run with debug turned on in production!

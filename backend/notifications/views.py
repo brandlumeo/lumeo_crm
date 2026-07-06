@@ -1,5 +1,5 @@
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -72,3 +72,21 @@ class NotificationMarkReadView(APIView):
 
         updated = qs.update(is_read=True)
         return Response({"marked_read": updated}, status=status.HTTP_200_OK)
+
+class TriggerCronTasksView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        token = request.query_params.get('token')
+        from django.conf import settings
+        if not token or token != getattr(settings, 'CRON_SECRET_KEY', ''):
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        from notifications.tasks import send_daily_digest, check_task_deadlines
+        from subscriptions.tasks import check_expiring_subscriptions
+
+        send_daily_digest.delay()
+        check_task_deadlines.delay()
+        check_expiring_subscriptions.delay()
+
+        return Response({'status': 'Background tasks triggered successfully'})
