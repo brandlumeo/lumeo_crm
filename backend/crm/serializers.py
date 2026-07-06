@@ -158,22 +158,6 @@ class LeadSerializer(CompanyScopedSerializer):
             )
         return attrs
 
-    def create(self, validated_data):
-        instance = super().create(validated_data)
-        if instance.assigned_to:
-            from notifications.tasks import notify_lead_assigned
-            notify_lead_assigned.delay(instance.id, instance.assigned_to.id)
-        return instance
-
-    def update(self, instance, validated_data):
-        old_assigned = instance.assigned_to
-        updated_instance = super().update(instance, validated_data)
-        new_assigned = updated_instance.assigned_to
-        if new_assigned and new_assigned != old_assigned:
-            from notifications.tasks import notify_lead_assigned
-            notify_lead_assigned.delay(updated_instance.id, new_assigned.id)
-        return updated_instance
-
 
 class CustomerSerializer(CompanyScopedSerializer):
     has_portal_access = serializers.SerializerMethodField()
@@ -247,15 +231,6 @@ class DealSerializer(CompanyScopedSerializer):
                 {"assigned_to_id": "Assigned user must belong to the same company."}
             )
         return attrs
-
-    def update(self, instance, validated_data):
-        old_stage = instance.stage
-        updated_instance = super().update(instance, validated_data)
-        new_stage = updated_instance.stage
-        if new_stage == Deal.Stage.WON and old_stage != Deal.Stage.WON:
-            from notifications.tasks import notify_deal_won
-            notify_deal_won.delay(updated_instance.id)
-        return updated_instance
 
 
 class TaskSerializer(CompanyScopedSerializer):
@@ -556,7 +531,7 @@ class InvoiceLineItemSerializer(serializers.ModelSerializer):
 
 
 class InvoiceSerializer(CompanyScopedSerializer):
-    line_items = InvoiceLineItemSerializer(many=True, required=False)
+    items = InvoiceLineItemSerializer(many=True, required=False)
 
     class Meta:
         model = Invoice
@@ -564,52 +539,56 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "id",
             "company",
             "company_id",
-            "customer",
-            "customer_id",
             "deal",
             "deal_id",
+            "customer",
+            "customer_id",
             "invoice_number",
             "status",
             "issue_date",
             "due_date",
             "subtotal",
-            "tax_total",
-            "discount_total",
+            "tax_amount",
             "total",
-            "notes",
-            "terms",
-            "line_items",
+            "items",
+            "public_token",
+            "signature_data",
+            "signed_at",
+            "signed_by_name",
+            "signed_by_ip",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "invoice_number", "issue_date", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token")
 
     def create(self, validated_data):
-        line_items_data = validated_data.pop("line_items", [])
+        items_data = validated_data.pop("items", [])
+        
+        # Auto generate invoice number
+        import uuid
+        user = self.context.get("request").user
+        prefix = getattr(user.company, "invoice_prefix", "INV-") if user and hasattr(user, "company") else "INV-"
+        validated_data["invoice_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
+        
         invoice = super().create(validated_data)
-        for item_data in line_items_data:
+        
+        for item_data in items_data:
             InvoiceLineItem.objects.create(invoice=invoice, **item_data)
             
-        if invoice.status == Invoice.Status.SENT:
-            from notifications.tasks import send_invoice_email
-            send_invoice_email.delay(invoice.id)
-            
+        invoice.calculate_totals()
         return invoice
 
     def update(self, instance, validated_data):
-        line_items_data = validated_data.pop("line_items", None)
-        old_status = instance.status
+        items_data = validated_data.pop("items", None)
         invoice = super().update(instance, validated_data)
-
-        if line_items_data is not None:
-            invoice.line_items.all().delete()
-            for item_data in line_items_data:
-                InvoiceLineItem.objects.create(invoice=invoice, **item_data)
-
-        if invoice.status == Invoice.Status.SENT and old_status != Invoice.Status.SENT:
-            from notifications.tasks import send_invoice_email
-            send_invoice_email.delay(invoice.id)
-
+        
+        if items_data is not None:
+            # Simple replace strategy for line items
+            instance.items.all().delete()
+            for item_data in items_data:
+                InvoiceLineItem.objects.create(invoice=instance, **item_data)
+                
+        invoice.calculate_totals()
         return invoice
 
 
@@ -996,26 +975,11 @@ class CalendarAccountSerializer(CompanyScopedSerializer):
         read_only_fields = ("id", "user", "created_at")
 
 class TicketCommentSerializer(serializers.ModelSerializer):
-    user = UserSummarySerializer(read_only=True)
-
+    author = UserSummarySerializer(read_only=True)
     class Meta:
         model = TicketComment
-        fields = ("id", "ticket", "user", "comment", "is_internal", "created_at")
-        read_only_fields = ("id", "user", "created_at")
-
-    def create(self, validated_data):
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            validated_data["user"] = request.user
-        
-        comment = super().create(validated_data)
-        
-        if not comment.is_internal:
-            from notifications.tasks import notify_ticket_reply
-            notify_ticket_reply.delay(comment.id)
-            
-        return comment
-
+        fields = "__all__"
+        read_only_fields = ("author", "created_at")
 
 class TicketSerializer(CompanyScopedSerializer):
     assigned_to = UserSummarySerializer(read_only=True)

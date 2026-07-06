@@ -317,19 +317,19 @@ def notify_ticket_reply(self, comment_id: int):
         from django.core.mail import EmailMultiAlternatives
         from django.conf import settings
 
-        comment = TicketComment.objects.select_related("ticket", "user").get(pk=comment_id)
+        comment = TicketComment.objects.select_related("ticket", "author").get(pk=comment_id)
         ticket = comment.ticket
         
         # If the person who commented is NOT the assigned agent, notify the agent
-        if ticket.assigned_to and comment.user != ticket.assigned_to:
+        if ticket.assigned_to and comment.author != ticket.assigned_to:
             subject = f"New Reply on Ticket #{ticket.id}: {ticket.title}"
-            text_content = f"Hello {ticket.assigned_to.first_name},\n\nThere is a new reply on your ticket.\n\n{comment.user.get_full_name()} wrote:\n{comment.comment}\n\nView Ticket: {settings.FRONTEND_URL}/dashboard/tickets"
+            text_content = f"Hello {ticket.assigned_to.first_name},\n\nThere is a new reply on your ticket.\n\n{comment.author.get_full_name()} wrote:\n{comment.comment}\n\nView Ticket: {settings.FRONTEND_URL}/dashboard/tickets"
             
             html_content = f"""
             <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 40px; border-radius: 16px;">
                 <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                     <h2 style="color: #111827; margin-top: 0;">New Reply on Ticket #{ticket.id}</h2>
-                    <p style="color: #4b5563;"><strong>{comment.user.get_full_name()}</strong> added a new comment:</p>
+                    <p style="color: #4b5563;"><strong>{comment.author.get_full_name()}</strong> added a new comment:</p>
                     <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; font-style: italic; color: #374151;">
                         "{comment.comment}"
                     </div>
