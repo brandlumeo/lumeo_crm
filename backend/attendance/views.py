@@ -621,9 +621,9 @@ class HolidayDetailView(APIView):
         holiday.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+from rest_framework.viewsets import ModelViewSet
+from crm.permissions import CompanyRBACPermission
 class TimeLogAdminViewSet(ModelViewSet):
-    from rest_framework.viewsets import ModelViewSet
-    from accounts.permissions import CompanyRBACPermission
     permission_classes = [CompanyRBACPermission]
     serializer_class = TimeLogSerializer
     def get_queryset(self):

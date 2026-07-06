@@ -42,6 +42,11 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.auto_close_shifts",
         "schedule": crontab(hour=23, minute=59),
     },
+    # Check for expiring subscriptions daily at 08:00 UTC
+    "check-subscription-expiry": {
+        "task": "notifications.tasks.check_subscription_expiry",
+        "schedule": crontab(hour=8, minute=0),
+    },
     # Process delayed workflow sequence steps every minute
     "process-workflow-sequences": {
         "task": "crm.tasks.process_due_workflow_steps_task",
