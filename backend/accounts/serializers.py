@@ -130,8 +130,19 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def update(self, instance, validated_data):
+        was_enabled = instance.two_factor_enabled
         validated_data.pop("two_factor_code", None)
-        return super().update(instance, validated_data)
+        updated_instance = super().update(instance, validated_data)
+
+        if was_enabled and not updated_instance.two_factor_enabled:
+            from notifications.tasks import send_notification_email
+            send_notification_email.delay(
+                to_email=updated_instance.email,
+                title="Security Alert: Two-Factor Authentication Disabled",
+                body=f"Hi {updated_instance.first_name or updated_instance.username},\n\nTwo-Factor Authentication was just disabled on your account. If you did not make this change, please reset your password immediately."
+            )
+
+        return updated_instance
 
 
 class TeamInvitationSerializer(serializers.ModelSerializer):

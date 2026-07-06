@@ -394,6 +394,14 @@ class PasswordUpdateView(APIView):
                 return Response({"current_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
             request.user.set_password(serializer.validated_data["new_password"])
             request.user.save()
+            
+            from notifications.tasks import send_notification_email
+            send_notification_email.delay(
+                to_email=request.user.email,
+                title="Security Alert: Password Changed",
+                body=f"Hi {request.user.first_name or request.user.username},\n\nYour account password was just changed. If you did not make this change, please contact support immediately."
+            )
+            
             return Response({"detail": "Password updated successfully."})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
