@@ -402,7 +402,7 @@ class TeamListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        users = User.objects.filter(company=request.user.company)
+        users = User.objects.filter(company=request.user.company).exclude(role=User.Role.CUSTOMER)
         invites = TeamInvitation.objects.filter(
             company=request.user.company,
             is_accepted=False
