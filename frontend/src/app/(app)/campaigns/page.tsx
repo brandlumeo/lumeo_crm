@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCampaigns, useCreateCampaign, useSendCampaign, useDeleteCampaign } from "@/lib/queries";
 import { Plus, Send, Trash2, Mail, Clock, Search, Loader2 } from "lucide-react";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 
 export default function CampaignsPage() {
   const { data, isLoading } = useCampaigns();
@@ -12,6 +13,8 @@ export default function CampaignsPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCampaign, setNewCampaign] = useState({ name: "", subject: "", body_html: "", target_audience: "all_leads" });
+  const [confirmSendId, setConfirmSendId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const campaigns = data?.results || [];
 
@@ -26,14 +29,28 @@ export default function CampaignsPage() {
   };
 
   const handleSend = (id: number) => {
-    if (confirm("Are you sure you want to send this campaign now? This cannot be undone.")) {
-      sendMutation.mutate(id);
+    setConfirmSendId(id);
+  };
+
+  const confirmSend = () => {
+    if (confirmSendId !== null) {
+      sendMutation.mutate(confirmSendId, {
+        onSuccess: () => setConfirmSendId(null),
+        onError: () => setConfirmSendId(null)
+      });
     }
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this campaign?")) {
-      deleteMutation.mutate(id);
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (confirmDeleteId !== null) {
+      deleteMutation.mutate(confirmDeleteId, {
+        onSuccess: () => setConfirmDeleteId(null),
+        onError: () => setConfirmDeleteId(null)
+      });
     }
   };
 
@@ -223,6 +240,30 @@ export default function CampaignsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        open={confirmSendId !== null}
+        onClose={() => setConfirmSendId(null)}
+        onConfirm={confirmSend}
+        title="Send Campaign"
+        description="Are you sure you want to send this campaign now? This cannot be undone and will immediately dispatch emails to your target audience."
+        confirmText="Send Campaign"
+        cancelText="Cancel"
+        variant="info"
+        loading={sendMutation.isPending}
+      />
+
+      <ConfirmationModal
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Campaign"
+        description="Are you sure you want to delete this campaign? Any performance history will be lost."
+        confirmText="Delete Campaign"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 }
