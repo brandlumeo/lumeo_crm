@@ -308,7 +308,7 @@ CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', True)
 # ── django-axes: brute-force protection ────────────────────────────────────
 
 # Top solution: Never lock out an entire IP address (prevents blocking admins/coworkers on the same IP)
-AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_FAILURE_LIMIT = 20
 # Set cooloff to 1 minute so any existing lockouts immediately expire and unlock the user
 AXES_COOLOFF_TIME = timedelta(minutes=1)
