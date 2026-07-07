@@ -69,7 +69,8 @@ import {
   updateAsset,
   deleteAsset,
   fetchEmailAccounts,
-  connectEmailAccount,
+  getOAuthUrl,
+  handleOAuthCallback,
   deleteEmailAccount,
   fetchEmailMessages,
   fetchCalendarAccounts,
@@ -746,12 +747,18 @@ export function useEmailAccounts(params?: ListParams) {
   });
 }
 
-export function useConnectEmailAccount() {
+export function useGetOAuthUrl() {
+  return useMutation({
+    mutationFn: getOAuthUrl,
+  });
+}
+
+export function useHandleOAuthCallback() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: connectEmailAccount,
+    mutationFn: handleOAuthCallback,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["emailAccounts"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm", "email-accounts"] });
     },
   });
 }

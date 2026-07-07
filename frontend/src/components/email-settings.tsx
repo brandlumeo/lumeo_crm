@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useEmailAccounts, useConnectEmailAccount, useDisconnectEmailAccount } from "@/lib/queries";
+import { useEmailAccounts, useGetOAuthUrl, useDisconnectEmailAccount } from "@/lib/queries";
 import { Mail, Plus, Trash2, CheckCircle, Loader2, ShieldCheck, Zap, RefreshCw } from "lucide-react";
 
 const PROVIDER_META: Record<string, {
@@ -54,14 +54,20 @@ const FEATURE_HIGHLIGHTS = [
 
 export function EmailSettings() {
   const { data: accounts, isLoading } = useEmailAccounts();
-  const connectMutation = useConnectEmailAccount();
+  const urlMutation = useGetOAuthUrl();
   const disconnectMutation = useDisconnectEmailAccount();
 
   const [provider, setProvider] = useState<"google" | "outlook">("google");
   const selectedMeta = PROVIDER_META[provider];
 
   const handleConnect = () => {
-    connectMutation.mutate({ provider });
+    urlMutation.mutate({ provider }, {
+      onSuccess: (data) => {
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      }
+    });
   };
 
   const activeAccounts = accounts?.results || [];
@@ -201,14 +207,18 @@ export function EmailSettings() {
               </div>
 
               <button
-                onClick={handleConnect}
-                disabled={connectMutation.isPending}
-                className={`w-full sm:w-auto btn text-white px-6 py-2.5 text-[13px] font-semibold flex items-center gap-2 transition-all shadow-sm hover:shadow-md disabled:opacity-50 bg-gradient-to-r ${selectedMeta.gradient}`}
-              >
-                {connectMutation.isPending
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
-                  : <><Plus className="w-4 h-4" /> Connect {selectedMeta.label}</>
-                }
+              onClick={handleConnect}
+              disabled={urlMutation.isPending}
+              className={`w-full text-white font-medium py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm ${
+                urlMutation.isPending ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
+              }`}
+              style={{ backgroundColor: provider === "google" ? "#EA4335" : "#0078D4" }}
+            >
+              {urlMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}Connect {selectedMeta.label}
               </button>
             </div>
           </div>

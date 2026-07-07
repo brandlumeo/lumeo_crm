@@ -1166,28 +1166,87 @@ class EmailAccountViewSet(CompanyScopedModelViewSet):
     serializer_class = EmailAccountSerializer
     queryset = EmailAccount.objects.select_related("company", "user")
     
-    @action(detail=False, methods=["post"], url_path="connect")
-    def connect(self, request):
+    @action(detail=False, methods=["post"], url_path="auth-url")
+    def auth_url(self, request):
         provider = request.data.get("provider")
-        if provider not in ["google", "outlook"]:
-            return Response({"error": "Invalid provider"}, status=400)
+        if provider != "google":
+            return Response({"error": "Only Google is supported right now"}, status=400)
             
-        import uuid
-        username = request.user.username
-        default_email = username if "@" in username else f"{username}@{provider}.com"
-        email_address = request.data.get("email_address", default_email)
+        from django.conf import settings
+        import urllib.parse
+        
+        client_id = getattr(settings, 'GOOGLE_CLIENT_ID', None)
+        if not client_id:
+            return Response({"error": "Google Client ID not configured"}, status=500)
+            
+        redirect_uri = request.data.get("redirect_uri", f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/api/auth/callback/google")
+        
+        params = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly",
+            "access_type": "offline",
+            "prompt": "consent",
+        }
+        url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+        return Response({"url": url})
+
+    @action(detail=False, methods=["post"], url_path="callback")
+    def callback(self, request):
+        from django.conf import settings
+        import requests
+        
+        code = request.data.get("code")
+        redirect_uri = request.data.get("redirect_uri", f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/api/auth/callback/google")
+        
+        if not code:
+            return Response({"error": "Authorization code missing"}, status=400)
+        
+        client_id = getattr(settings, 'GOOGLE_CLIENT_ID', None)
+        client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', None)
+        
+        # Exchange code for tokens
+        token_res = requests.post("https://oauth2.googleapis.com/token", data={
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        })
+        
+        if not token_res.ok:
+            return Response({"error": "Failed to exchange code", "details": token_res.json()}, status=400)
+            
+        token_data = token_res.json()
+        access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
+        
+        # Get user info
+        user_info_res = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers={
+            "Authorization": f"Bearer {access_token}"
+        })
+        if not user_info_res.ok:
+            return Response({"error": "Failed to fetch user info"}, status=400)
+            
+        user_email = user_info_res.json().get("email")
         
         account, created = EmailAccount.objects.update_or_create(
             user=request.user,
-            email_address=email_address,
+            email_address=user_email,
             defaults={
                 "company": request.user.company,
-                "provider": provider,
-                "access_token": f"mock_access_{uuid.uuid4().hex}",
-                "refresh_token": f"mock_refresh_{uuid.uuid4().hex}",
+                "provider": "google",
+                "access_token": access_token,
                 "is_active": True
             }
         )
+        
+        # Only update refresh_token if Google actually sent a new one
+        if refresh_token:
+            account.refresh_token = refresh_token
+            account.save(update_fields=["refresh_token"])
+            
         return Response(EmailAccountSerializer(account, context={"request": request}).data)
 
 class EmailMessageViewSet(CompanyScopedModelViewSet):

@@ -964,8 +964,13 @@ export async function fetchEmailAccounts(params?: ListParams) {
   return listPage<EmailAccount>(endpoints.emailAccounts, params);
 }
 
-export async function connectEmailAccount(payload: { provider: "google" | "outlook"; email_address?: string }) {
-  const { data } = await api.post<EmailAccount>(`${endpoints.emailAccounts}connect/`, payload);
+export async function getOAuthUrl(provider: "google" | "outlook") {
+  const { data } = await api.post<{ url: string }>(`${endpoints.emailAccounts}auth-url/`, { provider });
+  return data;
+}
+
+export async function handleOAuthCallback(code: string) {
+  const { data } = await api.post<EmailAccount>(`${endpoints.emailAccounts}callback/`, { code });
   return data;
 }
 
