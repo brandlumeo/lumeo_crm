@@ -554,29 +554,50 @@ class AcceptInviteView(APIView):
         except DjangoValidationError as e:
             return Response({"password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=invite.email,
-                email=invite.email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name,
-                designation=invite.designation,
-                department=invite.department,
-                company=invite.company,
-                role=invite.role,
-            )
-            invite.is_accepted = True
-            invite.save()
+        try:
+            with transaction.atomic():
+                # Check if user already exists
+                user = User.objects.filter(email=invite.email).first()
+                
+                if user:
+                    # User already exists, just update them with company/role if needed
+                    user.company = invite.company
+                    user.role = invite.role
+                    user.designation = invite.designation
+                    user.department = invite.department
+                    user.first_name = first_name
+                    user.last_name = last_name
+                    # Only set password if they don't have one (e.g. they only signed in with Google before)
+                    # Or just override it since they provided it during invite acceptance
+                    user.set_password(password)
+                    user.save()
+                else:
+                    # Create new user
+                    user = User.objects.create_user(
+                        username=invite.email,
+                        email=invite.email,
+                        password=password,
+                        first_name=first_name,
+                        last_name=last_name,
+                        designation=invite.designation,
+                        department=invite.department,
+                        company=invite.company,
+                        role=invite.role,
+                    )
+                
+                invite.is_accepted = True
+                invite.save()
 
-        # Generate JWT tokens for immediate login
-        from rest_framework_simplejwt.tokens import RefreshToken
-        refresh = RefreshToken.for_user(user)
+            # Generate JWT tokens for immediate login
+            refresh = RefreshToken.for_user(user)
 
-        return Response({
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }, status=status.HTTP_201_CREATED)
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error accepting invite: {str(e)}")
+            return Response({"error": "An error occurred while creating the account. Please contact support."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordResetRequestView(APIView):
