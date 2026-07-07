@@ -61,7 +61,7 @@ export function EmailSettings() {
   const selectedMeta = PROVIDER_META[provider];
 
   const handleConnect = () => {
-    urlMutation.mutate({ provider }, {
+    urlMutation.mutate(provider, {
       onSuccess: (data) => {
         if (data?.url) {
           window.location.href = data.url;
