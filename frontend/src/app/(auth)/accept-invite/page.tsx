@@ -62,9 +62,22 @@ function AcceptInviteForm() {
       await queryClient.invalidateQueries();
       router.replace("/dashboard");
     } catch (err: any) {
-      setError(
-        err.response?.data?.error || "Failed to accept invite. The link may have expired."
-      );
+      const data = err.response?.data;
+      if (data) {
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        
+        // Handle field validation errors (like "password")
+        const firstErrorKey = Object.keys(data)[0];
+        if (firstErrorKey && Array.isArray(data[firstErrorKey])) {
+          setError(data[firstErrorKey][0]);
+          return;
+        }
+      }
+      
+      setError("Failed to accept invite. The link may have expired.");
     }
   };
 
