@@ -22,9 +22,8 @@ class User(AbstractUser):
         help_text="Company workspace this user belongs to.",
     )
     role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.STAFF,
+        max_length=50,
+        default="staff",
         db_index=True,
     )
     avatar = models.URLField(
@@ -140,9 +139,8 @@ class TeamInvitation(models.Model):
     department = models.CharField(max_length=100, blank=True, null=True)
     personal_message = models.TextField(blank=True, null=True)
     role = models.CharField(
-        max_length=20,
-        choices=User.Role.choices,
-        default=User.Role.STAFF,
+        max_length=50,
+        default="staff",
     )
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     invited_by = models.ForeignKey(
