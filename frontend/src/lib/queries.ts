@@ -309,24 +309,24 @@ export function useDashboardBundle() {
   return useQuery({
     queryKey: ["dashboard-bundle"],
     queryFn: async () => {
-      const [me, company, leads, customers, deals, tasks, notes] = await Promise.all([
+      const [me, company, leadsRes, customersRes, dealsRes, tasksRes, notesRes] = await Promise.all([
         fetchMe(),
         fetchCurrentCompany(),
-        fetchAllLeads(),
-        fetchAllCustomers(),
-        fetchAllDeals(),
-        fetchAllTasks(),
-        fetchAllNotes(),
+        fetchLeadPage({ limit: 100 }),
+        fetchCustomerPage({ limit: 100 }),
+        fetchDealPage({ limit: 100 }),
+        fetchTaskPage({ limit: 100 }),
+        fetchNotePage({ limit: 100 }),
       ]);
 
       return {
         me,
         company,
-        leads,
-        customers,
-        deals,
-        tasks,
-        notes,
+        leads: leadsRes.results,
+        customers: customersRes.results,
+        deals: dealsRes.results,
+        tasks: tasksRes.results,
+        notes: notesRes.results,
       };
     },
     staleTime: 60 * 1000,
