@@ -1,24 +1,22 @@
 "use client";
 
-import { useShiftHistory, useCurrentUser } from "@/lib/queries";
-import { Clock, MapPin, MonitorSmartphone, Users } from "lucide-react";
-import { formatLongDate } from "@/lib/utils";
+import { useState } from "react";
+import { useAttendanceMatrix, useCurrentUser } from "@/lib/queries";
+import { getAttendanceMatrixExportUrl } from "@/lib/api";
+import { Users, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function TeamAttendancePage() {
   const { data: user } = useCurrentUser();
-  const { data: logs, isLoading } = useShiftHistory(true);
+  
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    return { month: now.getMonth() + 1, year: now.getFullYear() };
+  });
 
-  if (isLoading) {
-    return (
-      <div className="p-7 max-w-7xl">
-        <div className="h-8 bg-bone-2 rounded w-1/4 mb-4 animate-pulse" />
-        <div className="h-4 bg-bone-2 rounded w-1/2 animate-pulse" />
-      </div>
-    );
-  }
+  const { data: matrixData, isLoading } = useAttendanceMatrix(currentDate.month, currentDate.year);
 
   // Ensure only managers can view
-  if (!user?.has_management_access) {
+  if (user && !user.has_management_access) {
     return (
       <div className="p-7 max-w-7xl">
         <h1 className="text-2xl font-serif text-ink mb-4">Access Denied</h1>
@@ -27,94 +25,147 @@ export default function TeamAttendancePage() {
     );
   }
 
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => {
+      let m = prev.month - 1;
+      let y = prev.year;
+      if (m < 1) {
+        m = 12;
+        y--;
+      }
+      return { month: m, year: y };
+    });
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(prev => {
+      let m = prev.month + 1;
+      let y = prev.year;
+      if (m > 12) {
+        m = 1;
+        y++;
+      }
+      return { month: m, year: y };
+    });
+  };
+
+  const getMonthName = (m: number) => {
+    const d = new Date();
+    d.setMonth(m - 1);
+    return d.toLocaleString('default', { month: 'long' });
+  };
+  
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'present': return <div title="Present" className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-100 text-emerald-600 font-bold text-xs">✔</div>;
+      case 'absent': return <div title="Absent" className="flex items-center justify-center w-6 h-6 rounded-md bg-rose-100 text-rose-600 font-bold text-xs">✖</div>;
+      case 'half_day': return <div title="Half Day" className="flex items-center justify-center w-6 h-6 rounded-md bg-amber-100 text-amber-600 font-bold text-xs">★</div>;
+      case 'late': return <div title="Late" className="flex items-center justify-center w-6 h-6 rounded-md bg-orange-100 text-orange-600 font-bold text-[10px]">⏱</div>;
+      case 'leave': return <div title="On Leave" className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-100 text-blue-600 font-bold text-xs">✈</div>;
+      case 'holiday': return <div title="Holiday" className="flex items-center justify-center w-6 h-6 rounded-md bg-purple-100 text-purple-600 font-bold text-[10px]">⭐</div>;
+      case 'day_off': return <div title="Day Off" className="flex items-center justify-center w-6 h-6 rounded-md bg-slate-100 text-slate-500 font-bold text-[10px]">📅</div>;
+      case 'future': return <div className="w-6 h-6" />;
+      default: return <div className="w-6 h-6 text-xs text-muted">-</div>;
+    }
+  };
+
   return (
-    <div className="p-7 max-w-7xl flex flex-col gap-8 animate-rise">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-serif text-[32px] tracking-tight flex items-center gap-3">
-          <Users className="w-8 h-8 text-accent" />
-          Team Attendance
-        </h1>
-        <p className="text-[13.5px] text-muted">
-          View real-time clock-in and clock-out logs for all staff members across your company.
-        </p>
+    <div className="p-7 max-w-[1600px] mx-auto flex flex-col gap-6 animate-rise">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-serif text-[32px] tracking-tight flex items-center gap-3">
+            <Users className="w-8 h-8 text-accent" />
+            Team Attendance Matrix
+          </h1>
+          <p className="text-[13.5px] text-muted">
+            Premium real-time matrix view of all staff members' attendance records.
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-paper border border-line rounded-lg overflow-hidden p-1">
+            <button onClick={handlePrevMonth} className="p-2 hover:bg-bone rounded transition-colors text-muted hover:text-ink">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="px-4 py-1 font-medium text-[13px] min-w-[120px] text-center">
+              {getMonthName(currentDate.month)} {currentDate.year}
+            </div>
+            <button onClick={handleNextMonth} className="p-2 hover:bg-bone rounded transition-colors text-muted hover:text-ink">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <a
+            href={getAttendanceMatrixExportUrl(currentDate.month, currentDate.year)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-ink text-paper px-4 py-2.5 rounded-lg text-[13px] font-medium hover:bg-ink-2 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </a>
+        </div>
+      </div>
+      
+      {/* Legend */}
+      <div className="bg-paper border border-line rounded-lg p-4 flex flex-wrap items-center gap-6 text-[12.5px] font-medium text-ink-2">
+        <span className="text-muted uppercase tracking-wider text-[11px] font-bold">Legend:</span>
+        <div className="flex items-center gap-2">{getStatusIcon('present')} Present</div>
+        <div className="flex items-center gap-2">{getStatusIcon('half_day')} Half Day</div>
+        <div className="flex items-center gap-2">{getStatusIcon('late')} Late</div>
+        <div className="flex items-center gap-2">{getStatusIcon('absent')} Absent</div>
+        <div className="flex items-center gap-2">{getStatusIcon('leave')} On Leave</div>
+        <div className="flex items-center gap-2">{getStatusIcon('holiday')} Holiday</div>
+        <div className="flex items-center gap-2">{getStatusIcon('day_off')} Day Off</div>
       </div>
 
       <div className="card p-0 border border-line bg-paper overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-bone border-b border-line text-muted uppercase tracking-wider text-[11px] font-semibold">
-                <th className="py-3 px-5">Staff Member</th>
-                <th className="py-3 px-5">Date</th>
-                <th className="py-3 px-5">Clock In</th>
-                <th className="py-3 px-5">Clock Out</th>
-                <th className="py-3 px-5">Location</th>
-                <th className="py-3 px-5">IP Address</th>
-                <th className="py-3 px-5">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs?.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted">
-                    No attendance logs found.
-                  </td>
+        <div className="overflow-x-auto custom-scrollbar">
+          {isLoading ? (
+            <div className="p-10 flex justify-center">
+              <div className="animate-pulse text-muted text-sm font-medium">Loading matrix data...</div>
+            </div>
+          ) : !matrixData?.matrix || matrixData.matrix.length === 0 ? (
+            <div className="p-10 text-center text-muted text-[13px]">
+              No employees found.
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-bone border-b border-line text-muted uppercase tracking-wider text-[11px] font-semibold">
+                  <th className="py-3 px-5 sticky left-0 bg-bone z-10 border-r border-line shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] min-w-[200px]">Employee</th>
+                  {Array.from({ length: matrixData.days_in_month }).map((_, i) => (
+                    <th key={i} className="py-3 px-2 text-center min-w-[40px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>{i + 1}</span>
+                      </div>
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                logs?.map((log) => (
-                  <tr key={log.id} className="border-b border-line-2 last:border-0 table-row-hover">
-                    <td className="py-3.5 px-5">
-                      <div className="font-medium text-ink text-[13px]">{log.user_full_name || "Unknown"}</div>
-                      <div className="text-[11px] text-muted font-mono">{log.user_email}</div>
+              </thead>
+              <tbody>
+                {matrixData.matrix.map((row: any) => (
+                  <tr key={row.id} className="border-b border-line-2 last:border-0 table-row-hover">
+                    <td className="py-3 px-5 sticky left-0 bg-paper z-10 border-r border-line-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                      <div className="font-medium text-ink text-[13px] truncate max-w-[180px]">{row.name}</div>
+                      <div className="text-[11px] text-muted capitalize">{row.role}</div>
                     </td>
-                    <td className="py-3.5 px-5 text-[13px] text-ink-2">
-                      {formatLongDate(new Date(log.clock_in))}
-                    </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-1.5 text-[13px]">
-                        <Clock className="w-3.5 h-3.5 text-muted" />
-                        <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-5">
-                      {log.clock_out ? (
-                        <div className="flex items-center gap-1.5 text-[13px]">
-                          <Clock className="w-3.5 h-3.5 text-muted" />
-                          <span>{new Date(log.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      ) : (
-                        <span className="text-[10px] uppercase tracking-wider font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
-                          Active Shift
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-1.5 text-[12px] capitalize font-medium text-ink-2">
-                        {log.work_location === "wfh" ? (
-                          <MonitorSmartphone className="w-3.5 h-3.5 text-blue-500" />
-                        ) : log.work_location === "office" ? (
-                          <MapPin className="w-3.5 h-3.5 text-amber-500" />
-                        ) : (
-                          <MapPin className="w-3.5 h-3.5 text-muted" />
-                        )}
-                        <span>{log.work_location}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-5 font-mono text-[11px] text-muted">
-                      {log.ip_address || "—"}
-                    </td>
-                    <td className="py-3.5 px-5 text-[12px] text-ink-2 max-w-[200px] truncate" title={log.notes}>
-                      {log.notes ? (
-                        <span className="italic">"{log.notes}"</span>
-                      ) : (
-                        <span className="text-muted/50">—</span>
-                      )}
-                    </td>
+                    {Array.from({ length: matrixData.days_in_month }).map((_, i) => {
+                      const dayString = (i + 1).toString();
+                      const status = row.days[dayString] || "absent";
+                      return (
+                        <td key={i} className="py-2 px-2 text-center">
+                          <div className="flex justify-center">
+                            {getStatusIcon(status)}
+                          </div>
+                        </td>
+                      );
+                    })}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

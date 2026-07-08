@@ -634,6 +634,18 @@ export function useShiftHistory(all: boolean = false) {
   });
 }
 
+export function useAttendanceMatrix(month: number, year: number) {
+  return useQuery({
+    queryKey: ["attendance-matrix", month, year],
+    queryFn: async () => {
+      const { fetchAttendanceMatrix } = await import("./api");
+      return fetchAttendanceMatrix(month, year);
+    },
+    enabled: !!month && !!year,
+  });
+}
+
+
 export function useLeaves(all?: boolean) {
   return useQuery({
     queryKey: ["attendance", "leaves", { all }],

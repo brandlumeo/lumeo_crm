@@ -144,6 +144,7 @@ const endpoints = {
   attendanceBreakStart: "/attendance/break-start/",
   attendanceBreakEnd: "/attendance/break-end/",
   attendanceHistory: "/attendance/history/",
+  attendanceMatrix: "/attendance/matrix/",
   attendanceLeaves: "/attendance/leaves/",
   attendanceExpenses: "/attendance/expenses/",
   attendanceAssets: "/attendance/assets/",
@@ -875,6 +876,16 @@ export async function fetchShiftHistory() {
   const { data } = await api.get<TimeLog[]>(endpoints.attendanceHistory);
   return data;
 }
+
+export async function fetchAttendanceMatrix(month: number, year: number) {
+  const { data } = await api.get(`${endpoints.attendanceMatrix}?month=${month}&year=${year}`);
+  return data;
+}
+
+export function getAttendanceMatrixExportUrl(month: number, year: number) {
+  return `${api.defaults.baseURL}${endpoints.attendanceMatrix}?month=${month}&year=${year}&export=csv`;
+}
+
 
 export async function fetchLeaves(all?: boolean) {
   const { data } = await api.get<LeaveRequest[]>(
