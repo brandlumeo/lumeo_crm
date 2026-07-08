@@ -20,6 +20,19 @@ class SaasSubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all().select_related('company').order_by('-created_at')
     serializer_class = SaasSubscriptionSerializer
 
+    def perform_update(self, serializer):
+        subscription = serializer.save()
+        company = subscription.company
+        
+        if not subscription.is_active:
+            company.status = "suspended"
+        elif subscription.plan != "free":
+            company.status = "active"
+        else:
+            company.status = "trial"
+            
+        company.save(update_fields=["status"])
+
 class SaasStatsView(views.APIView):
     permission_classes = [permissions.IsAdminUser]
 
