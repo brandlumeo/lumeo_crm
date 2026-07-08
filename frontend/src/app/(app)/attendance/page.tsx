@@ -41,7 +41,7 @@ export default function AttendancePage() {
   const { data: history = [], isLoading: historyLoading } = useShiftHistory();
   const { data: leaves = [], isLoading: leavesLoading } = useLeaves();
   const { data: companyLeaves = [], isLoading: companyLeavesLoading } = useLeaves(true); // for managers
-  const { data: companyHistory = [], isLoading: companyHistoryLoading } = useShiftHistory(true); // for managers
+
 
   const punchInMutation = usePunchIn();
   const punchOutMutation = usePunchOut();
@@ -521,64 +521,6 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Manager Company Shift Logs Panel */}
-      {isManager && (
-        <div className="card p-6 border border-line bg-paper flex flex-col gap-4">
-          <div className="flex items-center gap-2 border-b border-line-2 pb-3">
-            <Users className="w-5 h-5 text-accent" />
-            <h2 className="font-serif text-[20px]">Company Shift Logs Overview</h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            {companyHistoryLoading ? (
-              <p className="text-xs text-muted">Loading company shift logs...</p>
-            ) : companyHistory.length === 0 ? (
-              <p className="text-xs text-muted italic">No shifts recorded by staff yet.</p>
-            ) : (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-line text-muted uppercase tracking-wider">
-                    <th className="py-2 font-medium">Staff Member</th>
-                    <th className="py-2 font-medium">Shift Date</th>
-                    <th className="py-2 font-medium">Location</th>
-                    <th className="py-2 font-medium">Timestamps</th>
-                    <th className="py-2 font-medium">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companyHistory.map((log) => (
-                    <tr key={log.id} className="border-b border-line-2 last:border-0 hover:bg-bone/30">
-                      <td className="py-2.5 font-medium">
-                        {log.user_full_name}
-                        <div className="text-[10px] text-muted font-normal font-mono mt-0.5">{log.user_email}</div>
-                      </td>
-                      <td className="py-2.5">{formatLongDate(new Date(log.clock_in))}</td>
-                      <td className="py-2.5 capitalize font-mono text-[11px]">{log.work_location}</td>
-                      <td className="py-2.5 text-muted leading-tight">
-                        In: {new Date(log.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {log.clock_out ? (
-                          <>
-                            <br />
-                            Out: {new Date(log.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </>
-                        ) : (
-                          <>
-                            <br />
-                            <span className="text-emerald-600 font-medium text-[10px]">Active Shift</span>
-                          </>
-                        )}
-                      </td>
-                      <td className="py-2.5 font-semibold text-ink-2">
-                        {calcDuration(log.clock_in, log.clock_out)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Double Column: History lists */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
