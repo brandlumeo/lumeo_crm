@@ -94,7 +94,7 @@ export function WorkspaceForm() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* General Settings */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-blue-500"></div>
           <div className="p-6 sm:p-8 space-y-8 flex-1 pt-9">
             <div className="flex items-center gap-3 mb-2">
@@ -117,7 +117,7 @@ export function WorkspaceForm() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={!isAdmin}
-                  className={cn("input w-full h-11 bg-bone/30 focus:bg-white text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
             </div>
@@ -131,7 +131,7 @@ export function WorkspaceForm() {
         </div>
 
         {/* Regional & Domain Settings */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
           <div className="p-6 sm:p-8 space-y-8 flex-1 pt-9">
             <div className="flex items-center gap-3 mb-2">
@@ -154,7 +154,7 @@ export function WorkspaceForm() {
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                     disabled={!isAdmin}
-                    className={cn("input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10", !isAdmin && "opacity-70 cursor-not-allowed")}
+                    className={cn("input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10", !isAdmin && "opacity-70 cursor-not-allowed")}
                   >
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
@@ -181,7 +181,7 @@ export function WorkspaceForm() {
                   onChange={(e) => setDomain(e.target.value)}
                   disabled={!isAdmin}
                   placeholder="crm.yourcompany.com"
-                  className={cn("input w-full h-11 font-mono text-[13.5px] bg-bone/30 focus:bg-white", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  className={cn("input w-full h-11 font-mono text-[13.5px] bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
             </div>

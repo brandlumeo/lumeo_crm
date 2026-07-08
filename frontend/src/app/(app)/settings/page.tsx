@@ -121,7 +121,7 @@ export default function SettingsPage() {
                 autoComplete="off"
                 name="settings-search"
                 id="settings-search"
-                className="w-full pl-9 pr-3 py-2 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                className="w-full pl-9 pr-3 py-2 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
               />
             </div>
           </div>
@@ -232,13 +232,13 @@ function PlaceholderForm({ tabId }: { tabId: string }) {
         <p className="text-[14px] text-muted">Configure your preferences and options for {tab.label.toLowerCase()}.</p>
       </div>
 
-      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden min-h-[400px] flex flex-col items-center justify-center p-12 text-center relative">
+      <div className="bg-paper border border-line rounded-xl shadow-sm overflow-hidden min-h-[400px] flex flex-col items-center justify-center p-12 text-center relative">
         {/* Subtle background decoration */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-50"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-accent/5 opacity-40 blur-[100px]"></div>
 
         <div className="relative z-10 flex flex-col items-center">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-white to-bone border border-line shadow-sm grid place-items-center mb-6">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-paper to-bone border border-line shadow-sm grid place-items-center mb-6">
             <tab.icon className="w-8 h-8 text-ink/40" />
           </div>
           <h4 className="text-[17px] font-semibold text-ink tracking-tight mb-2">Under Construction</h4>
