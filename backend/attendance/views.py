@@ -628,3 +628,124 @@ class TimeLogAdminViewSet(ModelViewSet):
     serializer_class = TimeLogSerializer
     def get_queryset(self):
         return TimeLog.objects.filter(company=self.request.user.company).order_by('-clock_in')
+
+
+from calendar import monthrange
+from datetime import date, timedelta
+from accounts.models import User
+
+class AttendanceMatrixView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        month = int(request.GET.get('month', timezone.now().month))
+        year = int(request.GET.get('year', timezone.now().year))
+        
+        company = request.user.company
+        _, num_days = monthrange(year, month)
+        
+        # Get all active employees in the company
+        users = User.objects.filter(company=company, is_active=True)
+        
+        # Prefetch timelogs, leaves, holidays
+        start_date = date(year, month, 1)
+        end_date = date(year, month, num_days)
+        
+        timelogs = TimeLog.objects.filter(
+            company=company,
+            clock_in__date__gte=start_date,
+            clock_in__date__lte=end_date
+        )
+        
+        leaves = LeaveRequest.objects.filter(
+            user__company=company,
+            status=LeaveRequest.Status.APPROVED,
+            start_date__lte=end_date,
+            end_date__gte=start_date
+        )
+        
+        holidays = Holiday.objects.filter(
+            company=company,
+            date__gte=start_date,
+            date__lte=end_date
+        )
+        
+        holiday_dates = {h.date for h in holidays}
+        
+        # Organize timelogs by user and date
+        timelog_dict = {}
+        for tl in timelogs:
+            d = tl.clock_in.date()
+            if tl.user_id not in timelog_dict:
+                timelog_dict[tl.user_id] = {}
+            timelog_dict[tl.user_id][d] = tl
+            
+        # Organize leaves by user and date
+        leave_dict = {}
+        for l in leaves:
+            if l.user_id not in leave_dict:
+                leave_dict[l.user_id] = set()
+            
+            # Add all dates in the leave range
+            current = l.start_date
+            while current <= l.end_date:
+                if current.month == month and current.year == year:
+                    leave_dict[l.user_id].add(current)
+                current += timedelta(days=1)
+                
+        matrix = []
+        
+        for user in users:
+            user_days = {}
+            for day in range(1, num_days + 1):
+                current_date = date(year, month, day)
+                is_weekend = current_date.weekday() >= 5 # 5=Sat, 6=Sun
+                
+                status = "absent"
+                
+                # 1. Check Holiday / Weekend
+                if current_date in holiday_dates:
+                    status = "holiday"
+                elif is_weekend:
+                    status = "day_off"
+                    
+                # 2. Check Leave
+                if user.id in leave_dict and current_date in leave_dict[user.id]:
+                    status = "leave"
+                    
+                # 3. Check TimeLog (Overrides default status)
+                tl = timelog_dict.get(user.id, {}).get(current_date)
+                if tl:
+                    if tl.shift_status == TimeLog.ShiftStatus.LATE:
+                        status = "late"
+                    else:
+                        # Simple logic for half day: if worked less than 4 hours
+                        if tl.clock_out:
+                            duration = (tl.clock_out - tl.clock_in).total_seconds() / 3600
+                            if duration < 4:
+                                status = "half_day"
+                            else:
+                                status = "present"
+                        else:
+                            # Still clocked in
+                            status = "present"
+                            
+                # 4. If date is in the future, don't mark as absent
+                if current_date > timezone.now().date() and status == "absent":
+                    status = "future"
+                    
+                user_days[str(day)] = status
+                
+            matrix.append({
+                "id": user.id,
+                "name": user.get_full_name() or user.username,
+                "role": user.role,
+                "days": user_days
+            })
+            
+        return Response({
+            "month": month,
+            "year": year,
+            "days_in_month": num_days,
+            "matrix": matrix
+        })

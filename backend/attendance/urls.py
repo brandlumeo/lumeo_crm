@@ -10,6 +10,7 @@ urlpatterns = [
     path("break-start/", views.BreakStartView.as_view(), name="break_start"),
     path("break-end/", views.BreakEndView.as_view(), name="break_end"),
     path("history/", views.PersonalHistoryView.as_view(), name="history"),
+    path("matrix/", views.AttendanceMatrixView.as_view(), name="matrix"),
     path("leaves/", views.LeaveRequestListCreateView.as_view(), name="leave_list_create"),
     path("leaves/<uuid:pk>/approve/", views.LeaveApprovalView.as_view(), name="leave_approve"),
     path("expenses/", views.ExpenseClaimListCreateView.as_view(), name="expense_list_create"),
