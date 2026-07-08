@@ -766,7 +766,9 @@ class AttendanceMatrixView(APIView):
             from django.http import HttpResponse
             
             response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename="attendance_{year}_{month}.csv"'
+            import calendar
+            month_name = calendar.month_name[month]
+            response['Content-Disposition'] = f'attachment; filename="Team_Attendance_Matrix_{month_name}_{year}.csv"'
             
             writer = csv.writer(response)
             
