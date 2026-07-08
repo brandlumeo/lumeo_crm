@@ -149,9 +149,20 @@ def default_roles():
         {
             "id": "hr", "name": "HR", "members": 0, "isAdmin": False,
             "permissions": {
+                "Clients": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
                 "Employees": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Projects": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
                 "Attendance": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
-                "Leaves": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"}
+                "Tasks": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Estimates": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Invoices": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Payments": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Time Logs": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Tickets": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Events": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Notices": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Leaves": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"},
+                "Leads": {"Add": "All", "View": "All", "Update": "All", "Delete": "None"}
             }
         },
         {
