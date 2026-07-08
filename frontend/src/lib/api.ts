@@ -465,6 +465,16 @@ export async function createTask(payload: TaskInput) {
   return data;
 }
 
+export async function updateTask({ id, payload }: { id: number; payload: Partial<TaskInput> }) {
+  const { data } = await api.patch<Task>(`${endpoints.tasks}${id}/`, payload);
+  return data;
+}
+
+export async function deleteTask(id: number) {
+  const { data } = await api.delete(`${endpoints.tasks}${id}/`);
+  return data;
+}
+
 export async function createNote(payload: NoteInput) {
   const { data } = await api.post<Note>(endpoints.notes, payload);
   return data;
