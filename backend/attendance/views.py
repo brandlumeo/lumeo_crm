@@ -642,9 +642,12 @@ class AttendanceMatrixView(APIView):
         year = int(request.GET.get('year', timezone.now().year))
         
         company = request.user.company
+        from calendar import monthrange
+        from datetime import date, timedelta
         _, num_days = monthrange(year, month)
         
         # Get all active employees in the company
+        from accounts.models import User
         users = User.objects.filter(company=company, is_active=True)
         
         # Prefetch timelogs, leaves, holidays
@@ -697,6 +700,16 @@ class AttendanceMatrixView(APIView):
         
         for user in users:
             user_days = {}
+            counts = {
+                "present": 0,
+                "absent": 0,
+                "half_day": 0,
+                "late": 0,
+                "leave": 0,
+                "holiday": 0,
+                "day_off": 0,
+            }
+            
             for day in range(1, num_days + 1):
                 current_date = date(year, month, day)
                 is_weekend = current_date.weekday() >= 5 # 5=Sat, 6=Sun
@@ -735,13 +748,47 @@ class AttendanceMatrixView(APIView):
                     status = "future"
                     
                 user_days[str(day)] = status
+                if status in counts:
+                    counts[status] += 1
                 
             matrix.append({
                 "id": user.id,
                 "name": user.get_full_name() or user.username,
                 "role": user.role,
-                "days": user_days
+                "days": user_days,
+                "counts": counts
             })
+            
+        is_export = request.GET.get("export") == "csv"
+        
+        if is_export:
+            import csv
+            from django.http import HttpResponse
+            
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="attendance_{year}_{month}.csv"'
+            
+            writer = csv.writer(response)
+            
+            # Header
+            header = ["Employee", "Role"] + [str(d) for d in range(1, num_days + 1)] + ["Total Present", "Total Absent", "Total Half Day", "Total Late", "Total Leave"]
+            writer.writerow(header)
+            
+            # Rows
+            for row in matrix:
+                csv_row = [row["name"], row["role"]]
+                for d in range(1, num_days + 1):
+                    csv_row.append(row["days"][str(d)])
+                csv_row.extend([
+                    row["counts"]["present"],
+                    row["counts"]["absent"],
+                    row["counts"]["half_day"],
+                    row["counts"]["late"],
+                    row["counts"]["leave"],
+                ])
+                writer.writerow(csv_row)
+                
+            return response
             
         return Response({
             "month": month,
