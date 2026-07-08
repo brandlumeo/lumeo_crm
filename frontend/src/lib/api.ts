@@ -882,10 +882,20 @@ export async function fetchAttendanceMatrix(month: number, year: number) {
   return data;
 }
 
-export function getAttendanceMatrixExportUrl(month: number, year: number) {
-  return `${api.defaults.baseURL}${endpoints.attendanceMatrix}?month=${month}&year=${year}&export=csv`;
+export async function downloadAttendanceMatrixCSV(month: number, year: number) {
+  const response = await api.get(`${endpoints.attendanceMatrix}?month=${month}&year=${year}&export=csv`, {
+    responseType: 'blob',
+  });
+  
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `attendance_${year}_${month}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
-
 
 export async function fetchLeaves(all?: boolean) {
   const { data } = await api.get<LeaveRequest[]>(

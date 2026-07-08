@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAttendanceMatrix, useCurrentUser } from "@/lib/queries";
-import { getAttendanceMatrixExportUrl } from "@/lib/api";
+import { downloadAttendanceMatrixCSV } from "@/lib/api";
 import { Users, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function TeamAttendancePage() {
@@ -95,15 +95,13 @@ export default function TeamAttendancePage() {
             </button>
           </div>
           
-          <a
-            href={getAttendanceMatrixExportUrl(currentDate.month, currentDate.year)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => downloadAttendanceMatrixCSV(currentDate.month, currentDate.year)}
             className="flex items-center gap-2 bg-ink text-paper px-5 py-2.5 rounded-lg text-[13px] font-bold shadow-sm hover:bg-ink-2 hover:-translate-y-0.5 transition-all"
           >
             <Download className="w-4 h-4" />
             Export CSV
-          </a>
+          </button>
         </div>
       </div>
       
