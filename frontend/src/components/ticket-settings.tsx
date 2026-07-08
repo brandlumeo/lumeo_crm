@@ -291,7 +291,7 @@ export function TicketSettingsForm() {
       </div>
 
       {/* Main Container */}
-      <div className="bg-white border border-line shadow-sm overflow-hidden flex flex-col relative">
+      <div className="bg-paper border border-line shadow-sm overflow-hidden flex flex-col relative">
         
         {/* Tabs */}
         <div className="flex items-center overflow-x-auto border-b border-line px-2">
@@ -322,7 +322,7 @@ export function TicketSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[250px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-3.5 px-6 w-16 text-center">#</th>
                       <th className="py-3.5 px-6">Name</th>
@@ -361,14 +361,14 @@ export function TicketSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditAgent(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteAgent(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -388,7 +388,7 @@ export function TicketSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[250px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-3.5 px-6 w-16 text-center">#</th>
                       <th className="py-3.5 px-6">Name</th>
@@ -416,14 +416,14 @@ export function TicketSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditGroup(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteGroup(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -443,7 +443,7 @@ export function TicketSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[250px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-3.5 px-6 w-16 text-center">#</th>
                       <th className="py-3.5 px-6">Name</th>
@@ -471,14 +471,14 @@ export function TicketSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditType(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteType(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -498,7 +498,7 @@ export function TicketSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[250px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-3.5 px-6 w-16 text-center">#</th>
                       <th className="py-3.5 px-6">Name</th>
@@ -526,14 +526,14 @@ export function TicketSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditChannel(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteChannel(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -553,7 +553,7 @@ export function TicketSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[250px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-3.5 px-6 w-16 text-center">#</th>
                       <th className="py-3.5 px-6">Template Name</th>
@@ -581,14 +581,14 @@ export function TicketSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditTemplate(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteTemplate(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -651,7 +651,7 @@ export function TicketSettingsForm() {
       {/* Agent Modal */}
       {isAgentModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-lg font-semibold text-ink">
                 {editingIndex !== null ? "Edit Agent" : "Add New Agent"}
@@ -671,7 +671,7 @@ export function TicketSettingsForm() {
                   type="text"
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. John Doe"
                   autoFocus
                 />
@@ -683,7 +683,7 @@ export function TicketSettingsForm() {
                   type="text"
                   value={agentGroup}
                   onChange={(e) => setAgentGroup(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. Support Team"
                 />
               </div>
@@ -693,7 +693,7 @@ export function TicketSettingsForm() {
                 <select
                   value={agentStatus}
                   onChange={(e) => setAgentStatus(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
@@ -704,7 +704,7 @@ export function TicketSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsAgentModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -724,7 +724,7 @@ export function TicketSettingsForm() {
       {/* Group Modal */}
       {isGroupModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-lg font-semibold text-ink">
                 {editingIndex !== null ? "Edit Group" : "Add New Group"}
@@ -744,7 +744,7 @@ export function TicketSettingsForm() {
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. Technical Support"
                   autoFocus
                 />
@@ -754,7 +754,7 @@ export function TicketSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsGroupModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -774,7 +774,7 @@ export function TicketSettingsForm() {
       {/* Type Modal */}
       {isTypeModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-lg font-semibold text-ink">
                 {editingIndex !== null ? "Edit Ticket Type" : "Add New Ticket Type"}
@@ -794,7 +794,7 @@ export function TicketSettingsForm() {
                   type="text"
                   value={typeName}
                   onChange={(e) => setTypeName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. Bug"
                   autoFocus
                 />
@@ -804,7 +804,7 @@ export function TicketSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsTypeModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -824,7 +824,7 @@ export function TicketSettingsForm() {
       {/* Channel Modal */}
       {isChannelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-lg font-semibold text-ink">
                 {editingIndex !== null ? "Edit Ticket Channel" : "Add New Ticket Channel"}
@@ -844,7 +844,7 @@ export function TicketSettingsForm() {
                   type="text"
                   value={channelName}
                   onChange={(e) => setChannelName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. Email, Portal, Phone"
                   autoFocus
                 />
@@ -854,7 +854,7 @@ export function TicketSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsChannelModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -874,7 +874,7 @@ export function TicketSettingsForm() {
       {/* Template Modal */}
       {isTemplateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-xl overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-lg font-semibold text-ink">
                 {editingIndex !== null ? "Edit Reply Template" : "Add Reply Template"}
@@ -894,7 +894,7 @@ export function TicketSettingsForm() {
                   type="text"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. Greeting, Apology"
                   autoFocus
                 />
@@ -905,7 +905,7 @@ export function TicketSettingsForm() {
                 <textarea
                   value={templateBody}
                   onChange={(e) => setTemplateBody(e.target.value)}
-                  className="input w-full min-h-[120px] resize-y py-3 bg-white"
+                  className="input w-full min-h-[120px] resize-y py-3 bg-paper"
                   placeholder="Write your template text here..."
                 />
               </div>
@@ -914,7 +914,7 @@ export function TicketSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsTemplateModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>

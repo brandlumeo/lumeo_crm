@@ -230,7 +230,7 @@ export function LeavesSettingsForm() {
   const renderTable = (data: LeaveType[], isArchivedTab: boolean) => (
     <div className="overflow-x-auto min-h-[300px]">
       <table className="w-full text-left text-[13px]">
-        <thead className="bg-white border-b border-line text-muted/80 font-medium">
+        <thead className="bg-paper border-b border-line text-muted/80 font-medium">
           <tr>
             <th className="py-4 px-6">Leave Type</th>
             <th className="py-4 px-6">Leave Allotment Type</th>
@@ -287,14 +287,14 @@ export function LeavesSettingsForm() {
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(lt.id)}
-                        className="flex items-center justify-center gap-1.5 w-full max-w-[80px] h-8 border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors text-[12px]"
+                        className="flex items-center justify-center gap-1.5 w-full max-w-[80px] h-8 border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors text-[12px]"
                       >
                         <Edit className="w-3.5 h-3.5" /> Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => handleArchiveToggle(lt.id)}
-                        className="flex items-center justify-center gap-1.5 w-full max-w-[80px] h-8 border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors text-[12px]"
+                        className="flex items-center justify-center gap-1.5 w-full max-w-[80px] h-8 border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors text-[12px]"
                       >
                         {lt.isArchived ? (
                           <><ArchiveRestore className="w-3.5 h-3.5" /> Restore</>
@@ -356,7 +356,7 @@ export function LeavesSettingsForm() {
       </div>
 
       {/* Main Container */}
-      <div className="bg-white border border-line shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400"></div>
         
         {/* Tabs */}
@@ -378,7 +378,7 @@ export function LeavesSettingsForm() {
         </div>
 
         {/* Tab Content */}
-        <div className="p-0 min-h-[400px] flex flex-col bg-white">
+        <div className="p-0 min-h-[400px] flex flex-col bg-paper">
           
           {activeTab === "types" && renderTable(activeTypes, false)}
           
@@ -422,7 +422,7 @@ export function LeavesSettingsForm() {
                 <select
                   value={reportingManagerRole}
                   onChange={(e) => setReportingManagerRole(e.target.value)}
-                  className="input w-48 h-10 bg-white text-[13px] border border-line rounded px-3 focus:outline-none focus:border-red-500"
+                  className="input w-48 h-10 bg-paper text-[13px] border border-line rounded px-3 focus:outline-none focus:border-red-500"
                 >
                   <option value="Pre-Approve">Pre-Approve</option>
                   <option value="Approve">Approve</option>
@@ -454,7 +454,7 @@ export function LeavesSettingsForm() {
       {/* Leave Type Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in flex flex-col">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in flex flex-col">
             
             <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
               <h3 className="text-[15px] font-semibold text-ink">
@@ -499,7 +499,7 @@ export function LeavesSettingsForm() {
                         type="text"
                         value={typeName}
                         onChange={(e) => setTypeName(e.target.value)}
-                        className="input w-full h-11 bg-white text-[13px]"
+                        className="input w-full h-11 bg-paper text-[13px]"
                         placeholder="E.g. Sick, Casual"
                       />
                     </div>
@@ -508,7 +508,7 @@ export function LeavesSettingsForm() {
                       <select
                         value={typeAllotment}
                         onChange={(e) => setTypeAllotment(e.target.value)}
-                        className="input w-full h-11 bg-white text-[13px]"
+                        className="input w-full h-11 bg-paper text-[13px]"
                       >
                         <option value="Yearly Leave Type">Yearly Leave Type</option>
                         <option value="Monthly Leave Type">Monthly Leave Type</option>
@@ -518,7 +518,7 @@ export function LeavesSettingsForm() {
                       <label className="text-[13px] text-muted flex items-center gap-1">No of {typeAllotment.includes('Monthly') ? 'Monthly' : 'Yearly'} Leaves <HelpCircle className="w-3.5 h-3.5" /></label>
                       <input
                         type="number" min="0" value={typeLeaves} onChange={(e) => setTypeLeaves(e.target.value)}
-                        className="input w-full h-11 bg-white text-[13px]"
+                        className="input w-full h-11 bg-paper text-[13px]"
                       />
                     </div>
                   </div>
@@ -529,7 +529,7 @@ export function LeavesSettingsForm() {
                       <select
                         value={typePaidStatus}
                         onChange={(e) => setTypePaidStatus(e.target.value)}
-                        className="input w-full h-11 bg-white text-[13px]"
+                        className="input w-full h-11 bg-paper text-[13px]"
                       >
                         <option value="Paid">Paid</option>
                         <option value="Unpaid">Unpaid</option>
@@ -542,7 +542,7 @@ export function LeavesSettingsForm() {
                           type="text"
                           value={typeColor}
                           onChange={(e) => setTypeColor(e.target.value)}
-                          className="input w-full h-11 bg-white font-mono text-[13px] pr-12"
+                          className="input w-full h-11 bg-paper font-mono text-[13px] pr-12"
                         />
                         <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
                           <div className="w-6 h-6 rounded-sm shadow-sm border border-line" style={{ backgroundColor: typeColor || "#16813D" }} />
@@ -562,7 +562,7 @@ export function LeavesSettingsForm() {
                           type="text"
                           value={typeDepartments}
                           onChange={(e) => setTypeDepartments(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          className="input w-full h-11 bg-paper text-[13px] pr-10 text-ellipsis overflow-hidden"
                           placeholder="e.g. HR, Management, IT..."
                         />
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
@@ -575,7 +575,7 @@ export function LeavesSettingsForm() {
                           type="text"
                           value={typeDesignations}
                           onChange={(e) => setTypeDesignations(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          className="input w-full h-11 bg-paper text-[13px] pr-10 text-ellipsis overflow-hidden"
                           placeholder="e.g. Team Lead, Branch Manager..."
                         />
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
@@ -595,14 +595,14 @@ export function LeavesSettingsForm() {
                         <label className="text-[13px] text-muted flex items-center gap-1">Effective After <HelpCircle className="w-3.5 h-3.5" /></label>
                         <input
                           type="number" min="0" value={effectiveAfterValue} onChange={(e) => setEffectiveAfterValue(e.target.value)}
-                          className="input w-full h-10 bg-white text-[13px]"
+                          className="input w-full h-10 bg-paper text-[13px]"
                         />
                       </div>
                       <div className="space-y-1.5 w-32 mt-6">
                         <select
                           value={effectiveAfterUnit}
                           onChange={(e) => setEffectiveAfterUnit(e.target.value)}
-                          className="input w-full h-10 bg-white text-[13px]"
+                          className="input w-full h-10 bg-paper text-[13px]"
                         >
                           <option value="Day(s)">Day(s)</option>
                           <option value="Month(s)">Month(s)</option>
@@ -632,7 +632,7 @@ export function LeavesSettingsForm() {
                       <select
                         value={unusedLeaves}
                         onChange={(e) => setUnusedLeaves(e.target.value)}
-                        className="input w-full h-10 bg-white text-[13px]"
+                        className="input w-full h-10 bg-paper text-[13px]"
                       >
                         <option value="Carry Forward">Carry Forward</option>
                         <option value="Lapsed">Lapsed</option>
@@ -644,7 +644,7 @@ export function LeavesSettingsForm() {
                       <select
                         value={overUtilization}
                         onChange={(e) => setOverUtilization(e.target.value)}
-                        className="input w-full h-10 bg-white text-[13px]"
+                        className="input w-full h-10 bg-paper text-[13px]"
                       >
                         <option value="Do not allow">Do not allow</option>
                         <option value="Allow">Allow</option>
@@ -679,7 +679,7 @@ export function LeavesSettingsForm() {
                           type="text"
                           value={typeGenders}
                           onChange={(e) => setTypeGenders(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          className="input w-full h-11 bg-paper text-[13px] pr-10 text-ellipsis overflow-hidden"
                           placeholder="e.g. Male, Female, Others"
                         />
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
@@ -693,7 +693,7 @@ export function LeavesSettingsForm() {
                           type="text"
                           value={typeMaritalStatuses}
                           onChange={(e) => setTypeMaritalStatuses(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          className="input w-full h-11 bg-paper text-[13px] pr-10 text-ellipsis overflow-hidden"
                           placeholder="e.g. Single, Married, Widower..."
                         />
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
@@ -707,7 +707,7 @@ export function LeavesSettingsForm() {
                           type="text"
                           value={typeUserRoles}
                           onChange={(e) => setTypeUserRoles(e.target.value)}
-                          className="input w-full h-11 bg-white text-[13px] pr-10 text-ellipsis overflow-hidden"
+                          className="input w-full h-11 bg-paper text-[13px] pr-10 text-ellipsis overflow-hidden"
                           placeholder="e.g. App Administrator, Employee..."
                         />
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
@@ -723,7 +723,7 @@ export function LeavesSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>

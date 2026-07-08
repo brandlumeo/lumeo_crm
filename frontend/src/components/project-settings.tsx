@@ -225,7 +225,7 @@ export function ProjectSettingsForm() {
       </div>
 
       {/* Main Container */}
-      <div className="bg-white border border-line shadow-sm overflow-hidden flex flex-col relative">
+      <div className="bg-paper border border-line shadow-sm overflow-hidden flex flex-col relative">
         
         {/* Tabs */}
         <div className="flex items-center overflow-x-auto border-b border-line px-2">
@@ -277,7 +277,7 @@ export function ProjectSettingsForm() {
                     value={projectPrefix}
                     onChange={(e) => setProjectPrefix(e.target.value)}
                     disabled={!isAdmin}
-                    className="input w-full h-11 bg-white font-mono text-sm"
+                    className="input w-full h-11 bg-paper font-mono text-sm"
                     placeholder="PRJ-"
                   />
                   <p className="text-xs text-muted/80 mt-1">Auto-incrementing prefix for projects</p>
@@ -291,7 +291,7 @@ export function ProjectSettingsForm() {
                     value={defaultView}
                     onChange={(e) => setDefaultView(e.target.value)}
                     disabled={!isAdmin}
-                    className="input w-full h-11 bg-white"
+                    className="input w-full h-11 bg-paper"
                   >
                     <option value="list">List View</option>
                     <option value="kanban">Kanban Board</option>
@@ -348,7 +348,7 @@ export function ProjectSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[300px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-4 px-6 w-16 text-center">#</th>
                       <th className="py-4 px-6">Name</th>
@@ -404,14 +404,14 @@ export function ProjectSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditStatus(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteStatus(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -431,7 +431,7 @@ export function ProjectSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[300px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-4 px-6 w-16 text-center">#</th>
                       <th className="py-4 px-6">Category Name</th>
@@ -459,14 +459,14 @@ export function ProjectSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditCategory(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteCategory(index)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
@@ -488,7 +488,7 @@ export function ProjectSettingsForm() {
       {/* Status Modal */}
       {isStatusModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-[15px] font-semibold text-ink">
                 {editingStatusIndex !== null ? "Edit Status" : "Add Status"}
@@ -508,7 +508,7 @@ export function ProjectSettingsForm() {
                   type="text"
                   value={statusName}
                   onChange={(e) => setStatusName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. in progress"
                   autoFocus
                 />
@@ -521,13 +521,13 @@ export function ProjectSettingsForm() {
                     type="color"
                     value={statusColor}
                     onChange={(e) => setStatusColor(e.target.value)}
-                    className="w-10 h-10 rounded border border-line cursor-pointer p-0.5 bg-white"
+                    className="w-10 h-10 rounded border border-line cursor-pointer p-0.5 bg-paper"
                   />
                   <input
                     type="text"
                     value={statusColor}
                     onChange={(e) => setStatusColor(e.target.value)}
-                    className="input w-full h-10 bg-white font-mono text-[13px] uppercase"
+                    className="input w-full h-10 bg-paper font-mono text-[13px] uppercase"
                     placeholder="#3B82F6"
                   />
                 </div>
@@ -537,7 +537,7 @@ export function ProjectSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsStatusModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -557,7 +557,7 @@ export function ProjectSettingsForm() {
       {/* Category Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-[15px] font-semibold text-ink">
                 {editingCategoryIndex !== null ? "Edit Category" : "Add Category"}
@@ -577,7 +577,7 @@ export function ProjectSettingsForm() {
                   type="text"
                   value={categoryName}
                   onChange={(e) => setCategoryName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. CCTV"
                   autoFocus
                 />
@@ -587,7 +587,7 @@ export function ProjectSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -611,7 +611,7 @@ export function ProjectSettingsForm() {
             className="absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity" 
             onClick={() => setDeleteConfirmation({ isOpen: false, index: null, type: 'status' })} 
           />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in">
+          <div className="relative w-full max-w-sm bg-paper rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in">
             <div className="p-6 text-center">
               <div className="w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4 border border-rose-100">
                 <AlertTriangle className="w-7 h-7 text-rose-500" />
@@ -624,7 +624,7 @@ export function ProjectSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
               <button 
                 onClick={() => setDeleteConfirmation({ isOpen: false, index: null, type: 'status' })} 
-                className="w-full sm:w-auto flex-1 btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-10 px-4 rounded-xl font-medium text-[14px] transition-colors"
+                className="w-full sm:w-auto flex-1 btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-10 px-4 rounded-xl font-medium text-[14px] transition-colors"
                 disabled={mutation.isPending}
               >
                 Cancel

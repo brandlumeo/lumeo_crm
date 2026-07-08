@@ -76,7 +76,7 @@ export function HRSettings() {
         </div>
 
         {/* Holiday card */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 via-pink-400 to-red-400" />
 
           {isLoading ? (
@@ -169,7 +169,7 @@ export function HRSettings() {
                       value={newHoliday.name}
                       onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })}
                       placeholder="e.g. New Year's Day"
-                      className="input w-full bg-white"
+                      className="input w-full bg-paper"
                     />
                   </div>
                   <div>
@@ -179,7 +179,7 @@ export function HRSettings() {
                       required
                       value={newHoliday.date}
                       onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
-                      className="input w-full bg-white"
+                      className="input w-full bg-paper"
                     />
                   </div>
                 </div>
@@ -190,7 +190,7 @@ export function HRSettings() {
                     value={newHoliday.description}
                     onChange={(e) => setNewHoliday({ ...newHoliday, description: e.target.value })}
                     placeholder="Brief note about this holiday"
-                    className="input w-full bg-white"
+                    className="input w-full bg-paper"
                   />
                 </div>
                 <div className="flex items-center gap-3 pt-1">
@@ -231,7 +231,7 @@ export function HRSettings() {
           <p className="text-[14px] text-muted">Standard leave allowances applied globally across all employees.</p>
         </div>
 
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-400" />
 
           <div className="p-6 sm:p-8 pt-9">

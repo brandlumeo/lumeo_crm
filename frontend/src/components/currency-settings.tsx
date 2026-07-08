@@ -91,7 +91,7 @@ export function CurrencySettingsForm() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Base Currency */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
           <div className="p-6 sm:p-8 space-y-8 flex-1 pt-9">
             <div className="flex items-center gap-3 mb-2">
@@ -114,7 +114,7 @@ export function CurrencySettingsForm() {
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                     disabled={!isAdmin}
-                    className={cn("input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10 text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
+                    className={cn("input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10 text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
                   >
                     <option value="USD">USD - United States Dollar ($)</option>
                     <option value="EUR">EUR - Euro (€)</option>

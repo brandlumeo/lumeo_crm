@@ -419,7 +419,7 @@ export function AttendanceSettingsForm() {
       </div>
 
       {/* Main Container */}
-      <div className="bg-white border border-line shadow-sm overflow-hidden flex flex-col relative">
+      <div className="bg-paper border border-line shadow-sm overflow-hidden flex flex-col relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500"></div>
         
         {/* Tabs */}
@@ -501,7 +501,7 @@ export function AttendanceSettingsForm() {
                     value={emailReportRole}
                     onChange={(e) => setEmailReportRole(e.target.value)}
                     disabled={!isAdmin}
-                    className="input w-full h-11 bg-white text-[13.5px]"
+                    className="input w-full h-11 bg-paper text-[13.5px]"
                   >
                     <option value="Primary Admin">Primary Admin</option>
                     <option value="Secondary Admin">Secondary Admin</option>
@@ -518,7 +518,7 @@ export function AttendanceSettingsForm() {
                       value={weekStartsFrom}
                       onChange={(e) => setWeekStartsFrom(e.target.value)}
                       disabled={!isAdmin}
-                      className="input w-full h-11 bg-white text-[13.5px]"
+                      className="input w-full h-11 bg-paper text-[13.5px]"
                     >
                       <option value="Monday">Monday</option>
                       <option value="Sunday">Sunday</option>
@@ -554,7 +554,7 @@ export function AttendanceSettingsForm() {
                     </label>
                     <input
                       type="time" step="60" value={officeStartTime} onChange={(e) => setOfficeStartTime(e.target.value)} disabled={!isAdmin}
-                      className="input w-full h-10 bg-bone/30 focus:bg-white font-mono text-sm"
+                      className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -563,14 +563,14 @@ export function AttendanceSettingsForm() {
                     </label>
                     <input
                       type="time" step="60" value={officeEndTime} onChange={(e) => setOfficeEndTime(e.target.value)} disabled={!isAdmin}
-                      className="input w-full h-10 bg-bone/30 focus:bg-white font-mono text-sm"
+                      className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-medium text-ink">Late Mark After (min)</label>
                     <input
                       type="number" min="0" value={lateMarkAfter} onChange={(e) => setLateMarkAfter(e.target.value)} disabled={!isAdmin}
-                      className="input w-full h-10 bg-bone/30 focus:bg-white font-mono text-sm"
+                      className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
                     />
                   </div>
                 </div>
@@ -599,7 +599,7 @@ export function AttendanceSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[300px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-4 px-6 w-40">Name</th>
                       <th className="py-4 px-6 w-48">Time</th>
@@ -665,7 +665,7 @@ export function AttendanceSettingsForm() {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenEditShift(index)}
-                                    className="flex items-center justify-center w-8 h-8 border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                    className="flex items-center justify-center w-8 h-8 border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                   >
                                     <Edit className="w-3.5 h-3.5" />
                                   </button>
@@ -673,7 +673,7 @@ export function AttendanceSettingsForm() {
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteShift(index)}
-                                      className="flex items-center justify-center w-8 h-8 border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                      className="flex items-center justify-center w-8 h-8 border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -695,7 +695,7 @@ export function AttendanceSettingsForm() {
             <div className="flex flex-col">
               <div className="overflow-x-auto min-h-[300px]">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                  <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                     <tr>
                       <th className="py-4 px-6">Rotation Name</th>
                       <th className="py-4 px-6 text-center">No. of Employees</th>
@@ -740,14 +740,14 @@ export function AttendanceSettingsForm() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditRotation(index)}
-                                  className="flex items-center justify-center w-8 h-8 border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                                  className="flex items-center justify-center w-8 h-8 border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteRotation(index)}
-                                  className="flex items-center justify-center w-8 h-8 border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                  className="flex items-center justify-center w-8 h-8 border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -765,7 +765,7 @@ export function AttendanceSettingsForm() {
                   <div className="mt-12">
                     <h4 className="text-[14px] font-semibold text-ink mb-4 px-2">Automated Shifts</h4>
                     <table className="w-full text-left text-[13px] border-t border-line">
-                      <thead className="bg-white border-b border-line text-muted/80 font-medium">
+                      <thead className="bg-paper border-b border-line text-muted/80 font-medium">
                         <tr>
                           <th className="py-4 px-6">Department</th>
                           <th className="py-4 px-6 text-center">Employees</th>
@@ -787,7 +787,7 @@ export function AttendanceSettingsForm() {
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteAutomatedShift(index)}
-                                    className="flex items-center justify-center w-8 h-8 border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                                    className="flex items-center justify-center w-8 h-8 border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -805,7 +805,7 @@ export function AttendanceSettingsForm() {
                 <div className="border-t border-line px-6 py-4 flex items-center justify-between text-[13px] text-muted">
                   <div className="flex items-center gap-2">
                     Show 
-                    <select className="border border-line rounded px-1.5 py-1 bg-white focus:outline-none">
+                    <select className="border border-line rounded px-1.5 py-1 bg-paper focus:outline-none">
                       <option>10</option>
                       <option>25</option>
                       <option>50</option>
@@ -815,8 +815,8 @@ export function AttendanceSettingsForm() {
                   <div className="flex items-center gap-4">
                     <span>Showing {rotations.length > 0 ? 1 : 0} to {rotations.length} of {rotations.length} entries</span>
                     <div className="flex items-center gap-1">
-                      <button className="px-3 py-1.5 border border-line rounded bg-white hover:bg-bone disabled:opacity-50" disabled>Previous</button>
-                      <button className="px-3 py-1.5 border border-line rounded bg-white hover:bg-bone disabled:opacity-50" disabled>Next</button>
+                      <button className="px-3 py-1.5 border border-line rounded bg-paper hover:bg-bone disabled:opacity-50" disabled>Previous</button>
+                      <button className="px-3 py-1.5 border border-line rounded bg-paper hover:bg-bone disabled:opacity-50" disabled>Next</button>
                     </div>
                   </div>
                 </div>
@@ -836,7 +836,7 @@ export function AttendanceSettingsForm() {
       {/* Shift Modal */}
       {isShiftModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-2xl my-8 overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
               <h3 className="text-[15px] font-semibold text-ink">
                 {editingShiftIndex !== null ? "Edit Shift" : "Add Shift"}
@@ -858,7 +858,7 @@ export function AttendanceSettingsForm() {
                     type="text"
                     value={shiftName}
                     onChange={(e) => setShiftName(e.target.value)}
-                    className="input w-full h-10 bg-white"
+                    className="input w-full h-10 bg-paper"
                     placeholder="e.g. General Shift"
                   />
                 </div>
@@ -869,13 +869,13 @@ export function AttendanceSettingsForm() {
                       type="color"
                       value={shiftColor}
                       onChange={(e) => setShiftColor(e.target.value)}
-                      className="w-10 h-10 rounded border border-line cursor-pointer p-0.5 bg-white shrink-0"
+                      className="w-10 h-10 rounded border border-line cursor-pointer p-0.5 bg-paper shrink-0"
                     />
                     <input
                       type="text"
                       value={shiftColor}
                       onChange={(e) => setShiftColor(e.target.value)}
-                      className="input w-full h-10 bg-white font-mono text-[13px]"
+                      className="input w-full h-10 bg-paper font-mono text-[13px]"
                     />
                   </div>
                 </div>
@@ -886,21 +886,21 @@ export function AttendanceSettingsForm() {
                   <label className="text-[13px] font-medium text-ink">Start Time <span className="text-rose-500">*</span></label>
                   <input
                     type="time" step="60" value={shiftStartTime} onChange={(e) => setShiftStartTime(e.target.value)}
-                    className="input w-full h-10 bg-white font-mono text-sm"
+                    className="input w-full h-10 bg-paper font-mono text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium text-ink">Half Day Time <span className="text-rose-500">*</span></label>
                   <input
                     type="time" step="60" value={shiftHalfDayTime} onChange={(e) => setShiftHalfDayTime(e.target.value)}
-                    className="input w-full h-10 bg-white font-mono text-sm"
+                    className="input w-full h-10 bg-paper font-mono text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium text-ink">End Time <span className="text-rose-500">*</span></label>
                   <input
                     type="time" step="60" value={shiftEndTime} onChange={(e) => setShiftEndTime(e.target.value)}
-                    className="input w-full h-10 bg-white font-mono text-sm"
+                    className="input w-full h-10 bg-paper font-mono text-sm"
                   />
                 </div>
               </div>
@@ -910,14 +910,14 @@ export function AttendanceSettingsForm() {
                   <label className="text-[13px] font-medium text-ink">Late mark after (minutes) <span className="text-rose-500">*</span></label>
                   <input
                     type="number" min="0" value={shiftLateMarkAfter} onChange={(e) => setShiftLateMarkAfter(e.target.value)}
-                    className="input w-full h-10 bg-white"
+                    className="input w-full h-10 bg-paper"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium text-ink">Maximum check-in allowed in a day <span className="text-rose-500">*</span></label>
                   <input
                     type="number" min="1" value={shiftMaxCheckIn} onChange={(e) => setShiftMaxCheckIn(e.target.value)}
-                    className="input w-full h-10 bg-white"
+                    className="input w-full h-10 bg-paper"
                   />
                 </div>
               </div>
@@ -933,7 +933,7 @@ export function AttendanceSettingsForm() {
                         "px-3 py-1.5 text-[12.5px] font-medium rounded border transition-colors",
                         shiftOfficeOpensOn.includes(day) 
                           ? "bg-blue-50 border-blue-200 text-blue-700" 
-                          : "bg-white border-line text-muted hover:bg-bone"
+                          : "bg-paper border-line text-muted hover:bg-bone"
                       )}
                     >
                       {day}
@@ -947,7 +947,7 @@ export function AttendanceSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsShiftModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -967,7 +967,7 @@ export function AttendanceSettingsForm() {
       {/* Rotation Modal */}
       {isRotationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md my-8 overflow-hidden animate-scale-in flex flex-col">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-md my-8 overflow-hidden animate-scale-in flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
               <h3 className="text-[15px] font-semibold text-ink">
                 {editingRotationIndex !== null ? "Edit Shift Rotation" : "Add Shift Rotation"}
@@ -988,7 +988,7 @@ export function AttendanceSettingsForm() {
                   type="text"
                   value={rotationName}
                   onChange={(e) => setRotationName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. Weekly Rotation"
                 />
               </div>
@@ -1000,7 +1000,7 @@ export function AttendanceSettingsForm() {
                   min="0"
                   value={rotationEmployees}
                   onChange={(e) => setRotationEmployees(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. 5"
                 />
               </div>
@@ -1032,7 +1032,7 @@ export function AttendanceSettingsForm() {
                 <select
                   value={rotationStatus}
                   onChange={(e) => setRotationStatus(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -1044,7 +1044,7 @@ export function AttendanceSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsRotationModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>
@@ -1063,7 +1063,7 @@ export function AttendanceSettingsForm() {
       {/* Automate Shifts Modal */}
       {isAutomateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 overflow-hidden animate-scale-in flex flex-col">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-2xl my-8 overflow-hidden animate-scale-in flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
               <h3 className="text-[15px] font-semibold text-ink">
                 Add Automate Shift
@@ -1087,7 +1087,7 @@ export function AttendanceSettingsForm() {
                     value={automateDepartment}
                     onChange={(e) => setAutomateDepartment(e.target.value)}
                     placeholder="Type or select a department..."
-                    className="input w-full h-10 bg-white"
+                    className="input w-full h-10 bg-paper"
                   />
                   <datalist id="departments-list">
                     {Array.from(new Set(teamData?.map(u => u.department).filter(Boolean))).map(dept => (
@@ -1107,7 +1107,7 @@ export function AttendanceSettingsForm() {
                       <div className="text-[13px] text-muted p-2">No team members found</div>
                     ) : (
                       teamData.map(user => (
-                        <label key={user.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer">
+                        <label key={user.id} className="flex items-center gap-2 p-1.5 hover:bg-paper rounded cursor-pointer">
                           <input 
                             type="checkbox" 
                             checked={automateEmployees.includes(user.id.toString())}
@@ -1137,7 +1137,7 @@ export function AttendanceSettingsForm() {
                 <select
                   value={automateRotationName}
                   onChange={(e) => setAutomateRotationName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                 >
                   <option value="">Nothing selected</option>
                   {rotations.map(rot => (

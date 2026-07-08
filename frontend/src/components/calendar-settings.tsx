@@ -151,7 +151,7 @@ export function CalendarSettings() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
           {/* Connected accounts */}
-          <div className="xl:col-span-2 bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+          <div className="xl:col-span-2 bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-indigo-500" />
 
             <div className="px-6 py-4 pt-8 border-b border-line bg-bone/30 flex items-center justify-between">
@@ -243,7 +243,7 @@ export function CalendarSettings() {
                         <div className="px-6 py-5 bg-bone/20 border-t border-line space-y-5 animate-rise">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             {/* Sync Preferences */}
-                            <div className="space-y-3 bg-white p-4 rounded-xl border border-line">
+                            <div className="space-y-3 bg-paper p-4 rounded-xl border border-line">
                               <span className="text-[13px] font-bold text-ink block mb-1">Preferences & Routing</span>
                               <label className="flex items-start gap-3 cursor-pointer">
                                 <input 
@@ -272,7 +272,7 @@ export function CalendarSettings() {
                             </div>
 
                             {/* Booking Parameters */}
-                            <div className="space-y-3 bg-white p-4 rounded-xl border border-line">
+                            <div className="space-y-3 bg-paper p-4 rounded-xl border border-line">
                               <span className="text-[13px] font-bold text-ink block mb-1">Meeting Options</span>
                               
                               <div className="grid grid-cols-2 gap-3">
@@ -325,7 +325,7 @@ export function CalendarSettings() {
                           </div>
 
                           {/* Availability Hours */}
-                          <div className="bg-white p-4 rounded-xl border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="bg-paper p-4 rounded-xl border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                               <span className="text-[13px] font-bold text-ink">Availability Windows</span>
                               <p className="text-[11px] text-muted">Set daily times during which clients are allowed to request bookings.</p>
@@ -354,7 +354,7 @@ export function CalendarSettings() {
                             <button 
                               type="button" 
                               onClick={() => { setExpandedAccountId(null); setEditingAccountSettings(null); }}
-                              className="btn bg-white hover:bg-bone border border-line text-xs font-semibold px-4 h-8 rounded-lg"
+                              className="btn bg-paper hover:bg-bone border border-line text-xs font-semibold px-4 h-8 rounded-lg"
                             >
                               Cancel
                             </button>
@@ -378,7 +378,7 @@ export function CalendarSettings() {
           </div>
 
           {/* Connect new account */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${selectedMeta.gradient} transition-all duration-300`} />
             <div className="p-5 pt-8 flex flex-col gap-4">
               <div className="text-[13px] font-semibold text-ink">Connect Calendar</div>
@@ -441,7 +441,7 @@ export function CalendarSettings() {
 
         {/* Create form */}
         {showLinkForm && (
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative mb-5">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative mb-5">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-indigo-500" />
             <div className="p-6 pt-8">
               <div className="flex items-center gap-3 mb-5">
@@ -479,7 +479,7 @@ export function CalendarSettings() {
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-ink mb-1.5">URL Slug</label>
-                  <div className="flex items-center border border-line rounded-xl overflow-hidden focus-within:border-ink transition-colors bg-white">
+                  <div className="flex items-center border border-line rounded-xl overflow-hidden focus-within:border-ink transition-colors bg-paper">
                     <span className="px-3 text-[13px] text-muted bg-bone-2 border-r border-line py-2 shrink-0">/book/</span>
                     <input required type="text" value={linkSlug} onChange={e => setLinkSlug(e.target.value)}
                       className="flex-1 px-3 py-2 text-[13px] outline-none bg-transparent font-mono" placeholder="discovery-call" />
@@ -510,7 +510,7 @@ export function CalendarSettings() {
               const fullUrl = `${window.location.origin}/book/${link.slug}`;
               const palette = DURATION_COLORS[idx % DURATION_COLORS.length];
               return (
-                <div key={link.id} className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden group hover:border-slate-300 hover:shadow-md transition-all">
+                <div key={link.id} className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden group hover:border-slate-300 hover:shadow-md transition-all">
                   {/* Top bar */}
                   <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -570,7 +570,7 @@ export function CalendarSettings() {
           </div>
         ) : (
           !showLinkForm && (
-            <div className="py-14 flex flex-col items-center text-center space-y-3 bg-white border border-dashed border-line rounded-2xl">
+            <div className="py-14 flex flex-col items-center text-center space-y-3 bg-paper border border-dashed border-line rounded-2xl">
               <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-200 flex items-center justify-center">
                 <LinkIcon className="w-6 h-6 text-violet-400" />
               </div>

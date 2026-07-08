@@ -145,7 +145,7 @@ export function FinanceSettingsForm() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         
         {/* Core Financial Defaults */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow xl:col-span-2">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow xl:col-span-2">
           <div className="p-6 md:p-8 flex-1">
             <div className="flex items-center gap-3 mb-8 pb-4 border-b border-line/50">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
@@ -165,7 +165,7 @@ export function FinanceSettingsForm() {
                   value={invoicePrefix}
                   onChange={(e) => setInvoicePrefix(e.target.value)}
                   disabled={!isAdmin}
-                  className="input w-full h-11 bg-bone/30 focus:bg-white"
+                  className="input w-full h-11 bg-bone/30 focus:bg-paper"
                 />
               </div>
 
@@ -176,7 +176,7 @@ export function FinanceSettingsForm() {
                   value={quotePrefix}
                   onChange={(e) => setQuotePrefix(e.target.value)}
                   disabled={!isAdmin}
-                  className="input w-full h-11 bg-bone/30 focus:bg-white"
+                  className="input w-full h-11 bg-bone/30 focus:bg-paper"
                 />
               </div>
 
@@ -189,7 +189,7 @@ export function FinanceSettingsForm() {
                     value={defaultTaxRate}
                     onChange={(e) => setDefaultTaxRate(e.target.value)}
                     disabled={!isAdmin}
-                    className="input w-full h-11 pr-10 bg-bone/30 focus:bg-white"
+                    className="input w-full h-11 pr-10 bg-bone/30 focus:bg-paper"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
                     <span className="text-muted font-medium">%</span>
@@ -201,7 +201,7 @@ export function FinanceSettingsForm() {
         </div>
 
         {/* Invoice Template Picker */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow lg:col-span-2">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow lg:col-span-2">
           <div className="p-6 md:p-8 flex-1">
             <div className="flex items-center gap-3 mb-8 pb-4 border-b border-line/50">
               <div className="w-10 h-10 rounded-xl bg-fuchsia-50 flex items-center justify-center text-fuchsia-600">
@@ -232,7 +232,7 @@ export function FinanceSettingsForm() {
                       : "border-transparent bg-bone/30 hover:bg-bone/60"
                   )}
                 >
-                  <div className="w-full aspect-[1/1.4] bg-white border border-line/60 rounded overflow-hidden shadow-sm relative flex flex-col">
+                  <div className="w-full aspect-[1/1.4] bg-paper border border-line/60 rounded overflow-hidden shadow-sm relative flex flex-col">
                      {/* Mock miniature template designs */}
                      {template.id === "template1" && (
                        <>
@@ -293,7 +293,7 @@ export function FinanceSettingsForm() {
         </div>
 
         {/* Invoice Payment Details */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow">
           <div className="p-6 md:p-8 flex-1">
             <div className="flex items-center gap-3 mb-8 pb-4 border-b border-line/50">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -334,7 +334,7 @@ export function FinanceSettingsForm() {
                         value={invoiceLanguage}
                         onChange={(e) => setInvoiceLanguage(e.target.value)}
                         disabled={!isAdmin}
-                        className="input w-full h-11 bg-bone/30 focus:bg-white"
+                        className="input w-full h-11 bg-bone/30 focus:bg-paper"
                     >
                         <option value="en">English</option>
                         <option value="es">Spanish</option>
@@ -349,7 +349,7 @@ export function FinanceSettingsForm() {
                             value={dueAfterDays}
                             onChange={(e) => setDueAfterDays(Number(e.target.value))}
                             disabled={!isAdmin}
-                            className="input w-full h-11 bg-bone/30 focus:bg-white pr-16"
+                            className="input w-full h-11 bg-bone/30 focus:bg-paper pr-16"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-muted">Day(s)</span>
                     </div>
@@ -360,7 +360,7 @@ export function FinanceSettingsForm() {
         </div>
 
         {/* Reminders & Visibility */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow">
           <div className="p-6 md:p-8 flex-1">
             <div className="flex items-center gap-3 mb-8 pb-4 border-b border-line/50">
               <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-600">
@@ -382,7 +382,7 @@ export function FinanceSettingsForm() {
                                 value={sendReminderBefore}
                                 onChange={(e) => setSendReminderBefore(Number(e.target.value))}
                                 disabled={!isAdmin}
-                                className="input w-full h-11 bg-bone/30 focus:bg-white pr-16"
+                                className="input w-full h-11 bg-bone/30 focus:bg-paper pr-16"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-muted">Day(s)</span>
                         </div>
@@ -395,7 +395,7 @@ export function FinanceSettingsForm() {
                                 value={sendReminderAfter}
                                 onChange={(e) => setSendReminderAfter(Number(e.target.value))}
                                 disabled={!isAdmin}
-                                className="input w-full h-11 bg-bone/30 focus:bg-white pr-16"
+                                className="input w-full h-11 bg-bone/30 focus:bg-paper pr-16"
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-muted">Day(s)</span>
                         </div>
@@ -429,7 +429,7 @@ export function FinanceSettingsForm() {
         </div>
 
         {/* Client Info to Show */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow xl:col-span-2">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow xl:col-span-2">
           <div className="p-6 md:p-8 flex-1">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line/50">
               <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
@@ -471,7 +471,7 @@ export function FinanceSettingsForm() {
         </div>
 
         {/* Text Areas */}
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow lg:col-span-2">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow lg:col-span-2">
           <div className="p-6 md:p-8 flex-1">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line/50">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -491,7 +491,7 @@ export function FinanceSettingsForm() {
                   onChange={(e) => setInvoiceTerms(e.target.value)}
                   disabled={!isAdmin}
                   rows={4}
-                  className="input w-full py-3 bg-bone/30 focus:bg-white resize-none"
+                  className="input w-full py-3 bg-bone/30 focus:bg-paper resize-none"
                   placeholder="Thank you for your business."
                 />
               </div>
@@ -503,7 +503,7 @@ export function FinanceSettingsForm() {
                   onChange={(e) => setInvoiceOtherInfo(e.target.value)}
                   disabled={!isAdmin}
                   rows={4}
-                  className="input w-full py-3 bg-bone/30 focus:bg-white resize-none"
+                  className="input w-full py-3 bg-bone/30 focus:bg-paper resize-none"
                   placeholder="Enter Other Information"
                 />
               </div>

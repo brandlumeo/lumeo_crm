@@ -40,7 +40,7 @@ export function BillingSettings() {
       )}
 
       {/* Portal Link Card */}
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500"></div>
         
         <div className="p-8 sm:p-12 flex flex-col items-center text-center">

@@ -250,7 +250,7 @@ export function SecurityForm() {
       {/* 2FA Disable Modal Confirmation */}
       {showDisableConfirm && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-line shadow-2xl max-w-md w-full overflow-hidden animate-rise">
+          <div className="bg-paper rounded-2xl border border-line shadow-2xl max-w-md w-full overflow-hidden animate-rise">
             <div className="p-6 space-y-4">
               <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
                 <ShieldAlert className="w-6 h-6" />
@@ -265,7 +265,7 @@ export function SecurityForm() {
             <div className="bg-bone/50 px-6 py-4 border-t border-line flex items-center justify-end gap-3">
               <button 
                 onClick={() => { setShowDisableConfirm(false); setDisablingMethod(null); }}
-                className="btn bg-white hover:bg-bone border border-line h-10 px-4 rounded-xl text-sm font-medium text-ink-2"
+                className="btn bg-paper hover:bg-bone border border-line h-10 px-4 rounded-xl text-sm font-medium text-ink-2"
               >
                 Keep Enabled
               </button>
@@ -287,7 +287,7 @@ export function SecurityForm() {
         <div className="xl:col-span-2 space-y-8">
           
           {/* Card 1: Two-Factor Authentication */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-slate-500 to-zinc-400" />
             
             <div className="p-6 sm:p-8 space-y-6">
@@ -347,7 +347,7 @@ export function SecurityForm() {
                           <div className="flex gap-3">
                             <span className="w-5 h-5 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-xs font-bold text-accent shrink-0 mt-0.5">2</span>
                             <p className="leading-snug text-xs sm:text-[13px]">
-                              Scan the QR Code on the right, or enter the secret key manually: <strong className="font-mono text-ink text-xs block mt-1 bg-white border border-line px-2.5 py-1 rounded select-all">{qrSecret}</strong>
+                              Scan the QR Code on the right, or enter the secret key manually: <strong className="font-mono text-ink text-xs block mt-1 bg-paper border border-line px-2.5 py-1 rounded select-all">{qrSecret}</strong>
                             </p>
                           </div>
                           <div className="flex gap-3">
@@ -359,7 +359,7 @@ export function SecurityForm() {
                         </div>
 
                         {/* Real Dynamic QR Code generated locally */}
-                        <div className="flex flex-col items-center justify-center bg-white p-3 border border-line rounded-xl shadow-inner gap-2">
+                        <div className="flex flex-col items-center justify-center bg-paper p-3 border border-line rounded-xl shadow-inner gap-2">
                           {qrCodeDataUrl ? (
                             <img
                               src={qrCodeDataUrl}
@@ -384,7 +384,7 @@ export function SecurityForm() {
                             value={verificationCode}
                             onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
                             placeholder="000000"
-                            className="input text-center font-mono text-lg tracking-widest h-11 w-full bg-white"
+                            className="input text-center font-mono text-lg tracking-widest h-11 w-full bg-paper"
                           />
                           <button
                             onClick={handle2FAVerify}
@@ -460,7 +460,7 @@ export function SecurityForm() {
           </div>
 
           {/* Card 2: Active Devices & Sessions */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative hover:shadow-md transition-shadow">
             <div className="p-6 sm:p-8 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-line">
                 <div className="flex items-center gap-3">
@@ -531,7 +531,7 @@ export function SecurityForm() {
           {/* Change Password Card */}
           <form 
             onSubmit={(e) => { e.preventDefault(); handlePasswordSubmit(); }}
-            className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative hover:shadow-md transition-shadow"
+            className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative hover:shadow-md transition-shadow"
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-700 via-slate-500 to-zinc-400" />
             
@@ -559,7 +559,7 @@ export function SecurityForm() {
                       autoComplete="current-password"
                       name="current-password"
                       id="current-password"
-                      className="input w-full h-10 pr-9 bg-bone/30 focus:bg-white text-sm"
+                      className="input w-full h-10 pr-9 bg-bone/30 focus:bg-paper text-sm"
                     />
                     <button type="button" onClick={() => setShowCurrent(!showCurrent)}
                       className="absolute inset-y-0 right-2.5 flex items-center text-muted hover:text-ink">
@@ -583,7 +583,7 @@ export function SecurityForm() {
                       autoComplete="new-password"
                       name="new-password"
                       id="new-password"
-                      className="input w-full h-10 pr-9 bg-bone/30 focus:bg-white text-sm"
+                      className="input w-full h-10 pr-9 bg-bone/30 focus:bg-paper text-sm"
                     />
                     <button type="button" onClick={() => setShowNew(!showNew)}
                       className="absolute inset-y-0 right-2.5 flex items-center text-muted hover:text-ink">
@@ -625,7 +625,7 @@ export function SecurityForm() {
                       id="confirm-password"
                       className={`input w-full h-10 pr-9 text-sm transition-all ${
                         passwordsMatch ? "border-emerald-400 focus:border-emerald-500 bg-emerald-50/10" :
-                        passwordsMismatch ? "border-rose-400 focus:border-rose-500 bg-rose-50/10" : "bg-bone/30 focus:bg-white"
+                        passwordsMismatch ? "border-rose-400 focus:border-rose-500 bg-rose-50/10" : "bg-bone/30 focus:bg-paper"
                       }`}
                     />
                     <button type="button" onClick={() => setShowConfirm(!showConfirm)}
@@ -665,7 +665,7 @@ export function SecurityForm() {
           </form>
 
           {/* Security Tips Card */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden hover:border-slate-300 transition-colors">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden hover:border-slate-300 transition-colors">
             <div className="px-6 py-4 border-b border-line bg-gradient-to-r from-slate-50 to-zinc-50 flex items-center gap-3">
               <ShieldCheck className="w-4 h-4 text-slate-700" />
               <span className="text-[13.5px] font-bold text-ink">Security Checklist</span>

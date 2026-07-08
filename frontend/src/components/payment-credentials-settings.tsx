@@ -67,7 +67,7 @@ export function PaymentCredentialsForm() {
   ];
 
   return (
-    <div className="animate-fade-in bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+    <div className="animate-fade-in bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
       {/* Header Tabs */}
       <div className="flex items-center gap-6 px-6 pt-6 border-b border-line shrink-0 overflow-x-auto custom-scrollbar">
         {tabs.map(tab => (
@@ -112,7 +112,7 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
-                      className="w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
+                      className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
                       <option value="test">Test</option>
@@ -129,7 +129,7 @@ export function PaymentCredentialsForm() {
                         value={stripePublicKey}
                         onChange={(e) => setStripePublicKey(e.target.value)}
                         disabled={!isAdmin}
-                        className="input w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                        className="input w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       />
                     </label>
                     <label className="block relative">
@@ -141,7 +141,7 @@ export function PaymentCredentialsForm() {
                           value={stripeSecretKey}
                           onChange={(e) => setStripeSecretKey(e.target.value)}
                           disabled={!isAdmin}
-                          className="input w-full h-10 pl-3 pr-10 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                          className="input w-full h-10 pl-3 pr-10 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                         />
                         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +160,7 @@ export function PaymentCredentialsForm() {
                         type="password"
                         placeholder=""
                         disabled={!isAdmin}
-                        className="input w-full h-10 pl-3 pr-10 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                        className="input w-full h-10 pl-3 pr-10 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       />
                       <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -177,7 +177,7 @@ export function PaymentCredentialsForm() {
                       <span className="text-[13px] text-ink bg-transparent font-mono select-all">
                         https://crm.lumeo.in/verify_webhook/{company?.id || "b246320efc407fb3fae..."}
                       </span>
-                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-ink transition-colors">
+                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-ink transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
@@ -212,7 +212,7 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
-                      className="w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
+                      className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
                       <option value="sandbox">Sandbox</option>
@@ -229,7 +229,7 @@ export function PaymentCredentialsForm() {
                         value={paypalClientId}
                         onChange={(e) => setPaypalClientId(e.target.value)}
                         disabled={!isAdmin}
-                        className="input w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                        className="input w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       />
                     </label>
                     <label className="block relative">
@@ -241,7 +241,7 @@ export function PaymentCredentialsForm() {
                           value={paypalSecret}
                           onChange={(e) => setPaypalSecret(e.target.value)}
                           disabled={!isAdmin}
-                          className="input w-full h-10 pl-3 pr-10 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                          className="input w-full h-10 pl-3 pr-10 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                         />
                         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -259,7 +259,7 @@ export function PaymentCredentialsForm() {
                       <span className="text-[13px] text-ink bg-transparent font-mono select-all">
                         https://crm.lumeo.in/paypal-webhook/{company?.id || "b246320efc407fb3fae..."}
                       </span>
-                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-ink transition-colors">
+                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-ink transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
@@ -293,7 +293,7 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
-                      className="w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
+                      className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
                       <option value="test">Test</option>
@@ -310,7 +310,7 @@ export function PaymentCredentialsForm() {
                         value={razorpayKey}
                         onChange={(e) => setRazorpayKey(e.target.value)}
                         disabled={!isAdmin}
-                        className="input w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                        className="input w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       />
                     </label>
                     <label className="block relative">
@@ -322,7 +322,7 @@ export function PaymentCredentialsForm() {
                           value={razorpaySecret}
                           onChange={(e) => setRazorpaySecret(e.target.value)}
                           disabled={!isAdmin}
-                          className="input w-full h-10 pl-3 pr-10 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                          className="input w-full h-10 pl-3 pr-10 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                         />
                         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,7 +341,7 @@ export function PaymentCredentialsForm() {
                         type="password"
                         placeholder=""
                         disabled={!isAdmin}
-                        className="input w-full h-10 pl-3 pr-10 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                        className="input w-full h-10 pl-3 pr-10 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       />
                       <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -358,7 +358,7 @@ export function PaymentCredentialsForm() {
                       <span className="text-[13px] text-ink bg-transparent font-mono select-all">
                         https://crm.lumeo.in/razorpay-webhook/{company?.id || "b246320efc407fb3fae..."}
                       </span>
-                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-ink transition-colors">
+                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-ink transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
@@ -392,7 +392,7 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
-                      className="w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
+                      className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
                       <option value="sandbox">Sandbox</option>
@@ -409,7 +409,7 @@ export function PaymentCredentialsForm() {
                         value={paystackPublicKey}
                         onChange={(e) => setPaystackPublicKey(e.target.value)}
                         disabled={!isAdmin}
-                        className="input w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                        className="input w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       />
                     </label>
                     <label className="block relative">
@@ -421,7 +421,7 @@ export function PaymentCredentialsForm() {
                           value={paystackSecretKey}
                           onChange={(e) => setPaystackSecretKey(e.target.value)}
                           disabled={!isAdmin}
-                          className="input w-full h-10 pl-3 pr-10 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                          className="input w-full h-10 pl-3 pr-10 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                         />
                         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -441,7 +441,7 @@ export function PaymentCredentialsForm() {
                       value={paystackMerchantEmail}
                       onChange={(e) => setPaystackMerchantEmail(e.target.value)}
                       disabled={!isAdmin}
-                      className="input w-full h-10 px-3 bg-white border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                      className="input w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                     />
                   </label>
 
@@ -451,7 +451,7 @@ export function PaymentCredentialsForm() {
                       <span className="text-[13px] text-ink bg-transparent font-mono select-all">
                         https://crm.lumeo.in/paystack-webhook/{company?.id || "b246320efc407fb3fae..."}
                       </span>
-                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-ink transition-colors">
+                      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-ink transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
@@ -472,7 +472,7 @@ export function PaymentCredentialsForm() {
       </div>
 
       {/* Footer */}
-      <div className="p-6 border-t border-line/40 bg-white flex items-center gap-4">
+      <div className="p-6 border-t border-line/40 bg-paper flex items-center gap-4">
         {isAdmin && (
           <button
             onClick={() => mutation.mutate({

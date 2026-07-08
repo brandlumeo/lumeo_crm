@@ -455,7 +455,7 @@ export function RolesPermissionsForm() {
           
           <div className="space-y-4">
             {roles.map((role: any) => (
-              <div key={role.id} className="border border-line rounded-xl bg-white overflow-hidden shadow-sm hover:shadow transition-shadow">
+              <div key={role.id} className="border border-line rounded-xl bg-paper overflow-hidden shadow-sm hover:shadow transition-shadow">
                 {/* Role Header Row */}
                 <div className={cn(
                   "flex flex-col sm:flex-row sm:items-center justify-between p-5 transition-colors cursor-pointer",
@@ -481,7 +481,7 @@ export function RolesPermissionsForm() {
                           "flex items-center gap-2 px-4 py-2 border rounded-full transition-all text-[13px] font-medium",
                           expandedRole === role.id 
                             ? "bg-ink text-paper border-ink shadow-sm" 
-                            : "bg-white border-line hover:border-ink hover:text-ink text-muted"
+                            : "bg-paper border-line hover:border-ink hover:text-ink text-muted"
                         )}
                       >
                         <Key className="w-4 h-4" /> 
@@ -594,7 +594,7 @@ export function RolesPermissionsForm() {
                                               <select 
                                                 value={role.permissions?.[module.name]?.sub?.[sub] || "None"}
                                                 onChange={(e) => handleSubPermissionChange(role.id, module.name, sub, e.target.value)}
-                                                className="w-full bg-white border border-line rounded px-3 py-1.5 text-[13px] focus:outline-none focus:border-red-500 appearance-none cursor-pointer"
+                                                className="w-full bg-paper border border-line rounded px-3 py-1.5 text-[13px] focus:outline-none focus:border-red-500 appearance-none cursor-pointer"
                                               >
                                                 {subPermissionOptions.map(opt => <option key={opt}>{opt}</option>)}
                                               </select>
@@ -624,7 +624,7 @@ export function RolesPermissionsForm() {
       {/* Manage Role Modal */}
       {isManageRoleOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
-          <div className="bg-white rounded shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-scale-in">
+          <div className="bg-paper rounded shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-scale-in">
             <div className="flex items-center justify-between p-5 border-b border-line">
               <h2 className="text-lg font-medium text-ink">Manage Role</h2>
               <button 
@@ -692,7 +692,7 @@ export function RolesPermissionsForm() {
                       placeholder="e.g. HR" 
                       value={newRoleName}
                       onChange={(e) => setNewRoleName(e.target.value)}
-                      className="w-full bg-white border border-line rounded px-3 py-2 text-[13px] focus:outline-none focus:border-red-500 transition-colors"
+                      className="w-full bg-paper border border-line rounded px-3 py-2 text-[13px] focus:outline-none focus:border-red-500 transition-colors"
                     />
                   </div>
                   <div>
@@ -701,7 +701,7 @@ export function RolesPermissionsForm() {
                       <select 
                         value={importRoleId}
                         onChange={(e) => setImportRoleId(e.target.value)}
-                        className="w-full bg-white border border-line rounded px-3 py-2 text-[13px] focus:outline-none focus:border-red-500 transition-colors appearance-none text-muted"
+                        className="w-full bg-paper border border-line rounded px-3 py-2 text-[13px] focus:outline-none focus:border-red-500 transition-colors appearance-none text-muted"
                       >
                         <option value="--">--</option>
                         {roles.map((r: any) => (
@@ -718,7 +718,7 @@ export function RolesPermissionsForm() {
             <div className="p-5 border-t border-line flex justify-end gap-3 bg-bone/30">
               <button 
                 onClick={() => setIsManageRoleOpen(false)}
-                className="btn bg-white border border-line text-ink hover:bg-bone px-5 py-2 rounded text-[13px] font-medium transition-colors"
+                className="btn bg-paper border border-line text-ink hover:bg-bone px-5 py-2 rounded text-[13px] font-medium transition-colors"
               >
                 Close
               </button>

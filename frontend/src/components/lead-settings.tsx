@@ -239,7 +239,7 @@ export function LeadSettingsForm() {
       </div>
 
       {/* Main card */}
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative min-h-[400px]">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative min-h-[400px]">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"></div>
         
         <div className="p-6 sm:p-8 space-y-6 flex-1">
@@ -252,7 +252,7 @@ export function LeadSettingsForm() {
                 {/* Round Robin Assignment Toggle */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-indigo-100 bg-indigo-50/40 rounded-xl hover:border-indigo-200 transition-all gap-4">
                   <div className="flex items-start sm:items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-white border border-indigo-100 flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-paper border border-indigo-100 flex items-center justify-center shrink-0 shadow-sm">
                       <RefreshCw className="w-5 h-5 text-indigo-500" strokeWidth={2} />
                     </div>
                     <div className="pr-4">
@@ -289,7 +289,7 @@ export function LeadSettingsForm() {
                       onChange={(e) => setLeadPrefix(e.target.value)}
                       onBlur={() => saveSettings({ lead_prefix: leadPrefix })}
                       disabled={!isAdmin || mutation.isPending}
-                      className="input w-full h-11 bg-bone/30 focus:bg-white font-mono text-sm"
+                      className="input w-full h-11 bg-bone/30 focus:bg-paper font-mono text-sm"
                       placeholder="LD-"
                     />
                     <p className="text-xs text-muted/80">Prepended identifier for lead records (e.g. LD-0023)</p>
@@ -309,7 +309,7 @@ export function LeadSettingsForm() {
                         }}
                         disabled={!isAdmin || mutation.isPending}
                         className={cn(
-                          "select w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10 capitalize",
+                          "select w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10 capitalize",
                           !isAdmin && "opacity-70 cursor-not-allowed"
                         )}
                       >
@@ -367,7 +367,7 @@ export function LeadSettingsForm() {
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       placeholder="e.g. LinkedIn Campaign"
-                      className="input w-full bg-white h-9 text-sm"
+                      className="input w-full bg-paper h-9 text-sm"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -386,7 +386,7 @@ export function LeadSettingsForm() {
                   <p className="text-sm text-muted">No custom lead sources configured.</p>
                 </div>
               ) : (
-                <div className="border border-line rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="border border-line rounded-xl overflow-hidden bg-paper shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-bone/40 border-b border-line text-xs font-bold text-ink uppercase tracking-wider">
@@ -427,7 +427,7 @@ export function LeadSettingsForm() {
                                       </button>
                                       <button
                                         onClick={() => setEditingId(null)}
-                                        className="w-8 h-8 rounded-lg border border-line bg-white text-muted grid place-items-center hover:bg-bone transition-colors"
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted grid place-items-center hover:bg-bone transition-colors"
                                       >
                                         <XCircle className="w-4 h-4" />
                                       </button>
@@ -439,7 +439,7 @@ export function LeadSettingsForm() {
                                           setEditingId(source.id);
                                           setEditName(source.name);
                                         }}
-                                        className="w-8 h-8 rounded-lg border border-line bg-white text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
                                       >
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </button>
@@ -496,7 +496,7 @@ export function LeadSettingsForm() {
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       placeholder="e.g. Negotiation Started"
-                      className="input w-full bg-white h-9 text-sm"
+                      className="input w-full bg-paper h-9 text-sm"
                     />
                   </div>
                   <div className="w-24 space-y-1.5">
@@ -506,7 +506,7 @@ export function LeadSettingsForm() {
                         type="color"
                         value={newColor}
                         onChange={(e) => setNewColor(e.target.value)}
-                        className="w-8 h-8 rounded border border-line cursor-pointer bg-white"
+                        className="w-8 h-8 rounded border border-line cursor-pointer bg-paper"
                       />
                       <span className="text-xs font-mono uppercase text-muted">{newColor}</span>
                     </div>
@@ -527,7 +527,7 @@ export function LeadSettingsForm() {
                   <p className="text-sm text-muted">No custom stages defined. Default stages will be used.</p>
                 </div>
               ) : (
-                <div className="border border-line rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="border border-line rounded-xl overflow-hidden bg-paper shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-bone/40 border-b border-line text-xs font-bold text-ink uppercase tracking-wider">
@@ -566,7 +566,7 @@ export function LeadSettingsForm() {
                                     type="color"
                                     value={editColor}
                                     onChange={(e) => setEditColor(e.target.value)}
-                                    className="w-6 h-6 rounded cursor-pointer border border-line bg-white"
+                                    className="w-6 h-6 rounded cursor-pointer border border-line bg-paper"
                                   />
                                   <span className="text-xs font-mono uppercase text-muted">{editColor}</span>
                                 </div>
@@ -587,7 +587,7 @@ export function LeadSettingsForm() {
                                       </button>
                                       <button
                                         onClick={() => setEditingId(null)}
-                                        className="w-8 h-8 rounded-lg border border-line bg-white text-muted grid place-items-center hover:bg-bone transition-colors"
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted grid place-items-center hover:bg-bone transition-colors"
                                       >
                                         <XCircle className="w-4 h-4" />
                                       </button>
@@ -600,7 +600,7 @@ export function LeadSettingsForm() {
                                           setEditName(pipeline.name);
                                           setEditColor(pipeline.color || "#3B82F6");
                                         }}
-                                        className="w-8 h-8 rounded-lg border border-line bg-white text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
                                       >
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </button>
@@ -643,7 +643,7 @@ export function LeadSettingsForm() {
                   <p className="text-sm text-muted">No employees found to list.</p>
                 </div>
               ) : (
-                <div className="border border-line rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="border border-line rounded-xl overflow-hidden bg-paper shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-bone/40 border-b border-line text-xs font-bold text-ink uppercase tracking-wider">
@@ -723,7 +723,7 @@ export function LeadSettingsForm() {
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       placeholder="e.g. Enterprise Business"
-                      className="input w-full bg-white h-9 text-sm"
+                      className="input w-full bg-paper h-9 text-sm"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -742,7 +742,7 @@ export function LeadSettingsForm() {
                   <p className="text-sm text-muted">No custom deal categories configured.</p>
                 </div>
               ) : (
-                <div className="border border-line rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="border border-line rounded-xl overflow-hidden bg-paper shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-bone/40 border-b border-line text-xs font-bold text-ink uppercase tracking-wider">
@@ -783,7 +783,7 @@ export function LeadSettingsForm() {
                                       </button>
                                       <button
                                         onClick={() => setEditingId(null)}
-                                        className="w-8 h-8 rounded-lg border border-line bg-white text-muted grid place-items-center hover:bg-bone transition-colors"
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted grid place-items-center hover:bg-bone transition-colors"
                                       >
                                         <XCircle className="w-4 h-4" />
                                       </button>
@@ -795,7 +795,7 @@ export function LeadSettingsForm() {
                                           setEditingId(category.id);
                                           setEditName(category.name);
                                         }}
-                                        className="w-8 h-8 rounded-lg border border-line bg-white text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
                                       >
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </button>
@@ -838,7 +838,7 @@ export function LeadSettingsForm() {
                   <p className="text-sm text-muted">No employees found to list.</p>
                 </div>
               ) : (
-                <div className="border border-line rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="border border-line rounded-xl overflow-hidden bg-paper shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-bone/40 border-b border-line text-xs font-bold text-ink uppercase tracking-wider">

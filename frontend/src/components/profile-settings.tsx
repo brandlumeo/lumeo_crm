@@ -107,7 +107,7 @@ export function ProfileForm() {
       {activeTab === "profile" && (
         <div className="space-y-8 animate-fade-in">
           {/* Avatar Section */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"></div>
             <div className="p-6 sm:p-8 flex flex-col sm:flex-row gap-8 items-start sm:items-center flex-1 pt-9">
               <div className="relative group">
@@ -118,7 +118,7 @@ export function ProfileForm() {
                     <UserCircle className="w-14 h-14 text-muted/60" />
                   )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1.5 shadow-sm border border-line">
+                <div className="absolute -bottom-2 -right-2 bg-paper rounded-full p-1.5 shadow-sm border border-line">
                   <ShieldCheck className="w-5 h-5 text-emerald-500" />
                 </div>
               </div>
@@ -129,7 +129,7 @@ export function ProfileForm() {
                     type="url"
                     value={avatar}
                     onChange={(e) => setAvatar(e.target.value)}
-                    className="input w-full max-w-md h-11 bg-bone/30 focus:bg-white"
+                    className="input w-full max-w-md h-11 bg-bone/30 focus:bg-paper"
                     placeholder="https://example.com/avatar.jpg"
                   />
                 </div>
@@ -140,7 +140,7 @@ export function ProfileForm() {
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
             {/* Personal Info */}
-            <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
               <div className="p-6 sm:p-8 space-y-8 flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
@@ -156,7 +156,7 @@ export function ProfileForm() {
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-5">
                     <div className="sm:col-span-3 space-y-1.5">
                       <label className="text-[13.5px] font-medium text-ink">Prefix</label>
-                      <select value={prefix} onChange={e => setPrefix(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white cursor-pointer">
+                      <select value={prefix} onChange={e => setPrefix(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper cursor-pointer">
                         <option value="Mr">Mr</option>
                         <option value="Mrs">Mrs</option>
                         <option value="Ms">Ms</option>
@@ -165,11 +165,11 @@ export function ProfileForm() {
                     </div>
                     <div className="sm:col-span-4 space-y-1.5">
                       <label className="text-[13.5px] font-medium text-ink">First Name</label>
-                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white" />
+                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper" />
                     </div>
                     <div className="sm:col-span-5 space-y-1.5">
                       <label className="text-[13.5px] font-medium text-ink">Last Name</label>
-                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white" />
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper" />
                     </div>
                   </div>
 
@@ -178,11 +178,11 @@ export function ProfileForm() {
                       <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
                         <Phone className="w-4 h-4 text-muted" /> Mobile
                       </label>
-                      <input type="tel" value={mobile} onChange={e => setMobile(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white" placeholder="+91 9876543210" />
+                      <input type="tel" value={mobile} onChange={e => setMobile(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper" placeholder="+91 9876543210" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">Gender</label>
-                      <select value={gender} onChange={e => setGender(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white cursor-pointer">
+                      <select value={gender} onChange={e => setGender(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper cursor-pointer">
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
@@ -194,7 +194,7 @@ export function ProfileForm() {
             </div>
 
             {/* Account Settings */}
-            <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
               <div className="p-6 sm:p-8 space-y-8 flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
@@ -220,7 +220,7 @@ export function ProfileForm() {
                   <div className="space-y-1.5">
                     <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">Your Password</label>
                     <div className="relative">
-                      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Leave blank to keep current password" className="input w-full h-11 bg-bone/30 focus:bg-white pl-10" />
+                      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Leave blank to keep current password" className="input w-full h-11 bg-bone/30 focus:bg-paper pl-10" />
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted">
                         <Lock className="w-4 h-4" />
                       </div>
@@ -233,7 +233,7 @@ export function ProfileForm() {
                       <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
                         <Globe className="w-4 h-4 text-muted" /> Country
                       </label>
-                      <select value={country} onChange={e => setCountry(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white cursor-pointer">
+                      <select value={country} onChange={e => setCountry(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper cursor-pointer">
                         <option value="India">India</option>
                         <option value="United States">United States</option>
                         <option value="United Kingdom">United Kingdom</option>
@@ -247,7 +247,7 @@ export function ProfileForm() {
                       <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
                         <Languages className="w-4 h-4 text-muted" /> Language
                       </label>
-                      <select value={language} onChange={e => setLanguage(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-white cursor-pointer">
+                      <select value={language} onChange={e => setLanguage(e.target.value)} className="input w-full h-11 bg-bone/30 focus:bg-paper cursor-pointer">
                         <option value="English">English</option>
                         <option value="Spanish">Spanish</option>
                         <option value="French">French</option>
@@ -261,7 +261,7 @@ export function ProfileForm() {
                       <Clock className="w-4 h-4 text-muted" /> Timezone
                     </label>
                     <div className="relative">
-                      <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10">
+                      <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10">
                         <option value="UTC">UTC (Universal Coordinated Time)</option>
                         <option value="America/New_York">Eastern Time (ET)</option>
                         <option value="America/Chicago">Central Time (CT)</option>
@@ -277,7 +277,7 @@ export function ProfileForm() {
             </div>
 
             {/* Integrations & Notifications */}
-            <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative lg:col-span-2">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative lg:col-span-2">
               <div className="p-6 sm:p-8 space-y-8 flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center border border-orange-100">
@@ -355,7 +355,7 @@ export function ProfileForm() {
       )}
 
       {activeTab === "emergency" && (
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
           <div className="p-6 border-b border-line flex items-center justify-between bg-bone/20">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center border border-rose-100">
@@ -427,7 +427,7 @@ export function ProfileForm() {
       )}
 
       {activeTab === "documents" && (
-        <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
           <div className="p-6 border-b border-line flex items-center justify-between bg-bone/20">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100">

@@ -105,7 +105,7 @@ export function ThemeSettingsForm() {
         {/* Main settings card */}
         <div className="xl:col-span-2 space-y-6">
           {/* Color Scheme Picker */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${currentScheme.gradient}`} />
             <div className="p-6 sm:p-8 pt-9">
               <div className="mb-6">
@@ -121,7 +121,7 @@ export function ThemeSettingsForm() {
                     className={`relative flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border transition-all duration-150 group ${
                       colorScheme === scheme.id
                         ? "border-transparent shadow-md scale-[1.02] ring-2 ring-offset-2"
-                        : "border-line bg-bone/30 hover:border-slate-300 hover:shadow-sm opacity-90 hover:opacity-100 hover:bg-white"
+                        : "border-line bg-bone/30 hover:border-slate-300 hover:shadow-sm opacity-90 hover:opacity-100 hover:bg-paper"
                     }`}
                     style={colorScheme === scheme.id ? { "--tw-ring-color": scheme.hex, backgroundColor: `${scheme.hex}08` } as React.CSSProperties : undefined}
                   >
@@ -146,7 +146,7 @@ export function ThemeSettingsForm() {
           {/* Dark Mode + Font Size row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Dark Mode toggle */}
-            <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-700 to-slate-500" />
               <div className="p-6 pt-8 h-full flex flex-col">
                 <div className="flex items-start gap-4 mb-4">
@@ -176,7 +176,7 @@ export function ThemeSettingsForm() {
             </div>
 
             {/* Font Size selector */}
-            <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-indigo-500" />
               <div className="p-6 pt-8 h-full flex flex-col">
                 <div className="text-[13.5px] font-semibold text-ink uppercase tracking-widest mb-1.5">Font Size</div>
@@ -190,7 +190,7 @@ export function ThemeSettingsForm() {
                       className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border transition-all ${
                         fontSize === f.id
                           ? "border-indigo-400 bg-indigo-50/50 text-indigo-700 shadow-inner ring-1 ring-indigo-400"
-                          : "border-line bg-bone/30 text-muted hover:border-slate-300 hover:bg-white"
+                          : "border-line bg-bone/30 text-muted hover:border-slate-300 hover:bg-paper"
                       }`}
                     >
                       <span className="font-bold" style={{ fontSize: f.size }}>{f.preview}</span>
@@ -206,14 +206,14 @@ export function ThemeSettingsForm() {
         {/* Sidebar preview */}
         <div className="space-y-5">
           {/* Live Preview */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-line bg-bone/40 flex items-center gap-2">
               <Palette className="w-4 h-4 text-slate-500" />
               <span className="text-[13px] font-semibold text-ink uppercase tracking-widest">Live Preview</span>
             </div>
             <div className={`p-6 space-y-5 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-[#faf9f7]"}`}>
               {/* Topbar preview */}
-              <div className={`rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm ${darkMode ? "bg-[#222] border border-[#333]" : "bg-white border border-[#eaeaea]"}`}>
+              <div className={`rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm ${darkMode ? "bg-[#222] border border-[#333]" : "bg-paper border border-[#eaeaea]"}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-md shadow-sm" style={{ background: currentScheme.hex }} />
                   <div className={`text-[12px] font-bold tracking-tight ${darkMode ? "text-[#f4efe6]" : "text-[#1a1714]"}`}>Lumeo CRM</div>
@@ -221,7 +221,7 @@ export function ThemeSettingsForm() {
                 <div className={`w-6 h-6 rounded-full ${darkMode ? "bg-[#333]" : "bg-slate-100"}`} />
               </div>
               
-              <div className={`p-4 rounded-xl space-y-4 border ${darkMode ? "bg-[#222] border-[#333]" : "bg-white border-[#eaeaea]"}`}>
+              <div className={`p-4 rounded-xl space-y-4 border ${darkMode ? "bg-[#222] border-[#333]" : "bg-paper border-[#eaeaea]"}`}>
                 {/* Sample text */}
                 <div className="space-y-2">
                   <div className={`h-2.5 rounded-full w-full ${darkMode ? "bg-[#333]" : "bg-slate-200"}`} />

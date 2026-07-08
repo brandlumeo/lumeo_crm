@@ -124,13 +124,13 @@ export function AppSettingsForm() {
       )}
 
       {/* App Settings Card */}
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-zinc-600 via-gray-600 to-slate-800"></div>
         
         <div className="p-6 sm:p-8 space-y-8 flex-1">
           
           <div className="flex items-start sm:items-center gap-4 p-5 bg-gradient-to-br from-zinc-50/50 to-slate-50/30 border border-zinc-100/50 rounded-xl">
-            <div className="w-12 h-12 rounded-xl bg-white border border-zinc-200 flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-paper border border-zinc-200 flex items-center justify-center shrink-0 shadow-sm">
               <Globe2 className="w-6 h-6 text-zinc-700" strokeWidth={2} />
             </div>
             <div className="pr-4">
@@ -152,7 +152,7 @@ export function AppSettingsForm() {
                   onChange={(e) => setDateFormat(e.target.value)}
                   disabled={!isAdmin}
                   className={cn(
-                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10",
+                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10",
                     !isAdmin && "opacity-70 cursor-not-allowed"
                   )}
                 >
@@ -181,7 +181,7 @@ export function AppSettingsForm() {
                   onChange={(e) => setTimeFormat(e.target.value)}
                   disabled={!isAdmin}
                   className={cn(
-                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10",
+                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10",
                     !isAdmin && "opacity-70 cursor-not-allowed"
                   )}
                 >
@@ -207,7 +207,7 @@ export function AppSettingsForm() {
                   onChange={(e) => setTimezone(e.target.value)}
                   disabled={!isAdmin}
                   className={cn(
-                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10",
+                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10",
                     !isAdmin && "opacity-70 cursor-not-allowed"
                   )}
                 >
@@ -234,7 +234,7 @@ export function AppSettingsForm() {
                   onChange={(e) => setLanguage(e.target.value)}
                   disabled={!isAdmin}
                   className={cn(
-                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10",
+                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10",
                     !isAdmin && "opacity-70 cursor-not-allowed"
                   )}
                 >
@@ -263,7 +263,7 @@ export function AppSettingsForm() {
                   onChange={(e) => setRowLimit(e.target.value)}
                   disabled={!isAdmin}
                   className={cn(
-                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-white cursor-pointer pr-10",
+                    "input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10",
                     !isAdmin && "opacity-70 cursor-not-allowed"
                   )}
                 >
@@ -303,13 +303,13 @@ export function AppSettingsForm() {
       </div>
 
       {/* Client Sign Up Settings Card */}
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-indigo-500"></div>
         
         <div className="p-6 sm:p-8 space-y-8 flex-1">
           
           <div className="flex items-start sm:items-center gap-4 p-5 bg-gradient-to-br from-blue-50/50 to-sky-50/30 border border-blue-100/50 rounded-xl">
-            <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-paper border border-blue-200 flex items-center justify-center shrink-0 shadow-sm">
               <UserPlus className="w-6 h-6 text-blue-600" strokeWidth={2} />
             </div>
             <div className="pr-4">
@@ -367,7 +367,7 @@ export function AppSettingsForm() {
                   </div>
                   <button
                     onClick={handleCopyUrl}
-                    className="btn btn-secondary h-11 px-5 flex items-center justify-center gap-2 bg-white hover:bg-bone transition-colors shrink-0"
+                    className="btn btn-secondary h-11 px-5 flex items-center justify-center gap-2 bg-paper hover:bg-bone transition-colors shrink-0"
                   >
                     {copied ? (
                       <><CheckCircle className="w-4 h-4 text-green" /> Copied</>

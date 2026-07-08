@@ -101,13 +101,13 @@ export function BusinessAddressForm() {
         </div>
       )}
 
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-500"></div>
         
         <div className="p-6 sm:p-8 space-y-8 flex-1">
           
           <div className="flex items-start sm:items-center gap-4 p-5 bg-gradient-to-br from-amber-50/50 to-orange-50/30 border border-amber-100/50 rounded-xl">
-            <div className="w-12 h-12 rounded-xl bg-white border border-amber-200 flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-paper border border-amber-200 flex items-center justify-center shrink-0 shadow-sm">
               <MapPin className="w-6 h-6 text-amber-600" strokeWidth={2} />
             </div>
             <div className="pr-4">
@@ -126,7 +126,7 @@ export function BusinessAddressForm() {
                 value={address1}
                 onChange={(e) => setAddress1(e.target.value)}
                 disabled={!isAdmin}
-                className={cn("input w-full h-11 bg-bone/30 focus:bg-white", !isAdmin && "opacity-70 cursor-not-allowed")}
+                className={cn("input w-full h-11 bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 placeholder="123 Business Rd, Suite 100"
               />
             </div>
@@ -139,7 +139,7 @@ export function BusinessAddressForm() {
                 value={address2}
                 onChange={(e) => setAddress2(e.target.value)}
                 disabled={!isAdmin}
-                className={cn("input w-full h-11 bg-bone/30 focus:bg-white", !isAdmin && "opacity-70 cursor-not-allowed")}
+                className={cn("input w-full h-11 bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 placeholder="Building B, Floor 3"
               />
             </div>
@@ -154,7 +154,7 @@ export function BusinessAddressForm() {
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   disabled={!isAdmin}
-                  className={cn("input w-full h-11 bg-bone/30 focus:bg-white", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
               <div className="space-y-1.5">
@@ -166,7 +166,7 @@ export function BusinessAddressForm() {
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   disabled={!isAdmin}
-                  className={cn("input w-full h-11 bg-bone/30 focus:bg-white", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
             </div>
@@ -181,7 +181,7 @@ export function BusinessAddressForm() {
                   value={zip}
                   onChange={(e) => setZip(e.target.value)}
                   disabled={!isAdmin}
-                  className={cn("input w-full h-11 bg-bone/30 focus:bg-white font-mono text-sm", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper font-mono text-sm", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
               <div className="space-y-1.5">
@@ -193,7 +193,7 @@ export function BusinessAddressForm() {
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   disabled={!isAdmin}
-                  className={cn("input w-full h-11 bg-bone/30 focus:bg-white", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
             </div>

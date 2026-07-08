@@ -104,14 +104,14 @@ export function TaxSettingsForm() {
       )}
 
       {/* Main Card */}
-      <div className="bg-white border border-line rounded-lg shadow-sm overflow-hidden flex flex-col relative">
+      <div className="bg-paper border border-line rounded-lg shadow-sm overflow-hidden flex flex-col relative">
         <div className="px-6 py-5 border-b border-line">
           <h3 className="text-lg font-medium text-ink tracking-tight">Tax Settings</h3>
         </div>
         
         <div className="p-0 overflow-x-auto">
           <table className="w-full text-left text-[13.5px]">
-            <thead className="bg-white border-b border-line text-muted/80 font-medium text-[13px]">
+            <thead className="bg-paper border-b border-line text-muted/80 font-medium text-[13px]">
               <tr>
                 <th className="py-3 px-6 font-medium w-16">#</th>
                 <th className="py-3 px-6 font-medium">Tax Name</th>
@@ -138,14 +138,14 @@ export function TaxSettingsForm() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(index)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-bone text-muted hover:text-ink transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-bone text-muted hover:text-ink transition-colors"
                           >
                             <Edit className="w-3.5 h-3.5" /> Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(index)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-white hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium border border-line rounded bg-paper hover:bg-rose-50 text-muted hover:text-rose-600 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" /> Delete
                           </button>
@@ -163,7 +163,7 @@ export function TaxSettingsForm() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
+          <div className="bg-paper rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scale-in">
             <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <h3 className="text-lg font-semibold text-ink">
                 {editingIndex !== null ? "Edit Tax" : "Add Tax"}
@@ -183,7 +183,7 @@ export function TaxSettingsForm() {
                   type="text"
                   value={taxName}
                   onChange={(e) => setTaxName(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. GST"
                   autoFocus
                 />
@@ -195,7 +195,7 @@ export function TaxSettingsForm() {
                   type="number"
                   value={taxRate}
                   onChange={(e) => setTaxRate(e.target.value)}
-                  className="input w-full h-10 bg-white"
+                  className="input w-full h-10 bg-paper"
                   placeholder="e.g. 18"
                 />
               </div>
@@ -204,7 +204,7 @@ export function TaxSettingsForm() {
             <div className="px-6 py-4 bg-bone/30 border-t border-line flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="btn bg-white border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
+                className="btn bg-paper border border-line hover:bg-bone text-ink shadow-sm h-9 px-4 rounded-lg font-medium text-[13px] transition-colors"
               >
                 Cancel
               </button>

@@ -116,7 +116,7 @@ export function TimeLogSettingsForm() {
         </div>
       )}
 
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 via-emerald-500 to-green-500"></div>
         
         <div className="p-6 sm:p-8 space-y-8 flex-1">
@@ -127,7 +127,7 @@ export function TimeLogSettingsForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Require Timesheet Approval Toggle */}
-              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-white transition-colors">
+              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-paper transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                     <Timer className="w-5 h-5" />
@@ -150,7 +150,7 @@ export function TimeLogSettingsForm() {
               </div>
 
               {/* Allow Manual Time Entry */}
-              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-white transition-colors">
+              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-paper transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
                     <Keyboard className="w-5 h-5" />
@@ -181,7 +181,7 @@ export function TimeLogSettingsForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Stop Timer Automatically after Shift */}
-              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-white transition-colors">
+              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-paper transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                     <Clock className="w-5 h-5" />
@@ -204,7 +204,7 @@ export function TimeLogSettingsForm() {
               </div>
 
               {/* Send Tracker Reminders */}
-              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-white transition-colors">
+              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-paper transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                     <BellRing className="w-5 h-5" />
@@ -248,7 +248,7 @@ export function TimeLogSettingsForm() {
                   value={defaultBillableRate}
                   onChange={(e) => setDefaultBillableRate(e.target.value)}
                   disabled={!isAdmin}
-                  className="input w-full h-11 pl-8 bg-bone/30 focus:bg-white font-mono text-sm"
+                  className="input w-full h-11 pl-8 bg-bone/30 focus:bg-paper font-mono text-sm"
                   placeholder="0.00"
                 />
               </div>
@@ -257,7 +257,7 @@ export function TimeLogSettingsForm() {
 
             {/* Daily report toggle */}
             <div className="flex flex-col justify-end">
-              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-white transition-colors max-w-md">
+              <div className="flex items-center justify-between p-4 border border-line bg-bone/20 rounded-xl hover:bg-paper transition-colors max-w-md">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                     <MailCheck className="w-5 h-5" />
@@ -304,7 +304,7 @@ export function TimeLogSettingsForm() {
                         "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
                         isSelected 
                           ? "bg-teal-50 border-teal-200 text-teal-800 shadow-sm" 
-                          : "bg-white hover:bg-bone/40 border-line text-muted"
+                          : "bg-paper hover:bg-bone/40 border-line text-muted"
                       )}
                     >
                       {isSelected && <Check className="w-3.5 h-3.5 text-teal-600" />}

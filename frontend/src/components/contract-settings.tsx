@@ -81,7 +81,7 @@ export function ContractSettingsForm() {
         </div>
       )}
 
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col relative group/card hover:shadow-md transition-shadow">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 via-blue-500 to-sky-500"></div>
         
         <div className="p-6 sm:p-8 space-y-8 flex-1">
@@ -97,7 +97,7 @@ export function ContractSettingsForm() {
                 value={contractPrefix}
                 onChange={(e) => setContractPrefix(e.target.value)}
                 disabled={!isAdmin}
-                className="input w-full h-11 bg-bone/30 focus:bg-white font-mono text-sm uppercase"
+                className="input w-full h-11 bg-bone/30 focus:bg-paper font-mono text-sm uppercase"
                 placeholder="CONT"
               />
             </div>
@@ -112,7 +112,7 @@ export function ContractSettingsForm() {
                 value={contractNumberSeparator}
                 onChange={(e) => setContractNumberSeparator(e.target.value)}
                 disabled={!isAdmin}
-                className="input w-full h-11 bg-bone/30 focus:bg-white font-mono text-sm text-center"
+                className="input w-full h-11 bg-bone/30 focus:bg-paper font-mono text-sm text-center"
                 placeholder="#"
               />
             </div>
@@ -129,7 +129,7 @@ export function ContractSettingsForm() {
                 value={contractNumberDigits}
                 onChange={(e) => setContractNumberDigits(Number(e.target.value))}
                 disabled={!isAdmin}
-                className="input w-full h-11 bg-bone/30 focus:bg-white font-mono text-sm text-center"
+                className="input w-full h-11 bg-bone/30 focus:bg-paper font-mono text-sm text-center"
                 placeholder="3"
               />
             </div>

@@ -127,7 +127,7 @@ export function WorkflowsSettings() {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Rules", value: workflowRules.length, color: "text-ink", bg: "bg-white" },
+          { label: "Total Rules", value: workflowRules.length, color: "text-ink", bg: "bg-paper" },
           { label: "Active", value: workflowRules.filter(r => r.is_active).length, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
           { label: "Paused", value: workflowRules.filter(r => !r.is_active).length, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
           { label: "Triggers", value: 3, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" },
@@ -140,7 +140,7 @@ export function WorkflowsSettings() {
       </div>
 
       {/* Main card */}
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
 
         {/* Filter tabs */}
@@ -203,7 +203,7 @@ export function WorkflowsSettings() {
                     key={rule.id}
                     className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                       rule.is_active
-                        ? "border-line bg-white hover:border-slate-300 hover:shadow-sm"
+                        ? "border-line bg-paper hover:border-slate-300 hover:shadow-sm"
                         : "border-dashed border-line bg-bone/30 opacity-60"
                     }`}
                   >
@@ -272,7 +272,7 @@ export function WorkflowsSettings() {
       {/* Creation Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-line flex flex-col animate-rise max-h-[92vh] overflow-y-auto">
+          <div className="bg-paper w-full max-w-md rounded-2xl shadow-2xl border border-line flex flex-col animate-rise max-h-[92vh] overflow-y-auto">
             {/* Modal header */}
             <div className="p-6 border-b border-line flex items-center justify-between bg-bone/40">
               <div className="flex items-center gap-3">
@@ -351,7 +351,7 @@ export function WorkflowsSettings() {
                       <input
                         required
                         placeholder="e.g. Follow up onboarding with {record_name}"
-                        className="input w-full bg-white"
+                        className="input w-full bg-paper"
                         value={taskTitle}
                         onChange={(e) => setTaskTitle(e.target.value)}
                       />
@@ -362,7 +362,7 @@ export function WorkflowsSettings() {
                         type="number"
                         min={0}
                         required
-                        className="input w-full bg-white font-mono"
+                        className="input w-full bg-paper font-mono"
                         value={dueDaysOffset}
                         onChange={(e) => setDueDaysOffset(Number(e.target.value))}
                       />
@@ -375,7 +375,7 @@ export function WorkflowsSettings() {
                       <input
                         required
                         placeholder="e.g. Deal Won: {record_name} 🎉"
-                        className="input w-full bg-white"
+                        className="input w-full bg-paper"
                         value={notificationTitle}
                         onChange={(e) => setNotificationTitle(e.target.value)}
                       />
@@ -385,7 +385,7 @@ export function WorkflowsSettings() {
                       <textarea
                         required
                         placeholder="e.g. {record_name} has just been closed successfully."
-                        className="input w-full bg-white h-20 resize-none py-2"
+                        className="input w-full bg-paper h-20 resize-none py-2"
                         value={notificationBody}
                         onChange={(e) => setNotificationBody(e.target.value)}
                       />

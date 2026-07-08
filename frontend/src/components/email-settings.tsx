@@ -86,7 +86,7 @@ export function EmailSettings() {
         <div className="xl:col-span-2 space-y-5">
 
           {/* Connected Accounts */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
 
             <div className="px-6 py-5 pt-8 border-b border-line bg-bone/30 flex items-center justify-between">
@@ -158,7 +158,7 @@ export function EmailSettings() {
           </div>
 
           {/* Connect new account */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${selectedMeta.gradient} transition-all duration-300`} />
 
             <div className="p-6 pt-8">
@@ -228,7 +228,7 @@ export function EmailSettings() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Feature highlights */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-line bg-bone/40 flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-500" />
               <span className="text-[13px] font-semibold text-ink">What you get</span>

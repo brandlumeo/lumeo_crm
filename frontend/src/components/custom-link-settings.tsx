@@ -140,7 +140,7 @@ export function CustomLinkSettingsForm() {
         <div className="xl:col-span-2 space-y-6">
           {/* Add form */}
           {showForm && (
-            <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow animate-in slide-in-from-top-4 fade-in duration-300">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-indigo-500" />
               <div className="p-6 sm:p-8 pt-9">
                 <div className="flex items-center gap-4 mb-6">
@@ -166,7 +166,7 @@ export function CustomLinkSettingsForm() {
                           className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
                             form.type === t.id
                               ? `${t.bg} border-transparent ring-2 ring-violet-500 ring-offset-1 shadow-sm transform scale-[1.02]`
-                              : "border-line hover:border-slate-300 bg-bone/30 hover:bg-white"
+                              : "border-line hover:border-slate-300 bg-bone/30 hover:bg-paper"
                           }`}
                         >
                           <div className={`${form.type === t.id ? t.color : "text-slate-400"} transition-colors`}>{t.icon}</div>
@@ -184,7 +184,7 @@ export function CustomLinkSettingsForm() {
                         value={form.label}
                         onChange={e => setForm(prev => ({ ...prev, label: e.target.value }))}
                         placeholder={`e.g. ${getTypeMeta(form.type).label}`}
-                        className="input w-full h-11 bg-white"
+                        className="input w-full h-11 bg-paper"
                       />
                     </div>
                     <div>
@@ -195,7 +195,7 @@ export function CustomLinkSettingsForm() {
                         value={form.url}
                         onChange={e => setForm(prev => ({ ...prev, url: e.target.value }))}
                         placeholder={getTypeMeta(form.type).placeholder}
-                        className="input w-full h-11 font-mono text-[13px] bg-white"
+                        className="input w-full h-11 font-mono text-[13px] bg-paper"
                       />
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export function CustomLinkSettingsForm() {
           )}
 
           {/* Links list card */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative group/card hover:shadow-md transition-shadow">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-600 via-slate-400 to-zinc-300" />
 
             <div className="px-6 py-5 pt-8 border-b border-line bg-bone/30 flex items-center justify-between">
@@ -226,7 +226,7 @@ export function CustomLinkSettingsForm() {
             </div>
 
             {links.length === 0 ? (
-              <div className="py-16 flex flex-col items-center text-center space-y-4 px-6 bg-white">
+              <div className="py-16 flex flex-col items-center text-center space-y-4 px-6 bg-paper">
                 <div className="w-16 h-16 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center shadow-sm">
                   <LinkIcon className="w-7 h-7 text-violet-400" />
                 </div>
@@ -239,7 +239,7 @@ export function CustomLinkSettingsForm() {
                 </button>
               </div>
             ) : (
-              <div className="divide-y divide-line bg-white">
+              <div className="divide-y divide-line bg-paper">
                 {links.map(link => {
                   const meta = getTypeMeta(link.type);
                   return (
@@ -262,7 +262,7 @@ export function CustomLinkSettingsForm() {
                       <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleCopy(link.url, link.id)}
-                          className="w-9 h-9 flex items-center justify-center rounded-lg border border-transparent hover:border-slate-200 hover:bg-white hover:shadow-sm text-muted hover:text-ink transition-all"
+                          className="w-9 h-9 flex items-center justify-center rounded-lg border border-transparent hover:border-slate-200 hover:bg-paper hover:shadow-sm text-muted hover:text-ink transition-all"
                           title="Copy URL"
                         >
                           {copiedId === link.id
@@ -272,7 +272,7 @@ export function CustomLinkSettingsForm() {
                         </button>
                         <a
                           href={link.url} target="_blank" rel="noreferrer"
-                          className="w-9 h-9 flex items-center justify-center rounded-lg border border-transparent hover:border-slate-200 hover:bg-white hover:shadow-sm text-muted hover:text-ink transition-all"
+                          className="w-9 h-9 flex items-center justify-center rounded-lg border border-transparent hover:border-slate-200 hover:bg-paper hover:shadow-sm text-muted hover:text-ink transition-all"
                           title="Open in new tab"
                         >
                           <ExternalLink className="w-4.5 h-4.5" />
@@ -296,14 +296,14 @@ export function CustomLinkSettingsForm() {
         {/* Sidebar preview */}
         <div className="space-y-6">
           {/* Profile preview card */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden group/card hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden group/card hover:shadow-md transition-shadow">
             <div className="px-5 py-4 border-b border-line bg-bone/40 flex items-center gap-2">
               <Blocks className="w-4 h-4 text-slate-500" />
               <span className="text-[13px] font-semibold text-ink uppercase tracking-widest">Profile Widget</span>
             </div>
             <div className="p-6">
               {/* Mini profile card */}
-              <div className="bg-white rounded-2xl p-5 border border-line text-center mb-5 shadow-sm relative overflow-hidden">
+              <div className="bg-paper rounded-2xl p-5 border border-line text-center mb-5 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-red-500"></div>
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-[18px] mx-auto mb-3 shadow-inner">N</div>
                 <div className="text-[14px] font-bold text-ink">Northwind Trading</div>

@@ -113,7 +113,7 @@ export function CustomFieldsSettings() {
         </p>
       </div>
 
-      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden flex flex-col relative">
+      <div className="bg-paper border border-line rounded-xl shadow-sm overflow-hidden flex flex-col relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"></div>
         
         <div className="p-6 sm:p-8 space-y-6">
@@ -171,7 +171,7 @@ export function CustomFieldsSettings() {
               </thead>
               <tbody className="divide-y divide-line">
                 {filteredFields.map((cf) => (
-                  <tr key={cf.id} className="hover:bg-bone-3 transition-colors bg-white">
+                  <tr key={cf.id} className="hover:bg-bone-3 transition-colors bg-paper">
                     <td className="py-3 px-5 font-medium">{cf.label}</td>
                     <td className="py-3 px-5 font-mono text-xs text-muted">{cf.name}</td>
                     <td className="py-3 px-5 capitalize font-medium text-ink-2">

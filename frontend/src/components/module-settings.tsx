@@ -189,7 +189,7 @@ export function ModuleSettingsForm() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Module grid */}
         <div className="xl:col-span-2 space-y-4">
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-600 via-slate-400 to-zinc-400" />
 
             <div className="p-6 sm:p-8 pt-9 space-y-4">
@@ -202,7 +202,7 @@ export function ModuleSettingsForm() {
                     onClick={() => toggle(mod.key)}
                     className={`group flex items-center gap-5 p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer ${
                       modules[mod.key]
-                        ? "border-line bg-white hover:border-slate-300 hover:shadow-md"
+                        ? "border-line bg-paper hover:border-slate-300 hover:shadow-md"
                         : "border-dashed border-line bg-bone/30 opacity-60 hover:opacity-80"
                     } ${!isAdmin ? "cursor-default" : ""}`}
                   >
@@ -258,7 +258,7 @@ export function ModuleSettingsForm() {
         {/* Sidebar summary */}
         <div className="space-y-6">
           {/* Active count card */}
-          <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden group/card hover:shadow-md transition-shadow">
+          <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden group/card hover:shadow-md transition-shadow">
             <div className="px-5 py-4 border-b border-line bg-bone/40 flex items-center gap-2">
               <Blocks className="w-4 h-4 text-slate-500" />
               <span className="text-[13px] font-semibold text-ink uppercase tracking-widest">Module Status</span>

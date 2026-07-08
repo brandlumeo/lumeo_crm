@@ -179,7 +179,7 @@ export function TaskSettingsForm() {
       )}
 
       {/* Main Card */}
-      <div className="bg-white border border-line rounded-2xl shadow-sm overflow-hidden relative">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-400" />
 
         <div className="p-6 sm:p-8 space-y-10 pt-9">
@@ -337,7 +337,7 @@ export function TaskSettingsForm() {
                       )}
                     >
                       {taskDefaultPriority === p.id && (
-                        <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center">
+                        <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-paper flex items-center justify-center">
                           <Check className="w-2.5 h-2.5 text-current" />
                         </span>
                       )}
@@ -430,12 +430,12 @@ export function TaskSettingsForm() {
                       "flex items-center gap-2.5 px-4 py-3 rounded-xl border text-xs font-semibold transition-all text-left",
                       isChecked 
                         ? "bg-violet-50/50 border-violet-200 text-violet-900 shadow-sm" 
-                        : "bg-white border-line text-muted hover:bg-bone/40"
+                        : "bg-paper border-line text-muted hover:bg-bone/40"
                     )}
                   >
                     <div className={cn(
                       "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-                      isChecked ? "bg-violet-600 border-violet-600 text-white" : "border-line bg-white"
+                      isChecked ? "bg-violet-600 border-violet-600 text-white" : "border-line bg-paper"
                     )}>
                       {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                     </div>
