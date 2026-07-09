@@ -71,7 +71,7 @@ export function AttendanceWidget() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full mt-3 right-0 w-[320px] bg-white border border-line rounded-2xl shadow-2xl shadow-ink/5 z-50 p-5 animate-in slide-in-from-top-3 zoom-in-95 duration-200">
+          <div className="absolute top-full mt-3 right-0 w-[320px] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/5 z-50 p-5 animate-in slide-in-from-top-3 zoom-in-95 duration-200">
             {!status.is_clocked_in ? (
               // Clock In Panel
               <div className="flex flex-col gap-5">
@@ -112,7 +112,7 @@ export function AttendanceWidget() {
                   <textarea 
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-bone/30 border border-line rounded-xl px-3 py-2.5 text-[13px] outline-none hover:border-line-2 focus:border-ink focus:bg-white focus:ring-4 focus:ring-ink/5 transition-all resize-none h-16 placeholder:text-muted/50"
+                    className="w-full bg-bone/30 border border-line rounded-xl px-3 py-2.5 text-[13px] outline-none hover:border-line-2 focus:border-ink focus:bg-paper focus:ring-4 focus:ring-ink/5 transition-all resize-none h-16 placeholder:text-muted/50"
                     placeholder="E.g., Traffic delayed me by 10 mins..."
                   />
                 </div>
@@ -144,7 +144,7 @@ export function AttendanceWidget() {
                   <textarea 
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-bone/30 border border-line rounded-xl px-3 py-2.5 text-[13px] outline-none hover:border-line-2 focus:border-ink focus:bg-white focus:ring-4 focus:ring-ink/5 transition-all resize-none h-20 placeholder:text-muted/50"
+                    className="w-full bg-bone/30 border border-line rounded-xl px-3 py-2.5 text-[13px] outline-none hover:border-line-2 focus:border-ink focus:bg-paper focus:ring-4 focus:ring-ink/5 transition-all resize-none h-20 placeholder:text-muted/50"
                     placeholder="Summarize your shift..."
                   />
                 </div>
