@@ -30,7 +30,7 @@ class CompanyRBACPermission(BasePermission):
         
         role_data = next((r for r in roles if r.get("id") == role_id), None)
         if not role_data:
-            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
+            if request.user.has_management_access or request.user.role == User.Role.STAFF:
                 return True
             return request.method in SAFE_METHODS
             
@@ -40,7 +40,7 @@ class CompanyRBACPermission(BasePermission):
         perms = role_data.get("permissions", {})
         if module_name not in perms:
             # Fallback if the module was added after custom roles were saved
-            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
+            if request.user.has_management_access or request.user.role == User.Role.STAFF:
                 return True
             return request.method in SAFE_METHODS
             
@@ -57,7 +57,7 @@ class CompanyRBACPermission(BasePermission):
         module_name = getattr(view, "permission_module", None)
         if not module_name:
             # Legacy fallback
-            if request.user.role == User.Role.MANAGER:
+            if request.user.has_management_access:
                 return request.method != "DELETE"
             if request.method == "DELETE":
                 return False
@@ -75,7 +75,7 @@ class CompanyRBACPermission(BasePermission):
         
         role_data = next((r for r in roles if r.get("id") == role_id), None)
         if not role_data:
-            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
+            if request.user.has_management_access or request.user.role == User.Role.STAFF:
                 return True
             return request.method in SAFE_METHODS
             
@@ -85,8 +85,8 @@ class CompanyRBACPermission(BasePermission):
         perms = role_data.get("permissions", {})
         if module_name not in perms:
             # Fallback if the module was added after custom roles were saved
-            if request.user.role in [User.Role.MANAGER, User.Role.STAFF]:
-                if request.user.role == User.Role.STAFF and action == "Delete":
+            if request.user.has_management_access or request.user.role == User.Role.STAFF:
+                if not request.user.has_management_access and action == "Delete":
                     return False
                 return True
             return request.method in SAFE_METHODS
