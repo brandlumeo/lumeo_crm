@@ -236,7 +236,7 @@ export default function PayrollPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payrolls.map((slip) => (
+                  {Array.isArray(payrolls) ? payrolls.map((slip) => (
                     <tr key={slip.id} className="border-b border-line-2 last:border-0 hover:bg-bone/30">
                       {isManager && (
                         <td className="py-3 font-medium">
@@ -297,7 +297,7 @@ export default function PayrollPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )) : null}
                 </tbody>
               </table>
             )}
@@ -319,11 +319,11 @@ export default function PayrollPage() {
                   required
                 >
                   <option value="" disabled>Select Employee</option>
-                  {team.map((u: any) => (
+                  {Array.isArray(team) ? team.map((u: any) => (
                     <option key={u.id} value={u.id}>
                       {u.first_name} {u.last_name}
                     </option>
-                  ))}
+                  )) : null}
                 </select>
               </div>
 
