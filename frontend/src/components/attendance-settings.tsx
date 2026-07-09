@@ -6,6 +6,7 @@ import {
   Clock, Loader2, CheckCircle, XCircle, Shield, 
   Timer, HelpCircle, Plus, Edit, Trash2, X, RotateCw, Settings
 } from "lucide-react";
+import { toast } from "sonner";
 import { useCurrentCompany, useCurrentUser, useTeam } from "@/lib/queries";
 import { updateCompany } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -132,19 +133,17 @@ export function AttendanceSettingsForm() {
   }, [company]);
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
-  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const mutation = useMutation({
     mutationFn: updateCompany,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["company", "current"] });
-      setMsg({ type: "success", text: "Attendance settings updated successfully." });
-      setTimeout(() => setMsg(null), 4000);
+      toast.success("Attendance settings saved successfully.");
       setIsShiftModalOpen(false);
       setIsRotationModalOpen(false);
     },
     onError: () => {
-      setMsg({ type: "error", text: "Failed to update attendance settings. Please try again." });
+      toast.error("Failed to update attendance settings. Please try again.");
     },
   });
 
@@ -282,8 +281,7 @@ export function AttendanceSettingsForm() {
       newRotations.splice(index, 1);
       mutation.mutate({ shift_rotations: newRotations }, {
         onSuccess: () => {
-          setMsg({ type: "success", text: "Shift rotation deleted successfully." });
-          setTimeout(() => setMsg(null), 4000);
+          toast.success("Shift rotation deleted successfully.");
         }
       });
     }
@@ -310,8 +308,7 @@ export function AttendanceSettingsForm() {
     mutation.mutate({ shift_rotations: newRotations }, {
       onSuccess: () => {
         setIsRotationModalOpen(false);
-        setMsg({ type: "success", text: `Shift rotation ${editingRotationIndex !== null ? 'updated' : 'added'} successfully.` });
-        setTimeout(() => setMsg(null), 4000);
+        toast.success(`Shift rotation ${editingRotationIndex !== null ? 'updated' : 'added'} successfully.`);
       }
     });
   };
@@ -329,8 +326,7 @@ export function AttendanceSettingsForm() {
     mutation.mutate({ automated_shifts: newAutomatedShifts }, {
       onSuccess: () => {
         setIsAutomateModalOpen(false);
-        setMsg({ type: "success", text: "Automated shift added successfully." });
-        setTimeout(() => setMsg(null), 4000);
+        toast.success("Automated shift added successfully.");
       }
     });
   };
@@ -340,8 +336,7 @@ export function AttendanceSettingsForm() {
     newAutomatedShifts.splice(index, 1);
     mutation.mutate({ automated_shifts: newAutomatedShifts }, {
       onSuccess: () => {
-        setMsg({ type: "success", text: "Automated shift deleted successfully." });
-        setTimeout(() => setMsg(null), 4000);
+        toast.success("Automated shift deleted successfully.");
       }
     });
   };
@@ -390,17 +385,6 @@ export function AttendanceSettingsForm() {
         <div className="bg-amber-50 text-amber-800 border border-amber-200/60 rounded-xl p-4 text-[13.5px] flex gap-3 shadow-sm items-center">
           <Shield className="w-5 h-5 shrink-0 text-amber-600" />
           <span className="font-medium">Read-only access: Only Owners and Admins can modify attendance settings.</span>
-        </div>
-      )}
-
-      {msg && (
-        <div className={`flex items-center gap-3 text-[13.5px] font-medium rounded-xl px-5 py-4 shadow-sm animate-rise ${
-          msg.type === "success" 
-            ? "bg-emerald-50 text-emerald-800 border border-emerald-200/60" 
-            : "bg-rose-50 text-rose-800 border border-rose-200/60"
-        }`}>
-          {msg.type === "success" ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-          {msg.text}
         </div>
       )}
 
