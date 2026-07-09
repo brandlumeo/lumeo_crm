@@ -25,7 +25,7 @@ export default function PayrollPage() {
   const { data: user } = useCurrentUser();
   const isManager = user?.role === "owner" || user?.role === "admin";
   const { data: payrolls = [], isLoading } = usePayrolls(isManager);
-  const { data: team = [] } = useTeam();
+  const { data: teamData } = useTeam();
 
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollMutation = useUpdatePayroll();
@@ -313,15 +313,15 @@ export default function PayrollPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Select Employee</label>
                 <select
-                  required
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  className="bg-paper border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none"
+                  className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                  required
                 >
-                  <option value="">-- Choose Employee --</option>
-                  {team.map((member: any) => (
+                  <option value="" disabled>Select Employee</option>
+                  {teamData?.users?.map((member: any) => (
                     <option key={member.id} value={member.id}>
-                      {member.first_name} {member.last_name} ({member.email})
+                      {member.full_name || member.email}
                     </option>
                   ))}
                 </select>
