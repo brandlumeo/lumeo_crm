@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAttendanceMatrix, useCurrentUser } from "@/lib/queries";
 import { downloadAttendanceMatrixCSV } from "@/lib/api";
-import { Users, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Download, ChevronLeft, ChevronRight, StarHalf } from "lucide-react";
 
 export default function TeamAttendancePage() {
   const { data: user } = useCurrentUser();
@@ -59,7 +59,7 @@ export default function TeamAttendancePage() {
     switch (status) {
       case 'present': return <div title="Present" className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-100 text-emerald-600 font-bold text-xs">✔</div>;
       case 'absent': return <div title="Absent" className="flex items-center justify-center w-6 h-6 rounded-md bg-rose-100 text-rose-600 font-bold text-xs">✖</div>;
-      case 'half_day': return <div title="Half Day" className="flex items-center justify-center w-6 h-6 rounded-md bg-amber-100 text-amber-600 font-bold text-xs">★</div>;
+      case 'half_day': return <div title="Half Day" className="flex items-center justify-center w-6 h-6 rounded-md bg-amber-100 text-amber-600 font-bold text-xs"><StarHalf className="w-3.5 h-3.5 fill-amber-500" /></div>;
       case 'late': return <div title="Late" className="flex items-center justify-center w-6 h-6 rounded-md bg-orange-100 text-orange-600 font-bold text-[10px]">⏱</div>;
       case 'leave': return <div title="On Leave" className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-100 text-blue-600 font-bold text-xs">✈</div>;
       case 'holiday': return <div title="Holiday" className="flex items-center justify-center w-6 h-6 rounded-md bg-purple-100 text-purple-600 font-bold text-[10px]">⭐</div>;
