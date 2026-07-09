@@ -18,6 +18,25 @@ def _get_client_ip(request):
     return ip
 
 
+
+def _auto_close_stale_shifts():
+    """Fallback self-healing utility to close shifts from previous days."""
+    try:
+        now = timezone.now()
+        today = now.date()
+        open_logs = TimeLog.objects.filter(clock_out__isnull=True, clock_in__date__lt=today)
+        for log in open_logs:
+            active_break = BreakLog.objects.filter(time_log=log, end_time__isnull=True).first()
+            if active_break:
+                active_break.end_time = now
+                active_break.save()
+            log.clock_out = now
+            log.is_auto_closed = True
+            log.save()
+    except Exception:
+        pass
+
+
 class CurrentStatusView(APIView):
     """
     GET /api/v1/attendance/status/
@@ -27,6 +46,7 @@ class CurrentStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        _auto_close_stale_shifts()
         active_log = TimeLog.objects.filter(
             user=request.user, clock_out__isnull=True
         ).first()
@@ -241,6 +261,7 @@ class PersonalHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        _auto_close_stale_shifts()
         from accounts.models import User
         is_manager = request.user.has_management_access
         view_all = request.query_params.get("all") == "true"
@@ -264,6 +285,7 @@ class LeaveRequestListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        _auto_close_stale_shifts()
         from accounts.models import User
         # Check manager privilege
         is_manager = request.user.has_management_access
@@ -345,6 +367,7 @@ class ExpenseClaimListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        _auto_close_stale_shifts()
         from accounts.models import User
         is_manager = request.user.has_management_access
         view_all = request.query_params.get("all") == "true"
@@ -422,6 +445,7 @@ class OfficeAssetListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        _auto_close_stale_shifts()
         from accounts.models import User
         assets = OfficeAsset.objects.filter(company=request.user.company)
 
@@ -523,6 +547,7 @@ class PayrollListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        _auto_close_stale_shifts()
         from accounts.models import User
         is_manager = request.user.has_management_access
         view_all = request.query_params.get("all") == "true"
