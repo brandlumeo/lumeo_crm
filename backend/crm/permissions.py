@@ -58,7 +58,7 @@ class CompanyRBACPermission(BasePermission):
         if not module_name:
             # Legacy fallback
             if request.user.has_management_access:
-                return request.method != "DELETE"
+                return True
             if request.method == "DELETE":
                 return False
             if request.method in SAFE_METHODS:
