@@ -389,7 +389,7 @@ export function SecurityForm() {
                           <button
                             onClick={handle2FAVerify}
                             disabled={profileMutation.isPending || verificationCode.length !== 6}
-                            className="btn bg-ink hover:bg-black text-white h-11 px-5 rounded-xl font-medium shrink-0 flex items-center gap-1.5"
+                            className="btn  h-11 px-5 rounded-xl font-medium shrink-0 flex items-center gap-1.5"
                           >
                             {profileMutation.isPending ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -447,7 +447,7 @@ export function SecurityForm() {
                       ) : (
                         <button 
                           onClick={() => setVerificationMode("google_authenticator")}
-                          className="btn bg-ink hover:bg-black text-white h-9 px-5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                          className="btn  h-9 px-5 rounded-xl text-xs font-bold transition-all shadow-sm"
                         >
                           Configure & Enable
                         </button>
@@ -653,7 +653,7 @@ export function SecurityForm() {
               <button
                 type="submit"
                 disabled={passwordMutation.isPending || !currentPassword || !newPassword || !confirmPassword || passwordsMismatch}
-                className="btn bg-ink hover:bg-black text-white px-4 h-9 shadow-sm hover:shadow-md transition-all rounded-xl text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="btn  px-4 h-9 shadow-sm hover:shadow-md transition-all rounded-xl text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 {passwordMutation.isPending ? (
                   <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Updating...</>

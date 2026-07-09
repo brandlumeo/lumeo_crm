@@ -193,7 +193,7 @@ export function NotificationsForm() {
           <div className="pt-4 flex items-center gap-4 border-t border-line/40">
             <button
               onClick={handleSave}
-              className="btn bg-ink hover:bg-ink-2 text-white shadow-sm hover:shadow-md transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 border-0"
+              className="btn btn-primary shadow-sm hover:shadow-md transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 border-0"
             >
               {mutation.isPending ? "Saving..." : (
                 <>

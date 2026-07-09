@@ -346,7 +346,7 @@ export function ProfileForm() {
                 enable_google_calendar: enableGoogleCalendar
               })}
               disabled={mutation.isPending}
-              className="btn bg-ink hover:bg-ink-2 text-white shadow-md hover:shadow-lg transition-all h-11 px-8 rounded-xl font-semibold flex items-center gap-2 bg-ink hover:bg-black text-white"
+              className="btn btn-primary shadow-md hover:shadow-lg transition-all h-11 px-8 rounded-xl font-semibold flex items-center gap-2 "
             >
               {mutation.isPending ? "Saving..." : "Save Profile"}
             </button>
@@ -368,7 +368,7 @@ export function ProfileForm() {
             </div>
             <button 
               onClick={() => setShowEmergencyModal(true)}
-              className="btn bg-ink hover:bg-ink-2 text-white h-9 px-4 rounded-lg text-[13px] bg-rose-500 hover:bg-rose-600 text-white flex items-center gap-2 shadow-sm border border-rose-600/50"
+              className="btn btn-primary h-9 px-4 rounded-lg text-[13px] btn-primary bg-rose-500 border-rose-500 hover:bg-rose-600 text-white dark:text-white dark:bg-rose-600 dark:hover:bg-rose-700 flex items-center gap-2 shadow-sm border border-rose-600/50"
             >
               <Plus className="w-4 h-4" /> Create New
             </button>
@@ -438,7 +438,7 @@ export function ProfileForm() {
                 <p className="text-[13px] text-muted">Upload and manage your identity documents.</p>
               </div>
             </div>
-            <button className="btn bg-ink hover:bg-ink-2 text-white h-9 px-4 rounded-lg text-[13px] bg-indigo-500 hover:bg-indigo-600 text-white flex items-center gap-2 shadow-sm border border-indigo-600/50">
+            <button className="btn btn-primary h-9 px-4 rounded-lg text-[13px] btn-primary flex items-center gap-2 shadow-sm border border-indigo-600/50">
               <Plus className="w-4 h-4" /> Add Files
             </button>
           </div>
@@ -512,7 +512,7 @@ export function ProfileForm() {
                   setNewEmergencyContact({ name: "", relationship: "", mobile: "", email: "" });
                   setShowEmergencyModal(false);
                 }} 
-                className="btn bg-rose-500 hover:bg-rose-600 text-white text-sm"
+                className="btn btn-primary bg-rose-500 border-rose-500 hover:bg-rose-600 text-white dark:text-white dark:bg-rose-600 dark:hover:bg-rose-700 text-sm"
               >
                 Save Contact
               </button>

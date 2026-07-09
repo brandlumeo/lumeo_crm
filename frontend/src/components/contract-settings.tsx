@@ -155,7 +155,7 @@ export function ContractSettingsForm() {
                   contract_number_digits: contractNumberDigits
                 })}
                 disabled={mutation.isPending}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-md hover:shadow-lg transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 group relative overflow-hidden"
+                className="btn btn-primary shadow-md hover:shadow-lg transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
                 {mutation.isPending ? (

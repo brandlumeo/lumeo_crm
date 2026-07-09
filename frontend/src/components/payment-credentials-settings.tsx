@@ -482,7 +482,7 @@ export function PaymentCredentialsForm() {
               paypal_secret: paypalSecret
             })}
             disabled={mutation.isPending}
-            className="btn bg-ink hover:bg-ink-2 text-white shadow-sm hover:shadow-md transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 bg-ink hover:bg-ink-2 text-white border-0"
+            className="btn btn-primary shadow-sm hover:shadow-md transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 bg-ink hover:bg-ink-2 text-white border-0"
           >
             {mutation.isPending ? "Saving..." : (
               <>

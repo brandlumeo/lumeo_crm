@@ -300,7 +300,7 @@ export function CustomFieldsSettings() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="btn bg-ink hover:bg-ink-2 text-white flex items-center gap-1"
+                  className="btn btn-primary flex items-center gap-1"
                 >
                   {createMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Create Field

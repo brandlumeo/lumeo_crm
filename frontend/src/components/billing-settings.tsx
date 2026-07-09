@@ -56,7 +56,7 @@ export function BillingSettings() {
 
           <Link 
             href="/billing"
-            className="btn bg-ink hover:bg-ink-2 text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 transition-all h-12 px-8 rounded-xl font-medium flex items-center gap-2 group relative overflow-hidden bg-violet-600 hover:bg-violet-700 text-white"
+            className="btn btn-primary shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 transition-all h-12 px-8 rounded-xl font-medium flex items-center gap-2 group relative overflow-hidden bg-violet-600 hover:bg-violet-700 text-white"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
             <span className="relative flex items-center gap-2">

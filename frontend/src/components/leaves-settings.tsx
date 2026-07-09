@@ -349,7 +349,7 @@ export function LeavesSettingsForm() {
       {/* Top Action Button Container */}
       <div className="flex gap-2 mb-2 min-h-9">
         {isAdmin && activeTab === "types" && (
-          <button onClick={handleOpenAdd} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAdd} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add New Leave Type
           </button>
         )}
@@ -436,7 +436,7 @@ export function LeavesSettingsForm() {
                   <button
                     onClick={handleSaveGeneral}
                     disabled={mutation.isPending}
-                    className="btn bg-ink hover:bg-ink-2 text-white shadow-sm transition-all h-10 px-6 rounded font-medium flex items-center gap-2 text-[13px]"
+                    className="btn btn-primary shadow-sm transition-all h-10 px-6 rounded font-medium flex items-center gap-2 text-[13px]"
                   >
                     {mutation.isPending ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
@@ -730,7 +730,7 @@ export function LeavesSettingsForm() {
               <button
                 onClick={handleSaveModal}
                 disabled={mutation.isPending || !typeName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save

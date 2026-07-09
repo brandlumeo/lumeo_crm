@@ -96,7 +96,7 @@ export function TaxSettingsForm() {
         <div className="flex mb-6">
           <button 
             onClick={handleOpenAdd}
-            className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors"
+            className="btn btn-primary shadow-sm h-9 px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors"
           >
             <Plus className="w-4 h-4" /> Add Tax
           </button>
@@ -211,7 +211,7 @@ export function TaxSettingsForm() {
               <button
                 onClick={handleSaveModal}
                 disabled={mutation.isPending || !taxName || taxRate === ""}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save

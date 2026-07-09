@@ -121,7 +121,7 @@ export function CustomLinkSettingsForm() {
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="btn bg-ink hover:bg-ink-2 text-white shadow-md hover:shadow-lg transition-all h-11 px-6 rounded-xl font-medium flex items-center gap-2 shrink-0 group relative overflow-hidden bg-ink hover:bg-black text-white"
+            className="btn btn-primary shadow-md hover:shadow-lg transition-all h-11 px-6 rounded-xl font-medium flex items-center gap-2 shrink-0 group relative overflow-hidden "
           >
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
             <Plus className="w-4 h-4" /> Add New Link
@@ -202,7 +202,7 @@ export function CustomLinkSettingsForm() {
 
                   <div className="flex gap-3 justify-end pt-2">
                     <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary h-11 px-6 font-medium">Cancel</button>
-                    <button type="submit" className="btn bg-ink hover:bg-ink-2 text-white h-11 px-6 font-medium shadow-md hover:shadow-lg bg-ink hover:bg-black text-white flex items-center gap-2">
+                    <button type="submit" className="btn btn-primary h-11 px-6 font-medium shadow-md hover:shadow-lg  flex items-center gap-2">
                       <Plus className="w-4 h-4" /> Save Link
                     </button>
                   </div>
@@ -234,7 +234,7 @@ export function CustomLinkSettingsForm() {
                   <div className="text-[15px] font-bold text-ink mb-1">No links added yet</div>
                   <p className="text-[13.5px] text-muted max-w-sm mx-auto leading-relaxed">Add your company website, social media, or any custom URL to display on your public profile.</p>
                 </div>
-                <button onClick={() => setShowForm(true)} className="btn bg-ink hover:bg-black text-white h-10 px-6 mt-2 flex items-center gap-2 shadow-sm font-medium rounded-xl">
+                <button onClick={() => setShowForm(true)} className="btn  h-10 px-6 mt-2 flex items-center gap-2 shadow-sm font-medium rounded-xl">
                   <Plus className="w-4 h-4" /> Add first link
                 </button>
               </div>

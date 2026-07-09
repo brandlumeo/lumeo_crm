@@ -362,7 +362,7 @@ export function CalendarSettings() {
                               type="button" 
                               onClick={() => handleUpdateAccountSettings(account.id)}
                               disabled={updateAccountMutation.isPending}
-                              className="btn bg-ink hover:bg-black text-white text-xs font-semibold px-4 h-8 rounded-lg flex items-center gap-1.5"
+                              className="btn  text-xs font-semibold px-4 h-8 rounded-lg flex items-center gap-1.5"
                             >
                               {updateAccountMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                               Save Settings

@@ -407,20 +407,20 @@ export function AttendanceSettingsForm() {
       {/* Top Action Button Placeholder Container */}
       <div className="flex gap-2 mb-2 min-h-9">
         {isAdmin && activeTab === "shifts" && (
-          <button onClick={handleOpenAddShift} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddShift} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add New Shift
           </button>
         )}
         
         {isAdmin && activeTab === "rotation" && (
           <>
-            <button onClick={handleOpenAddRotation} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+            <button onClick={handleOpenAddRotation} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
               <Plus className="w-4 h-4" /> Add New Shift Rotation
             </button>
-            <button onClick={() => setIsAutomateModalOpen(true)} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+            <button onClick={() => setIsAutomateModalOpen(true)} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
               <Settings className="w-4 h-4" /> Automate Shifts
             </button>
-            <button onClick={() => alert("Rotation run successfully initiated.")} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+            <button onClick={() => alert("Rotation run successfully initiated.")} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
               <RotateCw className="w-4 h-4" /> Run Rotation
             </button>
           </>
@@ -655,7 +655,7 @@ export function AttendanceSettingsForm() {
                   <button
                     onClick={handleSaveGeneral}
                     disabled={mutation.isPending}
-                    className="btn bg-ink hover:bg-ink-2 text-white shadow-sm transition-all h-10 px-6 rounded font-medium flex items-center gap-2"
+                    className="btn btn-primary shadow-sm transition-all h-10 px-6 rounded font-medium flex items-center gap-2"
                   >
                     {mutation.isPending ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
@@ -1027,7 +1027,7 @@ export function AttendanceSettingsForm() {
               <button
                 onClick={handleSaveShiftModal}
                 disabled={mutation.isPending || !shiftName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -1124,7 +1124,7 @@ export function AttendanceSettingsForm() {
               <button
                 onClick={handleSaveRotationModal}
                 disabled={mutation.isPending || !rotationName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -1225,7 +1225,7 @@ export function AttendanceSettingsForm() {
               <button
                 onClick={handleSaveAutomateModal}
                 disabled={mutation.isPending || !automateRotationName || automateEmployees.length === 0}
-                className="btn bg-rose-500 hover:bg-rose-600 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary bg-rose-500 border-rose-500 hover:bg-rose-600 text-white dark:text-white dark:bg-rose-600 dark:hover:bg-rose-700 shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 <CheckCircle className="w-4 h-4" /> Save

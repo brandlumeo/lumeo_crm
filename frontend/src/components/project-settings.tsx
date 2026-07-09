@@ -213,12 +213,12 @@ export function ProjectSettingsForm() {
       {/* Top Action Button Placeholder Container */}
       <div className="flex mb-2 h-9">
         {isAdmin && activeTab === "status" && (
-          <button onClick={handleOpenAddStatus} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddStatus} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add Status
           </button>
         )}
         {isAdmin && activeTab === "category" && (
-          <button onClick={handleOpenAddCategory} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddCategory} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add Category
           </button>
         )}
@@ -331,7 +331,7 @@ export function ProjectSettingsForm() {
                       project_send_reminder: sendReminder
                     })}
                     disabled={mutation.isPending}
-                    className="btn bg-ink hover:bg-ink-2 text-white shadow-sm transition-all h-9 px-5 rounded font-medium flex items-center gap-2"
+                    className="btn btn-primary shadow-sm transition-all h-9 px-5 rounded font-medium flex items-center gap-2"
                   >
                     {mutation.isPending ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
@@ -544,7 +544,7 @@ export function ProjectSettingsForm() {
               <button
                 onClick={handleSaveStatusModal}
                 disabled={mutation.isPending || !statusName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -594,7 +594,7 @@ export function ProjectSettingsForm() {
               <button
                 onClick={handleSaveCategoryModal}
                 disabled={mutation.isPending || !categoryName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -632,7 +632,7 @@ export function ProjectSettingsForm() {
               <button 
                 onClick={confirmDelete} 
                 disabled={mutation.isPending}
-                className="w-full sm:w-auto flex-1 btn bg-rose-500 hover:bg-rose-600 text-white shadow-sm h-10 px-4 rounded-xl font-medium flex items-center justify-center gap-2 text-[14px] transition-colors"
+                className="w-full sm:w-auto flex-1 btn btn-primary bg-rose-500 border-rose-500 hover:bg-rose-600 text-white dark:text-white dark:bg-rose-600 dark:hover:bg-rose-700 shadow-sm h-10 px-4 rounded-xl font-medium flex items-center justify-center gap-2 text-[14px] transition-colors"
               >
                 {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 Delete

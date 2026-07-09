@@ -264,27 +264,27 @@ export function TicketSettingsForm() {
       {/* Top Action Button Placeholder Container to keep layout steady */}
       <div className="flex mb-2 h-9">
         {isAdmin && activeTab === "agents" && (
-          <button onClick={handleOpenAddAgent} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddAgent} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add New Agents
           </button>
         )}
         {isAdmin && activeTab === "groups" && (
-          <button onClick={handleOpenAddGroup} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddGroup} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add New Group
           </button>
         )}
         {isAdmin && activeTab === "types" && (
-          <button onClick={handleOpenAddType} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddType} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add New Ticket Type
           </button>
         )}
         {isAdmin && activeTab === "channels" && (
-          <button onClick={handleOpenAddChannel} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddChannel} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add New Ticket Channel
           </button>
         )}
         {isAdmin && activeTab === "templates" && (
-          <button onClick={handleOpenAddTemplate} className="btn bg-ink hover:bg-ink-2 text-white shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
+          <button onClick={handleOpenAddTemplate} className="btn btn-primary shadow-sm px-4 rounded font-medium flex items-center gap-1.5 text-[13px] transition-colors">
             <Plus className="w-4 h-4" /> Add Reply Template
           </button>
         )}
@@ -711,7 +711,7 @@ export function TicketSettingsForm() {
               <button
                 onClick={handleSaveAgentModal}
                 disabled={mutation.isPending || !agentName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -761,7 +761,7 @@ export function TicketSettingsForm() {
               <button
                 onClick={handleSaveGroupModal}
                 disabled={mutation.isPending || !groupName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -811,7 +811,7 @@ export function TicketSettingsForm() {
               <button
                 onClick={handleSaveTypeModal}
                 disabled={mutation.isPending || !typeName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -861,7 +861,7 @@ export function TicketSettingsForm() {
               <button
                 onClick={handleSaveChannelModal}
                 disabled={mutation.isPending || !channelName}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
@@ -921,7 +921,7 @@ export function TicketSettingsForm() {
               <button
                 onClick={handleSaveTemplateModal}
                 disabled={mutation.isPending || !templateName || !templateBody}
-                className="btn bg-ink hover:bg-ink-2 text-white shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
+                className="btn btn-primary shadow-sm h-9 px-5 rounded-lg font-medium flex items-center gap-2 text-[13px] transition-colors"
               >
                 {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save
