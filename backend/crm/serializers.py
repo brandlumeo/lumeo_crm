@@ -158,6 +158,22 @@ class LeadSerializer(CompanyScopedSerializer):
             )
         return attrs
 
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        if instance.assigned_to:
+            from notifications.tasks import notify_lead_assigned
+            notify_lead_assigned.delay(instance.id, instance.assigned_to.id)
+        return instance
+
+    def update(self, instance, validated_data):
+        old_assigned = instance.assigned_to
+        updated_instance = super().update(instance, validated_data)
+        new_assigned = updated_instance.assigned_to
+        if new_assigned and new_assigned != old_assigned:
+            from notifications.tasks import notify_lead_assigned
+            notify_lead_assigned.delay(updated_instance.id, new_assigned.id)
+        return updated_instance
+
 
 class CustomerSerializer(CompanyScopedSerializer):
     has_portal_access = serializers.SerializerMethodField()
@@ -231,6 +247,15 @@ class DealSerializer(CompanyScopedSerializer):
                 {"assigned_to_id": "Assigned user must belong to the same company."}
             )
         return attrs
+
+    def update(self, instance, validated_data):
+        old_stage = instance.stage
+        updated_instance = super().update(instance, validated_data)
+        new_stage = updated_instance.stage
+        if new_stage == Deal.Stage.WON and old_stage != Deal.Stage.WON:
+            from notifications.tasks import notify_deal_won
+            notify_deal_won.delay(updated_instance.id)
+        return updated_instance
 
 
 class TaskSerializer(CompanyScopedSerializer):
@@ -576,10 +601,16 @@ class InvoiceSerializer(CompanyScopedSerializer):
             InvoiceLineItem.objects.create(invoice=invoice, **item_data)
             
         invoice.calculate_totals()
+        
+        if invoice.status == Invoice.Status.SENT:
+            from notifications.tasks import send_invoice_email
+            send_invoice_email.delay(invoice.id)
+            
         return invoice
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop("items", None)
+        old_status = instance.status
         invoice = super().update(instance, validated_data)
         
         if items_data is not None:
@@ -589,6 +620,11 @@ class InvoiceSerializer(CompanyScopedSerializer):
                 InvoiceLineItem.objects.create(invoice=instance, **item_data)
                 
         invoice.calculate_totals()
+        
+        if invoice.status == Invoice.Status.SENT and old_status != Invoice.Status.SENT:
+            from notifications.tasks import send_invoice_email
+            send_invoice_email.delay(invoice.id)
+            
         return invoice
 
 
@@ -976,10 +1012,24 @@ class CalendarAccountSerializer(CompanyScopedSerializer):
 
 class TicketCommentSerializer(serializers.ModelSerializer):
     author = UserSummarySerializer(read_only=True)
+
     class Meta:
         model = TicketComment
         fields = "__all__"
         read_only_fields = ("author", "created_at")
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            validated_data["author"] = request.user
+            
+        comment = super().create(validated_data)
+        
+        if not comment.is_internal:
+            from notifications.tasks import notify_ticket_reply
+            notify_ticket_reply.delay(comment.id)
+            
+        return comment
 
 class TicketSerializer(CompanyScopedSerializer):
     assigned_to = UserSummarySerializer(read_only=True)

@@ -25,7 +25,7 @@ export default function PayrollPage() {
   const { data: user } = useCurrentUser();
   const isManager = user?.role === "owner" || user?.role === "admin";
   const { data: payrolls = [], isLoading } = usePayrolls(isManager);
-  const { data: teamData } = useTeam();
+  const { data: team = [] } = useTeam();
 
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollMutation = useUpdatePayroll();
@@ -319,9 +319,9 @@ export default function PayrollPage() {
                   required
                 >
                   <option value="" disabled>Select Employee</option>
-                  {teamData?.users?.map((member: any) => (
-                    <option key={member.id} value={member.id}>
-                      {member.full_name || member.email}
+                  {team.map((u: any) => (
+                    <option key={u.id} value={u.id}>
+                      {u.first_name} {u.last_name}
                     </option>
                   ))}
                 </select>
