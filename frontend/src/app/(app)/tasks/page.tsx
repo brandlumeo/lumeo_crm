@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { createTask, fetchTeam, updateTask, deleteTask } from "@/lib/api";
 import { useCurrentUser, useTaskPage } from "@/lib/queries";
 import type { TaskInput, Task } from "@/lib/types";
@@ -36,6 +37,7 @@ export default function TasksPage() {
   // Drawer states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
   
   // Forms
   const [form, setForm] = useState<TaskInput>({
@@ -92,10 +94,19 @@ export default function TasksPage() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteTask,
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       toast.success("Task deleted");
+      setTaskToDelete(null);
+      if (editingTask?.id === deletedId) {
+        setIsDrawerOpen(false);
+        setEditingTask(null);
+      }
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
+    onError: () => {
+      toast.error("Failed to delete task");
+      setTaskToDelete(null);
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -260,8 +271,8 @@ export default function TasksPage() {
                           <button onClick={() => openEditDrawer(task)} className="p-1.5 text-muted hover:text-ink hover:bg-bone rounded">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { if(confirm("Delete this task?")) deleteMutation.mutate(task.id); }} className="p-1.5 text-muted hover:text-rose-600 hover:bg-rose-50 rounded">
-                            <Trash2 className="w-4 h-4" />
+                          <button onClick={() => setTaskToDelete(task.id)} className="p-1.5 text-muted hover:text-rose-600 hover:bg-rose-50 rounded">
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -394,7 +405,7 @@ export default function TasksPage() {
               {editingTask ? (
                 <button
                   type="button"
-                  onClick={() => { if(confirm("Are you sure?")) { deleteMutation.mutate(editingTask.id); setIsDrawerOpen(false); } }}
+                  onClick={() => setTaskToDelete(editingTask.id)}
                   className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-2 text-[13px] font-medium"
                 >
                   <Trash2 className="w-4 h-4" /> Delete
@@ -421,6 +432,16 @@ export default function TasksPage() {
         </Dialog.Portal>
       </Dialog.Root>
 
+      <ConfirmationModal
+        open={taskToDelete !== null}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={() => taskToDelete && deleteMutation.mutate(taskToDelete)}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+      />
     </PageShell>
   );
 }
