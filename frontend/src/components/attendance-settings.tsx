@@ -102,6 +102,11 @@ export function AttendanceSettingsForm() {
   const [automateEmployees, setAutomateEmployees] = useState<string[]>([]);
   const [automateRotationName, setAutomateRotationName] = useState("");
 
+  // Weekend & Off-Day Policy
+  const [weekendPolicy, setWeekendPolicy] = useState<Record<string, string[]>>({
+    "0": [], "1": [], "2": [], "3": [], "4": [], "5": ["all"], "6": ["all"]
+  });
+
   useEffect(() => {
     if (company) {
       setOfficeStartTime(company.office_start_time ?? "09:00:00");
@@ -120,6 +125,9 @@ export function AttendanceSettingsForm() {
       setEmailReportRole(company.email_report_role ?? "Primary Admin");
       setWeekStartsFrom(company.week_starts_from ?? "Monday");
       setReminderStatus(company.attendance_reminder_status ?? false);
+      if (company.weekend_policy) {
+        setWeekendPolicy(company.weekend_policy);
+      }
     }
   }, [company]);
 
@@ -157,7 +165,8 @@ export function AttendanceSettingsForm() {
       
       email_report_role: emailReportRole,
       week_starts_from: weekStartsFrom,
-      attendance_reminder_status: reminderStatus
+      attendance_reminder_status: reminderStatus,
+      weekend_policy: weekendPolicy
     });
   };
 
@@ -488,6 +497,70 @@ export function AttendanceSettingsForm() {
                     Send monthly attendance report email
                     <HelpCircle className="w-4 h-4 text-muted/70" />
                   </label>
+                </div>
+              </div>
+
+              {/* Weekend Policy */}
+              <div className="border-t border-line/60 pt-8 mt-8">
+                <h4 className="text-[14px] font-semibold text-ink mb-1">Global Weekend & Off-Day Policy</h4>
+                <p className="text-[13px] text-muted mb-4">Select which weeks of the month each day is considered a day off.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {[
+                    { id: "0", label: "Monday" },
+                    { id: "1", label: "Tuesday" },
+                    { id: "2", label: "Wednesday" },
+                    { id: "3", label: "Thursday" },
+                    { id: "4", label: "Friday" },
+                    { id: "5", label: "Saturday" },
+                    { id: "6", label: "Sunday" }
+                  ].map(day => (
+                    <div key={day.id} className="bg-paper border border-line rounded-lg p-3">
+                      <label className="text-[13px] font-medium text-ink block mb-2">{day.label}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { id: "all", label: "All Weeks" },
+                          { id: "1", label: "1st" },
+                          { id: "2", label: "2nd" },
+                          { id: "3", label: "3rd" },
+                          { id: "4", label: "4th" },
+                          { id: "5", label: "5th" },
+                        ].map(opt => {
+                          const isSelected = weekendPolicy[day.id]?.includes(opt.id) || (opt.id !== 'all' && weekendPolicy[day.id]?.includes('all'));
+                          return (
+                            <button
+                              key={opt.id}
+                              disabled={!isAdmin}
+                              onClick={() => {
+                                setWeekendPolicy(prev => {
+                                  const current = prev[day.id] || [];
+                                  let next = [...current];
+                                  if (opt.id === 'all') {
+                                    next = current.includes('all') ? [] : ['all'];
+                                  } else {
+                                    if (next.includes('all')) next = [];
+                                    if (next.includes(opt.id)) {
+                                      next = next.filter(i => i !== opt.id);
+                                    } else {
+                                      next.push(opt.id);
+                                    }
+                                  }
+                                  return { ...prev, [day.id]: next };
+                                });
+                              }}
+                              className={cn(
+                                "px-2 py-1 text-[11px] font-medium rounded transition-colors",
+                                isSelected 
+                                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
+                                  : "bg-bone-2 text-muted border border-transparent hover:bg-bone"
+                              )}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

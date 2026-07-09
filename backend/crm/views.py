@@ -496,18 +496,34 @@ class DealViewSet(CompanyScopedModelViewSet):
 
 
 class TaskViewSet(CompanyScopedModelViewSet):
+    permission_module = "Tasks"
     serializer_class = TaskSerializer
     queryset = Task.objects.select_related("company", "assigned_to")
     search_fields = ("title", "assigned_to__username")
     ordering_fields = ("created_at", "updated_at", "title", "due_date", "status")
-    ordering = ("due_date", "title")
+    ordering = ("-created_at",)
 
     def apply_business_filters(self, queryset):
+        user = self.request.user
         status_value = self.request.query_params.get("status")
         if status_value:
             queryset = queryset.filter(status=status_value)
 
         queryset = self._filter_by_assignee(queryset)
+        
+        # For staff (non-management) employees with 'Owned' permission, restrict to their tasks
+        if not user.has_management_access and user.role not in ["owner", "admin", "manager"]:
+            company = getattr(user, "company", None)
+            if company:
+                roles = company.roles
+                role_id = str(user.role).lower()
+                role_data = next((r for r in roles if r.get("id") == role_id), None)
+                if role_data:
+                    perms = role_data.get("permissions", {})
+                    task_perm = perms.get("Tasks", {})
+                    if task_perm.get("View") == "Owned":
+                        queryset = queryset.filter(assigned_to=user)
+
         return self._filter_by_date_range(queryset, "due_date")
 
 

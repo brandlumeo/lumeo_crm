@@ -195,7 +195,16 @@ def default_roles():
             }
         }
     ]
-
+def default_weekend_policy():
+    return {
+        "0": [], # Monday
+        "1": [], # Tuesday
+        "2": [], # Wednesday
+        "3": [], # Thursday
+        "4": [], # Friday
+        "5": ["all"], # Saturday
+        "6": ["all"]  # Sunday
+    }
 
 class Company(models.Model):
     class Status(models.TextChoices):
@@ -325,6 +334,7 @@ class Company(models.Model):
     attendance_reminder_status = models.BooleanField(default=False)
     
     employee_shifts = models.JSONField(default=list, blank=True)
+    weekend_policy = models.JSONField(default=default_weekend_policy, blank=True)
     shift_rotations = models.JSONField(default=list, blank=True)
     automated_shifts = models.JSONField(default=list, blank=True)
     
@@ -395,6 +405,22 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+        
+    def is_day_off(self, target_date):
+        import math
+        weekday = str(target_date.weekday())
+        policy = self.weekend_policy.get(weekday, [])
+        if "all" in policy:
+            return True
+        if not policy:
+            return False
+            
+        # Calculate week number of the month for this specific weekday
+        # e.g. 1st Saturday, 2nd Saturday
+        day_of_month = target_date.day
+        week_num = str(math.ceil(day_of_month / 7))
+        
+        return week_num in policy
 
     @property
     def is_trial_active(self):

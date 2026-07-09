@@ -97,6 +97,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "week_starts_from",
             "attendance_reminder_status",
             "employee_shifts",
+            "weekend_policy",
             "shift_rotations",
             "automated_shifts",
             "default_leave_quota",

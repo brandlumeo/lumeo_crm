@@ -737,7 +737,7 @@ class AttendanceMatrixView(APIView):
             
             for day in range(1, num_days + 1):
                 current_date = date(year, month, day)
-                is_weekend = current_date.weekday() >= 5 # 5=Sat, 6=Sun
+                is_weekend = company.is_day_off(current_date)
                 
                 status = "absent"
                 

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   CheckSquare, Plus, Search, Calendar, User, 
-  MoreVertical, Edit2, Trash2, LayoutList, LayoutGrid, X,
+  Edit2, Trash2, LayoutList, LayoutGrid, X,
   Clock, AlertCircle
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -62,7 +62,7 @@ export default function TasksPage() {
     limit: 100, // Load up to 100 tasks for board view seamlessly
     search,
     status: status || undefined,
-    ordering: "due_date",
+    ordering: "-created_at",
   });
 
   // Mutations
@@ -75,7 +75,12 @@ export default function TasksPage() {
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.due_date?.[0] || err.response?.data?.detail || "Failed to create task");
+      const detail = err.response?.data?.detail
+        || err.response?.data?.non_field_errors?.[0]
+        || err.response?.data?.title?.[0]
+        || err.response?.data?.due_date?.[0]
+        || "Failed to create task";
+      toast.error(detail);
     }
   });
 
@@ -88,7 +93,12 @@ export default function TasksPage() {
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.due_date?.[0] || err.response?.data?.detail || "Failed to update task");
+      const detail = err.response?.data?.detail
+        || err.response?.data?.non_field_errors?.[0]
+        || err.response?.data?.title?.[0]
+        || err.response?.data?.due_date?.[0]
+        || "Failed to update task";
+      toast.error(detail);
     }
   });
 
@@ -221,10 +231,11 @@ export default function TasksPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-line bg-bone/50 text-muted/80 uppercase tracking-wider text-[11px] font-semibold">
-                    <th className="px-5 py-3 w-[45%]">Task Title</th>
+                    <th className="px-5 py-3 w-[38%]">Task Title</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">Assignee</th>
                     <th className="px-5 py-3">Due Date</th>
+                    <th className="px-5 py-3">Created</th>
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -232,7 +243,7 @@ export default function TasksPage() {
                   {rows.map((task) => (
                     <tr key={task.id} className="group hover:bg-bone/40 transition-colors">
                       <td className="px-5 py-3">
-                        <div className="font-medium text-ink cursor-pointer hover:text-accent transition-colors truncate max-w-[300px] xl:max-w-[450px]" onClick={() => openEditDrawer(task)}>
+                        <div className="font-medium text-ink cursor-pointer hover:text-accent transition-colors truncate max-w-[300px] xl:max-w-[420px]" onClick={() => openEditDrawer(task)}>
                           {task.title}
                         </div>
                       </td>
@@ -264,6 +275,18 @@ export default function TasksPage() {
                         <div className="flex items-center gap-1.5 text-muted text-[13px]">
                           <Calendar className="w-3.5 h-3.5" />
                           {task.due_date ? formatDateTime(task.due_date) : "No date"}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5 text-muted text-[12px] whitespace-nowrap">
+                          <Clock className="w-3 h-3 shrink-0" />
+                          {task.created_at
+                            ? new Date(task.created_at).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "—"}
                         </div>
                       </td>
                       <td className="px-5 py-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
@@ -316,6 +339,12 @@ export default function TasksPage() {
                           </div>
                         </div>
                       </div>
+                      {task.created_at && (
+                        <div className="flex items-center gap-1 text-[10.5px] text-muted/60 mt-2 pt-2 border-t border-line/50">
+                          <Clock className="w-2.5 h-2.5" />
+                          Created {new Date(task.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -398,6 +427,14 @@ export default function TasksPage() {
                     })}
                   </select>
                 </div>
+
+                {/* Show created_at when editing */}
+                {editingTask?.created_at && (
+                  <div className="flex items-center gap-2 text-[12px] text-muted bg-bone/50 rounded-lg px-3 py-2">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    Created on {new Date(editingTask.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}
+                  </div>
+                )}
               </form>
             </div>
 

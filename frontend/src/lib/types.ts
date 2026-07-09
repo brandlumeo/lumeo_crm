@@ -90,6 +90,7 @@ export interface CompanyDetail extends CompanySummary {
   week_starts_from: string;
   attendance_reminder_status: boolean;
   employee_shifts: any[];
+  weekend_policy: Record<string, string[]>;
   shift_rotations: any[];
   automated_shifts: any[];
   default_leave_quota: number;
