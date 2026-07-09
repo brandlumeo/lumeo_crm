@@ -72,6 +72,9 @@ export default function TasksPage() {
       setIsDrawerOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.due_date?.[0] || err.response?.data?.detail || "Failed to create task");
+    }
   });
 
   const updateMutation = useMutation({
@@ -82,6 +85,9 @@ export default function TasksPage() {
       setEditingTask(null);
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.due_date?.[0] || err.response?.data?.detail || "Failed to update task");
+    }
   });
 
   const deleteMutation = useMutation({
@@ -107,7 +113,7 @@ export default function TasksPage() {
     setEditingTask(task);
     setForm({
       title: task.title,
-      due_date: task.due_date ? task.due_date.slice(0, 16) : "",
+      due_date: task.due_date ? task.due_date.slice(0, 10) : "",
       status: task.status,
       assigned_to_id: task.assigned_to?.id || null,
     });
@@ -352,12 +358,13 @@ export default function TasksPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Due Date & Time</label>
+                  <label className="text-[13px] font-medium text-ink">Due Date *</label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                     className="input w-full"
+                    required
                   />
                 </div>
 
