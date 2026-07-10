@@ -248,6 +248,13 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'cache-control',
+    'pragma',
+    'expires',
+]
+
 # C2 fix: lock down CORS — only allow listed origins, never all origins in production
 CORS_ALLOW_ALL_ORIGINS = True
 
