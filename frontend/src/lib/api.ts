@@ -72,7 +72,7 @@ const ACCESS_TOKEN_KEY = "lumeo_access_token";
 
 // C5 fix: Validate NEXT_PUBLIC_API_URL at startup.
 // In production (NODE_ENV=production) a missing URL would silently point to localhost and break everything.
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
 if (!rawApiUrl) {
   if (process.env.NODE_ENV === "production") {

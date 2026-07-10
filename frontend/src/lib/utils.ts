@@ -137,7 +137,7 @@ export function getMediaUrl(path: string | null | undefined): string {
   if (!path) return "";
   if (path.startsWith("http")) return path;
   
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim() || "http://127.0.0.1:8000/api/v1";
   const baseUrl = apiUrl.replace("/api/v1", "");
   
   return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
