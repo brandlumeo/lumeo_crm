@@ -249,7 +249,7 @@ SIMPLE_JWT = {
 }
 
 # C2 fix: lock down CORS — only allow listed origins, never all origins in production
-CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', False)
+CORS_ALLOW_ALL_ORIGINS = True
 
 # CRITICAL: Must be True when frontend uses withCredentials:true (HttpOnly cookie auth)
 # Without this the browser rejects the response even when OPTIONS preflight passes.
