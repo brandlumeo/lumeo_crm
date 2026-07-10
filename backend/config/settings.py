@@ -268,6 +268,7 @@ CORS_ALLOWED_ORIGINS = env_list(
         'http://localhost:5173',
         'https://lumeo-crm-backend.onrender.com',
         'https://lumeo.estgrp.in',
+        'http://lumeo.estgrp.in',
     ]
 )
 
@@ -284,6 +285,7 @@ CSRF_TRUSTED_ORIGINS = env_list(
         'http://localhost:5173',
         'https://lumeo-crm-backend.onrender.com',
         'https://lumeo.estgrp.in',
+        'http://lumeo.estgrp.in',
     ]
 )
 
