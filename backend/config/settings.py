@@ -268,9 +268,11 @@ CORS_ALLOWED_ORIGINS = env_list(
         'http://localhost:5173',
         'https://lumeo-crm-backend.onrender.com',
         'https://lumeo.estgrp.in',
-        'http://lumeo.estgrp.in',
     ]
 )
+# Force append HTTP origin in case env override missed it
+if 'http://lumeo.estgrp.in' not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append('http://lumeo.estgrp.in')
 
 CSRF_TRUSTED_ORIGINS = env_list(
     'CSRF_TRUSTED_ORIGINS',
@@ -285,9 +287,10 @@ CSRF_TRUSTED_ORIGINS = env_list(
         'http://localhost:5173',
         'https://lumeo-crm-backend.onrender.com',
         'https://lumeo.estgrp.in',
-        'http://lumeo.estgrp.in',
     ]
 )
+if 'http://lumeo.estgrp.in' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('http://lumeo.estgrp.in')
 
 import ssl
 REDIS_URL = env('REDIS_URL', 'redis://127.0.0.1:6379/1')
