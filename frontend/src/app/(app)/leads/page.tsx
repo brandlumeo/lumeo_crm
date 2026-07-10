@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Mail, Users, Download, Upload, X, Loader2 } from "lucide-react";
 
 import { createLead, exportLeads } from "@/lib/api";
-import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany } from "@/lib/queries";
+import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany, useDeleteLead } from "@/lib/queries";
 import type { LeadInput } from "@/lib/types";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
 import { DataTable } from "@/components/data-table";
@@ -57,6 +57,7 @@ export default function LeadsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const importMutation = useImportLeads();
+  const deleteMutation = useDeleteLead();
 
   const handleExport = async () => {
     try {
@@ -252,7 +253,16 @@ export default function LeadsPage() {
                 {
                   label: "Delete",
                   variant: "danger",
-                  onClick: (ids) => toast.error(`Deleted ${ids.length} leads.`),
+                  onClick: async (ids) => {
+                    const promises = ids.map(id => deleteMutation.mutateAsync(Number(id)));
+                    toast.promise(Promise.all(promises), {
+                      loading: `Deleting ${ids.length} leads...`,
+                      success: () => {
+                        return `Deleted ${ids.length} leads.`;
+                      },
+                      error: "Failed to delete leads.",
+                    });
+                  },
                 },
               ]}
             />
