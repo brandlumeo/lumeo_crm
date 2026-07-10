@@ -50,20 +50,20 @@ function NavItem({
   pathname: string, 
   counts: any, 
   openMenus: Record<string, boolean>, 
-  toggleMenu: (label: string) => void 
+  toggleMenu: (label: string, currentlyExpanded: boolean) => void 
 }) {
   const hasSubItems = item.subItems && item.subItems.length > 0;
   const isOpen = openMenus[item.label];
   
   const isActive = item.href ? (pathname === item.href || pathname.startsWith(`${item.href}/`)) : false;
   const isSubActive = hasSubItems && item.subItems.some((sub: any) => pathname === sub.href || pathname.startsWith(`${sub.href}/`));
-  const isExpanded = isOpen || isSubActive;
+  const isExpanded = openMenus[item.label] !== undefined ? openMenus[item.label] : isSubActive;
 
   return (
     <div className="flex flex-col gap-0.5">
       {hasSubItems ? (
         <button
-          onClick={() => toggleMenu(item.label)}
+          onClick={() => toggleMenu(item.label, isExpanded)}
           className={cn(
             "flex items-center justify-between px-2 py-1.5 rounded-md text-[13.5px] transition-colors w-full",
             isSubActive ? "text-ink font-medium" : "text-ink-2 hover:bg-bone-2 hover:text-ink"
@@ -171,8 +171,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     router.refresh();
   };
 
-  const toggleMenu = (label: string) => {
-    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  const toggleMenu = (label: string, currentlyExpanded: boolean) => {
+    setOpenMenus(prev => ({ ...prev, [label]: !currentlyExpanded }));
   };
 
   const isOwnerOrAdmin = user?.role === "owner" || user?.role === "admin";
