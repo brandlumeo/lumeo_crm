@@ -208,10 +208,18 @@ export async function clearSession(): Promise<void> {
 // Request: inject access token as Authorization header
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
+  config.headers = config.headers ?? {};
   if (token) {
-    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Prevent browser caching for GET requests (specifically for settings/matrix endpoints)
+  if (config.method?.toLowerCase() === 'get') {
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+  }
+  
   return config;
 });
 
