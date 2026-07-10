@@ -306,6 +306,7 @@ export function useInvoicePage(params: ListParams) {
 
 
 export function useDashboardBundle() {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["dashboard-bundle"],
     queryFn: async () => {
@@ -318,6 +319,9 @@ export function useDashboardBundle() {
         fetchTaskPage({ limit: 100 }),
         fetchNotePage({ limit: 100 }),
       ]);
+
+      queryClient.setQueryData(["me"], me);
+      queryClient.setQueryData(["company", "current"], company);
 
       return {
         me,
