@@ -42,6 +42,11 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.auto_close_shifts",
         "schedule": crontab(hour=23, minute=59),
     },
+    # Check and send clock-in/out attendance reminders every 15 minutes
+    "process-attendance-reminders": {
+        "task": "notifications.tasks.process_attendance_reminders",
+        "schedule": crontab(minute="*/15"),
+    },
     # Check for expiring subscriptions daily at 08:00 UTC
     "check-subscription-expiry": {
         "task": "notifications.tasks.check_subscription_expiry",

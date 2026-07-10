@@ -261,6 +261,76 @@ def check_task_deadlines(self):
         logger.exception('check_task_deadlines failed: %s', exc)
         raise self.retry(exc=exc)
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def process_attendance_reminders(self):
+    """
+    Runs periodically (e.g. every 15-30 mins) to send clock-in and clock-out reminders.
+    Checks `attendance_reminder_status` on the Company model.
+    """
+    try:
+        from attendance.models import TimeLog
+        from companies.models import Company
+        from notifications.models import Notification
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+        
+        User = get_user_model()
+        now = timezone.now()
+        local_time = timezone.localtime(now)
+        today = local_time.date()
+        current_time = local_time.time()
+        
+        count = 0
+        
+        companies = Company.objects.filter(attendance_reminder_status=True)
+        for company in companies:
+            if company.is_day_off(today):
+                continue
+                
+            start_time = company.office_start_time
+            end_time = company.office_end_time
+            
+            # Find all active employees in this company
+            employees = User.objects.filter(company=company, is_active=True, role__in=["employee", "admin", "owner", "manager"])
+            
+            for emp in employees:
+                # Clock-In Reminder
+                if current_time >= start_time:
+                    has_clocked_in = TimeLog.objects.filter(user=emp, clock_in__date=today).exists()
+                    if not has_clocked_in:
+                        title = f"Clock-In Reminder: {today.strftime('%b %d')}"
+                        already_sent = Notification.objects.filter(user=emp, title=title).exists()
+                        if not already_sent:
+                            Notification.objects.create(
+                                user=emp,
+                                notification_type=Notification.Type.GENERAL,
+                                title=title,
+                                body="Your shift has started. Please remember to clock in for today."
+                            )
+                            count += 1
+                
+                # Clock-Out Reminder
+                if current_time >= end_time:
+                    # Find open shift for today
+                    open_log = TimeLog.objects.filter(user=emp, clock_in__date=today, clock_out__isnull=True).first()
+                    if open_log:
+                        title = f"Clock-Out Reminder: {today.strftime('%b %d')}"
+                        already_sent = Notification.objects.filter(user=emp, title=title).exists()
+                        if not already_sent:
+                            Notification.objects.create(
+                                user=emp,
+                                notification_type=Notification.Type.GENERAL,
+                                title=title,
+                                body="Your shift has ended. Please remember to clock out for today."
+                            )
+                            count += 1
+                            
+        logger.info('process_attendance_reminders: sent %d reminders', count)
+        return {'sent': count}
+    except Exception as exc:
+        logger.exception('process_attendance_reminders failed: %s', exc)
+        raise self.retry(exc=exc)
+
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def auto_close_shifts(self):
