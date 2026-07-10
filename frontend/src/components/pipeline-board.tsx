@@ -304,7 +304,7 @@ export function PipelineBoard({ deals }: { deals: Deal[] }) {
   };
 
   return (
-    <div className="card mb-6 animate-rise">
+    <div className="card mb-6 animate-rise !overflow-visible">
       <div className="card-head">
         <div className="card-title">
           Pipeline
