@@ -43,8 +43,14 @@ class SaasStatsView(views.APIView):
         total_users = User.objects.count()
         active_users = User.objects.filter(is_active=True).count()
         
-        # simple mock for MRR based on active companies (e.g. $49/mo)
-        mrr = active_companies * 49.00
+        # Calculate real MRR based on active paid subscriptions
+        from subscriptions.models import Subscription, PLAN_LIMITS, Plan
+        mrr = 0.0
+        active_subs = Subscription.objects.filter(is_active=True).exclude(plan=Plan.FREE)
+        for sub in active_subs:
+            plan_data = PLAN_LIMITS.get(sub.plan)
+            if plan_data:
+                mrr += float(plan_data.get("price_monthly", 0))
 
         recent_companies = Company.objects.order_by('-created_at')[:5]
         recent_companies_data = SaasCompanySerializer(recent_companies, many=True).data

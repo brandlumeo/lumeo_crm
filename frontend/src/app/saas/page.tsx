@@ -34,7 +34,7 @@ export default function SaasOverview() {
         <StatCard title="Total Companies" value={stats.total_companies} icon={Building2} sub={`${stats.active_companies} active`} trend="+12%" />
         <StatCard title="Total Users" value={stats.total_users} icon={Users} sub={`${stats.active_users} active`} trend="+5%" />
         <StatCard title="Trial Accounts" value={stats.trial_companies} icon={Activity} sub="In free trial" trend="+2%" />
-        <StatCard title="Est. MRR" value={"$" + stats.mrr.toFixed(2)} icon={CreditCard} sub="Based on active plans" trend="+18%" isRevenue />
+        <StatCard title="Est. MRR" value={"₹" + stats.mrr.toFixed(2)} icon={CreditCard} sub="Based on active plans" trend="+18%" isRevenue />
       </div>
 
       <div className="bg-[#131316] border border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden">
