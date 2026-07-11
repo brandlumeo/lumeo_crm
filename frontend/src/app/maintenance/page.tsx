@@ -3,9 +3,7 @@
 import { Construction, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
 import { getAccessToken } from "@/lib/api";
-import { jwtDecode } from "jwt-decode";
 
 export default function MaintenancePage() {
   const [isSuperuser, setIsSuperuser] = useState(false);
@@ -15,7 +13,14 @@ export default function MaintenancePage() {
     const token = getAccessToken();
     if (token) {
       try {
-        const decoded: any = jwtDecode(token);
+        const payloadBase64 = token.split('.')[1];
+        // Handle URL safe base64
+        const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const decoded = JSON.parse(jsonPayload);
         if (decoded.is_superuser) {
           setIsSuperuser(true);
         }

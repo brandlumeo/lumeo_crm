@@ -251,7 +251,7 @@ api.interceptors.response.use(
       | (InternalAxiosRequestConfig & { _retry?: boolean })
       | undefined;
 
-    if (error.response?.status === 503 && error.response?.data?.code === "maintenance_mode") {
+    if (error.response?.status === 503 && (error.response?.data as any)?.code === "maintenance_mode") {
       if (isBrowser() && window.location.pathname !== "/maintenance") {
         window.location.href = "/maintenance";
       }
