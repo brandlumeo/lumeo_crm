@@ -34,14 +34,23 @@ class MaintenanceModeMiddleware:
                             user = User.objects.filter(id=user_id).first()
                             if user and user.is_superuser:
                                 is_super = True
+                            elif user:
+                                # Valid token, but not superuser. Return 503 Maintenance!
+                                return JsonResponse(
+                                    {"detail": "The platform is currently under maintenance. Please try again later.", "code": "maintenance_mode"},
+                                    status=503
+                                )
                     except Exception:
                         pass
                 
-                # Allow superusers to bypass maintenance mode
+                # If we get here and they are not a superadmin, it means they either have no token,
+                # or their token is invalid/expired. We should return 401 to force the frontend to
+                # redirect them to the Login page. Once they log in, they get a valid token.
+                # If they are a normal user, the next request will hit the 503 block above.
                 if not is_super:
                     return JsonResponse(
-                        {"detail": "The platform is currently under maintenance. Please try again later.", "code": "maintenance_mode"},
-                        status=503
+                        {"detail": "Authentication credentials were not provided."},
+                        status=401
                     )
         
         response = self.get_response(request)
