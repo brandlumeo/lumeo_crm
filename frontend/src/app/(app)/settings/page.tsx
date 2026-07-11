@@ -107,8 +107,8 @@ export default function SettingsPage() {
         
         {/* Sidebar Nav */}
         <div className={cn(
-          "w-full md:w-64 shrink-0 flex flex-col md:sticky md:top-[100px] md:h-[calc(100vh-140px)] bg-paper rounded-xl border border-line shadow-sm overflow-hidden min-h-0",
-          showMenuOnMobile ? "block" : "hidden md:flex"
+          "w-full md:w-64 shrink-0 grid grid-rows-[auto_1fr] md:sticky md:top-[100px] md:h-[calc(100vh-140px)] bg-paper rounded-xl border border-line shadow-sm overflow-hidden",
+          showMenuOnMobile ? "block" : "hidden md:grid"
         )}>
           <div className="p-4 border-b border-line shrink-0 bg-bone/50">
             <div className="relative">
@@ -126,7 +126,7 @@ export default function SettingsPage() {
             </div>
           </div>
           
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2 space-y-0.5">
+          <div className="overflow-y-auto custom-scrollbar p-2 space-y-0.5 min-h-0">
             {filteredTabs.length === 0 && (
               <div className="text-center py-6 text-sm text-muted">
                 No sections found.
