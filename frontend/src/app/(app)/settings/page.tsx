@@ -107,7 +107,7 @@ export default function SettingsPage() {
         
         {/* Sidebar Nav */}
         <div className={cn(
-          "w-full md:w-64 shrink-0 flex flex-col h-full bg-paper rounded-xl border border-line shadow-sm overflow-hidden",
+          "w-full md:w-64 shrink-0 flex flex-col h-full bg-paper rounded-xl border border-line shadow-sm overflow-hidden min-h-0",
           showMenuOnMobile ? "block" : "hidden md:flex"
         )}>
           <div className="p-4 border-b border-line shrink-0 bg-bone/50">
@@ -162,7 +162,7 @@ export default function SettingsPage() {
 
         {/* Content Area */}
         <div className={cn(
-          "flex-1 w-full max-w-4xl h-full relative animate-rise",
+          "flex-1 w-full max-w-4xl h-full relative animate-rise min-h-0",
           showMenuOnMobile ? "hidden md:block" : "block",
           activeTab !== "notifications" 
             ? "overflow-y-auto custom-scrollbar bg-paper border border-line rounded-xl shadow-sm" 
