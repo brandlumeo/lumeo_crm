@@ -30,8 +30,8 @@ export interface Conversation {
 
 export const commsApi = {
   getConversations: async () => {
-    const { data } = await api.get<Conversation[]>("/communications/conversations/");
-    return data;
+    const { data } = await api.get<{ results: Conversation[] }>("/communications/conversations/");
+    return data.results || [];
   },
   
   startDirect: async (userId: number) => {
