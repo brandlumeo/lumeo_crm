@@ -107,7 +107,7 @@ export default function SettingsPage() {
         
         {/* Sidebar Nav */}
         <div className={cn(
-          "w-full md:w-64 shrink-0 flex flex-col md:sticky md:top-[100px] md:max-h-[calc(100vh-140px)] bg-paper rounded-xl border border-line shadow-sm overflow-hidden",
+          "w-full md:w-64 shrink-0 flex flex-col md:sticky md:top-[100px] md:h-[calc(100vh-140px)] bg-paper rounded-xl border border-line shadow-sm overflow-hidden",
           showMenuOnMobile ? "block" : "hidden md:flex"
         )}>
           <div className="p-4 border-b border-line shrink-0 bg-bone/50">
