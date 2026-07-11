@@ -177,14 +177,14 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
                   <label className="block">
-                    <span className="label">Workspace username</span>
+                    <span className="label">Email address</span>
                     <input
-                      type="text"
+                      type="email"
                       required
                       value={username}
                       onChange={(event) => setUsername(event.target.value)}
                       className="input"
-                      placeholder="your.username"
+                      placeholder="name@company.com"
                     />
                   </label>
                   <label className="block">
