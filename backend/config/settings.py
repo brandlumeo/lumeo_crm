@@ -143,6 +143,7 @@ INSTALLED_APPS = [
     'subscriptions',
     'notifications',
     'attendance',
+    'communications',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

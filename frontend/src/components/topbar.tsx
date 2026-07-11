@@ -253,13 +253,13 @@ export function Topbar() {
           )}
         </div>
 
-        <button
-          type="button"
+        <Link
+          href="/inbox"
           className="hidden md:grid w-8 h-8 border border-line bg-paper rounded-md place-items-center text-ink-2 hover:bg-bone-2 transition-colors"
           aria-label="Inbox"
         >
           <Inbox className="w-[15px] h-[15px]" strokeWidth={1.6} />
-        </button>
+        </Link>
 
         <ThemeToggle />
 

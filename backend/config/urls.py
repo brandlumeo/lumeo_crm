@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/v1/subscriptions/', include('subscriptions.urls')),
     path('api/v1/notifications/', include('notifications.urls')),
     path('api/v1/attendance/', include('attendance.urls')),
+    path('api/v1/communications/', include('communications.urls')),
     path('api/v1/saas/', include('crm.saas_urls')),
 ]
 

@@ -226,7 +226,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { label: "Settings", href: "/settings", icon: Settings },
     ...(mounted && user?.is_superuser ? [{ label: "SaaS Admin", href: "/saas", icon: Layers }] : []),
     ...(onClose ? [
-      { label: "Inbox", href: "#" as any, icon: Inbox },
+      { label: "Inbox", href: "/inbox" as any, icon: Inbox },
       { label: "Contact Support", onClick: () => { window.dispatchEvent(new CustomEvent("open-support-modal")); if (onClose) onClose(); }, icon: HelpCircle },
       { label: "Sign Out", onClick: handleLogout, icon: LogOut },
     ] : []),
