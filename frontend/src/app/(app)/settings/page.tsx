@@ -103,11 +103,11 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 items-stretch md:h-[calc(100vh-220px)] min-h-0 animate-fade-in relative">
+      <div className="flex flex-col md:flex-row gap-8 items-start animate-fade-in relative">
         
         {/* Sidebar Nav */}
         <div className={cn(
-          "w-full md:w-64 shrink-0 flex flex-col h-full bg-paper rounded-xl border border-line shadow-sm overflow-hidden min-h-0",
+          "w-full md:w-64 shrink-0 flex flex-col md:sticky md:top-[100px] md:max-h-[calc(100vh-140px)] bg-paper rounded-xl border border-line shadow-sm overflow-hidden",
           showMenuOnMobile ? "block" : "hidden md:flex"
         )}>
           <div className="p-4 border-b border-line shrink-0 bg-bone/50">
@@ -162,11 +162,11 @@ export default function SettingsPage() {
 
         {/* Content Area */}
         <div className={cn(
-          "flex-1 w-full max-w-4xl h-full relative animate-rise min-h-0",
+          "flex-1 w-full max-w-4xl relative animate-rise",
           showMenuOnMobile ? "hidden md:block" : "block",
           activeTab !== "notifications" 
-            ? "overflow-y-auto custom-scrollbar bg-paper border border-line rounded-xl shadow-sm" 
-            : "overflow-hidden"
+            ? "bg-paper border border-line rounded-xl shadow-sm" 
+            : ""
         )}>
           <div className={cn(activeTab !== "notifications" ? "p-8 md:p-10" : "h-full")}>
             
