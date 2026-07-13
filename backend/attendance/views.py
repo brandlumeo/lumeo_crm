@@ -1,3 +1,4 @@
+import datetime
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
@@ -110,10 +111,19 @@ class PunchInView(APIView):
         longitude = request.data.get("longitude")
         notes = request.data.get("notes", "")
 
-        # 3. Determine Shift Status (Assume 09:30 AM is standard shift start)
+        # 3. Determine Shift Status dynamically based on Company settings
         local_time = timezone.localtime(timezone.now())
+        company = request.user.company
+        
+        # Combine today's date with the shift start time
+        shift_start = datetime.datetime.combine(local_time.date(), company.office_start_time)
+        shift_start = timezone.make_aware(shift_start, timezone.get_current_timezone())
+        
+        # Add grace period
+        cutoff_time = shift_start + datetime.timedelta(minutes=company.late_mark_after_minutes)
+        
         shift_status = TimeLog.ShiftStatus.ON_TIME
-        if local_time.hour > 9 or (local_time.hour == 9 and local_time.minute > 45):
+        if timezone.now() > cutoff_time:
             shift_status = TimeLog.ShiftStatus.LATE
 
         # 4. Create log

@@ -264,6 +264,110 @@ export function HRSettings() {
         </div>
       </div>
 
+      {/* ───── Attendance Rules ───── */}
+      <div>
+        <div className="mb-6">
+          <h3 className="text-2xl font-semibold text-ink tracking-tight mb-1">Attendance Rules</h3>
+          <p className="text-[14px] text-muted">Configure default shift timings and grace periods for late tracking.</p>
+        </div>
+        <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 sm:p-8 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400" />
+          <AttendanceRulesForm />
+        </div>
+      </div>
+
     </div>
+  );
+}
+
+import { useCurrentCompany, useUpdateCompany } from "@/lib/queries";
+import { useEffect } from "react";
+import { Clock } from "lucide-react";
+import { toast } from "sonner";
+
+function AttendanceRulesForm() {
+  const { data: company, isLoading } = useCurrentCompany();
+  const updateMutation = useUpdateCompany();
+  
+  const [formData, setFormData] = useState({
+    office_start_time: "09:30:00",
+    office_end_time: "18:00:00",
+    late_mark_after_minutes: 15,
+  });
+
+  useEffect(() => {
+    if (company) {
+      setFormData({
+        office_start_time: company.office_start_time || "09:30:00",
+        office_end_time: company.office_end_time || "18:00:00",
+        late_mark_after_minutes: company.late_mark_after_minutes ?? 15,
+      });
+    }
+  }, [company]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateMutation.mutate(formData, {
+      onSuccess: () => {
+        toast.success("Attendance rules updated");
+      },
+    });
+  };
+
+  if (isLoading) return <div className="py-4 text-sm text-muted">Loading rules...</div>;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label className="block text-[13px] font-medium text-ink mb-1.5 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted" /> Shift Start Time
+          </label>
+          <input
+            type="time"
+            step="60"
+            required
+            value={formData.office_start_time.substring(0, 5)}
+            onChange={e => setFormData({ ...formData, office_start_time: e.target.value + ":00" })}
+            className="input w-full bg-bone-2"
+          />
+        </div>
+        <div>
+          <label className="block text-[13px] font-medium text-ink mb-1.5 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted" /> Shift End Time
+          </label>
+          <input
+            type="time"
+            step="60"
+            required
+            value={formData.office_end_time.substring(0, 5)}
+            onChange={e => setFormData({ ...formData, office_end_time: e.target.value + ":00" })}
+            className="input w-full bg-bone-2"
+          />
+        </div>
+        <div>
+          <label className="block text-[13px] font-medium text-ink mb-1.5">Late Grace Period (Minutes)</label>
+          <input
+            type="number"
+            min="0"
+            max="120"
+            required
+            value={formData.late_mark_after_minutes}
+            onChange={e => setFormData({ ...formData, late_mark_after_minutes: parseInt(e.target.value) || 0 })}
+            className="input w-full bg-bone-2"
+          />
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={updateMutation.isPending}
+          className="btn bg-ink text-white hover:bg-ink-dark px-6 text-[13px]"
+        >
+          {updateMutation.isPending ? "Saving..." : "Save Settings"}
+        </button>
+      </div>
+    </form>
   );
 }
