@@ -45,8 +45,8 @@ export default function InboxPage() {
   const { data: team = [] } = useQuery({
     queryKey: ["team", searchQ],
     queryFn: async () => {
-      const { data } = await api.get<{ results: any[] }>("/accounts/team/");
-      return data.results.filter((m: any) => 
+      const { data } = await api.get<{ users: any[] }>("/accounts/team/");
+      return data.users.filter((m: any) => 
         (m.first_name + " " + m.last_name).toLowerCase().includes(searchQ.toLowerCase()) ||
         m.email.toLowerCase().includes(searchQ.toLowerCase())
       );
