@@ -62,7 +62,7 @@ export default function RegisterPage() {
       });
       // Show success message and redirect to login
       setSuccessMode(true);
-      setSuccessMessage(data.detail || "Registration received. Please check your inbox or proceed to login.");
+      setSuccessMessage((data as any).detail || "Registration successful! You will be redirected shortly.");
     } catch (err: any) {
       if (err.response) {
         const detail = err.response.data?.detail;
