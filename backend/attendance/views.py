@@ -132,12 +132,14 @@ class PunchInView(APIView):
         notes = request.data.get("notes", "")
 
         # 3. Determine Shift Status dynamically based on Company settings
-        local_time = timezone.localtime(timezone.now())
+        import pytz
+        company_tz = pytz.timezone(request.user.company.timezone)
+        local_time = timezone.now().astimezone(company_tz)
         company = request.user.company
         
-        # Combine today's date with the shift start time
+        # Combine today's date in company timezone with the shift start time
         shift_start = datetime.datetime.combine(local_time.date(), company.office_start_time)
-        shift_start = timezone.make_aware(shift_start, timezone.get_current_timezone())
+        shift_start = timezone.make_aware(shift_start, company_tz)
         
         # Add grace period
         cutoff_time = shift_start + datetime.timedelta(minutes=company.late_mark_after_minutes)
