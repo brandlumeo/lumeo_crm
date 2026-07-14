@@ -200,6 +200,8 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD', ''),
         'HOST': env('DB_HOST', 'localhost'),
         'PORT': env('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
     }
 }
 
@@ -328,7 +330,6 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = True
 AXES_BACKEND = 'axes.backends.AxesBackend'
-AXES_META_PRECEDENCE_ORDER = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR']
 
 AUTHENTICATION_BACKENDS = [
     # axes must come FIRST to intercept locked-out users

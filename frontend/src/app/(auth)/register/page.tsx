@@ -209,6 +209,7 @@ export default function RegisterPage() {
                 Already have an account? Sign in
               </Link>
             </form>
+            )}
           </div>
         </div>
 
