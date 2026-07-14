@@ -683,41 +683,29 @@ class AttendanceMatrixView(APIView):
         from datetime import date, timedelta
         _, num_days = monthrange(year, month)
         
-        # Get all active employees in the company
-        from accounts.models import User
-        users = User.objects.filter(company=company, is_active=True)
-        
-        debug_user = request.GET.get('debug_user')
-        if debug_user:
-            user_logs = TimeLog.objects.filter(user__email__icontains=debug_user).values(
-                'id', 'user_id', 'company_id', 'clock_in', 'clock_out', 'shift_status', 'work_location'
-            )
-            user_details = User.objects.filter(email__icontains=debug_user).values(
-                'id', 'email', 'company_id', 'is_active'
-            )
-            return Response({
-                "debug_users": list(user_details),
-                "debug_logs": list(user_logs),
-                "timezone_now": str(timezone.now()),
-                "localtime_now": str(timezone.localtime(timezone.now()))
-            })
-            
-        
-        # Prefetch timelogs, leaves, holidays
+        from django.db.models import Prefetch
+        # Get all active employees in the company with prefetched timelogs and leaves
         start_date = date(year, month, 1)
         end_date = date(year, month, num_days)
-        
-        timelogs = TimeLog.objects.filter(
-            company=company,
-            clock_in__date__gte=start_date,
-            clock_in__date__lte=end_date
-        )
-        
-        leaves = LeaveRequest.objects.filter(
-            user__company=company,
-            status=LeaveRequest.Status.APPROVED,
-            start_date__lte=end_date,
-            end_date__gte=start_date
+
+        users = User.objects.filter(company=company, is_active=True).prefetch_related(
+            Prefetch(
+                'time_logs',
+                queryset=TimeLog.objects.filter(
+                    clock_in__date__gte=start_date,
+                    clock_in__date__lte=end_date
+                ).order_by('-clock_in'),
+                to_attr='month_logs'
+            ),
+            Prefetch(
+                'leave_requests',
+                queryset=LeaveRequest.objects.filter(
+                    status=LeaveRequest.Status.APPROVED,
+                    start_date__lte=end_date,
+                    end_date__gte=start_date
+                ),
+                to_attr='month_leaves'
+            )
         )
         
         holidays = Holiday.objects.filter(
@@ -727,36 +715,9 @@ class AttendanceMatrixView(APIView):
         )
         
         holiday_dates = {h.date for h in holidays}
-        
-        timelog_dict = {}
-        for tl in timelogs:
-            try:
-                if timezone.is_aware(tl.clock_in):
-                    d = timezone.localtime(tl.clock_in).date()
-                else:
-                    d = tl.clock_in.date()
-            except Exception:
-                d = tl.clock_in.date()
-                
-            uid = str(tl.user_id)
-            if uid not in timelog_dict:
-                timelog_dict[uid] = {}
-            # Keep newest log (since ordered by -clock_in)
-            if d not in timelog_dict[uid]:
-                timelog_dict[uid][d] = tl
+
             
-        leave_dict = {}
-        for l in leaves:
-            uid = str(l.user_id)
-            if uid not in leave_dict:
-                leave_dict[uid] = set()
-            
-            # Add all dates in the leave range
-            current = l.start_date
-            while current <= l.end_date:
-                if current.month == month and current.year == year:
-                    leave_dict[uid].add(current)
-                current += timedelta(days=1)
+
                 
         matrix = []
         
@@ -785,11 +746,21 @@ class AttendanceMatrixView(APIView):
                     status = "day_off"
                     
                 # 2. Check Leave
-                if str(user.id) in leave_dict and current_date in leave_dict[str(user.id)]:
-                    status = "leave"
-                    
-                # 3. Check TimeLog (Overrides default status)
-                tl = timelog_dict.get(str(user.id), {}).get(current_date)
+                # Check leaves for this user
+                for l in user.month_leaves:
+                    if l.start_date <= current_date <= l.end_date:
+                        status = "leave"
+                        break
+                
+                # Check timelogs for this user
+                # We iterate to find the first log matching the date (which is the newest due to order_by)
+                tl = None
+                for log in user.month_logs:
+                    log_date = timezone.localtime(log.clock_in).date() if timezone.is_aware(log.clock_in) else log.clock_in.date()
+                    if log_date == current_date or log.clock_in.date() == current_date:
+                        tl = log
+                        break
+                        
                 if tl:
                     if tl.shift_status == TimeLog.ShiftStatus.LATE:
                         status = "late"
