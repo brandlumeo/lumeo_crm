@@ -693,8 +693,8 @@ class AttendanceMatrixView(APIView):
         
         timelogs = TimeLog.objects.filter(
             company=company,
-            clock_in__gte=timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min)),
-            clock_in__lte=timezone.make_aware(datetime.datetime.combine(end_date, datetime.time.max))
+            clock_in__date__gte=start_date,
+            clock_in__date__lte=end_date
         )
         
         leaves = LeaveRequest.objects.filter(
@@ -718,7 +718,8 @@ class AttendanceMatrixView(APIView):
             d = timezone.localtime(tl.clock_in).date()
             if tl.user_id not in timelog_dict:
                 timelog_dict[tl.user_id] = {}
-            timelog_dict[tl.user_id][d] = tl
+            if d not in timelog_dict[tl.user_id]:
+                timelog_dict[tl.user_id][d] = tl
             
         # Organize leaves by user and date
         leave_dict = {}
