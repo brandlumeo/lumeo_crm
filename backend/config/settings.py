@@ -126,6 +126,8 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     X_FRAME_OPTIONS = 'DENY'
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 
 
@@ -240,7 +242,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.ScopedRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'login': '10/min',   # Max 10 login attempts per minute per IP
+        'login': '5/min',             # Max 5 login attempts per minute per IP
+        'password_reset': '5/min',    # Max 5 password reset attempts per min
     },
 }
 
@@ -319,15 +322,13 @@ if CELERY_RESULT_BACKEND.startswith('rediss://'):
 CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', True)
 
 
-# ── django-axes: brute-force protection ────────────────────────────────────
-
-# Top solution: Never lock out an entire IP address (prevents blocking admins/coworkers on the same IP)
+# ─── django-axes: brute-force protection ────────────────────────────────────────────────────────────
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
-AXES_FAILURE_LIMIT = 20
-# Set cooloff to 1 minute so any existing lockouts immediately expire and unlock the user
-AXES_COOLOFF_TIME = timedelta(minutes=1)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = True
 AXES_BACKEND = 'axes.backends.AxesBackend'
+AXES_META_PRECEDENCE_ORDER = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR']
 
 AUTHENTICATION_BACKENDS = [
     # axes must come FIRST to intercept locked-out users

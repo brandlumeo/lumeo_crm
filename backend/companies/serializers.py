@@ -169,4 +169,20 @@ class CompanySerializer(serializers.ModelSerializer):
                 r["members"] = 0  # Reset hardcoded dummy data for custom roles
 
         ret["roles"] = roles_data
+
+        # Security: mask secret keys if they exist
+        if ret.get("stripe_secret_key"):
+            secret = ret["stripe_secret_key"]
+            if len(secret) > 8:
+                ret["stripe_secret_key"] = f"{secret[:7]}***{secret[-4:]}"
+            else:
+                ret["stripe_secret_key"] = "********"
+                
+        if ret.get("paypal_secret"):
+            secret = ret["paypal_secret"]
+            if len(secret) > 8:
+                ret["paypal_secret"] = f"{secret[:4]}***{secret[-4:]}"
+            else:
+                ret["paypal_secret"] = "********"
+
         return ret

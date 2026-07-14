@@ -336,10 +336,9 @@ function getTrialProgress(createdAt?: string, trialEndsAt?: string | null) {
     return 64;
   }
 
-  const start = new Date(createdAt).getTime();
-  const end = new Date(trialEndsAt).getTime();
   const now = Date.now();
-  const total = Math.max(end - start, 1);
-  const elapsed = Math.min(Math.max(now - start, 0), total);
-  return (elapsed / total) * 100;
+  const target = new Date(trialEndsAt).getTime();
+  const daysLeft = Math.max(0, Math.floor((target - now) / (1000 * 60 * 60 * 24)));
+  const elapsedDays = Math.max(0, 14 - daysLeft);
+  return (elapsedDays / 14) * 100;
 }

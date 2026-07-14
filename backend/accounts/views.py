@@ -23,6 +23,15 @@ from .serializers import UserSerializer, TeamInvitationSerializer
 
 logger = logging.getLogger(__name__)
 
+class MyRefreshToken(RefreshToken):
+    @classmethod
+    def for_user(cls, user):
+        token = super().for_user(user)
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+        token['username'] = user.username
+        return token
+
 # ── Cookie helpers ────────────────────────────────────────────────────────────
 
 COOKIE_REFRESH_TOKEN_NAME = "lumeo_refresh"
@@ -151,7 +160,7 @@ class CookieTokenObtainView(APIView):
                     "two_factor_method": "google_authenticator",
                 })
 
-        refresh = RefreshToken.for_user(user)
+        refresh = MyRefreshToken.for_user(user)
         # Return access token in body — frontend stores in sessionStorage
         response = Response({"access": str(refresh.access_token)})
         _set_auth_cookies(response, refresh)
@@ -218,7 +227,7 @@ class Verify2FAView(APIView):
             )
 
         # Success: login user and issue token
-        refresh = RefreshToken.for_user(user)
+        refresh = MyRefreshToken.for_user(user)
         response = Response({"access": str(refresh.access_token)})
         _set_auth_cookies(response, refresh)
         return response
@@ -300,16 +309,18 @@ class RegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if User.objects.filter(email=email).exists():
-            return Response(
-                {"detail": "A user with this email already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
+        if User.objects.filter(email=email).exists() or User.objects.filter(username=email).exists():
+            # Anti-enumeration: queue an email instead of returning a 400
+            from notifications.tasks import send_notification_email
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+            send_notification_email.delay(
+                to_email=email,
+                title="Login Attempt / Account Exists",
+                body=f"Someone (hopefully you) tried to register a Lumeo CRM account with this email address, but you already have an account! You can log in here: {frontend_url}/login"
             )
-            
-        if User.objects.filter(username=email).exists():
             return Response(
-                {"detail": "A user with this username already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "Registration received. If this email is new, your workspace is being created. Please check your inbox or proceed to login."},
+                status=status.HTTP_200_OK,
             )
 
         try:
@@ -360,10 +371,11 @@ class RegisterView(APIView):
         except Exception:
             pass
 
-        refresh = RefreshToken.for_user(user)
-        response = Response({"access": str(refresh.access_token)}, status=status.HTTP_201_CREATED)
-        _set_auth_cookies(response, refresh)
-        return response
+        # Remove token and auth cookies to prevent enumeration via success vs failure paths
+        return Response(
+            {"detail": "Registration received. If this email is new, your workspace is being created. Please check your inbox or proceed to login."},
+            status=status.HTTP_200_OK
+        )
 
 
 # ── Profile / user views ──────────────────────────────────────────────────────
@@ -589,7 +601,7 @@ class AcceptInviteView(APIView):
                 invite.save()
 
             # Generate JWT tokens for immediate login
-            refresh = RefreshToken.for_user(user)
+            refresh = MyRefreshToken.for_user(user)
 
             return Response({
                 "refresh": str(refresh),
@@ -609,6 +621,7 @@ class PasswordResetRequestView(APIView):
     Always returns 200 to avoid leaking whether an email is registered.
     """
     permission_classes = [AllowAny]
+    throttle_scope = "password_reset"
 
     def post(self, request):
         email = request.data.get("email", "").strip().lower()
@@ -641,6 +654,7 @@ class PasswordResetConfirmView(APIView):
     Body: { "uid": "...", "token": "...", "password": "new_password" }
     """
     permission_classes = [AllowAny]
+    throttle_scope = "password_reset"
 
     def post(self, request):
         uid = request.data.get("uid", "")

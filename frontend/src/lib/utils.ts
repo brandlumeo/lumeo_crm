@@ -74,7 +74,8 @@ export function formatRelativeDays(value: string | null) {
 
   const now = Date.now();
   const target = new Date(value).getTime();
-  const days = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  const diff = target - now;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
   if (days < 0) {
     return `${Math.abs(days)} days overdue`;

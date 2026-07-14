@@ -1,6 +1,7 @@
 "use client";
 
 import type { Route } from "next";
+import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -94,7 +95,7 @@ export default function LoginPage() {
         } else if (detail) {
           setError(detail);
         } else {
-          setError("Sign-in failed. Check your username and password.");
+          setError("Sign-in failed. Check your email and password.");
         }
       } else {
         setError("Unable to connect to the backend server. Please verify it is running.");
@@ -138,7 +139,7 @@ export default function LoginPage() {
         if (status === 400 && detail) {
           setError(detail);
         } else if (status === 401) {
-          setError("Session expired or invalid credentials. Please log in again.");
+          setError("Sign-in failed. Check your email and password.");
         } else if (status === 403) {
           setError("This account is locked. Please try again in 30 minutes.");
         } else {
@@ -308,20 +309,6 @@ export default function LoginPage() {
           <h2 className="font-serif text-[64px] leading-[0.95] max-w-md">
             Built for teams who close the <em className="text-accent not-italic">whole quarter.</em>
           </h2>
-        </div>
-        <div className="relative grid grid-cols-3 gap-6 text-xs text-paper/70 max-w-md">
-          <div>
-            <div className="font-mono text-2xl text-paper mb-1">14d</div>
-            free trial
-          </div>
-          <div>
-            <div className="font-mono text-2xl text-paper mb-1">0</div>
-            card up front
-          </div>
-          <div>
-            <div className="font-mono text-2xl text-paper mb-1">5</div>
-            live CRM views
-          </div>
         </div>
       </div>
     </div>

@@ -143,6 +143,28 @@ export function useCurrentUser() {
     queryFn: fetchMe,
     staleTime: fiveMinutes,
     enabled: authenticated(),
+    placeholderData: () => {
+      if (typeof window === "undefined") return undefined;
+      try {
+        const token = getAccessToken();
+        if (!token) return undefined;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload && payload.user_id) {
+          return {
+            id: payload.user_id,
+            first_name: payload.first_name || "",
+            last_name: payload.last_name || "",
+            username: payload.username || "",
+            email: "",
+            role: "employee",
+            is_active: true,
+          } as any;
+        }
+      } catch (e) {
+        return undefined;
+      }
+      return undefined;
+    }
   });
 }
 

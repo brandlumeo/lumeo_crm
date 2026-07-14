@@ -248,6 +248,11 @@ class Company(models.Model):
     timezone = models.CharField(max_length=50, default="UTC", help_text="Default timezone for the workspace.")
     date_format = models.CharField(max_length=20, default="MMM DD, YYYY", help_text="Default date format for the workspace.")
     time_format = models.CharField(max_length=10, default="12h", help_text="12h or 24h time format.")
+
+    # Attendance Settings
+    shift_start_time = models.TimeField(default="09:30:00", help_text="Default shift start time")
+    shift_end_time = models.TimeField(default="18:00:00", help_text="Default shift end time")
+    late_grace_period_minutes = models.IntegerField(default=15, help_text="Grace period before marking as Late")
     language = models.CharField(max_length=50, default="en", help_text="Default language.")
     datatable_row_limit = models.IntegerField(default=10)
     employee_can_export_data = models.BooleanField(default=False)

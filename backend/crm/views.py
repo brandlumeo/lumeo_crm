@@ -447,7 +447,7 @@ class CustomerViewSet(CompanyScopedModelViewSet):
 
 class DealViewSet(CompanyScopedModelViewSet):
     serializer_class = DealSerializer
-    queryset = Deal.objects.select_related("company")
+    queryset = Deal.objects.select_related("company", "assigned_to")
     search_fields = ("title",)
     ordering_fields = ("created_at", "updated_at", "title", "amount", "stage", "row_order")
     ordering = ("row_order", "-created_at")

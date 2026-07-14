@@ -1,8 +1,14 @@
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { AiChatWidget } from "@/components/ai-chat-widget";
+import { Metadata } from "next";
 
-export default function AppLayout({ 
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Lumeo CRM Dashboard",
+};
+
+export default function AppLayout({  
   children,
   modal 
 }: { 

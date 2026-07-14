@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,26 +44,25 @@ export default function RegisterPage() {
     }
   }, [router]);
 
+  const [successMode, setSuccessMode] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      await register({
+      const data = await register({
         first_name: firstName,
         last_name: lastName,
         email: email,
         password: password,
         company_name: companyName,
       });
-      await queryClient.invalidateQueries();
-      const nextValue =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("next")
-          : null;
-      router.replace(resolvePostLoginRoute(nextValue));
-      router.refresh();
+      // Show success message and redirect to login
+      setSuccessMode(true);
+      setSuccessMessage(data.detail || "Registration received. Please check your inbox or proceed to login.");
     } catch (err: any) {
       if (err.response) {
         const detail = err.response.data?.detail;
@@ -101,6 +100,26 @@ export default function RegisterPage() {
               Create your <em className="text-accent not-italic">workspace.</em>
             </h1>
 
+            {successMode ? (
+              <div className="flex flex-col gap-6 text-center animate-rise">
+                <div className="w-16 h-16 bg-green-500/10 text-green-600 rounded-full grid place-items-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-[28px] mb-2">Registration Received</h2>
+                  <p className="text-muted text-[15px] leading-relaxed max-w-sm mx-auto">
+                    {successMessage}
+                  </p>
+                </div>
+                <Link
+                  href="/login"
+                  className="btn btn-primary justify-center py-2.5 mt-4"
+                >
+                  Proceed to Sign In
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
               <div className="grid grid-cols-2 gap-3.5">
                 <label className="block">
@@ -166,6 +185,13 @@ export default function RegisterPage() {
               {error ? (
                 <div className="chip chip-warning justify-center text-center">{error}</div>
               ) : null}
+
+              <p className="text-[12px] text-muted text-center mt-2">
+                By signing up, you agree to our{" "}
+                <Link href="/terms" className="text-ink hover:underline">Terms of Service</Link>
+                {" "}and{" "}
+                <Link href="/privacy" className="text-ink hover:underline">Privacy Policy</Link>.
+              </p>
 
               <button
                 type="submit"

@@ -12,23 +12,34 @@ const serif = Instrument_Serif({
   style: ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
+  adjustFontFallback: false,
 });
 
 const sans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  adjustFontFallback: false,
 });
 
 const mono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
-  title: "Lumeo CRM",
+  title: {
+    template: "%s | Lumeo CRM",
+    default: "Lumeo CRM",
+  },
   description: "Premium CRM for leads, deals, customers, tasks, and notes.",
+  openGraph: {
+    title: "Lumeo CRM",
+    description: "Premium CRM for leads, deals, customers, tasks, and notes.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
