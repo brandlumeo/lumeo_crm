@@ -24,8 +24,10 @@ def _auto_close_stale_shifts():
     """Fallback self-healing utility to close shifts from previous days."""
     try:
         now = timezone.now()
-        today = now.date()
-        open_logs = TimeLog.objects.filter(clock_out__isnull=True, clock_in__date__lt=today)
+        today_local = timezone.localtime(now).date()
+        today_start_utc = timezone.make_aware(datetime.datetime.combine(today_local, datetime.time.min))
+        
+        open_logs = TimeLog.objects.filter(clock_out__isnull=True, clock_in__lt=today_start_utc)
         for log in open_logs:
             active_break = BreakLog.objects.filter(time_log=log, end_time__isnull=True).first()
             if active_break:
@@ -691,8 +693,8 @@ class AttendanceMatrixView(APIView):
         
         timelogs = TimeLog.objects.filter(
             company=company,
-            clock_in__date__gte=start_date,
-            clock_in__date__lte=end_date
+            clock_in__gte=timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min)),
+            clock_in__lte=timezone.make_aware(datetime.datetime.combine(end_date, datetime.time.max))
         )
         
         leaves = LeaveRequest.objects.filter(
@@ -713,7 +715,7 @@ class AttendanceMatrixView(APIView):
         # Organize timelogs by user and date
         timelog_dict = {}
         for tl in timelogs:
-            d = tl.clock_in.date()
+            d = timezone.localtime(tl.clock_in).date()
             if tl.user_id not in timelog_dict:
                 timelog_dict[tl.user_id] = {}
             timelog_dict[tl.user_id][d] = tl
@@ -779,7 +781,7 @@ class AttendanceMatrixView(APIView):
                             status = "present"
                             
                 # 4. If date is in the future, don't mark as absent
-                if current_date > timezone.now().date() and status == "absent":
+                if current_date > timezone.localtime(timezone.now()).date() and status == "absent":
                     status = "future"
                     
                 user_days[str(day)] = status
