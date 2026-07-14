@@ -712,26 +712,34 @@ class AttendanceMatrixView(APIView):
         
         holiday_dates = {h.date for h in holidays}
         
-        # Organize timelogs by user and date
         timelog_dict = {}
         for tl in timelogs:
-            d = timezone.localtime(tl.clock_in).date()
-            if tl.user_id not in timelog_dict:
-                timelog_dict[tl.user_id] = {}
-            if d not in timelog_dict[tl.user_id]:
-                timelog_dict[tl.user_id][d] = tl
+            try:
+                if timezone.is_aware(tl.clock_in):
+                    d = timezone.localtime(tl.clock_in).date()
+                else:
+                    d = tl.clock_in.date()
+            except Exception:
+                d = tl.clock_in.date()
+                
+            uid = str(tl.user_id)
+            if uid not in timelog_dict:
+                timelog_dict[uid] = {}
+            # Keep newest log (since ordered by -clock_in)
+            if d not in timelog_dict[uid]:
+                timelog_dict[uid][d] = tl
             
-        # Organize leaves by user and date
         leave_dict = {}
         for l in leaves:
-            if l.user_id not in leave_dict:
-                leave_dict[l.user_id] = set()
+            uid = str(l.user_id)
+            if uid not in leave_dict:
+                leave_dict[uid] = set()
             
             # Add all dates in the leave range
             current = l.start_date
             while current <= l.end_date:
                 if current.month == month and current.year == year:
-                    leave_dict[l.user_id].add(current)
+                    leave_dict[uid].add(current)
                 current += timedelta(days=1)
                 
         matrix = []
@@ -761,11 +769,11 @@ class AttendanceMatrixView(APIView):
                     status = "day_off"
                     
                 # 2. Check Leave
-                if user.id in leave_dict and current_date in leave_dict[user.id]:
+                if str(user.id) in leave_dict and current_date in leave_dict[str(user.id)]:
                     status = "leave"
                     
                 # 3. Check TimeLog (Overrides default status)
-                tl = timelog_dict.get(user.id, {}).get(current_date)
+                tl = timelog_dict.get(str(user.id), {}).get(current_date)
                 if tl:
                     if tl.shift_status == TimeLog.ShiftStatus.LATE:
                         status = "late"
