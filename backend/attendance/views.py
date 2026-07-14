@@ -687,6 +687,22 @@ class AttendanceMatrixView(APIView):
         from accounts.models import User
         users = User.objects.filter(company=company, is_active=True)
         
+        debug_user = request.GET.get('debug_user')
+        if debug_user:
+            user_logs = TimeLog.objects.filter(user__email__icontains=debug_user).values(
+                'id', 'user_id', 'company_id', 'clock_in', 'clock_out', 'shift_status', 'work_location'
+            )
+            user_details = User.objects.filter(email__icontains=debug_user).values(
+                'id', 'email', 'company_id', 'is_active'
+            )
+            return Response({
+                "debug_users": list(user_details),
+                "debug_logs": list(user_logs),
+                "timezone_now": str(timezone.now()),
+                "localtime_now": str(timezone.localtime(timezone.now()))
+            })
+            
+        
         # Prefetch timelogs, leaves, holidays
         start_date = date(year, month, 1)
         end_date = date(year, month, num_days)
