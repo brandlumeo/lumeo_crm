@@ -80,6 +80,24 @@ class CurrentStatusView(APIView):
         )
 
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from attendance.models import TimeLog
+from accounts.models import User
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def debug_athira_logs(request):
+    users = User.objects.filter(email__icontains='athira').values('id', 'email', 'first_name', 'last_name', 'company_id')
+    logs = []
+    for u in users:
+        user_logs = TimeLog.objects.filter(user_id=u['id']).values('id', 'clock_in', 'clock_out', 'company_id')
+        logs.append({
+            'user': u,
+            'logs': list(user_logs)
+        })
+    return Response({'debug_data': logs})
+
 class PunchInView(APIView):
     """
     POST /api/v1/attendance/punch-in/

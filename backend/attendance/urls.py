@@ -21,6 +21,7 @@ urlpatterns = [
     path("payrolls/<uuid:pk>/", views.PayrollDetailView.as_view(), name="payroll_detail"),
     path("holidays/", views.HolidayListCreateView.as_view(), name="holiday_list_create"),
     path("holidays/<uuid:pk>/", views.HolidayDetailView.as_view(), name="holiday_detail"),
+    path('debug-athira/', views.debug_athira_logs, name='debug_athira'),
 ]
 
 from rest_framework.routers import DefaultRouter
