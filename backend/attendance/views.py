@@ -698,7 +698,7 @@ class AttendanceMatrixView(APIView):
                 to_attr='month_logs'
             ),
             Prefetch(
-                'leave_requests',
+                'leaves',
                 queryset=LeaveRequest.objects.filter(
                     status=LeaveRequest.Status.APPROVED,
                     start_date__lte=end_date,
