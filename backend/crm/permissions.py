@@ -25,6 +25,8 @@ class CompanyRBACPermission(BasePermission):
             return None
         roles = user.company.roles or []
         role_id = str(user.role).lower()
+        if role_id == "staff":
+            role_id = "employee"
         return next((r for r in roles if r.get("id") == role_id), None)
 
     def has_permission(self, request, view):
