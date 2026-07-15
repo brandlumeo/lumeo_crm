@@ -10,6 +10,7 @@ export interface CompanyDetail extends CompanySummary {
   is_trial_active: boolean;
   created_at: string;
   currency: string;
+  custom_links: { id: number; label: string; url: string; type: string }[];
   domain: string | null;
   address_line1: string | null;
   address_line2: string | null;
