@@ -23,7 +23,7 @@ class User(AbstractUser):
     )
     role = models.CharField(
         max_length=50,
-        default="staff",
+        default="employee",
         db_index=True,
     )
     avatar = models.URLField(
@@ -140,7 +140,7 @@ class TeamInvitation(models.Model):
     personal_message = models.TextField(blank=True, null=True)
     role = models.CharField(
         max_length=50,
-        default="staff",
+        default="employee",
     )
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     invited_by = models.ForeignKey(

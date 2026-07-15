@@ -514,15 +514,24 @@ class TaskViewSet(CompanyScopedModelViewSet):
         # For staff (non-management) employees with 'Owned' permission, restrict to their tasks
         if not user.has_management_access and user.role not in ["owner", "admin", "manager"]:
             company = getattr(user, "company", None)
+            is_owned_only = True # Default to least privilege
             if company:
                 roles = company.roles
                 role_id = str(user.role).lower()
+                
+                # Fallback for legacy staff
+                if role_id == "staff":
+                    role_id = "employee"
+                    
                 role_data = next((r for r in roles if r.get("id") == role_id), None)
                 if role_data:
                     perms = role_data.get("permissions", {})
                     task_perm = perms.get("Tasks", {})
-                    if task_perm.get("View") == "Owned":
-                        queryset = queryset.filter(assigned_to=user)
+                    if task_perm.get("View") == "All":
+                        is_owned_only = False
+                        
+            if is_owned_only:
+                queryset = queryset.filter(assigned_to=user)
 
         return self._filter_by_date_range(queryset, "due_date")
 
