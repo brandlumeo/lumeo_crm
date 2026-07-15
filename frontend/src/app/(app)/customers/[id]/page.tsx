@@ -88,7 +88,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
   const handleResetPassword = () => {
     setIsMenuOpen(false);
-    resetPasswordMutation.mutate(customerId, {
+    resetPasswordMutation.mutate(id, {
       onSuccess: (data: any) => {
         // Typically you would show a modal with the new credentials here.
         // But a toast is fine for simplicity if the API sends an email.
