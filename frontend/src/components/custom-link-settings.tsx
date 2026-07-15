@@ -83,7 +83,13 @@ export function CustomLinkSettingsForm() {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.label.trim() || !form.url.trim()) return;
-    setLinks(prev => [...prev, { id: Date.now(), ...form }]);
+    
+    let finalUrl = form.url.trim();
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = 'https://' + finalUrl;
+    }
+    
+    setLinks(prev => [...prev, { id: Date.now(), ...form, url: finalUrl }]);
     setForm({ label: "", url: "", type: "website" });
     setShowForm(false);
     setSaved(true);
@@ -191,7 +197,7 @@ export function CustomLinkSettingsForm() {
                       <label className="block text-[13px] font-medium text-ink mb-1.5">URL</label>
                       <input
                         required
-                        type="url"
+                        type="text"
                         value={form.url}
                         onChange={e => setForm(prev => ({ ...prev, url: e.target.value }))}
                         placeholder={getTypeMeta(form.type).placeholder}
