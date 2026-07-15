@@ -330,6 +330,10 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = True
 AXES_BACKEND = 'axes.backends.AxesBackend'
+AXES_META_PRECEDENCE_ORDER = [
+    'HTTP_X_FORWARDED_FOR',
+    'REMOTE_ADDR',
+]
 
 AUTHENTICATION_BACKENDS = [
     # axes must come FIRST to intercept locked-out users
