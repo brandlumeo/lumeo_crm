@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useCurrentCompany, useCurrentUser, useUpdateCompany } from "@/lib/queries";
 import { Key, Users, ChevronDown, ChevronUp, Info, X, Trash2, RefreshCcw, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -622,8 +623,8 @@ export function RolesPermissionsForm() {
       </div>
 
       {/* Manage Role Modal */}
-      {isManageRoleOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
+      {isManageRoleOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
           <div className="bg-paper rounded shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-scale-in">
             <div className="flex items-center justify-between p-5 border-b border-line">
               <h2 className="text-lg font-medium text-ink">Manage Role</h2>
@@ -732,7 +733,7 @@ export function RolesPermissionsForm() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
