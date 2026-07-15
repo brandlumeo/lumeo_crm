@@ -63,11 +63,11 @@ export default function TeamPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (vars: { id: number; can_manage_team: boolean }) =>
-      api.patch(`/accounts/team/${vars.id}/`, { can_manage_team: vars.can_manage_team }).then((res) => res.data),
+    mutationFn: (vars: { id: number; can_manage_team?: boolean; role?: string }) =>
+      api.patch(`/accounts/team/${vars.id}/`, vars).then((res) => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team"] });
-      toast.success("Team management access updated.");
+      toast.success("Team member updated.");
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.detail || "Failed to update user.");
@@ -156,9 +156,27 @@ export default function TeamPage() {
                         </div>
                       </label>
                     )}
-                    <span className="capitalize text-muted">
-                      {company?.roles?.find((r: any) => r.id === user.role)?.name || user.role}
-                    </span>
+                    {isOwnerOrAdmin && user.role !== "admin" && user.role !== "owner" && user.role !== "client" ? (
+                      <select
+                        value={user.role}
+                        disabled={updateMutation.isPending}
+                        onChange={(e) => updateMutation.mutate({ id: user.id, role: e.target.value })}
+                        className="bg-transparent border-none text-[13px] text-muted focus:ring-0 capitalize appearance-none cursor-pointer hover:text-ink transition-colors pl-0 pr-4"
+                      >
+                        {company?.roles?.map((r: any) => {
+                          if (r.id === "client" || r.name.toLowerCase() === "client") return null;
+                          if (r.id === "admin" || r.isAdmin) return null;
+                          return <option key={r.id} value={r.id}>{r.name}</option>;
+                        })}
+                        {!company?.roles?.find((r: any) => r.id === user.role) && (
+                          <option value={user.role}>{user.role}</option>
+                        )}
+                      </select>
+                    ) : (
+                      <span className="capitalize text-muted">
+                        {company?.roles?.find((r: any) => r.id === user.role)?.name || user.role}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

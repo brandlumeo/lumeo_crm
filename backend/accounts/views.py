@@ -447,7 +447,11 @@ class TeamMemberUpdateView(APIView):
 
         if "can_manage_team" in request.data:
             member.can_manage_team = request.data["can_manage_team"]
-            member.save()
+
+        if "role" in request.data:
+            member.role = request.data["role"]
+
+        member.save()
 
         return Response(UserSerializer(member).data)
 
