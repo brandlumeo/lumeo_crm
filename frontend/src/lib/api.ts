@@ -454,6 +454,11 @@ export async function createCustomer(payload: CustomerInput) {
   return data;
 }
 
+export async function patchCustomer(id: number | string, payload: Partial<CustomerInput>) {
+  const { data } = await api.patch<Customer>(`${endpoints.customers}${id}/`, payload);
+  return data;
+}
+
 export async function deleteCustomer(id: number | string) {
   await api.delete(`${endpoints.customers}${id}/`);
 }
