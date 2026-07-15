@@ -246,7 +246,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
               <div className="pt-2 border-t border-line mt-4">
                 <CustomFieldsFormInputs 
                   modelName="customer" 
-                  value={formData.custom_data}
+                  values={formData.custom_data}
                   onChange={(newData) => setFormData({ ...formData, custom_data: newData })}
                 />
               </div>
