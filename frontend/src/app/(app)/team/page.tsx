@@ -156,22 +156,28 @@ export default function TeamPage() {
                         </div>
                       </label>
                     )}
-                    {isOwnerOrAdmin && user.role !== "admin" && user.role !== "owner" && user.role !== "client" ? (
-                      <select
-                        value={user.role}
-                        disabled={updateMutation.isPending}
-                        onChange={(e) => updateMutation.mutate({ id: user.id, role: e.target.value })}
-                        className="bg-transparent border-none text-[13px] text-muted focus:ring-0 capitalize appearance-none cursor-pointer hover:text-ink transition-colors pl-0 pr-4"
-                      >
-                        {company?.roles?.map((r: any) => {
-                          if (r.id === "client" || r.name.toLowerCase() === "client") return null;
-                          if (r.id === "admin" || r.isAdmin) return null;
-                          return <option key={r.id} value={r.id}>{r.name}</option>;
-                        })}
-                        {!company?.roles?.find((r: any) => r.id === user.role) && (
-                          <option value={user.role}>{user.role}</option>
-                        )}
-                      </select>
+                    {isManagerOrAbove && user.role !== "admin" && user.role !== "owner" && user.role !== "client" ? (
+                      <div className="relative group flex items-center">
+                        <select
+                          value={user.role}
+                          disabled={updateMutation.isPending}
+                          onChange={(e) => updateMutation.mutate({ id: user.id, role: e.target.value })}
+                          className="bg-transparent border-none text-[13px] text-muted focus:ring-0 capitalize appearance-none cursor-pointer hover:text-ink transition-colors pl-0 pr-4"
+                        >
+                          {company?.roles?.map((r: any) => {
+                            if (r.id === "client" || r.name.toLowerCase() === "client") return null;
+                            if (r.id === "admin" || r.isAdmin) return null;
+                            return <option key={r.id} value={r.id}>{r.name}</option>;
+                          })}
+                          {!company?.roles?.find((r: any) => r.id === user.role) && (
+                            <option value={user.role}>{user.role}</option>
+                          )}
+                        </select>
+                        <div className="absolute bottom-full left-1/4 -translate-x-1/2 mb-1 px-2 py-1 bg-ink text-white text-[10px] font-medium rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-10 pointer-events-none shadow-md">
+                          Change Role
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-ink"></div>
+                        </div>
+                      </div>
                     ) : (
                       <span className="capitalize text-muted">
                         {company?.roles?.find((r: any) => r.id === user.role)?.name || user.role}

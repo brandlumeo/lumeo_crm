@@ -437,8 +437,8 @@ class TeamMemberUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
-        if request.user.role not in [User.Role.OWNER, User.Role.ADMIN]:
-            return Response({"detail": "Only admins can manage team roles."}, status=status.HTTP_403_FORBIDDEN)
+        if not request.user.has_management_access:
+            return Response({"detail": "Only admins and managers can manage team roles."}, status=status.HTTP_403_FORBIDDEN)
         
         try:
             member = User.objects.get(pk=pk, company=request.user.company)
