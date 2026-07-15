@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import models
 
 from .models import Company
 
@@ -150,23 +151,23 @@ class CompanySerializer(serializers.ModelSerializer):
         roles_data = ret.get("roles") or []
         # Calculate real member counts from the database
         users = instance.users.all()
-        # Create a mapping of counts for basic roles
-        counts = {
-            "admin": users.filter(role="admin").count(),
-            "employee": users.filter(role="staff").count(),
-            "client": users.filter(role="customer").count(),
-            "manager": users.filter(role="manager").count()
-        }
         
-        # We also need to map the owner. Owner should probably be counted as an admin?
-        counts["admin"] += users.filter(role="owner").count()
-        
-        # Update the members count for matching roles, keep custom roles as 0 unless we implement a custom_role_id
+        # Update the members count for matching roles
         for r in roles_data:
-            if r.get("id") in counts:
-                r["members"] = counts[r.get("id")]
+            role_id = r.get("id")
+            if not role_id:
+                continue
+                
+            if role_id == "admin":
+                r["members"] = users.filter(models.Q(role="admin") | models.Q(role="owner")).count()
+            elif role_id == "manager":
+                r["members"] = users.filter(models.Q(role="manager") | models.Q(can_manage_team=True)).count()
+            elif role_id == "employee":
+                r["members"] = users.filter(role__in=["staff", "employee"]).count()
+            elif role_id == "client":
+                r["members"] = users.filter(role__in=["customer", "client"]).count()
             else:
-                r["members"] = 0  # Reset hardcoded dummy data for custom roles
+                r["members"] = users.filter(role=role_id).count()
 
         ret["roles"] = roles_data
 
