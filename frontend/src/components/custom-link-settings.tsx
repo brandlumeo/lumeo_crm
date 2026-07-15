@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link as LinkIcon, CheckCircle, Plus, Copy, ExternalLink, Trash2, Blocks } from "lucide-react";
+import { useCurrentCompany, useUpdateCompany } from "@/lib/queries";
 
 export function CustomLinkSettingsForm() {
-  const [links, setLinks] = useState<{ id: number; label: string; url: string; type: string }[]>([
-    { id: 1, label: "Company Website", url: "https://northwindtrading.com", type: "website" },
-    { id: 2, label: "LinkedIn", url: "https://linkedin.com/company/northwind", type: "linkedin" },
-  ]);
+  const { data: company, isLoading } = useCurrentCompany();
+  const updateCompany = useUpdateCompany();
+  
+  const [links, setLinks] = useState<{ id: number; label: string; url: string; type: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ label: "", url: "", type: "website" });
   const [saved, setSaved] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (company?.custom_links) {
+      setLinks(company.custom_links);
+    }
+  }, [company?.custom_links]);
 
   type LinkType = { id: string; label: string; gradient: string; bg: string; border: string; color: string; placeholder: string; icon: React.ReactNode };
 
@@ -82,24 +89,36 @@ export function CustomLinkSettingsForm() {
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.label.trim() || !form.url.trim()) return;
+    if (!form.label.trim() || !form.url.trim() || !company) return;
     
     let finalUrl = form.url.trim();
     if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
       finalUrl = 'https://' + finalUrl;
     }
     
-    setLinks(prev => [...prev, { id: Date.now(), ...form, url: finalUrl }]);
+    const newLinks = [...links, { id: Date.now(), ...form, url: finalUrl }];
+    setLinks(newLinks);
+    updateCompany.mutate({ id: company.id, custom_links: newLinks }, {
+      onSuccess: () => {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    });
+    
     setForm({ label: "", url: "", type: "website" });
     setShowForm(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
   };
 
   const handleDelete = (id: number) => {
-    setLinks(prev => prev.filter(l => l.id !== id));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    if (!company) return;
+    const newLinks = links.filter(l => l.id !== id);
+    setLinks(newLinks);
+    updateCompany.mutate({ id: company.id, custom_links: newLinks }, {
+      onSuccess: () => {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    });
   };
 
   const handleCopy = (url: string, id: number) => {
@@ -107,6 +126,8 @@ export function CustomLinkSettingsForm() {
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
+
+  if (isLoading) return <div className="p-8 text-center text-muted">Loading settings...</div>;
 
   return (
     <div className="space-y-8 animate-fade-in">

@@ -143,6 +143,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "module_tickets_enabled",
             "module_events_enabled",
             "module_notice_board_enabled",
+            "custom_links",
         )
         read_only_fields = ("id", "slug", "status", "trial_ends_at", "is_trial_active", "created_at")
 

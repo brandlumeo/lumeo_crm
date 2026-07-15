@@ -396,6 +396,8 @@ class Company(models.Model):
     module_events_enabled = models.BooleanField(default=True)
     module_notice_board_enabled = models.BooleanField(default=True)
     
+    custom_links = models.JSONField(default=list, blank=True)
+    
     trial_ends_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
