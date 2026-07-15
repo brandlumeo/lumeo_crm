@@ -332,8 +332,10 @@ export function CustomLinkSettingsForm() {
               {/* Mini profile card */}
               <div className="bg-paper rounded-2xl p-5 border border-line text-center mb-5 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-red-500"></div>
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-[18px] mx-auto mb-3 shadow-inner">N</div>
-                <div className="text-[14px] font-bold text-ink">Northwind Trading</div>
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-[18px] mx-auto mb-3 shadow-inner">
+                  {company?.name ? company.name.charAt(0).toUpperCase() : "W"}
+                </div>
+                <div className="text-[14px] font-bold text-ink">{company?.name || "Your Workspace"}</div>
                 <div className="text-[11.5px] font-medium text-emerald-600 mt-1">Active Profile</div>
               </div>
 
