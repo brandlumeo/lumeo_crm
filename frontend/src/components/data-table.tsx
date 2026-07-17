@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, ArrowDown, ArrowUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export interface Column<T> {
   key: string;
@@ -207,8 +208,8 @@ export function DataTable<T>({
       </div>
 
       {/* Floating Action Bar for Bulk Actions */}
-      {hasSelection && selectedIds.size > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
+      {hasSelection && selectedIds.size > 0 && typeof document !== "undefined" && createPortal(
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-8 fade-in duration-300">
           <div className="bg-ink text-paper px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-4 border border-line-2/20">
             <div className="flex items-center gap-2 pl-2">
               <div className="w-5 h-5 rounded-full bg-paper text-ink flex items-center justify-center text-[11px] font-bold">
@@ -245,7 +246,8 @@ export function DataTable<T>({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
