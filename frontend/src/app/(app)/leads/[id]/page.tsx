@@ -1,8 +1,12 @@
 "use client";
 
-import { use } from "react";
+import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, UserCircle2, Mail, Phone, Calendar, Briefcase, MapPin, Zap, Loader2 } from "lucide-react";
+import { ArrowLeft, UserCircle2, Mail, Phone, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check } from "lucide-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import * as Dialog from "@radix-ui/react-dialog";
+import { toast } from "sonner";
+import { createTask } from "@/lib/api";
 import { useLead, useScoreLead } from "@/lib/queries";
 import { Lead } from "@/lib/types";
 import { PageShell } from "@/components/page-shell";
@@ -18,6 +22,95 @@ const statusTone: Record<string, string> = {
   lost: "chip chip-neutral",
   won: "chip chip-positive",
 };
+
+function ReminderButton({ lead }: { lead: Lead }) {
+  const [open, setOpen] = useState(false);
+  const [days, setDays] = useState("1");
+  const [title, setTitle] = useState(`Follow up with ${lead.name}`);
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      toast.success("Reminder task created successfully!");
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", lead.id] });
+    },
+    onError: () => {
+      toast.error("Failed to create reminder.");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + parseInt(days, 10));
+    
+    createMutation.mutate({
+      title,
+      due_date: dueDate.toISOString().split("T")[0],
+      status: "todo",
+      lead_id: lead.id,
+      assigned_to_id: lead.assigned_to?.id || null,
+    });
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <button className="btn btn-secondary h-9 px-4 font-medium flex items-center gap-2 rounded-md shadow-sm">
+          <Clock className="w-4 h-4" />
+          Set Reminder
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-paper shadow-2xl rounded-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-5 border-b border-line">
+            <Dialog.Title className="text-lg font-bold text-ink">Set Follow-Up Reminder</Dialog.Title>
+            <Dialog.Description className="text-[13px] text-muted mt-1">
+              Creates a task assigned to this lead.
+            </Dialog.Description>
+          </div>
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            <div>
+              <label className="block text-[13px] font-medium text-ink mb-1.5">Reminder Note</label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="input w-full h-10"
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-ink mb-1.5">Follow up in (Days)</label>
+              <select
+                value={days}
+                onChange={(e) => setDays(e.target.value)}
+                className="select w-full h-10"
+              >
+                <option value="1">Tomorrow</option>
+                <option value="2">2 Days</option>
+                <option value="3">3 Days</option>
+                <option value="7">1 Week</option>
+                <option value="14">2 Weeks</option>
+                <option value="30">1 Month</option>
+              </select>
+            </div>
+            <div className="pt-2 flex justify-end gap-3">
+              <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary px-5 h-10">Cancel</button>
+              <button disabled={createMutation.isPending} type="submit" className="btn btn-primary px-5 h-10 flex items-center gap-2">
+                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save Reminder
+              </button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
 
 function PredictiveScoreCard({ lead }: { lead: Lead }) {
   const scoreMutation = useScoreLead();
@@ -86,11 +179,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <PageShell title={lead.name} eyebrow="Lead Details">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link href="/leads" className="inline-flex items-center text-[13px] text-muted hover:text-ink transition-colors font-medium px-3 py-1.5 bg-bone-2 border border-line rounded-md">
           <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
           Back to leads
         </Link>
+        <ReminderButton lead={lead} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">

@@ -284,6 +284,7 @@ export interface TaskInput {
   due_date: string;
   status?: string;
   assigned_to_id?: number | null;
+  lead_id?: number | null;
 }
 
 export interface NoteInput {
