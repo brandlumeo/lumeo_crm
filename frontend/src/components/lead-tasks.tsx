@@ -5,10 +5,11 @@ import { CheckCircle2, Circle, Clock, MoreVertical, Trash2 } from "lucide-react"
 import { fetchTaskPage, updateTask, deleteTask } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { useState } from "react";
 
 export function LeadTasks({ leadId }: { leadId: number }) {
   const queryClient = useQueryClient();
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tasks", "lead", leadId],
@@ -54,7 +55,7 @@ export function LeadTasks({ leadId }: { leadId: number }) {
       </div>
       <div className="divide-y divide-line">
         {tasks.map((task) => (
-          <div key={task.id} className="p-4 flex items-start justify-between group hover:bg-bone/30 transition-colors">
+          <div key={task.id} className="p-4 flex items-start justify-between group hover:bg-bone/30 transition-colors relative">
             <div className="flex items-start gap-3">
               <button
                 onClick={() =>
@@ -90,28 +91,34 @@ export function LeadTasks({ leadId }: { leadId: number }) {
               </div>
             </div>
             
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button className="p-1.5 text-muted hover:text-ink rounded hover:bg-bone-2 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none">
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content align="end" className="w-40 z-50 bg-paper border border-line rounded-lg shadow-xl py-1 animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 duration-200">
-                  <DropdownMenu.Item
-                    onClick={() => {
-                      if (confirm("Delete this reminder?")) {
-                        deleteMutation.mutate(task.id);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-[13px] text-red-500 hover:bg-red-50 cursor-pointer outline-none"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            <div className="relative">
+              <button 
+                onClick={() => setOpenDropdown(openDropdown === task.id ? null : task.id)}
+                className="p-1.5 text-muted hover:text-ink rounded hover:bg-bone-2 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              
+              {openDropdown === task.id && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
+                  <div className="absolute right-0 top-8 w-40 z-50 bg-paper border border-line rounded-lg shadow-xl py-1 animate-in fade-in zoom-in-95">
+                    <button
+                      onClick={() => {
+                        setOpenDropdown(null);
+                        if (confirm("Delete this reminder?")) {
+                          deleteMutation.mutate(task.id);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-red-500 hover:bg-red-50 cursor-pointer outline-none"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
