@@ -304,6 +304,7 @@ export interface ListParams {
   min_amount?: string;
   max_amount?: string;
   deal?: number;
+  lead?: number;
   limit?: number;
 }
 

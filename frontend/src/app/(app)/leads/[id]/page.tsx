@@ -13,6 +13,7 @@ import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
 import { CustomFieldsDisplay } from "@/components/custom-fields-display";
+import { LeadTasks } from "@/components/lead-tasks";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
 
 const statusTone: Record<string, string> = {
@@ -222,6 +223,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div className="animate-rise space-y-6" style={{ animationDelay: "50ms" }}>
+          <LeadTasks leadId={lead.id} />
           <ActivityTimeline entityId={lead.id} entityType="lead" />
           <DocumentLibrary entityId={lead.id} entityType="lead" />
         </div>

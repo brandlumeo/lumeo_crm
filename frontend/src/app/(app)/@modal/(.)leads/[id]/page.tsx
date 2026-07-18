@@ -12,6 +12,7 @@ import { Lead } from "@/lib/types";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
 import { CustomFieldsDisplay } from "@/components/custom-fields-display";
+import { LeadTasks } from "@/components/lead-tasks";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
 import { Drawer } from "@/components/drawer";
 
@@ -238,6 +239,7 @@ export default function InterceptedLeadPage({ params }: { params: Promise<{ id: 
         <CustomFieldsDisplay modelName="lead" customData={lead.custom_data} />
         
         <div className="animate-rise space-y-6" style={{ animationDelay: "50ms" }}>
+          <LeadTasks leadId={lead.id} />
           <ActivityTimeline entityId={lead.id} entityType="lead" />
           <DocumentLibrary entityId={lead.id} entityType="lead" />
         </div>
