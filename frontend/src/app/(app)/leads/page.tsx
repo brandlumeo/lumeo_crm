@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Mail, Users, Download, Upload, X, Loader2 } from "lucide-react";
+import { Mail, Users, User, Download, Upload, X, Loader2 } from "lucide-react";
 
 import { createLead, exportLeads, updateLead, sendEmail, fetchTeam } from "@/lib/api";
 import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany, useDeleteLead } from "@/lib/queries";
@@ -384,33 +384,8 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* Import Modal */}
       {showImportModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowImportModal(false)} />
-          <div className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
-            <div className="p-6 border-b border-line flex items-center justify-between shrink-0">
-              <h3 className="font-serif text-[18px] text-ink flex items-center gap-2">
-                <Upload className="w-5 h-5 text-accent" />
-                Import Leads
-              </h3>
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="p-1.5 hover:bg-bone-2 rounded-md border border-transparent hover:border-line text-muted hover:text-ink"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleImport} className="flex flex-col flex-1 min-h-0">
-              <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-                <div className="bg-bone-2 border border-line rounded-lg p-4 space-y-3">
-                  <p className="text-sm text-ink-2">
-                    Upload a CSV file to bulk import leads. Your CSV should have a header row and can contain the following columns:
-                  </p>
-                  <ul className="text-xs text-muted list-disc pl-4 space-y-1">
-                    <li><strong>Name</strong> (Required)</li>
-                    <li><strong>Email</strong> (Required)</li>
-                    <li><strong>Phone</strong> (Optional)</li>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
           <div className="bg-paper border border-line-2 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-4 border-b border-line-2 bg-bone/30">
