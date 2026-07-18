@@ -109,6 +109,13 @@ class CookieTokenObtainView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        from axes.helpers import is_client_locked_out
+        if is_client_locked_out(request):
+            return Response(
+                {"detail": "This account is temporarily locked due to multiple failed login attempts. Please try again later."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         user = authenticate(request, username=username, password=password)
         if user is None:
             # django-axes records this failure automatically via its middleware

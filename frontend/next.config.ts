@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/:path*',
         headers: [
           {
             key: 'X-Content-Type-Options',
@@ -26,18 +26,13 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-        ],
-      },
-      {
-        source: '/login',
-        headers: [
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'none';",
+            value: "frame-ancestors 'self';",
           },
         ],
       },
