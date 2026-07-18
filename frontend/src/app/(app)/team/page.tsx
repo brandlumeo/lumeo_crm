@@ -115,7 +115,7 @@ export default function TeamPage() {
               <h2 className="text-sm font-medium text-ink">Active Members</h2>
             </div>
             <div className="divide-y divide-line">
-              {data?.users.map((user) => (
+              {data?.users?.map((user) => (
                 <div key={user.id} className="flex items-center justify-between px-5 py-4">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-bone border border-line flex items-center justify-center text-ink font-medium">
