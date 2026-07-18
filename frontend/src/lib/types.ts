@@ -6,6 +6,7 @@ export interface CompanySummary {
 }
 
 export interface CompanyDetail extends CompanySummary {
+  lead_statuses?: string[];
   trial_ends_at: string | null;
   is_trial_active: boolean;
   created_at: string;
