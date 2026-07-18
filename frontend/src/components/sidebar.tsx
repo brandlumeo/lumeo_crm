@@ -314,7 +314,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               </div>
               <div className="text-[11px] text-paper/60 font-mono">
                 {company?.status === "trial"
-                  ? `${Math.round(trialProgress)}% of trial elapsed`
+                  ? `Upgrade to unlock full access`
                   : company?.slug ?? "workspace active"}
               </div>
               <Link

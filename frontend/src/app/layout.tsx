@@ -12,21 +12,18 @@ const serif = Instrument_Serif({
   style: ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
-  adjustFontFallback: false,
 });
 
 const sans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
-  adjustFontFallback: false,
 });
 
 const mono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
-  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {

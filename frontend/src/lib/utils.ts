@@ -93,7 +93,7 @@ export function getDisplayName(
   user?: Pick<UserSummary, "first_name" | "last_name" | "username"> | null,
 ) {
   if (!user) {
-    return "Workspace user";
+    return "";
   }
 
   const fullName = `${user.first_name} ${user.last_name}`.trim();

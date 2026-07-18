@@ -143,8 +143,8 @@ export default function ForgotPasswordPage() {
             bit encryption
           </div>
           <div>
-            <div className="font-mono text-2xl text-paper mb-1">0</div>
-            data exposed
+            <div className="font-mono text-2xl text-paper mb-1">100%</div>
+            secure reset
           </div>
         </div>
       </div>
