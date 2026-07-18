@@ -3,11 +3,11 @@ import { toast } from "sonner";
 
 
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Mail, Users, Download, Upload, X, Loader2 } from "lucide-react";
 
-import { createLead, exportLeads } from "@/lib/api";
+import { createLead, exportLeads, updateLead, sendEmail, fetchTeam } from "@/lib/api";
 import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany, useDeleteLead } from "@/lib/queries";
 import type { LeadInput } from "@/lib/types";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
@@ -41,6 +41,25 @@ export default function LeadsPage() {
     email: "",
     status: company?.default_lead_status || "new",
     custom_data: {},
+  });
+  
+  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
+  const [bulkStatusIds, setBulkStatusIds] = useState<number[]>([]);
+  const [bulkStatusValue, setBulkStatusValue] = useState("");
+
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [campaignIds, setCampaignIds] = useState<number[]>([]);
+  const [campaignSubject, setCampaignSubject] = useState("");
+  const [campaignBody, setCampaignBody] = useState("");
+
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignIds, setAssignIds] = useState<number[]>([]);
+  const [assignValue, setAssignValue] = useState<number | null>(null);
+
+  const { data: teamData } = useQuery({
+    queryKey: ["team"],
+    queryFn: fetchTeam,
+    enabled: !!me,
   });
 
   const [mounted, setMounted] = useState(false);
@@ -244,11 +263,24 @@ export default function LeadsPage() {
               bulkActions={[
                 {
                   label: "Send Campaign",
-                  onClick: (ids) => toast.success(`Drafting email to ${ids.length} leads...`),
+                  onClick: (ids) => {
+                    setCampaignIds(ids.map(Number));
+                    setShowCampaignModal(true);
+                  },
+                },
+                {
+                  label: "Assign To",
+                  onClick: (ids) => {
+                    setAssignIds(ids.map(Number));
+                    setShowAssignModal(true);
+                  },
                 },
                 {
                   label: "Change Status",
-                  onClick: (ids) => toast.info(`Bulk updating status for ${ids.length} leads...`),
+                  onClick: (ids) => {
+                    setBulkStatusIds(ids.map(Number));
+                    setShowBulkStatusModal(true);
+                  }
                 },
                 {
                   label: "Delete",
@@ -379,36 +411,250 @@ export default function LeadsPage() {
                     <li><strong>Name</strong> (Required)</li>
                     <li><strong>Email</strong> (Required)</li>
                     <li><strong>Phone</strong> (Optional)</li>
-                    <li><strong>Status</strong> (Optional: new, contacted, qualified)</li>
-                  </ul>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+          <div className="bg-paper border border-line-2 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-line-2 bg-bone/30">
+              <h3 className="font-serif text-xl text-ink">Import Leads</h3>
+              <button onClick={() => setShowImportModal(false)} className="text-muted hover:text-ink transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleImport} className="p-4 flex flex-col gap-4">
+              <p className="text-[13px] text-ink-2 leading-relaxed">
+                Upload a CSV file containing your leads. The file must have columns matching standard lead fields 
+                (e.g., <code>name</code>, <code>email</code>, <code>status</code>).
+              </p>
+              
+              <div className="border-2 border-dashed border-line-2 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3 bg-bone/20">
+                <div className="w-10 h-10 rounded-full bg-bone-2 flex items-center justify-center text-ink-2">
+                  <Upload className="w-5 h-5" />
                 </div>
-
-                <label className="block">
-                  <span className="label">CSV File</span>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    required
-                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-ink file:text-paper hover:file:bg-ink/90 file:cursor-pointer mt-2"
-                  />
-                </label>
+                <div>
+                  <label className="btn btn-primary px-4 py-2 cursor-pointer inline-flex">
+                    <span>Select CSV File</span>
+                    <input 
+                      type="file" 
+                      accept=".csv"
+                      className="hidden" 
+                      onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {importFile && (
+                    <div className="mt-3 text-[12px] font-mono text-accent bg-accent/10 px-3 py-1.5 rounded-full inline-block">
+                      {importFile.name}
+                    </div>
+                  )}
+                </div>
               </div>
-
-              <div className="p-6 border-t border-line bg-bone flex items-center justify-end gap-3 shrink-0">
-                <button type="button" onClick={() => setShowImportModal(false)} className="btn btn-secondary">
+              <div className="flex justify-end gap-3 mt-2">
+                <button type="button" onClick={() => setShowImportModal(false)} className="btn px-4 py-2 hover:bg-line-2/50 text-ink">
                   Cancel
                 </button>
-                <button
-                  type="submit"
+                <button 
+                  type="submit" 
                   disabled={!importFile || importMutation.isPending}
-                  className="btn btn-primary flex items-center gap-2"
+                  className="btn btn-primary px-4 py-2"
                 >
-                  {importMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  Import Leads
+                  {importMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Import'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Status Update Modal */}
+      {showBulkStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+          <div className="bg-paper border border-line-2 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-line-2 bg-bone/30">
+              <h3 className="font-serif text-xl text-ink">Change Status</h3>
+              <button onClick={() => setShowBulkStatusModal(false)} className="text-muted hover:text-ink transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              <p className="text-[13px] text-ink-2 leading-relaxed">Select a new status for {bulkStatusIds.length} leads.</p>
+              <div>
+                <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-2">New Status</label>
+                <select
+                  className="input flex-1"
+                  value={bulkStatusValue}
+                  onChange={(e) => setBulkStatusValue(e.target.value)}
+                >
+                  <option value="" disabled>Select a status</option>
+                  {company?.lead_statuses?.map((s: string) => (
+                    <option key={s} value={s}>{s.replace("_", " ")}</option>
+                  ))}
+                  {!company?.lead_statuses && (
+                    <>
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="qualified">Qualified</option>
+                      <option value="lost">Lost</option>
+                      <option value="won">Won</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+            <div className="p-4 border-t border-line-2 bg-bone/30 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowBulkStatusModal(false)} className="btn px-4 py-2 hover:bg-line-2/50 text-ink">Cancel</button>
+              <button 
+                type="button" 
+                disabled={!bulkStatusValue}
+                onClick={async () => {
+                  try {
+                    const promises = bulkStatusIds.map(id => updateLead(id, { status: bulkStatusValue }));
+                    toast.promise(Promise.all(promises), {
+                      loading: `Updating ${bulkStatusIds.length} leads...`,
+                      success: () => {
+                        setShowBulkStatusModal(false);
+                        setBulkStatusValue("");
+                        void queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+                        return `Updated ${bulkStatusIds.length} leads to ${bulkStatusValue}.`;
+                      },
+                      error: "Failed to update leads."
+                    });
+                  } catch (e) {
+                    toast.error("An error occurred");
+                  }
+                }} 
+                className="btn btn-primary px-4 py-2"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Campaign Modal */}
+      {showCampaignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+          <div className="bg-paper border border-line-2 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-line-2 bg-bone/30">
+              <h3 className="font-serif text-xl text-ink">Send Email Campaign</h3>
+              <button onClick={() => setShowCampaignModal(false)} className="text-muted hover:text-ink transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              <p className="text-[13px] text-ink-2 leading-relaxed">
+                Compose an email to be sent individually to {campaignIds.length} selected leads.
+              </p>
+              <div>
+                <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-2">Subject</label>
+                <input
+                  type="text"
+                  className="input w-full"
+                  placeholder="Enter email subject..."
+                  value={campaignSubject}
+                  onChange={(e) => setCampaignSubject(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-2">Message Body</label>
+                <textarea
+                  className="input w-full min-h-[150px] resize-y"
+                  placeholder="Type your message here..."
+                  value={campaignBody}
+                  onChange={(e) => setCampaignBody(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-line-2 bg-bone/30 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCampaignModal(false)} className="btn px-4 py-2 hover:bg-line-2/50 text-ink">Cancel</button>
+              <button 
+                type="button" 
+                disabled={!campaignSubject || !campaignBody}
+                onClick={async () => {
+                  try {
+                    const promises = campaignIds.map(id => sendEmail({ subject: campaignSubject, body: campaignBody, lead_id: id }));
+                    toast.promise(Promise.all(promises), {
+                      loading: `Sending emails to ${campaignIds.length} leads...`,
+                      success: () => {
+                        setShowCampaignModal(false);
+                        setCampaignSubject("");
+                        setCampaignBody("");
+                        return `Successfully sent to ${campaignIds.length} leads!`;
+                      },
+                      error: "Failed to send emails. Check your SMTP configuration."
+                    });
+                  } catch (e) {
+                    toast.error("An error occurred");
+                  }
+                }} 
+                className="btn btn-primary px-4 py-2 flex items-center gap-2"
+              >
+                <Mail className="w-4 h-4" /> Send Campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Assign Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+          <div className="bg-paper border border-line-2 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-line-2 bg-bone/30">
+              <h3 className="font-serif text-xl text-ink">Assign Leads</h3>
+              <button onClick={() => setShowAssignModal(false)} className="text-muted hover:text-ink transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              <p className="text-[13px] text-ink-2 leading-relaxed">Select a team member to assign to {assignIds.length} leads.</p>
+              <div>
+                <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-2">Team Member</label>
+                <select
+                  className="select w-full"
+                  value={assignValue || ""}
+                  onChange={(e) => setAssignValue(e.target.value ? parseInt(e.target.value) : null)}
+                >
+                  <option value="" disabled>Select a team member</option>
+                  <option value="unassigned">Unassigned</option>
+                  {me && <option value={me.id}>Me ({me.email})</option>}
+                  {teamData?.users?.map((u: any) => {
+                    if (u.id === me?.id) return null;
+                    return (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || u.email}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+            <div className="p-4 border-t border-line-2 bg-bone/30 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowAssignModal(false)} className="btn px-4 py-2 hover:bg-line-2/50 text-ink">Cancel</button>
+              <button 
+                type="button" 
+                disabled={assignValue === null}
+                onClick={async () => {
+                  try {
+                    const assignedId = (assignValue as any) === "unassigned" ? null : assignValue;
+                    const promises = assignIds.map(id => updateLead(id, { assigned_to_id: assignedId }));
+                    toast.promise(Promise.all(promises), {
+                      loading: `Assigning ${assignIds.length} leads...`,
+                      success: () => {
+                        setShowAssignModal(false);
+                        setAssignValue(null);
+                        void queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+                        return `Successfully assigned ${assignIds.length} leads!`;
+                      },
+                      error: "Failed to assign leads."
+                    });
+                  } catch (e) {
+                    toast.error("An error occurred");
+                  }
+                }} 
+                className="btn btn-primary px-4 py-2 flex items-center gap-2"
+              >
+                <User className="w-4 h-4" /> Save Assignment
+              </button>
+            </div>
           </div>
         </div>
       )}
