@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +8,6 @@ import { ArrowLeft, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useTicket, useTicketComments, useCreateTicketComment } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -35,12 +34,12 @@ export default function TicketDetailPage() {
 
   if (!mounted) return null;
 
-  const handleSendComment = (e: React.FormEvent) => {
+  const handleSendComment = (e: FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
     
     createCommentMutation.mutate(
-      { ticketId, payload: { content: newComment } },
+      { ticketId, payload: { body: newComment } },
       {
         onSuccess: () => {
           setNewComment("");
@@ -124,7 +123,7 @@ export default function TicketDetailPage() {
                           {comment.author?.first_name} {comment.author?.last_name}
                         </div>
                       )}
-                      <p className="whitespace-pre-wrap text-sm">{comment.content}</p>
+                      <p className="whitespace-pre-wrap text-sm">{comment.body}</p>
                       <div className="text-[11px] text-muted mt-2 text-right">
                         {formatDateTime(comment.created_at)}
                       </div>
@@ -139,11 +138,11 @@ export default function TicketDetailPage() {
           {/* Reply Box */}
           {ticket.status !== "closed" && ticket.status !== "resolved" ? (
             <form onSubmit={handleSendComment} className="relative">
-              <Textarea 
+              <textarea 
                 placeholder="Type your reply here..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="w-full pr-12 pb-12 min-h-[120px] bg-[#0a0a0a]"
+                className="w-full pr-12 pb-12 min-h-[120px] bg-[#0a0a0a] rounded-xl border-white/10"
                 disabled={createCommentMutation.isPending}
               />
               <div className="absolute bottom-3 right-3">
@@ -182,7 +181,7 @@ export default function TicketDetailPage() {
               <div className="text-xs text-muted mb-1 uppercase tracking-wider">Assigned To</div>
               <div>
                 {ticket.assigned_to 
-                  ? `${ticket.assigned_to.first_name} ${ticket.assigned_to.last_name}`.trim() || ticket.assigned_to.email 
+                  ? `${ticket.assigned_to.first_name} ${ticket.assigned_to.last_name}`.trim() || ticket.assigned_to.username 
                   : "Unassigned"}
               </div>
             </div>

@@ -1146,10 +1146,6 @@ export async function deleteTicket(id: number) {
   await api.delete(`${endpoints.tickets}${id}/`);
 }
 
-export async function createTicketComment(ticketId: number, payload: TicketCommentInput) {
-  const { data } = await api.post<TicketComment>(`${endpoints.tickets}${ticketId}/comments/`, payload);
-  return data;
-}
 
 export async function fetchPublicQuote(token: string) {
   const { data } = await api.get<Quote>(`/crm/public/quote/${token}/`);

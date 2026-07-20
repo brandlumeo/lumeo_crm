@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchTickets } from "@/lib/api";
@@ -10,8 +10,6 @@ import Link from "next/link";
 import { ArrowLeft, Ticket as TicketIcon, Plus } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -36,7 +34,7 @@ export default function PortalTicketsPage() {
 
   const tickets = data?.results || [];
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  const handleCreateTicket = (e: FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !description.trim()) {
       toast.error("Subject and description are required.");
@@ -130,17 +128,17 @@ export default function PortalTicketsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div 
             className="card p-6 w-full max-w-lg bg-[#111] border border-white/10 shadow-2xl animate-rise relative"
-            onClick={e => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <h2 className="font-serif text-2xl mb-4">Create New Ticket</h2>
             <form onSubmit={handleCreateTicket} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-muted mb-1">Subject</label>
-                <Input 
+                <input 
                   placeholder="Brief description of the issue"
                   value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubject(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-ink text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all"
                   required
                 />
               </div>
@@ -148,7 +146,7 @@ export default function PortalTicketsPage() {
                 <label className="block text-sm font-medium text-muted mb-1">Priority</label>
                 <select
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value as any)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriority(e.target.value as any)}
                   className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-ink text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all"
                 >
                   <option value="low">Low</option>
@@ -159,11 +157,11 @@ export default function PortalTicketsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted mb-1">Description</label>
-                <Textarea 
+                <textarea 
                   placeholder="Provide more details..."
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full min-h-[120px]"
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+                  className="w-full min-h-[120px] p-3 rounded-lg border border-line bg-surface text-ink text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all"
                   required
                 />
               </div>
