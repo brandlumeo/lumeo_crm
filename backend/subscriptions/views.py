@@ -132,7 +132,7 @@ class CreateSubscriptionView(APIView):
             if not settings.DEBUG:
                 # C4: Never silently fall back to free mock mode in production
                 return Response(
-                    {"detail": "Payment service temporarily unavailable. Please try again."},
+                    {"detail": f"Payment service temporarily unavailable. Error details: {str(e)}"},
                     status=status.HTTP_503_SERVICE_UNAVAILABLE,
                 )
             # Only allow mock fallback in DEBUG/development mode
