@@ -94,8 +94,8 @@ class CreateSubscriptionView(APIView):
             })
 
         # Real Razorpay API Integration
-        import razorpay
         try:
+            import razorpay
             client = razorpay.Client(auth=(rzp_id, rzp_secret))
             limits = PLAN_LIMITS.get(plan_key, {})
             price = limits.get("price_yearly" if billing_period == "yearly" else "price_monthly", 0)
@@ -170,10 +170,10 @@ class VerifySubscriptionView(APIView):
 
         if not is_mock:
             # Real Razorpay Signature verification
-            import razorpay
             rzp_id = getattr(settings, "RAZORPAY_KEY_ID", "")
             rzp_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
             try:
+                import razorpay
                 client = razorpay.Client(auth=(rzp_id, rzp_secret))
                 params = {
                     "razorpay_payment_id": razorpay_payment_id,
