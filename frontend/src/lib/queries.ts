@@ -103,6 +103,13 @@ import {
   signPublicInvoice,
   payPublicInvoice,
   verifyPublicInvoicePayment,
+  fetchExpenseClaims,
+  createExpenseClaim,
+  approveExpenseClaim,
+  fetchOfficeAssets,
+  createOfficeAsset,
+  updateOfficeAsset,
+  deleteOfficeAsset,
   fetchQuotes,
   createQuote,
   updateQuote,
@@ -1058,6 +1065,77 @@ export function useVerifyPublicInvoicePayment() {
     mutationFn: ({ token, payload }: { token: string; payload: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string } }) => verifyPublicInvoicePayment(token, payload),
     onSuccess: (_, { token }) => {
       void queryClient.invalidateQueries({ queryKey: ["public", "invoice", token] });
+    },
+  });
+}
+
+// ── HR: Expenses ─────────────────────────────────────────────────────────────
+
+export function useExpenseClaims(all = false) {
+  return useQuery({
+    queryKey: ["attendance", "expenses", { all }],
+    queryFn: () => fetchExpenseClaims(all),
+    enabled: authenticated(),
+  });
+}
+
+export function useCreateExpenseClaim() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createExpenseClaim,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "expenses"] });
+    },
+  });
+}
+
+export function useApproveExpenseClaim() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { status: "approved" | "rejected"; manager_notes?: string } }) =>
+      approveExpenseClaim(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "expenses"] });
+    },
+  });
+}
+
+// ── HR: Office Assets ────────────────────────────────────────────────────────
+
+export function useOfficeAssets() {
+  return useQuery({
+    queryKey: ["attendance", "assets"],
+    queryFn: fetchOfficeAssets,
+    enabled: authenticated(),
+  });
+}
+
+export function useCreateOfficeAsset() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createOfficeAsset,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "assets"] });
+    },
+  });
+}
+
+export function useUpdateOfficeAsset() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => updateOfficeAsset(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "assets"] });
+    },
+  });
+}
+
+export function useDeleteOfficeAsset() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteOfficeAsset,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "assets"] });
     },
   });
 }

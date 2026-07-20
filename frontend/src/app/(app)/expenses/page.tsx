@@ -13,9 +13,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {
-  useExpenses,
-  useSubmitExpense,
-  useApproveExpense,
+  useExpenseClaims,
+  useCreateExpenseClaim,
+  useApproveExpenseClaim,
   useCurrentUser,
   useAllDealsBoard,
 } from "@/lib/queries";
@@ -23,12 +23,12 @@ import { formatINR, formatLongDate, toNumber } from "@/lib/utils";
 
 export default function ExpensesPage() {
   const { data: user } = useCurrentUser();
-  const { data: expenses = [], isLoading: expensesLoading } = useExpenses();
-  const { data: companyExpenses = [], isLoading: companyExpensesLoading } = useExpenses(true); // for managers
+  const { data: expenses = [], isLoading: expensesLoading } = useExpenseClaims();
+  const { data: companyExpenses = [], isLoading: companyExpensesLoading } = useExpenseClaims(true); // for managers
   const { data: deals = [], isLoading: dealsLoading } = useAllDealsBoard();
 
-  const submitExpenseMutation = useSubmitExpense();
-  const approveExpenseMutation = useApproveExpense();
+  const submitExpenseMutation = useCreateExpenseClaim();
+  const approveExpenseMutation = useApproveExpenseClaim();
 
   // Component states
   const [mounted, setMounted] = useState(false);

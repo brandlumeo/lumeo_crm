@@ -1177,6 +1177,47 @@ export async function verifyPublicInvoicePayment(token: string, payload: { razor
   return data;
 }
 
+// ── HR: Expenses ─────────────────────────────────────────────────────────────
+
+export async function fetchExpenseClaims(all = false) {
+  const { data } = await api.get<ExpenseClaim[]>(
+    `${endpoints.attendanceExpenses}${all ? "?all=true" : ""}`
+  );
+  return data;
+}
+
+export async function createExpenseClaim(payload: FormData) {
+  const { data } = await api.post<ExpenseClaim>(endpoints.attendanceExpenses, payload, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function approveExpenseClaim(id: string, payload: { status: "approved" | "rejected"; manager_notes?: string }) {
+  const { data } = await api.post<ExpenseClaim>(`${endpoints.attendanceExpenses}${id}/approve/`, payload);
+  return data;
+}
+
+// ── HR: Office Assets ────────────────────────────────────────────────────────
+
+export async function fetchOfficeAssets() {
+  const { data } = await api.get<OfficeAsset[]>(endpoints.attendanceAssets);
+  return data;
+}
+
+export async function createOfficeAsset(payload: any) {
+  const { data } = await api.post<OfficeAsset>(endpoints.attendanceAssets, payload);
+  return data;
+}
+
+export async function updateOfficeAsset(id: string, payload: any) {
+  const { data } = await api.patch<OfficeAsset>(`${endpoints.attendanceAssets}${id}/`, payload);
+  return data;
+}
+
+export async function deleteOfficeAsset(id: string) {
+  await api.delete(`${endpoints.attendanceAssets}${id}/`);
+}
 
 export async function updateQuote(id: number, payload: any) {
   const { data } = await api.patch<Quote>(`${endpoints.quotes}${id}/`, payload);

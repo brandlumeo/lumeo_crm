@@ -13,10 +13,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import {
-  useAssets,
-  useCreateAsset,
-  useUpdateAsset,
-  useDeleteAsset,
+  useOfficeAssets,
+  useCreateOfficeAsset,
+  useUpdateOfficeAsset,
+  useDeleteOfficeAsset,
   useCurrentUser,
 } from "@/lib/queries";
 import { fetchTeam } from "@/lib/api";
@@ -24,7 +24,7 @@ import { formatLongDate } from "@/lib/utils";
 
 export default function AssetsPage() {
   const { data: currentUser } = useCurrentUser();
-  const { data: assets = [], isLoading: assetsLoading } = useAssets();
+  const { data: assets = [], isLoading: assetsLoading } = useOfficeAssets();
 
   // Queries for team users
   const { data: teamData, isLoading: teamLoading } = useQuery({
@@ -33,9 +33,9 @@ export default function AssetsPage() {
     enabled: !!currentUser,
   });
 
-  const createAssetMutation = useCreateAsset();
-  const updateAssetMutation = useUpdateAsset();
-  const deleteAssetMutation = useDeleteAsset();
+  const createAssetMutation = useCreateOfficeAsset();
+  const updateAssetMutation = useUpdateOfficeAsset();
+  const deleteAssetMutation = useDeleteOfficeAsset();
 
   // Component states
   const [mounted, setMounted] = useState(false);

@@ -602,6 +602,7 @@ export interface SMTPConfig {
   from_email: string;
 }
 
+
 export interface SMTPConfigInput {
   host: string;
   port: number;
