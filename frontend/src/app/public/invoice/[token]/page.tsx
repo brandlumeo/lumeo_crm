@@ -3,16 +3,29 @@ import { toast } from "sonner";
 
 
 import { useState, useRef, use } from "react";
-import { usePublicInvoice, useSignPublicInvoice } from "@/lib/queries";
+import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyPublicInvoicePayment } from "@/lib/queries";
 import SignatureCanvas from "react-signature-canvas";
-import { Loader2, CheckCircle2, FileText, Download } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-react";
 import { InvoiceLineItem } from "@/lib/types";
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function PublicInvoicePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
   const token = resolvedParams.token;
   const { data: invoice, isLoading, error } = usePublicInvoice(token);
   const signMutation = useSignPublicInvoice();
+  const payMutation = usePayPublicInvoice();
+  const verifyMutation = useVerifyPublicInvoicePayment();
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -59,6 +72,63 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         signed_by_name: signedByName,
       }
     });
+  };
+
+  const handlePay = async () => {
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        toast.error("Failed to load Razorpay Checkout SDK. Check your internet connection.");
+        return;
+      }
+      
+      payMutation.mutate(
+        { token },
+        {
+          onSuccess: (data) => {
+            const options = {
+              key: data.key,
+              amount: data.amount,
+              currency: data.currency,
+              name: invoice?.company?.name || "Payment",
+              description: `Invoice ${invoice?.invoice_number}`,
+              order_id: data.order_id,
+              handler: function (response: any) {
+                verifyMutation.mutate({
+                  token,
+                  payload: {
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                  }
+                }, {
+                  onSuccess: () => {
+                    toast.success("Payment verified and successful!");
+                  },
+                  onError: (err: any) => {
+                    toast.error(err.response?.data?.error || "Failed to verify payment.");
+                  }
+                });
+              },
+              prefill: {
+                name: "",
+                email: "",
+              },
+              theme: {
+                color: "#18181b",
+              },
+            };
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+          },
+          onError: (err: any) => {
+            toast.error(err.response?.data?.error || "Failed to initialize payment.");
+          }
+        }
+      );
+    } catch (error) {
+      toast.error("Something went wrong");
+    }
   };
 
   const isSigned = !!invoice.signature_data;
@@ -207,6 +277,28 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </div>
           )}
         </div>
+
+        {/* Payment Section */}
+        {invoice.status !== "paid" && (
+          <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 text-center">
+            <h3 className="text-2xl font-semibold text-ink mb-2">Pay Invoice</h3>
+            <p className="text-muted mb-8">Securely pay this invoice using Razorpay.</p>
+            <button
+              onClick={handlePay}
+              disabled={payMutation.isPending || verifyMutation.isPending}
+              className="bg-ink text-paper px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2 min-w-[200px] justify-center"
+            >
+              {payMutation.isPending || verifyMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <CreditCard className="w-5 h-5" />
+                  Pay ${parseFloat(invoice.total).toFixed(2)}
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

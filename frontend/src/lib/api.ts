@@ -1167,6 +1167,16 @@ export async function signPublicInvoice(token: string, payload: { signature_data
   return data;
 }
 
+export async function payPublicInvoice(token: string) {
+  const { data } = await api.post<{ order_id: string; amount: number; currency: string; key: string }>(`/crm/public/invoice/${token}/pay/`);
+  return data;
+}
+
+export async function verifyPublicInvoicePayment(token: string, payload: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) {
+  const { data } = await api.post<{ message: string }>(`/crm/public/invoice/${token}/verify-payment/`, payload);
+  return data;
+}
+
 
 export async function updateQuote(id: number, payload: any) {
   const { data } = await api.patch<Quote>(`${endpoints.quotes}${id}/`, payload);

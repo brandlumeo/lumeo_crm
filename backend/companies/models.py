@@ -262,6 +262,8 @@ class Company(models.Model):
     stripe_secret_key = models.CharField(max_length=255, blank=True, null=True)
     paypal_client_id = models.CharField(max_length=255, blank=True, null=True)
     paypal_secret = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_key_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_key_secret = models.CharField(max_length=255, blank=True, null=True)
     
     invoice_prefix = models.CharField(max_length=20, default="INV-")
     quote_prefix = models.CharField(max_length=20, default="QT-")

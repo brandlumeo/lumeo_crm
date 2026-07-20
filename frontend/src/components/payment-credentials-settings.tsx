@@ -26,10 +26,10 @@ export function PaymentCredentialsForm() {
   const [stripeStatus, setStripeStatus] = useState(!!(company?.stripe_public_key || company?.stripe_secret_key));
   const [paypalStatus, setPaypalStatus] = useState(!!(company?.paypal_client_id || company?.paypal_secret));
   
-  // Local UI states for Razorpay (mocked)
-  const [razorpayStatus, setRazorpayStatus] = useState(false);
-  const [razorpayKey, setRazorpayKey] = useState("");
-  const [razorpaySecret, setRazorpaySecret] = useState("");
+  // Local UI states for Razorpay
+  const [razorpayStatus, setRazorpayStatus] = useState(!!(company?.razorpay_key_id || company?.razorpay_key_secret));
+  const [razorpayKey, setRazorpayKey] = useState(company?.razorpay_key_id ?? "");
+  const [razorpaySecret, setRazorpaySecret] = useState(company?.razorpay_key_secret ?? "");
 
   // Local UI states for Paystack (mocked)
   const [paystackStatus, setPaystackStatus] = useState(false);
@@ -479,7 +479,9 @@ export function PaymentCredentialsForm() {
               stripe_public_key: stripePublicKey,
               stripe_secret_key: stripeSecretKey,
               paypal_client_id: paypalClientId,
-              paypal_secret: paypalSecret
+              paypal_secret: paypalSecret,
+              razorpay_key_id: razorpayKey,
+              razorpay_key_secret: razorpaySecret
             })}
             disabled={mutation.isPending}
             className="btn btn-primary shadow-sm hover:shadow-md transition-all h-10 px-6 rounded-lg font-medium flex items-center gap-2 bg-ink hover:bg-ink-2 text-white border-0"

@@ -101,6 +101,8 @@ import {
   signPublicQuote,
   fetchPublicInvoice,
   signPublicInvoice,
+  payPublicInvoice,
+  verifyPublicInvoicePayment,
   fetchQuotes,
   createQuote,
   updateQuote,
@@ -1038,6 +1040,22 @@ export function useSignPublicInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ token, payload }: { token: string; payload: { signature_data: string; signed_by_name: string } }) => signPublicInvoice(token, payload),
+    onSuccess: (_, { token }) => {
+      void queryClient.invalidateQueries({ queryKey: ["public", "invoice", token] });
+    },
+  });
+}
+
+export function usePayPublicInvoice() {
+  return useMutation({
+    mutationFn: ({ token }: { token: string }) => payPublicInvoice(token),
+  });
+}
+
+export function useVerifyPublicInvoicePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ token, payload }: { token: string; payload: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string } }) => verifyPublicInvoicePayment(token, payload),
     onSuccess: (_, { token }) => {
       void queryClient.invalidateQueries({ queryKey: ["public", "invoice", token] });
     },

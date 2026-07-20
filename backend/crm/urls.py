@@ -35,6 +35,8 @@ from .views import (
     InvoiceViewSet,
     PublicQuoteView,
     PublicInvoiceView,
+    PublicInvoicePayView,
+    PublicInvoiceVerifyPaymentView,
     OrderViewSet,
     EventViewSet,
     NoticeViewSet,
@@ -87,4 +89,6 @@ urlpatterns = [
     path('book/<slug:slug>/', PublicBookingView.as_view(), name='public_booking'),
     path('public/quote/<uuid:token>/', PublicQuoteView.as_view(), name='public_quote'),
     path('public/invoice/<uuid:token>/', PublicInvoiceView.as_view(), name='public_invoice'),
+    path('public/invoice/<uuid:token>/pay/', PublicInvoicePayView.as_view(), name='public_invoice_pay'),
+    path('public/invoice/<uuid:token>/verify-payment/', PublicInvoiceVerifyPaymentView.as_view(), name='public_invoice_verify_payment'),
 ] + router.urls + tickets_router.urls

@@ -37,6 +37,8 @@ class CompanySerializer(serializers.ModelSerializer):
             "stripe_secret_key",
             "paypal_client_id",
             "paypal_secret",
+            "razorpay_key_id",
+            "razorpay_key_secret",
             "invoice_prefix",
             "quote_prefix",
             "default_tax_rate",

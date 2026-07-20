@@ -1568,6 +1568,72 @@ class PublicInvoiceView(APIView):
 
         return Response({"message": "Invoice signed successfully"})
 
+import razorpay
+
+class PublicInvoicePayView(APIView):
+    permission_classes = []
+
+    def post(self, request, token):
+        invoice = get_object_or_404(Invoice, public_token=token)
+        company = invoice.company
+        
+        if not company.razorpay_key_id or not company.razorpay_key_secret:
+            return Response({"error": "Payment gateway not configured for this company."}, status=503)
+
+        if invoice.status == Invoice.Status.PAID:
+            return Response({"error": "Invoice is already paid."}, status=400)
+
+        amount_in_cents = int(float(invoice.total) * 100)
+        
+        try:
+            client = razorpay.Client(auth=(company.razorpay_key_id, company.razorpay_key_secret))
+            data = {
+                "amount": amount_in_cents,
+                "currency": "USD",
+                "receipt": str(invoice.invoice_number),
+            }
+            payment = client.order.create(data=data)
+            return Response({
+                "order_id": payment["id"],
+                "amount": amount_in_cents,
+                "currency": "USD",
+                "key": company.razorpay_key_id
+            })
+        except Exception as e:
+            return Response({"error": f"Payment initialization failed: {str(e)}"}, status=500)
+
+class PublicInvoiceVerifyPaymentView(APIView):
+    permission_classes = []
+
+    def post(self, request, token):
+        invoice = get_object_or_404(Invoice, public_token=token)
+        company = invoice.company
+        
+        razorpay_payment_id = request.data.get('razorpay_payment_id')
+        razorpay_order_id = request.data.get('razorpay_order_id')
+        razorpay_signature = request.data.get('razorpay_signature')
+        
+        if not company.razorpay_key_id or not company.razorpay_key_secret:
+            return Response({"error": "Payment gateway not configured."}, status=503)
+            
+        client = razorpay.Client(auth=(company.razorpay_key_id, company.razorpay_key_secret))
+        
+        try:
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature
+            })
+            
+            invoice.status = Invoice.Status.PAID
+            invoice.save(update_fields=['status'])
+            
+            return Response({"message": "Payment successful."})
+        except razorpay.errors.SignatureVerificationError:
+            return Response({"error": "Invalid payment signature."}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
 
 # ── Orders ───────────────────────────────────────────────────────────────────
 

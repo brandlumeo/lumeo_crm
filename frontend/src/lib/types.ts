@@ -31,6 +31,8 @@ export interface CompanyDetail extends CompanySummary {
   stripe_secret_key: string | null;
   paypal_client_id: string | null;
   paypal_secret: string | null;
+  razorpay_key_id: string | null;
+  razorpay_key_secret: string | null;
   invoice_prefix: string;
   quote_prefix: string;
   default_tax_rate: string;
