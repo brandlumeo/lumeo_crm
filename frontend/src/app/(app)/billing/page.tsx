@@ -86,9 +86,9 @@ function PlanCard({ plan, isCurrent, billingPeriod, onUpgrade, disabled }: PlanC
   const price = billingPeriod === "yearly" ? plan.price_yearly : plan.price_monthly;
   const priceFormatted = formatINR(price);
   
-  const maxUsers = plan.max_users >= 999999 ? "Unlimited" : `Up to ${plan.max_users}`;
-  const maxLeads = billingPeriod === "yearly" ? (plan.max_leads_yearly >= 999999 ? "Unlimited" : plan.max_leads_yearly.toLocaleString()) : (plan.max_leads_monthly >= 999999 ? "Unlimited" : plan.max_leads_monthly.toLocaleString());
-  const maxDeals = billingPeriod === "yearly" ? (plan.max_deals_yearly >= 999999 ? "Unlimited" : plan.max_deals_yearly.toLocaleString()) : (plan.max_deals_monthly >= 999999 ? "Unlimited" : plan.max_deals_monthly.toLocaleString());
+  const maxUsers = (plan.max_users || 0) >= 999999 ? "Unlimited" : `Up to ${plan.max_users || 0}`;
+  const maxLeads = billingPeriod === "yearly" ? ((plan.max_leads_yearly || plan.max_leads || 0) >= 999999 ? "Unlimited" : (plan.max_leads_yearly || plan.max_leads || 0).toLocaleString()) : ((plan.max_leads_monthly || plan.max_leads || 0) >= 999999 ? "Unlimited" : (plan.max_leads_monthly || plan.max_leads || 0).toLocaleString());
+  const maxDeals = billingPeriod === "yearly" ? ((plan.max_deals_yearly || plan.max_deals || 0) >= 999999 ? "Unlimited" : (plan.max_deals_yearly || plan.max_deals || 0).toLocaleString()) : ((plan.max_deals_monthly || plan.max_deals || 0) >= 999999 ? "Unlimited" : (plan.max_deals_monthly || plan.max_deals || 0).toLocaleString());
 
   const features = [
     `${maxUsers} team members`,
@@ -171,19 +171,19 @@ function PlanCard({ plan, isCurrent, billingPeriod, onUpgrade, disabled }: PlanC
       <div className={["text-[11px] grid grid-cols-3 gap-2 pt-4 border-t", isCurrent ? "border-paper/10 text-paper/50" : "border-line text-muted"].join(" ")}>
         <div className="text-center">
           <div className={["font-mono text-base mb-0.5", isCurrent ? "text-paper" : "text-ink"].join(" ")}>
-            {plan.max_users >= 999999 ? "∞" : plan.max_users}
+            {(plan.max_users || 0) >= 999999 ? "∞" : (plan.max_users || 0)}
           </div>
           users
         </div>
         <div className="text-center">
           <div className={["font-mono text-base mb-0.5", isCurrent ? "text-paper" : "text-ink"].join(" ")}>
-            {billingPeriod === "yearly" ? (plan.max_leads_yearly >= 999999 ? "∞" : plan.max_leads_yearly.toLocaleString()) : (plan.max_leads_monthly >= 999999 ? "∞" : plan.max_leads_monthly.toLocaleString())}
+            {billingPeriod === "yearly" ? ((plan.max_leads_yearly || plan.max_leads || 0) >= 999999 ? "∞" : (plan.max_leads_yearly || plan.max_leads || 0).toLocaleString()) : ((plan.max_leads_monthly || plan.max_leads || 0) >= 999999 ? "∞" : (plan.max_leads_monthly || plan.max_leads || 0).toLocaleString())}
           </div>
           leads
         </div>
         <div className="text-center">
           <div className={["font-mono text-base mb-0.5", isCurrent ? "text-paper" : "text-ink"].join(" ")}>
-            {billingPeriod === "yearly" ? (plan.max_deals_yearly >= 999999 ? "∞" : plan.max_deals_yearly.toLocaleString()) : (plan.max_deals_monthly >= 999999 ? "∞" : plan.max_deals_monthly.toLocaleString())}
+            {billingPeriod === "yearly" ? ((plan.max_deals_yearly || plan.max_deals || 0) >= 999999 ? "∞" : (plan.max_deals_yearly || plan.max_deals || 0).toLocaleString()) : ((plan.max_deals_monthly || plan.max_deals || 0) >= 999999 ? "∞" : (plan.max_deals_monthly || plan.max_deals || 0).toLocaleString())}
           </div>
           deals
         </div>
