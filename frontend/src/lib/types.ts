@@ -315,6 +315,10 @@ export interface PlanLimits {
   max_deals: number;
   price_monthly: number;
   price_yearly: number;
+  max_leads_monthly: number;
+  max_deals_monthly: number;
+  max_leads_yearly: number;
+  max_deals_yearly: number;
 }
 
 export interface Subscription {
@@ -339,6 +343,10 @@ export interface PlanDetail {
   max_users: number;
   max_leads: number;
   max_deals: number;
+  max_leads_monthly: number;
+  max_leads_yearly: number;
+  max_deals_monthly: number;
+  max_deals_yearly: number;
   is_current: boolean;
 }
 

@@ -40,6 +40,10 @@ class PlanDetailSerializer(serializers.Serializer):
     max_users = serializers.IntegerField()
     max_leads = serializers.IntegerField()
     max_deals = serializers.IntegerField()
+    max_leads_monthly = serializers.IntegerField()
+    max_leads_yearly = serializers.IntegerField()
+    max_deals_monthly = serializers.IntegerField()
+    max_deals_yearly = serializers.IntegerField()
     is_current = serializers.BooleanField()
 
 
@@ -54,8 +58,12 @@ def build_plan_catalogue(current_plan: str):
             "price_monthly": limits["price_monthly"],
             "price_yearly": limits["price_yearly"],
             "max_users": limits["max_users"],
-            "max_leads": limits["max_leads"],
-            "max_deals": limits["max_deals"],
+            "max_leads": limits["max_leads_monthly"],
+            "max_deals": limits["max_deals_monthly"],
+            "max_leads_monthly": limits["max_leads_monthly"],
+            "max_leads_yearly": limits["max_leads_yearly"],
+            "max_deals_monthly": limits["max_deals_monthly"],
+            "max_deals_yearly": limits["max_deals_yearly"],
             "is_current": choice_key == current_plan,
         })
     return result

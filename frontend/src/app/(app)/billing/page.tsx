@@ -81,11 +81,32 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, isCurrent, billingPeriod, onUpgrade, disabled }: PlanCardProps) {
-  const features = PLAN_FEATURES[plan.key] ?? [];
   const isPopular = plan.key === "pro";
 
   const price = billingPeriod === "yearly" ? plan.price_yearly : plan.price_monthly;
   const priceFormatted = formatINR(price);
+  
+  const maxUsers = plan.max_users >= 999999 ? "Unlimited" : `Up to ${plan.max_users}`;
+  const maxLeads = billingPeriod === "yearly" ? (plan.max_leads_yearly >= 999999 ? "Unlimited" : plan.max_leads_yearly.toLocaleString()) : (plan.max_leads_monthly >= 999999 ? "Unlimited" : plan.max_leads_monthly.toLocaleString());
+  const maxDeals = billingPeriod === "yearly" ? (plan.max_deals_yearly >= 999999 ? "Unlimited" : plan.max_deals_yearly.toLocaleString()) : (plan.max_deals_monthly >= 999999 ? "Unlimited" : plan.max_deals_monthly.toLocaleString());
+
+  const features = [
+    `${maxUsers} team members`,
+    `${maxLeads} leads`,
+    `${maxDeals} deals`,
+    "All CRM views",
+  ];
+  if (plan.key === "free") features.push("14-day trial");
+  if (plan.key === "starter") {
+    features.push("Pipeline & revenue charts");
+    features.push("Email support");
+  }
+  if (plan.key === "pro") {
+    features.push("Advanced analytics", "Priority support", "API access");
+  }
+  if (plan.key === "enterprise") {
+    features.push("Advanced analytics", "Dedicated support", "Custom integrations", "SLA guarantee");
+  }
 
   return (
     <div
@@ -156,13 +177,13 @@ function PlanCard({ plan, isCurrent, billingPeriod, onUpgrade, disabled }: PlanC
         </div>
         <div className="text-center">
           <div className={["font-mono text-base mb-0.5", isCurrent ? "text-paper" : "text-ink"].join(" ")}>
-            {plan.max_leads >= 999999 ? "∞" : plan.max_leads.toLocaleString()}
+            {billingPeriod === "yearly" ? (plan.max_leads_yearly >= 999999 ? "∞" : plan.max_leads_yearly.toLocaleString()) : (plan.max_leads_monthly >= 999999 ? "∞" : plan.max_leads_monthly.toLocaleString())}
           </div>
           leads
         </div>
         <div className="text-center">
           <div className={["font-mono text-base mb-0.5", isCurrent ? "text-paper" : "text-ink"].join(" ")}>
-            {plan.max_deals >= 999999 ? "∞" : plan.max_deals.toLocaleString()}
+            {billingPeriod === "yearly" ? (plan.max_deals_yearly >= 999999 ? "∞" : plan.max_deals_yearly.toLocaleString()) : (plan.max_deals_monthly >= 999999 ? "∞" : plan.max_deals_monthly.toLocaleString())}
           </div>
           deals
         </div>

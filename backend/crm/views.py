@@ -85,6 +85,28 @@ class CompanyScopedModelViewSet(ModelViewSet):
         if not user.is_superuser and user.company_id is None:
             raise PermissionDenied("Authenticated user is not assigned to a company.")
             
+        if user.company_id is not None:
+            try:
+                company = user.company
+                subscription = getattr(company, "subscription", None)
+                if subscription:
+                    limits = subscription.plan_limits
+                    model_name = self.queryset.model.__name__
+                    if model_name == "Lead":
+                        max_leads = limits.get("max_leads", 0)
+                        current_leads = self.queryset.model.objects.filter(company=company).count()
+                        if current_leads >= max_leads:
+                            raise PermissionDenied(f"Lead limit reached. Your plan allows up to {max_leads} leads.")
+                    elif model_name == "Deal":
+                        max_deals = limits.get("max_deals", 0)
+                        current_deals = self.queryset.model.objects.filter(company=company).count()
+                        if current_deals >= max_deals:
+                            raise PermissionDenied(f"Deal limit reached. Your plan allows up to {max_deals} deals.")
+            except PermissionDenied:
+                raise
+            except Exception:
+                pass
+
         save_kwargs = {}
         if hasattr(user, 'role') and user.role == "CUSTOMER":
             customer = getattr(user, 'customer_profile', None)
@@ -224,21 +246,33 @@ class LeadViewSet(CompanyScopedModelViewSet):
             reader = csv.DictReader(csv_file)
             
             created_count = 0
+            company = request.user.company
+            subscription = getattr(company, "subscription", None)
+            max_leads = float("inf")
+            if subscription:
+                max_leads = subscription.plan_limits.get("max_leads", 0)
+                
+            current_leads = Lead.objects.filter(company=company).count()
+
             for row in reader:
+                if current_leads + created_count >= max_leads:
+                    break
+                
                 name = row.get("Name", row.get("name", "")).strip()
                 email = row.get("Email", row.get("email", "")).strip()
                 if not name and not email:
                     continue
                 
                 Lead.objects.create(
-                    company=request.user.company,
+                    company=company,
                     name=name,
                     email=email,
                     status=row.get("Status", row.get("status", "new")).lower() or "new",
                 )
                 created_count += 1
                 
-            return Response({"status": "success", "imported": created_count})
+            message = "success" if (current_leads + created_count < max_leads) else "Partial success: Lead limit reached."
+            return Response({"status": message, "imported": created_count})
         except Exception as e:
             return Response({"error": f"Failed to parse CSV: {str(e)}"}, status=400)
 

@@ -14,29 +14,37 @@ class Plan(models.TextChoices):
 PLAN_LIMITS = {
     Plan.FREE: {
         "max_users": 2,
-        "max_leads": 50,
-        "max_deals": 20,
+        "max_leads_monthly": 50,
+        "max_deals_monthly": 20,
+        "max_leads_yearly": 50,
+        "max_deals_yearly": 20,
         "price_monthly": 0,
         "price_yearly": 0,
     },
     Plan.STARTER: {
         "max_users": 5,
-        "max_leads": 500,
-        "max_deals": 200,
-        "price_monthly": 999,
-        "price_yearly": 9990,
+        "max_leads_monthly": 500,
+        "max_deals_monthly": 200,
+        "max_leads_yearly": 6000,
+        "max_deals_yearly": 1200,
+        "price_monthly": 599,
+        "price_yearly": 4499,
     },
     Plan.PRO: {
         "max_users": 20,
-        "max_leads": 5000,
-        "max_deals": 2000,
-        "price_monthly": 2999,
-        "price_yearly": 29990,
+        "max_leads_monthly": 5000,
+        "max_deals_monthly": 2000,
+        "max_leads_yearly": 60000,
+        "max_deals_yearly": 24000,
+        "price_monthly": 1199,
+        "price_yearly": 13999,
     },
     Plan.ENTERPRISE: {
         "max_users": 100,
-        "max_leads": 999999,
-        "max_deals": 999999,
+        "max_leads_monthly": 999999,
+        "max_deals_monthly": 999999,
+        "max_leads_yearly": 999999,
+        "max_deals_yearly": 999999,
         "price_monthly": 7999,
         "price_yearly": 79990,
     },
@@ -53,6 +61,11 @@ class Subscription(models.Model):
         max_length=20,
         choices=Plan.choices,
         default=Plan.FREE,
+        db_index=True,
+    )
+    billing_period = models.CharField(
+        max_length=20,
+        default="monthly",
         db_index=True,
     )
     is_active = models.BooleanField(default=True, db_index=True)
@@ -87,7 +100,18 @@ class Subscription(models.Model):
 
     @property
     def plan_limits(self):
-        return PLAN_LIMITS.get(self.plan, PLAN_LIMITS[Plan.FREE])
+        limits = PLAN_LIMITS.get(self.plan, PLAN_LIMITS[Plan.FREE])
+        return {
+            "max_users": limits["max_users"],
+            "max_leads": limits["max_leads_yearly"] if self.billing_period == "yearly" else limits["max_leads_monthly"],
+            "max_deals": limits["max_deals_yearly"] if self.billing_period == "yearly" else limits["max_deals_monthly"],
+            "price_monthly": limits["price_monthly"],
+            "price_yearly": limits["price_yearly"],
+            "max_leads_monthly": limits["max_leads_monthly"],
+            "max_deals_monthly": limits["max_deals_monthly"],
+            "max_leads_yearly": limits["max_leads_yearly"],
+            "max_deals_yearly": limits["max_deals_yearly"],
+        }
 
     @property
     def is_trial(self):

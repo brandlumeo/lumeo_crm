@@ -501,6 +501,21 @@ class InviteMemberView(APIView):
             is_accepted=False,
         ).delete()
 
+        if request.user.company:
+            try:
+                subscription = request.user.company.subscription
+                limits = subscription.plan_limits
+                max_users = limits.get("max_users", 0)
+                current_users = User.objects.filter(company=request.user.company, is_active=True).count()
+                current_invites = TeamInvitation.objects.filter(company=request.user.company, is_accepted=False).count()
+                if (current_users + current_invites) >= max_users:
+                    return Response(
+                        {"error": f"Team member limit reached. Your plan allows up to {max_users} users."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Exception:
+                pass
+
         invite = TeamInvitation.objects.create(
             company=request.user.company,
             email=email,
