@@ -149,7 +149,7 @@ function PlanCard({ plan, isCurrent, billingPeriod, onUpgrade, disabled }: PlanC
         </div>
         {billingPeriod === "yearly" && plan.price_yearly > 0 && (
           <div className={["text-[12px] mt-1 font-medium text-accent"].join(" ")}>
-            Includes 17% yearly discount
+            Includes {Math.round(((plan.price_monthly * 12 - plan.price_yearly) / (plan.price_monthly * 12)) * 100)}% yearly discount
           </div>
         )}
       </div>
@@ -496,7 +496,7 @@ export default function BillingPage() {
                 >
                   Yearly
                   <span className="bg-accent text-white text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded">
-                    -17%
+                    Up to -37%
                   </span>
                 </button>
               </div>
