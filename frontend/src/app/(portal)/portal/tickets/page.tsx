@@ -4,13 +4,19 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchTickets } from "@/lib/api";
+import { useCreateTicket } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowLeft, Ticket as TicketIcon } from "lucide-react";
+import { ArrowLeft, Ticket as TicketIcon, Plus } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function PortalTicketsPage() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -19,12 +25,44 @@ export default function PortalTicketsPage() {
     queryFn: () => fetchTickets(),
   });
 
+  const createTicketMutation = useCreateTicket();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("low");
+
   if (!mounted) return null;
 
   const tickets = data?.results || [];
 
+  const handleCreateTicket = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim() || !description.trim()) {
+      toast.error("Subject and description are required.");
+      return;
+    }
+    
+    createTicketMutation.mutate(
+      { subject, description, priority },
+      {
+        onSuccess: (newTicket) => {
+          toast.success("Ticket created successfully!");
+          setIsModalOpen(false);
+          setSubject("");
+          setDescription("");
+          setPriority("low");
+          router.push(`/portal/tickets/${newTicket.id}`);
+        },
+        onError: (err: any) => {
+          toast.error("Failed to create ticket: " + (err.response?.data?.detail || err.message));
+        }
+      }
+    );
+  };
+
   return (
-    <div className="space-y-6 animate-rise">
+    <div className="space-y-6 animate-rise relative">
       <Link href="/portal" className="text-sm font-medium text-muted hover:text-ink flex items-center gap-2 w-fit">
         <ArrowLeft className="w-4 h-4" /> Back to Dashboard
       </Link>
@@ -34,6 +72,12 @@ export default function PortalTicketsPage() {
           <h1 className="font-serif text-[32px] leading-none mb-2">Support Tickets</h1>
           <p className="text-muted text-lg">Track your current and past support requests.</p>
         </div>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="btn btn-primary flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> New Ticket
+        </button>
       </div>
 
       <div className="card p-0">
@@ -60,7 +104,11 @@ export default function PortalTicketsPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
               {tickets.map((t) => (
-                <tr key={t.id} className="hover:bg-white/[0.02]">
+                <tr 
+                  key={t.id} 
+                  className="hover:bg-white/[0.02] cursor-pointer transition-colors"
+                  onClick={() => router.push(`/portal/tickets/${t.id}`)}
+                >
                   <td className="p-3 font-mono text-xs">#{t.id}</td>
                   <td className="p-3">{t.subject}</td>
                   <td className="p-3 capitalize">
@@ -77,6 +125,70 @@ export default function PortalTicketsPage() {
         </div>
         )}
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="card p-6 w-full max-w-lg bg-[#111] border border-white/10 shadow-2xl animate-rise relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="font-serif text-2xl mb-4">Create New Ticket</h2>
+            <form onSubmit={handleCreateTicket} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">Subject</label>
+                <Input 
+                  placeholder="Brief description of the issue"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">Priority</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as any)}
+                  className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-ink text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">Description</label>
+                <Textarea 
+                  placeholder="Provide more details..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full min-h-[120px]"
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="btn btn-secondary"
+                  disabled={createTicketMutation.isPending}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={createTicketMutation.isPending}
+                >
+                  {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

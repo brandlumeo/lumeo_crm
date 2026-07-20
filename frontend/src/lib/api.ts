@@ -1132,6 +1132,16 @@ export async function updateTicket(id: number, payload: Partial<TicketInput>) {
   return data;
 }
 
+export async function fetchTicketComments(ticketId: number) {
+  const { data } = await api.get<TicketComment[]>(`${endpoints.tickets}${ticketId}/comments/`);
+  return data;
+}
+
+export async function createTicketComment(ticketId: number, payload: TicketCommentInput) {
+  const { data } = await api.post<TicketComment>(`${endpoints.tickets}${ticketId}/comments/`, payload);
+  return data;
+}
+
 export async function deleteTicket(id: number) {
   await api.delete(`${endpoints.tickets}${id}/`);
 }

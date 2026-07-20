@@ -1500,20 +1500,18 @@ class TicketViewSet(CompanyScopedModelViewSet):
     ordering = ("-created_at",)
     filterset_fields = ("status", "priority", "assigned_to", "customer")
 
-class TicketCommentViewSet(ModelViewSet):
+class TicketCommentViewSet(CompanyScopedModelViewSet):
     serializer_class = TicketCommentSerializer
     queryset = TicketComment.objects.select_related("ticket", "author")
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_superuser:
-            return qs
-        return qs.filter(ticket__company=self.request.user.company)
-
     def perform_create(self, serializer):
         ticket_id = self.kwargs.get("ticket_pk")
         ticket = get_object_or_404(Ticket, pk=ticket_id, company=self.request.user.company)
+        if hasattr(self.request.user, "role") and self.request.user.role == "CUSTOMER":
+            customer = getattr(self.request.user, "customer_profile", None)
+            if ticket.customer != customer:
+                raise PermissionDenied("You can only comment on your own tickets.")
         serializer.save(author=self.request.user, ticket=ticket)
 
 

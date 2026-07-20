@@ -92,6 +92,7 @@ import {
   updateTicket,
   deleteTicket,
   createTicketComment,
+  fetchTicketComments,
   fetchPublicBookingLink,
   submitPublicBooking,
   aiAssistantAction,
@@ -996,6 +997,14 @@ export function useCreateTicketComment() {
       void queryClient.invalidateQueries({ queryKey: ["tickets", ticketId] });
       void queryClient.invalidateQueries({ queryKey: ["tickets"] });
     },
+  });
+}
+
+export function useTicketComments(ticketId: number) {
+  return useQuery({
+    queryKey: ["tickets", ticketId, "comments"],
+    queryFn: () => fetchTicketComments(ticketId),
+    enabled: !!ticketId,
   });
 }
 
