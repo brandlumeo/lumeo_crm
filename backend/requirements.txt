@@ -44,3 +44,4 @@ vine==5.1.0
 wcwidth==0.7.0
 whitenoise==6.8.2
 django-anymail[resend]==11.1
+setuptools
