@@ -134,90 +134,98 @@ export default function CRMTicketDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Conversation Area */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card space-y-6 min-h-[400px] max-h-[60vh] overflow-y-auto custom-scrollbar flex flex-col relative p-6">
+          <div className="lg:col-span-2 flex flex-col max-h-[70vh]">
+            <div className="card flex flex-col flex-1 overflow-hidden shadow-sm border border-line/60 bg-white p-0">
               
-              {/* Original Ticket Description */}
-              <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-medium shrink-0">
-                  C
-                </div>
-                <div className="flex-1 bg-slate-50 rounded-2xl rounded-tl-none p-4 border border-slate-100">
-                  <div className="text-xs font-medium text-slate-700 mb-1">
-                    Customer ID: {ticket.customer || "Unknown"} (Client)
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 bg-gradient-to-b from-bone/10 to-bone/30">
+                {/* Original Ticket Description */}
+                <div className="flex gap-4">
+                  <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-medium shrink-0 text-sm border border-accent/20">
+                    Client
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-slate-800">{ticket.description}</p>
-                  <div className="text-[11px] text-slate-400 mt-2 text-right">
-                    {formatDateTime(ticket.created_at)}
+                  <div className="flex flex-col gap-1 items-start max-w-[85%]">
+                    <div className="bg-white border border-line shadow-sm rounded-2xl rounded-tl-sm px-4 py-3 text-ink">
+                      <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{ticket.description}</p>
+                    </div>
+                    <div className="text-[11px] text-muted font-medium px-1">
+                      {formatDateTime(ticket.created_at)}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Comments */}
-              {isLoadingComments ? (
-                <div className="text-center text-muted py-4">Loading conversation...</div>
-              ) : (
-                comments?.map((comment) => {
-                  const isStaff = comment.author?.role !== "CUSTOMER";
-                  return (
-                    <div key={comment.id} className={`flex gap-4 ${isStaff ? "flex-row-reverse" : ""}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium shrink-0 ${
-                        isStaff ? "bg-brand/20 text-brand" : "bg-slate-100 text-slate-700"
-                      }`}>
-                        {isStaff ? "You" : (comment.author?.first_name?.[0] || "C")}
-                      </div>
-                      <div className={`flex-1 max-w-[85%] rounded-2xl p-4 border ${
-                        isStaff 
-                          ? "bg-white border-line-2 rounded-tr-none shadow-sm" 
-                          : "bg-slate-50 border-slate-100 rounded-tl-none"
-                      }`}>
-                        {!isStaff && (
-                          <div className="text-xs font-medium text-slate-700 mb-1">
-                            {comment.author?.first_name} {comment.author?.last_name} (Client)
+                {/* Comments */}
+                {isLoadingComments ? (
+                  <div className="text-center text-muted py-4 animate-pulse">Loading conversation...</div>
+                ) : (
+                  comments?.map((comment) => {
+                    const isStaff = comment.author?.role !== "CUSTOMER";
+                    const isMe = comment.author?.id === currentUser?.id;
+                    return (
+                      <div key={comment.id} className={`flex gap-4 ${isStaff ? "flex-row-reverse" : ""}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-medium shrink-0 text-sm border ${
+                          isStaff 
+                            ? "bg-ink text-bone border-ink"
+                            : "bg-accent/10 text-accent border-accent/20"
+                        }`}>
+                          {isMe ? "You" : (comment.author?.first_name?.[0] || "C")}
+                        </div>
+                        <div className={`flex flex-col gap-1 max-w-[85%] ${isStaff ? "items-end" : "items-start"}`}>
+                          {!isMe && (
+                            <div className="text-[12px] font-medium text-ink px-1 flex items-center gap-2">
+                              {comment.author?.first_name} {comment.author?.last_name}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${isStaff ? "bg-bone-2 text-muted" : "bg-accent/10 text-accent"}`}>
+                                {isStaff ? "Staff" : "Client"}
+                              </span>
+                            </div>
+                          )}
+                          <div className={`px-4 py-3 shadow-sm ${
+                            isStaff 
+                              ? "bg-ink text-white rounded-2xl rounded-tr-sm"
+                              : "bg-white border border-line rounded-2xl rounded-tl-sm text-ink"
+                          }`}>
+                            <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{comment.body}</p>
                           </div>
-                        )}
-                        {isStaff && comment.author?.id !== currentUser?.id && (
-                          <div className="text-xs font-medium text-brand mb-1">
-                            {comment.author?.first_name} {comment.author?.last_name} (Staff)
+                          <div className="text-[11px] text-muted font-medium px-1">
+                            {formatDateTime(comment.created_at)}
                           </div>
-                        )}
-                        <p className="whitespace-pre-wrap text-sm text-slate-800">{comment.body}</p>
-                        <div className="text-[11px] text-slate-400 mt-2 text-right">
-                          {formatDateTime(comment.created_at)}
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={commentsEndRef} />
-            </div>
-
-            {/* Reply Box */}
-            {ticket.status !== "closed" && ticket.status !== "resolved" ? (
-              <form onSubmit={handleSendComment} className="relative">
-                <textarea 
-                  placeholder="Type your reply here..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="w-full pr-12 pb-12 min-h-[120px] bg-white rounded-xl border-line-2 shadow-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none p-4"
-                  disabled={createCommentMutation.isPending}
-                />
-                <div className="absolute bottom-3 right-3">
-                  <button 
-                    type="submit" 
-                    disabled={!newComment.trim() || createCommentMutation.isPending}
-                    className="w-8 h-8 rounded-full bg-brand hover:bg-brand/90 flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-muted text-sm">
-                This ticket is marked as {ticket.status.replace("_", " ")}. Re-open the ticket to add new replies.
+                    );
+                  })
+                )}
+                <div ref={commentsEndRef} className="h-2" />
               </div>
-            )}
+
+              {/* Reply Box */}
+              <div className="p-4 bg-white border-t border-line/60">
+                {ticket.status !== "closed" && ticket.status !== "resolved" ? (
+                  <form onSubmit={handleSendComment} className="relative flex flex-col gap-3">
+                    <textarea 
+                      placeholder="Type your reply here..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="w-full resize-none min-h-[100px] p-4 text-[14px] bg-bone-2/50 border border-line rounded-xl focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none"
+                      disabled={createCommentMutation.isPending}
+                    />
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted">Press Enter to add a new line</span>
+                      <button 
+                        type="submit" 
+                        disabled={!newComment.trim() || createCommentMutation.isPending}
+                        className="btn btn-primary rounded-lg pl-4 pr-3 py-2 flex items-center gap-2 shadow-sm"
+                      >
+                        {createCommentMutation.isPending ? "Sending..." : "Send Reply"} 
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="py-3 px-4 bg-bone-2 rounded-xl text-center text-muted text-[13px] font-medium border border-line/50">
+                    This ticket is marked as {ticket.status.replace("_", " ")}. Re-open the ticket to add new replies.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Sidebar Admin Controls */}
