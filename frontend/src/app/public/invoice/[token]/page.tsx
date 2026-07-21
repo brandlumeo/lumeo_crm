@@ -7,6 +7,7 @@ import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyP
 import SignatureCanvas from "react-signature-canvas";
 import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-react";
 import { InvoiceLineItem } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -174,9 +175,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                       {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                     </td>
                     <td className="py-4 text-right text-ink">{item.quantity}</td>
-                    <td className="py-4 text-right text-ink">${parseFloat(item.unit_price).toFixed(2)}</td>
+                    <td className="py-4 text-right text-ink">{formatCurrency(parseFloat(item.unit_price), invoice.company?.currency)}</td>
                     <td className="py-4 text-right font-medium text-ink">
-                      ${(item.quantity * parseFloat(item.unit_price)).toFixed(2)}
+                      {formatCurrency(item.quantity * parseFloat(item.unit_price), invoice.company?.currency)}
                     </td>
                   </tr>
                 ))}
@@ -188,15 +189,15 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             <div className="w-full max-w-sm space-y-3">
               <div className="flex justify-between text-muted">
                 <span>Subtotal</span>
-                <span>${parseFloat(invoice.subtotal).toFixed(2)}</span>
+                <span>{formatCurrency(parseFloat(invoice.subtotal), invoice.company?.currency)}</span>
               </div>
               <div className="flex justify-between text-muted">
                 <span>Tax</span>
-                <span>${parseFloat(invoice.tax_amount).toFixed(2)}</span>
+                <span>{formatCurrency(parseFloat(invoice.tax_amount), invoice.company?.currency)}</span>
               </div>
               <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line">
                 <span>Total</span>
-                <span>${parseFloat(invoice.total).toFixed(2)}</span>
+                <span>{formatCurrency(parseFloat(invoice.total), invoice.company?.currency)}</span>
               </div>
             </div>
           </div>
@@ -223,12 +224,6 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   <span className="text-sm text-muted block">Signed by:</span>
                   <span className="font-medium text-ink">{invoice.signed_by_name}</span>
                 </div>
-                {invoice.signed_by_ip && (
-                  <div className="mt-2">
-                    <span className="text-sm text-muted block">IP Address:</span>
-                    <span className="font-mono text-sm text-ink">{invoice.signed_by_ip}</span>
-                  </div>
-                )}
               </div>
             </div>
           ) : (
@@ -293,7 +288,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               ) : (
                 <>
                   <CreditCard className="w-5 h-5" />
-                  Pay ${parseFloat(invoice.total).toFixed(2)}
+                  Pay {formatCurrency(parseFloat(invoice.total), invoice.company?.currency)}
                 </>
               )}
             </button>

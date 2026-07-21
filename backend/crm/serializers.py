@@ -11,7 +11,7 @@ User = get_user_model()
 class CompanySummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ("id", "name", "slug", "status")
+        fields = ("id", "name", "slug", "status", "currency")
 
 
 class UserSummarySerializer(serializers.ModelSerializer):

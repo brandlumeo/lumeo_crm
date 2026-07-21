@@ -3,6 +3,7 @@ export interface CompanySummary {
   name: string;
   slug: string;
   status: string;
+  currency: string;
 }
 
 export interface CompanyDetail extends CompanySummary {

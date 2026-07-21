@@ -7,6 +7,7 @@ import { usePublicQuote, useSignPublicQuote } from "@/lib/queries";
 import SignatureCanvas from "react-signature-canvas";
 import { Loader2, CheckCircle2, FileText, Download } from "lucide-react";
 import { QuoteLineItem } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 export default function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
@@ -101,9 +102,9 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                       {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                     </td>
                     <td className="py-4 text-right text-ink">{item.quantity}</td>
-                    <td className="py-4 text-right text-ink">${parseFloat(item.unit_price).toFixed(2)}</td>
+                    <td className="py-4 text-right text-ink">{formatCurrency(parseFloat(item.unit_price), quote.company?.currency)}</td>
                     <td className="py-4 text-right font-medium text-ink">
-                      ${(item.quantity * parseFloat(item.unit_price)).toFixed(2)}
+                      {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.company?.currency)}
                     </td>
                   </tr>
                 ))}
@@ -115,15 +116,15 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             <div className="w-full max-w-sm space-y-3">
               <div className="flex justify-between text-muted">
                 <span>Subtotal</span>
-                <span>${parseFloat(quote.subtotal).toFixed(2)}</span>
+                <span>{formatCurrency(parseFloat(quote.subtotal), quote.company?.currency)}</span>
               </div>
               <div className="flex justify-between text-muted">
                 <span>Tax</span>
-                <span>${parseFloat(quote.tax_amount).toFixed(2)}</span>
+                <span>{formatCurrency(parseFloat(quote.tax_amount), quote.company?.currency)}</span>
               </div>
               <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line">
                 <span>Total</span>
-                <span>${parseFloat(quote.total).toFixed(2)}</span>
+                <span>{formatCurrency(parseFloat(quote.total), quote.company?.currency)}</span>
               </div>
             </div>
           </div>
@@ -150,12 +151,6 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   <span className="text-sm text-muted block">Signed by:</span>
                   <span className="font-medium text-ink">{quote.signed_by_name}</span>
                 </div>
-                {quote.signed_by_ip && (
-                  <div className="mt-2">
-                    <span className="text-sm text-muted block">IP Address:</span>
-                    <span className="font-mono text-sm text-ink">{quote.signed_by_ip}</span>
-                  </div>
-                )}
               </div>
             </div>
           ) : (
