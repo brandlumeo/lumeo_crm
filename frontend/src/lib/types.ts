@@ -518,12 +518,15 @@ export interface Invoice {
   deal: number | null;
   customer: number;
   invoice_number: string;
-  status: "draft" | "sent" | "paid" | "overdue" | "void";
+  status: "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "void";
   issue_date: string;
   due_date: string | null;
   subtotal: string;
   tax_amount: string;
   total: string;
+  amount_paid?: string;
+  amount_due?: string;
+  payments?: any[];
   items: InvoiceLineItem[];
   public_token: string;
   signature_data: string | null;

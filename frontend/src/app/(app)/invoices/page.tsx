@@ -437,11 +437,11 @@ export default function InvoicesPage() {
                 </div>
                 <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
                   <div className="text-sm text-emerald-600 mb-1">Paid</div>
-                  <div className="font-semibold text-emerald-700">{formatCurrency(parseFloat(selectedInvoice.amount_paid || 0), company?.currency)}</div>
+                  <div className="font-semibold text-emerald-700">{formatCurrency(parseFloat(selectedInvoice.amount_paid || "0"), company?.currency)}</div>
                 </div>
                 <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-center">
                   <div className="text-sm text-red-600 mb-1">Due</div>
-                  <div className="font-semibold text-red-700">{formatCurrency(parseFloat(selectedInvoice.amount_due || 0), company?.currency)}</div>
+                  <div className="font-semibold text-red-700">{formatCurrency(parseFloat(selectedInvoice.amount_due || "0"), company?.currency)}</div>
                 </div>
               </div>
 
