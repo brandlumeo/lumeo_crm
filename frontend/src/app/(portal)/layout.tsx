@@ -28,6 +28,9 @@ export default function PortalLayout({
           <Link href="/portal/tickets" className="text-sm font-medium text-muted hover:text-ink transition-colors">
             Support
           </Link>
+          <Link href="/portal/settings" className="text-sm font-medium text-muted hover:text-ink transition-colors">
+            Settings
+          </Link>
           <div className="h-4 w-px bg-white/10" />
           <a href="#" onClick={(e) => {
             e.preventDefault();
