@@ -1543,7 +1543,7 @@ class TicketViewSet(CompanyScopedModelViewSet):
     ordering = ("-created_at",)
     filterset_fields = ("status", "priority", "assigned_to", "customer")
 
-class TicketCommentViewSet(viewsets.ModelViewSet):
+class TicketCommentViewSet(ModelViewSet):
     serializer_class = TicketCommentSerializer
     permission_classes = [IsAuthenticated]
 
