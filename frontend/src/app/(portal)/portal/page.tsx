@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CreditCard, FileText, LayoutDashboard, Ticket } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/utils";
 
 import { PageShell } from "@/components/page-shell";
 import { SkeletonTable } from "@/components/skeleton-table";
@@ -78,7 +79,9 @@ export default function PortalDashboardPage() {
                           {inv.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-[15px]">${inv.total}</td>
+                      <td className="px-6 py-4 text-right font-medium text-[15px]">
+                        {formatCurrency(parseFloat(inv.total), inv.company?.currency)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

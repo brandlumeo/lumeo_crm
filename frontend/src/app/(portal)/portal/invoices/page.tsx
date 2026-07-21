@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchInvoices } from "@/lib/api";
-import { formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -62,7 +62,7 @@ export default function PortalInvoicesPage() {
                   <td className="p-3">{inv.invoice_number}</td>
                   <td className="p-3">{formatDateTime(inv.issue_date)}</td>
                   <td className="p-3 capitalize">{inv.status}</td>
-                  <td className="p-3 text-right font-medium">{inv.total}</td>
+                  <td className="p-3 text-right font-medium">{formatCurrency(parseFloat(inv.total), inv.company?.currency)}</td>
                   <td className="p-3 text-right">
                     <a href={`/public/invoice/${inv.public_token}`} target="_blank" className="btn btn-secondary text-xs py-1 px-2">View</a>
                   </td>
