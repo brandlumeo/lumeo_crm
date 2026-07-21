@@ -944,6 +944,15 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         [Paragraph("Tax:", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)],
         [Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{instance.total:,.2f}</b>", right_total)]
     ]
+    
+    if doc_type in ["Invoice", "Receipt"] and hasattr(instance, "amount_paid"):
+        paid_style = ParagraphStyle('RightPaid', parent=right_normal, textColor=colors.HexColor("#059669"))
+        due_style = ParagraphStyle('RightDue', parent=right_total, textColor=colors.HexColor("#DC2626"))
+        
+        totals_data.extend([
+            [Paragraph("Amount Paid:", right_normal), Paragraph(f"{curr}{instance.amount_paid or 0:,.2f}", paid_style)],
+            [Paragraph("<b>Balance Due:</b>", right_total), Paragraph(f"<b>{curr}{instance.amount_due or instance.total:,.2f}</b>", due_style)]
+        ])
     totals_table = Table(totals_data, colWidths=[380, 120])
     totals_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
