@@ -118,6 +118,7 @@ import {
   createInvoice,
   updateInvoice,
   deleteInvoice,
+  addInvoicePayment,
   resetCustomerPassword,
   updateCompany,
   api,
@@ -1216,6 +1217,16 @@ export function useDeleteInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteInvoice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
+export function useAddInvoicePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number, payload: { amount: number, payment_method: string, transaction_id?: string, notes?: string } }) => addInvoicePayment(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },

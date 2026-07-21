@@ -1238,6 +1238,11 @@ export async function deleteInvoice(id: number) {
   await api.delete(`${endpoints.invoices}${id}/`);
 }
 
+export async function addInvoicePayment(id: number, payload: { amount: number, payment_method: string, transaction_id?: string, notes?: string }) {
+  const { data } = await api.post(`${endpoints.invoices}${id}/add_payment/`, payload);
+  return data;
+}
+
 export async function fetchHolidays() {
   const { data } = await api.get<any[]>(endpoints.attendanceHolidays);
   return data;

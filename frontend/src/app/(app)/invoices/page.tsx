@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany } from "@/lib/queries";
+import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment } from "@/lib/queries";
 import { downloadInvoicePdf } from "@/lib/api";
-import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Receipt } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 export default function InvoicesPage() {
@@ -15,6 +15,7 @@ export default function InvoicesPage() {
   const createMutation = useCreateInvoice();
   const deleteMutation = useDeleteInvoice();
   const updateMutation = useUpdateInvoice();
+  const addPaymentMutation = useAddInvoicePayment();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newInvoice, setNewInvoice] = useState<{ customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
@@ -25,6 +26,10 @@ export default function InvoicesPage() {
   });
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [newPayment, setNewPayment] = useState({ amount: 0, payment_method: "Bank Transfer", transaction_id: "", notes: "" });
 
   const invoices = data?.results || [];
   const customers = customerData?.results || [];
@@ -58,6 +63,19 @@ export default function InvoicesPage() {
     navigator.clipboard.writeText(url);
     setCopiedLink(token);
     setTimeout(() => setCopiedLink(null), 2000);
+  };
+
+  const handleAddPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInvoice || newPayment.amount <= 0) return;
+    
+    addPaymentMutation.mutate({ id: selectedInvoice.id, payload: newPayment }, {
+      onSuccess: () => {
+        setIsPaymentModalOpen(false);
+        setNewPayment({ amount: 0, payment_method: "Bank Transfer", transaction_id: "", notes: "" });
+        setSelectedInvoice(null);
+      }
+    });
   };
 
   return (
@@ -152,6 +170,17 @@ export default function InvoicesPage() {
                           title="Delete Invoice"
                         >
                           <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setNewPayment({ ...newPayment, amount: parseFloat(invoice.amount_due) || 0 });
+                            setIsPaymentModalOpen(true);
+                          }}
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors border border-line"
+                          title="Payments & Receipts"
+                        >
+                          <DollarSign className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => downloadInvoicePdf(invoice.id, invoice.invoice_number)}
@@ -385,6 +414,108 @@ export default function InvoicesPage() {
               >
                 {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete Invoice"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPaymentModalOpen && selectedInvoice && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-line flex justify-between items-center bg-bone">
+              <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-muted" />
+                Payments for Invoice #{selectedInvoice.invoice_number}
+              </h2>
+              <button onClick={() => setIsPaymentModalOpen(false)} className="text-muted hover:text-ink text-xl font-light">&times;</button>
+            </div>
+            <div className="p-6 max-h-[80vh] overflow-y-auto">
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-bone border border-line rounded-lg text-center">
+                  <div className="text-sm text-muted mb-1">Total</div>
+                  <div className="font-semibold text-ink">{formatCurrency(parseFloat(selectedInvoice.total), company?.currency)}</div>
+                </div>
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
+                  <div className="text-sm text-emerald-600 mb-1">Paid</div>
+                  <div className="font-semibold text-emerald-700">{formatCurrency(parseFloat(selectedInvoice.amount_paid || 0), company?.currency)}</div>
+                </div>
+                <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-center">
+                  <div className="text-sm text-red-600 mb-1">Due</div>
+                  <div className="font-semibold text-red-700">{formatCurrency(parseFloat(selectedInvoice.amount_due || 0), company?.currency)}</div>
+                </div>
+              </div>
+
+              {selectedInvoice.payments && selectedInvoice.payments.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-sm font-medium text-ink mb-3">Payment History</h3>
+                  <div className="space-y-3">
+                    {selectedInvoice.payments.map((payment: any) => (
+                      <div key={payment.id} className="flex justify-between items-center p-3 bg-bone border border-line rounded-lg">
+                        <div>
+                          <div className="text-sm font-medium text-ink">{payment.payment_method}</div>
+                          <div className="text-xs text-muted mt-0.5">{payment.payment_date} • {payment.receipt_number}</div>
+                        </div>
+                        <div className="font-semibold text-emerald-600">
+                          {formatCurrency(parseFloat(payment.amount), company?.currency)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {parseFloat(selectedInvoice.amount_due) > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-ink mb-3 border-t border-line pt-6">Record New Payment</h3>
+                  <form onSubmit={handleAddPayment} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-ink mb-1.5">Amount</label>
+                        <input
+                          required
+                          type="number"
+                          step="0.01"
+                          max={selectedInvoice.amount_due}
+                          value={newPayment.amount || ""}
+                          onChange={(e) => setNewPayment({ ...newPayment, amount: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-ink mb-1.5">Payment Method</label>
+                        <select
+                          required
+                          value={newPayment.payment_method}
+                          onChange={(e) => setNewPayment({ ...newPayment, payment_method: e.target.value })}
+                          className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        >
+                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Cash">Cash</option>
+                          <option value="Credit Card">Credit Card</option>
+                          <option value="Check">Check</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-ink mb-1.5">Transaction ID / Reference (Optional)</label>
+                      <input
+                        type="text"
+                        value={newPayment.transaction_id}
+                        onChange={(e) => setNewPayment({ ...newPayment, transaction_id: e.target.value })}
+                        className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={addPaymentMutation.isPending}
+                      className="w-full bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    >
+                      {addPaymentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Record Payment"}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         </div>
