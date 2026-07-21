@@ -245,7 +245,7 @@ export function ModuleSettingsForm() {
                           onChange={() => toggle(mod.key)}
                           className="sr-only peer"
                         />
-                        <div className="w-12 h-6 bg-bone-2 border border-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-200 after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner peer-checked:bg-emerald-500 peer-checked:border-emerald-500"></div>
+                        <div className="w-11 h-6 bg-bone-2 border border-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-200 after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner peer-checked:bg-emerald-500 peer-checked:border-emerald-500"></div>
                       </label>
                     </div>
                   </div>
