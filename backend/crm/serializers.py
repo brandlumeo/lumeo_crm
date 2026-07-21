@@ -1016,7 +1016,7 @@ class TicketCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = TicketComment
         fields = "__all__"
-        read_only_fields = ("author", "created_at")
+        read_only_fields = ("author", "created_at", "ticket")
 
     def create(self, validated_data):
         request = self.context.get("request")
