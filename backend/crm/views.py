@@ -1614,23 +1614,24 @@ class PublicInvoicePayView(APIView):
         if not company.razorpay_key_id or not company.razorpay_key_secret:
             return Response({"error": "Payment gateway not configured for this company."}, status=503)
 
-        if invoice.status == Invoice.Status.PAID:
-            return Response({"error": "Invoice is already paid."}, status=400)
-
-        amount_in_cents = int(float(invoice.total) * 100)
+        if invoice.amount_due <= 0:
+            return Response({"error": "Invoice is already fully paid"}, status=400)
+            
+        amount_in_cents = int(float(invoice.amount_due) * 100)
+        currency_code = company.currency or "USD"
         
         try:
             client = razorpay.Client(auth=(company.razorpay_key_id, company.razorpay_key_secret))
             data = {
                 "amount": amount_in_cents,
-                "currency": "USD",
+                "currency": currency_code,
                 "receipt": str(invoice.invoice_number),
             }
             payment = client.order.create(data=data)
             return Response({
                 "order_id": payment["id"],
                 "amount": amount_in_cents,
-                "currency": "USD",
+                "currency": currency_code,
                 "key": company.razorpay_key_id
             })
         except Exception as e:
@@ -1659,7 +1660,27 @@ class PublicInvoiceVerifyPaymentView(APIView):
                 'razorpay_signature': razorpay_signature
             })
             
-            invoice.status = Invoice.Status.PAID
+            # Fetch the actual payment amount from Razorpay
+            payment_info = client.payment.fetch(razorpay_payment_id)
+            amount_paid = payment_info['amount'] / 100.0
+            
+            import uuid
+            receipt_number = f"REC-{uuid.uuid4().hex[:6].upper()}"
+            
+            from .models import InvoicePayment
+            InvoicePayment.objects.create(
+                invoice=invoice,
+                amount=amount_paid,
+                payment_method="Razorpay",
+                transaction_id=razorpay_payment_id,
+                receipt_number=receipt_number,
+                notes="Online Payment via Public Link"
+            )
+            
+            if invoice.amount_due <= 0:
+                invoice.status = Invoice.Status.PAID
+            else:
+                invoice.status = Invoice.Status.PARTIALLY_PAID
             invoice.save(update_fields=['status'])
             
             return Response({"message": "Payment successful."})

@@ -199,6 +199,14 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 <span>Total</span>
                 <span>{formatCurrency(parseFloat(invoice.total), invoice.company?.currency)}</span>
               </div>
+              <div className="flex justify-between text-emerald-600 font-medium pt-1">
+                <span>Amount Paid</span>
+                <span>{formatCurrency(parseFloat(invoice.amount_paid || 0), invoice.company?.currency)}</span>
+              </div>
+              <div className="flex justify-between text-xl font-bold text-red-600 pt-3 border-t border-line">
+                <span>Amount Due</span>
+                <span>{formatCurrency(parseFloat(invoice.amount_due || invoice.total), invoice.company?.currency)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -274,7 +282,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         </div>
 
         {/* Payment Section */}
-        {invoice.status !== "paid" && (
+        {(parseFloat(invoice.amount_due) > 0) && (
           <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 text-center">
             <h3 className="text-2xl font-semibold text-ink mb-2">Pay Invoice</h3>
             <p className="text-muted mb-8">Securely pay this invoice using Razorpay.</p>
@@ -288,7 +296,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               ) : (
                 <>
                   <CreditCard className="w-5 h-5" />
-                  Pay {formatCurrency(parseFloat(invoice.total), invoice.company?.currency)}
+                  Pay {formatCurrency(parseFloat(invoice.amount_due), invoice.company?.currency)}
                 </>
               )}
             </button>
