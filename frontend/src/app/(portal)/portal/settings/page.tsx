@@ -32,7 +32,7 @@ export default function PortalSettingsPage() {
     setIsSubmitting(true);
     try {
       await api.put("/accounts/password/", {
-        old_password: oldPassword,
+        current_password: oldPassword,
         new_password: newPassword,
       });
       toast.success("Password updated successfully.");
@@ -44,7 +44,7 @@ export default function PortalSettingsPage() {
       setShowConfirmPassword(false);
     } catch (error: any) {
       const msg =
-        error.response?.data?.old_password?.[0] ||
+        error.response?.data?.current_password?.[0] ||
         error.response?.data?.detail ||
         "Failed to update password. Please check your current password.";
       toast.error(msg);
