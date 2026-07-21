@@ -1543,10 +1543,18 @@ class TicketViewSet(CompanyScopedModelViewSet):
     ordering = ("-created_at",)
     filterset_fields = ("status", "priority", "assigned_to", "customer")
 
-class TicketCommentViewSet(CompanyScopedModelViewSet):
+class TicketCommentViewSet(viewsets.ModelViewSet):
     serializer_class = TicketCommentSerializer
-    queryset = TicketComment.objects.select_related("ticket", "author")
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        ticket_id = self.kwargs.get("ticket_pk")
+        qs = TicketComment.objects.select_related("ticket", "author")
+        if ticket_id:
+            qs = qs.filter(ticket_id=ticket_id, ticket__company=self.request.user.company)
+        else:
+            qs = qs.filter(ticket__company=self.request.user.company)
+        return qs
 
     def perform_create(self, serializer):
         ticket_id = self.kwargs.get("ticket_pk")
