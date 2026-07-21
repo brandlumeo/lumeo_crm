@@ -4,11 +4,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { PageShell } from "@/components/page-shell";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function PortalSettingsPage() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +39,9 @@ export default function PortalSettingsPage() {
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setShowOldPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
     } catch (error: any) {
       const msg =
         error.response?.data?.old_password?.[0] ||
@@ -56,42 +65,72 @@ export default function PortalSettingsPage() {
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             <div>
               <label className="label">Current Password</label>
-              <input
-                type="password"
-                required
-                className="input"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                placeholder="Enter current password"
-              />
+              <div className="relative">
+                <input
+                  type={showOldPassword ? "text" : "password"}
+                  required
+                  className="input pr-10"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="Enter current password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOldPassword(!showOldPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                  tabIndex={-1}
+                >
+                  {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             
             <div className="h-px bg-line my-4" />
             
             <div>
               <label className="label">New Password</label>
-              <input
-                type="password"
-                required
-                className="input"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="At least 8 characters"
-                minLength={8}
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  required
+                  className="input pr-10"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                  tabIndex={-1}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             
             <div>
               <label className="label">Confirm New Password</label>
-              <input
-                type="password"
-                required
-                className="input"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                minLength={8}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  className="input pr-10"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             
             <div className="pt-4 flex justify-end">
