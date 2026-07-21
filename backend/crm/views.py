@@ -1546,6 +1546,7 @@ class TicketViewSet(CompanyScopedModelViewSet):
 class TicketCommentViewSet(ModelViewSet):
     serializer_class = TicketCommentSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         ticket_id = self.kwargs.get("ticket_pk")
