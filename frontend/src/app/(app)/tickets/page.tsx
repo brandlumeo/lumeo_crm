@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import {
   Ticket as TicketIcon,
   Plus,
@@ -240,13 +241,13 @@ function TicketDrawer({
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export default function TicketsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [sortColumn, setSortColumn] = useState("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [mounted, setMounted] = useState(false);
 
   // New ticket form
@@ -304,9 +305,6 @@ export default function TicketsPage() {
       { id, payload: { status } },
       {
         onSuccess: (updated: any) => {
-          if (selectedTicket?.id === id) {
-            setSelectedTicket({ ...selectedTicket, status: status as any });
-          }
           toast.success(`Ticket status updated to ${STATUS_META[status]?.label}.`);
         },
         onError: () => toast.error("Failed to update status."),
@@ -319,9 +317,6 @@ export default function TicketsPage() {
       { id, payload: { priority } },
       {
         onSuccess: (updated: any) => {
-          if (selectedTicket?.id === id) {
-            setSelectedTicket({ ...selectedTicket, priority: priority as any });
-          }
           toast.success(`Ticket priority updated to ${PRIORITY_META[priority]?.label}.`);
         },
         onError: () => toast.error("Failed to update priority."),
@@ -540,7 +535,7 @@ export default function TicketsPage() {
               setSortColumn(col);
               setSortDirection(dir);
             }}
-            onRowClick={(ticket) => setSelectedTicket(ticket)}
+            onRowClick={(ticket) => router.push(`/tickets/${ticket.id}`)}
             bulkActions={[
               {
                 label: "Mark Resolved",
@@ -569,17 +564,6 @@ export default function TicketsPage() {
           />
         )}
       </div>
-
-      {/* ── Ticket detail slide-over ── */}
-      {selectedTicket && (
-        <TicketDrawer
-          ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-          onStatusChange={handleStatusChange}
-          onPriorityChange={handlePriorityChange}
-          onDelete={handleDelete}
-        />
-      )}
 
       {/* ── Create ticket modal ── */}
       {isModalOpen && (
