@@ -1039,6 +1039,40 @@ class InvoiceViewSet(CompanyScopedModelViewSet):
         invoice = self.get_object()
         return generate_pdf_response(invoice, doc_type="Invoice")
 
+    @action(detail=True, methods=['post'])
+    def add_payment(self, request, pk=None):
+        invoice = self.get_object()
+        amount = request.data.get('amount')
+        payment_method = request.data.get('payment_method')
+        transaction_id = request.data.get('transaction_id', '')
+        notes = request.data.get('notes', '')
+        
+        if not amount or not payment_method:
+            return Response({"error": "amount and payment_method are required"}, status=400)
+            
+        import uuid
+        receipt_number = f"REC-{uuid.uuid4().hex[:6].upper()}"
+        
+        from .models import InvoicePayment
+        payment = InvoicePayment.objects.create(
+            invoice=invoice,
+            amount=amount,
+            payment_method=payment_method,
+            transaction_id=transaction_id,
+            receipt_number=receipt_number,
+            notes=notes
+        )
+        
+        if invoice.amount_due <= 0:
+            invoice.status = Invoice.Status.PAID
+        elif invoice.amount_paid > 0:
+            invoice.status = Invoice.Status.PARTIALLY_PAID
+            
+        invoice.save()
+        
+        from .serializers import InvoiceSerializer
+        return Response(InvoiceSerializer(invoice).data)
+
 
 class CustomFieldDefinitionViewSet(CompanyScopedModelViewSet):
     permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]

@@ -501,6 +501,7 @@ class Invoice(models.Model):
         DRAFT = "draft", "Draft"
         SENT = "sent", "Sent"
         PAID = "paid", "Paid"
+        PARTIALLY_PAID = "partially_paid", "Partially Paid"
         OVERDUE = "overdue", "Overdue"
         VOID = "void", "Void"
 
@@ -556,6 +557,14 @@ class Invoice(models.Model):
         self.total = self.subtotal + self.tax_amount
         self.save()
 
+    @property
+    def amount_paid(self):
+        return sum(payment.amount for payment in self.payments.all())
+
+    @property
+    def amount_due(self):
+        return self.total - self.amount_paid
+
 
 class InvoiceLineItem(models.Model):
     invoice = models.ForeignKey(
@@ -589,6 +598,27 @@ class InvoiceLineItem(models.Model):
 
     def __str__(self):
         return f"{self.name} x {self.quantity}"
+
+
+class InvoicePayment(models.Model):
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name="payments",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_date = models.DateField(auto_now_add=True)
+    payment_method = models.CharField(max_length=50)
+    transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    receipt_number = models.CharField(max_length=50, blank=True, null=True, unique=True, db_index=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.receipt_number} - {self.amount}"
 
 
 class CustomFieldDefinition(models.Model):

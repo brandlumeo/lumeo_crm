@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Ticket, TicketComment
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Ticket, TicketComment
 
 
 User = get_user_model()
@@ -555,8 +555,28 @@ class InvoiceLineItemSerializer(serializers.ModelSerializer):
         )
 
 
+class InvoicePaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoicePayment
+        fields = (
+            "id",
+            "invoice",
+            "amount",
+            "payment_date",
+            "payment_method",
+            "transaction_id",
+            "receipt_number",
+            "notes",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at", "receipt_number")
+
+
 class InvoiceSerializer(CompanyScopedSerializer):
     items = InvoiceLineItemSerializer(many=True, required=False)
+    payments = InvoicePaymentSerializer(many=True, read_only=True)
+    amount_paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    amount_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = Invoice
@@ -576,6 +596,9 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "tax_amount",
             "total",
             "items",
+            "payments",
+            "amount_paid",
+            "amount_due",
             "public_token",
             "signature_data",
             "signed_at",
@@ -584,7 +607,7 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "invoice_number", "issue_date", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token")
+        read_only_fields = ("id", "invoice_number", "issue_date", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token", "amount_paid", "amount_due")
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
