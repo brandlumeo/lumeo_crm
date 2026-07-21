@@ -63,7 +63,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
       return;
     }
 
-    const signatureData = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
+    const signatureData = sigCanvas.current.getCanvas().toDataURL("image/png");
     
     signMutation.mutate({
       token,
