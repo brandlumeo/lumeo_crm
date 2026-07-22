@@ -293,6 +293,7 @@ export interface TaskInput {
   status?: string;
   assigned_to_id?: number | null;
   lead_id?: number | null;
+  customer_id?: number | null;
 }
 
 export interface NoteInput {
@@ -313,6 +314,7 @@ export interface ListParams {
   max_amount?: string;
   deal?: number;
   lead?: number;
+  customer?: number;
   limit?: number;
 }
 
