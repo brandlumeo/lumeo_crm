@@ -249,8 +249,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           <div className="w-7 h-7 bg-ink rounded-md grid place-items-center text-bone font-serif italic text-[20px] leading-none pb-0.5">
             L
           </div>
-          <div className="font-serif text-[22px]">
+          <div className="font-serif text-xl flex items-baseline">
             Lume<em className="text-accent not-italic">o</em>
+            <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted ml-2 font-medium">CRM</span>
           </div>
         </div>
         {onClose && (
