@@ -139,22 +139,44 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
       <div className="max-w-4xl mx-auto space-y-8">
         
         {/* Invoice Document */}
-        <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line pb-8 mb-8">
+        <div className={`rounded-2xl shadow-sm border p-8 md:p-12 ${
+          invoice.company?.invoice_template === 'template1' ? 'bg-blue-50/30 border-blue-100' :
+          invoice.company?.invoice_template === 'template3' ? 'bg-zinc-900 border-zinc-800 text-white' :
+          'bg-paper border-line'
+        }`}>
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-ink mb-2">INVOICE</h1>
+              {invoice.company?.invoice_logo ? (
+                <img src={invoice.company.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" />
+              ) : (
+                <h1 className={`text-4xl font-bold mb-2 ${invoice.company?.invoice_template === 'template3' ? 'text-white' : 'text-ink'}`}>INVOICE</h1>
+              )}
               <p className="text-muted text-sm uppercase tracking-wider font-medium">{invoice.invoice_number}</p>
             </div>
             <div className="text-right">
-              <h2 className="text-xl font-semibold text-ink">{invoice.company?.name || "Company"}</h2>
+              <h2 className={`text-xl font-semibold ${invoice.company?.invoice_template === 'template3' ? 'text-white' : 'text-ink'}`}>{invoice.company?.name || "Company"}</h2>
               <div className="mt-4 space-y-1">
-                <p className="text-sm text-muted">Issue Date: <span className="font-medium text-ink">{invoice.issue_date}</span></p>
-                {invoice.due_date && <p className="text-sm text-muted">Due Date: <span className="font-medium text-ink">{invoice.due_date}</span></p>}
+                <p className="text-sm text-muted">Issue Date: <span className="font-medium">{invoice.issue_date}</span></p>
+                {invoice.due_date && <p className="text-sm text-muted">Due Date: <span className="font-medium">{invoice.due_date}</span></p>}
               </div>
-              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-bone-2 text-ink">
+              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                 Status: <span className="capitalize">{invoice.status.replace("_", " ")}</span>
               </div>
             </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2">Billed To</h3>
+            <div className="font-medium text-lg">{invoice.customer?.name}</div>
+            {invoice.company?.show_client_company_name && invoice.customer?.company && (
+              <div className="text-muted">{invoice.customer.company}</div>
+            )}
+            {invoice.company?.show_client_email && invoice.customer?.email && (
+              <div className="text-muted">{invoice.customer.email}</div>
+            )}
+            {invoice.company?.show_client_phone && invoice.customer?.phone && (
+              <div className="text-muted">{invoice.customer.phone}</div>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -185,7 +207,24 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </table>
           </div>
 
-          <div className="flex justify-end border-t border-line pt-8">
+          <div className="flex flex-col md:flex-row justify-between border-t border-line pt-8 gap-8">
+            
+            {/* Terms and Info Section */}
+            <div className="flex-1 space-y-6">
+              {invoice.company?.invoice_terms && (
+                <div>
+                  <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>
+                  <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.company.invoice_terms}</p>
+                </div>
+              )}
+              {invoice.company?.invoice_other_information && (
+                <div>
+                  <h4 className="text-sm font-semibold text-ink mb-1">Other Information / Bank Details</h4>
+                  <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.company.invoice_other_information}</p>
+                </div>
+              )}
+            </div>
+
             <div className="w-full max-w-sm space-y-3">
               <div className="flex justify-between text-muted">
                 <span>Subtotal</span>
