@@ -5,9 +5,9 @@ export interface CompanySummary {
   status: string;
   currency: string;
   invoice_template?: string;
-  invoice_logo?: string;
-  invoice_terms?: string;
-  invoice_other_information?: string;
+  invoice_logo?: string | null;
+  invoice_terms?: string | null;
+  invoice_other_information?: string | null;
   show_client_company_name?: boolean;
   show_client_email?: boolean;
   show_client_phone?: boolean;
