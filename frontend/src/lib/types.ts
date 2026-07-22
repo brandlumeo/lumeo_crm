@@ -187,6 +187,8 @@ export interface Lead {
   company: CompanySummary;
   name: string;
   email: string;
+  mobile: string | null;
+  source: string | null;
   status: string;
   assigned_to: UserSummary | null;
   custom_data: Record<string, any>;
@@ -263,6 +265,8 @@ export interface TokenPair {
 export interface LeadInput {
   name: string;
   email: string;
+  mobile?: string;
+  source?: string;
   status?: string;
   assigned_to_id?: number | null;
   custom_data?: Record<string, any>;

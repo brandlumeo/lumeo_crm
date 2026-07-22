@@ -126,6 +126,8 @@ class LeadSerializer(CompanyScopedSerializer):
             "company_id",
             "name",
             "email",
+            "mobile",
+            "source",
             "status",
             "assigned_to",
             "assigned_to_id",

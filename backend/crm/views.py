@@ -197,8 +197,12 @@ class LeadViewSet(CompanyScopedModelViewSet):
         rationale_points = []
         
         if lead.email:
-            base_score += 20
+            base_score += 15
             rationale_points.append("Has valid email address.")
+            
+        if lead.mobile:
+            base_score += 10
+            rationale_points.append("Has mobile number provided.")
             
         if lead.custom_data:
             base_score += 15

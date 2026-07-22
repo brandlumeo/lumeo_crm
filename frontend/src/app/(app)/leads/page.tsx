@@ -39,6 +39,8 @@ export default function LeadsPage() {
   const [form, setForm] = useState<LeadInput>({
     name: "",
     email: "",
+    mobile: "",
+    source: "",
     status: company?.default_lead_status || "new",
     custom_data: {},
   });
@@ -209,6 +211,16 @@ export default function LeadsPage() {
                   ),
                 },
                 {
+                  key: "mobile",
+                  header: "Mobile",
+                  render: (lead) => lead.mobile || <span className="text-muted text-xs">N/A</span>,
+                },
+                {
+                  key: "source",
+                  header: "Source",
+                  render: (lead) => lead.source || <span className="text-muted text-xs">N/A</span>,
+                },
+                {
                   key: "status",
                   header: "Status",
                   sortable: true,
@@ -337,6 +349,26 @@ export default function LeadsPage() {
                 value={form.email}
                 onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                 placeholder="buyer@apexlogistics.com"
+              />
+            </label>
+            <label>
+              <span className="label">Mobile</span>
+              <input
+                type="tel"
+                className="input"
+                value={form.mobile || ""}
+                onChange={(event) => setForm((current) => ({ ...current, mobile: event.target.value }))}
+                placeholder="+1 234 567 8900"
+              />
+            </label>
+            <label>
+              <span className="label">Source</span>
+              <input
+                type="text"
+                className="input"
+                value={form.source || ""}
+                onChange={(event) => setForm((current) => ({ ...current, source: event.target.value }))}
+                placeholder="Website, Referral, etc."
               />
             </label>
             <label>

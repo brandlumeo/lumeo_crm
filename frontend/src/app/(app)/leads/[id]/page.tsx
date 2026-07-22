@@ -2,7 +2,7 @@
 
 import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, UserCircle2, Mail, Phone, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check } from "lucide-react";
+import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
@@ -206,6 +206,18 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 <Mail className="w-4 h-4 text-muted shrink-0" />
                 <a href={`mailto:${lead.email}`} className="text-accent hover:underline truncate">{lead.email}</a>
               </div>
+              {lead.mobile && (
+                <div className="flex items-center gap-3 text-[13px]">
+                  <Phone className="w-4 h-4 text-muted shrink-0" />
+                  <a href={`tel:${lead.mobile}`} className="text-accent hover:underline truncate">{lead.mobile}</a>
+                </div>
+              )}
+              {lead.source && (
+                <div className="flex items-center gap-3 text-[13px]">
+                  <Globe className="w-4 h-4 text-muted shrink-0" />
+                  <span className="text-ink-2 truncate">Source: {lead.source}</span>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-[13px]">
                 <Briefcase className="w-4 h-4 text-muted shrink-0" />
                 <span className="text-ink-2 truncate">Assigned: {getDisplayName(lead.assigned_to) || "Unassigned"}</span>

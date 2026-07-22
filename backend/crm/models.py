@@ -25,6 +25,8 @@ class Lead(models.Model):
     )
     name = models.CharField(max_length=255)
     email = models.EmailField(db_index=True)
+    mobile = models.CharField(max_length=20, null=True, blank=True)
+    source = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(
         max_length=50,
         choices=Status.choices,
