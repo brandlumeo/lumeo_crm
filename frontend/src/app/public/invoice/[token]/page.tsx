@@ -168,8 +168,8 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
           <div className="mb-8">
             <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2">Billed To</h3>
             <div className="font-medium text-lg">{invoice.customer_details?.name}</div>
-            {invoice.company?.show_client_company_name && invoice.customer_details?.company && (
-              <div className="text-muted">{invoice.customer_details.company}</div>
+            {invoice.company?.show_client_company_name && typeof (invoice.customer_details as any)?.company_name === 'string' && (
+              <div className="text-muted">{(invoice.customer_details as any).company_name}</div>
             )}
             {invoice.company?.show_client_email && invoice.customer_details?.email && (
               <div className="text-muted">{invoice.customer_details.email}</div>
