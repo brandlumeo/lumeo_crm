@@ -161,7 +161,7 @@ export default function LoginPage() {
             L
           </div>
           <div className="font-serif text-[22px]">
-            Lume<em className="text-accent not-italic">o</em>
+            Lume<em className="text-accent not-italic">o</em> CRM
           </div>
         </Link>
 
@@ -243,7 +243,7 @@ export default function LoginPage() {
                     Don't have an account? Sign up
                   </Link>
                   <p className="text-xs text-muted text-center">
-                    Use the email created for your Lumeo workspace account.
+                    Use the email created for your Lumeo CRM workspace account.
                   </p>
                 </div>
               </>
@@ -297,7 +297,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="text-[11px] text-muted font-mono">Copyright Lumeo 2026</div>
+        <div className="text-[11px] text-muted font-mono">Copyright Lumeo CRM 2026</div>
       </div>
 
       <div className="hidden lg:flex relative bg-ink text-paper p-16 flex-col justify-between overflow-hidden">
