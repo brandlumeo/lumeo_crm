@@ -1,7 +1,6 @@
 "use client";
 import { toast } from "sonner";
-
-
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Phone, UserCircle2 } from "lucide-react";
@@ -157,8 +156,10 @@ export default function CustomersPage() {
                   sortable: true,
                   render: (customer) => (
                     <div>
-                      <div className="font-medium text-ink">{customer.name}</div>
-                      <div className="text-[12px] text-muted">{customer.email}</div>
+                      <Link href={`/customers/${customer.id}`} className="font-medium text-ink hover:text-accent transition-colors hover:underline">
+                        {customer.name}
+                      </Link>
+                      <div className="text-[12px] text-muted mt-0.5">{customer.email}</div>
                     </div>
                   ),
                 },
