@@ -2,12 +2,12 @@
 
 import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check } from "lucide-react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X } from "lucide-react";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
-import { createTask } from "@/lib/api";
-import { useLead, useScoreLead } from "@/lib/queries";
+import { createTask, updateLead, fetchTeam } from "@/lib/api";
+import { useLead, useScoreLead, useCurrentCompany } from "@/lib/queries";
 import { Lead } from "@/lib/types";
 import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
@@ -164,11 +164,160 @@ function PredictiveScoreCard({ lead }: { lead: Lead }) {
   );
 }
 
+function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean, onOpenChange: (open: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const { data: company } = useCurrentCompany();
+  const { data: teamData } = useQuery({
+    queryKey: ["team"],
+    queryFn: fetchTeam,
+  });
+
+  const [form, setForm] = useState({
+    name: lead.name || "",
+    email: lead.email || "",
+    mobile: lead.mobile || "",
+    source: lead.source || "",
+    status: lead.status || "new",
+    assigned_to_id: lead.assigned_to?.id || null,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: typeof form) => updateLead(lead.id, data),
+    onSuccess: () => {
+      toast.success("Lead updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["lead", lead.id] });
+      queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast.error("Failed to update lead.");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    mutation.mutate(form);
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+      <div className="bg-paper border border-line-2 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-4 border-b border-line-2 bg-bone/30 shrink-0">
+          <h3 className="font-serif text-xl text-ink">Edit Lead</h3>
+          <button onClick={() => onOpenChange(false)} className="text-muted hover:text-ink transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="overflow-y-auto p-4">
+          <form id="edit-lead-form" onSubmit={handleSubmit} className="space-y-4">
+            <label className="block">
+              <span className="label">Lead name</span>
+              <input
+                required
+                className="input w-full"
+                value={form.name}
+                onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block">
+                <span className="label">Email</span>
+                <input
+                  required
+                  type="email"
+                  className="input w-full"
+                  value={form.email}
+                  onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                />
+              </label>
+              <label className="block">
+                <span className="label">Mobile</span>
+                <input
+                  type="tel"
+                  className="input w-full"
+                  value={form.mobile || ""}
+                  onChange={(e) => setForm(f => ({ ...f, mobile: e.target.value }))}
+                />
+              </label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block">
+                <span className="label">Source</span>
+                <input
+                  type="text"
+                  className="input w-full"
+                  value={form.source || ""}
+                  onChange={(e) => setForm(f => ({ ...f, source: e.target.value }))}
+                />
+              </label>
+              <label className="block">
+                <span className="label">Status</span>
+                <select
+                  className="select w-full"
+                  value={form.status}
+                  onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
+                >
+                  {company?.lead_pipelines?.map((stage: any) => (
+                    <option key={stage.id} value={stage.name.toLowerCase()}>
+                      {stage.name}
+                    </option>
+                  )) || (
+                    <>
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="qualified">Qualified</option>
+                      <option value="won">Won</option>
+                      <option value="lost">Lost</option>
+                    </>
+                  )}
+                </select>
+              </label>
+            </div>
+            
+            <label className="block">
+              <span className="label">Assigned To</span>
+              <select
+                className="select w-full"
+                value={form.assigned_to_id || ""}
+                onChange={(e) => setForm(f => ({ ...f, assigned_to_id: e.target.value ? Number(e.target.value) : null }))}
+              >
+                <option value="">Unassigned</option>
+                {teamData?.map((member: any) => (
+                  <option key={member.id} value={member.id}>
+                    {getDisplayName(member)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </form>
+        </div>
+        
+        <div className="p-4 border-t border-line-2 bg-bone/30 flex justify-end gap-3 shrink-0">
+          <button type="button" onClick={() => onOpenChange(false)} className="btn px-4 py-2 hover:bg-line-2/50 text-ink">Cancel</button>
+          <button 
+            type="submit" 
+            form="edit-lead-form"
+            disabled={mutation.isPending}
+            className="btn btn-primary px-4 py-2 flex items-center gap-2"
+          >
+            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const leadId = parseInt(id, 10);
   
   const { data: lead, isLoading, error } = useLead(leadId);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   if (isLoading) {
     return <PageShell title="Loading..."><div className="p-6 text-muted">Loading lead details...</div></PageShell>;
@@ -185,8 +334,19 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
           Back to leads
         </Link>
-        <ReminderButton lead={lead} />
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowEditModal(true)}
+            className="btn bg-white hover:bg-bone border border-line text-ink py-1.5 px-3 flex items-center gap-2"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            Edit Lead
+          </button>
+          <ReminderButton lead={lead} />
+        </div>
       </div>
+      
+      <EditLeadModal lead={lead} open={showEditModal} onOpenChange={setShowEditModal} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">
         <div className="space-y-6">
