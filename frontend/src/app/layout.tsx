@@ -34,6 +34,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    google: "4BJ_RrzvBej9t5cPyOkvxYCQHcGE1xLNWboh_O6SepU",
+  },
   openGraph: {
     title: "Lumeo CRM - AI-Powered CRM for Small Businesses",
     description: "Automate follow-ups, prioritize leads, and close deals faster with AI. Free 14-day trial.",
