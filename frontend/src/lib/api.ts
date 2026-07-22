@@ -209,7 +209,13 @@ export async function clearSession(): Promise<void> {
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
   config.headers = config.headers ?? {};
-  if (token) {
+  if (
+    token &&
+    !config.url?.includes(endpoints.token) &&
+    !config.url?.includes(endpoints.refresh) &&
+    !config.url?.includes(endpoints.register) &&
+    !config.url?.includes(endpoints.passwordResetRequest)
+  ) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   
