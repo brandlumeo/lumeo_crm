@@ -181,7 +181,7 @@ export default function RegisterPage() {
               <label className="block">
                 <span className="label">Password</span>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type="password"
                   name="password"
                   autoComplete="new-password"
                   required
