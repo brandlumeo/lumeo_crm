@@ -27,16 +27,27 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    template: "%s | Lumeo CRM",
-    default: "Lumeo CRM",
+  metadataBase: new URL("https://www.lumeo.estgrp.in"),
+  title: "Lumeo CRM - AI-Powered CRM for Small Businesses & Startups",
+  description: "Lumeo CRM automates lead follow-ups, prioritizes deals with AI, and keeps your pipeline updated. Try it free for 14 days.",
+  keywords: ["CRM software", "AI CRM", "small business CRM", "sales automation", "lead management"],
+  alternates: {
+    canonical: "/",
   },
-  description: "Premium CRM for leads, deals, customers, tasks, and notes.",
   openGraph: {
-    title: "Lumeo CRM",
-    description: "Premium CRM for leads, deals, customers, tasks, and notes.",
+    title: "Lumeo CRM - AI-Powered CRM for Small Businesses",
+    description: "Automate follow-ups, prioritize leads, and close deals faster with AI. Free 14-day trial.",
+    url: "https://www.lumeo.estgrp.in",
+    siteName: "Lumeo CRM",
+    images: [{ url: "https://www.lumeo.estgrp.in/og-image.png", width: 1200, height: 630 }],
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lumeo CRM - AI-Powered CRM",
+    description: "AI-powered CRM that automates follow-ups for small businesses and startups.",
+    images: ["https://www.lumeo.estgrp.in/og-image.png"],
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
