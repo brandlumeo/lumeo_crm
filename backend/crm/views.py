@@ -1090,7 +1090,10 @@ class InvoiceViewSet(CompanyScopedModelViewSet):
 
 
 class CustomFieldDefinitionViewSet(CompanyScopedModelViewSet):
-    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), AdminOnlyRBACPermission()]
     serializer_class = CustomFieldDefinitionSerializer
     queryset = CustomFieldDefinition.objects.select_related("company")
     search_fields = ("label", "name")

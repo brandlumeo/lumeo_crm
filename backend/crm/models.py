@@ -29,7 +29,6 @@ class Lead(models.Model):
     source = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(
         max_length=50,
-        choices=Status.choices,
         default=Status.NEW,
         db_index=True,
     )
@@ -117,7 +116,6 @@ class Deal(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     stage = models.CharField(
         max_length=50,
-        choices=Stage.choices,
         default=Stage.PROSPECT,
         db_index=True,
     )
