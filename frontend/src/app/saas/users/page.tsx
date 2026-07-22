@@ -66,8 +66,13 @@ export default function SaasUsers() {
                         {u.first_name?.[0] || u.email[0]}
                       </div>
                       <div>
-                        <div className="font-semibold text-white/90">{u.first_name} {u.last_name}</div>
-                        <div className="text-white/40 text-xs mt-0.5">{u.email}</div>
+                        <div className="font-semibold text-white/90">{u.first_name || u.username} {u.last_name}</div>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          <div className="text-white/40 text-xs">Email: {u.email}</div>
+                          {u.username !== u.email && (
+                            <div className="text-white/30 text-[10px]">Username: {u.username}</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
