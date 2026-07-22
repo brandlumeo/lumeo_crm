@@ -286,7 +286,7 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
                 onChange={(e) => setForm(f => ({ ...f, assigned_to_id: e.target.value ? Number(e.target.value) : null }))}
               >
                 <option value="">Unassigned</option>
-                {teamData?.map((member: any) => (
+                {teamData?.users?.map((member: any) => (
                   <option key={member.id} value={member.id}>
                     {getDisplayName(member)}
                   </option>
