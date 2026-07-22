@@ -383,6 +383,8 @@ class ActivitySerializer(CompanyScopedSerializer):
             "customer",
             "activity_type",
             "description",
+            "call_outcome",
+            "call_reason",
             "created_by",
             "created_at",
         )

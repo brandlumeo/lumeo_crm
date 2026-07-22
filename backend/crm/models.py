@@ -284,6 +284,19 @@ class Activity(models.Model):
         NOTE = "note", "Note"
         STATUS_CHANGE = "status_change", "Status Change"
 
+    class CallOutcome(models.TextChoices):
+        CONNECTED = "connected", "Connected"
+        NOT_CONNECTED = "not_connected", "Not Connected"
+
+    class CallReason(models.TextChoices):
+        NO_ANSWER = "no_answer", "No Answer"
+        SWITCHED_OFF = "switched_off", "Switched Off"
+        BUSY = "busy", "Busy"
+        WRONG_NUMBER = "wrong_number", "Wrong Number"
+        INVALID_NUMBER = "invalid_number", "Invalid Number"
+        OTHER = "other", "Other"
+
+
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
@@ -299,6 +312,8 @@ class Activity(models.Model):
         db_index=True,
     )
     description = models.TextField()
+    call_outcome = models.CharField(max_length=20, choices=CallOutcome.choices, null=True, blank=True, db_index=True)
+    call_reason = models.CharField(max_length=20, choices=CallReason.choices, null=True, blank=True, db_index=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
