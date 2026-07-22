@@ -168,6 +168,7 @@ class CompanyScopedModelViewSet(ModelViewSet):
 
 
 class LeadViewSet(CompanyScopedModelViewSet):
+    permission_module = "Leads"
     serializer_class = LeadSerializer
     queryset = Lead.objects.select_related("company", "assigned_to")
     search_fields = ("name", "email", "assigned_to__username")
@@ -306,6 +307,7 @@ class LeadViewSet(CompanyScopedModelViewSet):
         return response
 
 class CustomerViewSet(CompanyScopedModelViewSet):
+    permission_module = "Clients"
     serializer_class = CustomerSerializer
     queryset = Customer.objects.select_related("company")
     search_fields = ("name", "email", "phone")
