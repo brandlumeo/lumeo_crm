@@ -275,6 +275,8 @@ export default function TeamPage() {
                     </label>
                     <input
                       type="text"
+                      name="first_name"
+                      autoComplete="given-name"
                       value={inviteFirstName}
                       onChange={(e) => setInviteFirstName(e.target.value)}
                       placeholder="Sarah"
@@ -287,6 +289,8 @@ export default function TeamPage() {
                     </label>
                     <input
                       type="text"
+                      name="last_name"
+                      autoComplete="family-name"
                       value={inviteLastName}
                       onChange={(e) => setInviteLastName(e.target.value)}
                       placeholder="Connor"
@@ -301,6 +305,8 @@ export default function TeamPage() {
                   </label>
                   <input
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     required
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}

@@ -126,6 +126,8 @@ export default function RegisterPage() {
                   <span className="label">First Name</span>
                   <input
                     type="text"
+                    name="first_name"
+                    autoComplete="given-name"
                     required
                     value={firstName}
                     onChange={(event) => setFirstName(event.target.value)}
@@ -137,6 +139,8 @@ export default function RegisterPage() {
                   <span className="label">Last Name</span>
                   <input
                     type="text"
+                    name="last_name"
+                    autoComplete="family-name"
                     required
                     value={lastName}
                     onChange={(event) => setLastName(event.target.value)}
@@ -150,11 +154,13 @@ export default function RegisterPage() {
                 <span className="label">Work Email</span>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="input"
-                  placeholder="jane@company.com"
+                  placeholder="name@company.com"
                 />
               </label>
 
@@ -162,6 +168,8 @@ export default function RegisterPage() {
                 <span className="label">Company Name</span>
                 <input
                   type="text"
+                  name="company"
+                  autoComplete="organization"
                   required
                   value={companyName}
                   onChange={(event) => setCompanyName(event.target.value)}
@@ -173,7 +181,9 @@ export default function RegisterPage() {
               <label className="block">
                 <span className="label">Password</span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}

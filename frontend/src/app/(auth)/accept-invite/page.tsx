@@ -129,6 +129,7 @@ function AcceptInviteForm() {
             <input
               {...register("first_name")}
               type="text"
+              autoComplete="given-name"
               className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[14px] outline-none focus:border-ink transition-colors"
             />
             {errors.first_name && (
@@ -144,6 +145,7 @@ function AcceptInviteForm() {
             <input
               {...register("last_name")}
               type="text"
+              autoComplete="family-name"
               className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[14px] outline-none focus:border-ink transition-colors"
             />
             {errors.last_name && (
@@ -161,6 +163,7 @@ function AcceptInviteForm() {
           <input
             {...register("password")}
             type="password"
+            autoComplete="new-password"
             className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[14px] outline-none focus:border-ink transition-colors"
           />
           {errors.password && (
