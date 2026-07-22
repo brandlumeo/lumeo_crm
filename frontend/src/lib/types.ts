@@ -4,6 +4,15 @@ export interface CompanySummary {
   slug: string;
   status: string;
   currency: string;
+  invoice_template?: string;
+  invoice_logo?: string;
+  invoice_terms?: string;
+  invoice_other_information?: string;
+  show_client_company_name?: boolean;
+  show_client_email?: boolean;
+  show_client_phone?: boolean;
+  show_client_address?: boolean;
+  show_tax_number_on_invoice?: boolean;
 }
 
 export interface CompanyDetail extends CompanySummary {
