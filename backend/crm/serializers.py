@@ -577,6 +577,7 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(CompanyScopedSerializer):
     items = InvoiceLineItemSerializer(many=True, required=False)
     payments = InvoicePaymentSerializer(many=True, read_only=True)
+    customer_details = CustomerSerializer(source='customer', read_only=True)
     amount_paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     amount_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
@@ -590,6 +591,7 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "deal_id",
             "customer",
             "customer_id",
+            "customer_details",
             "invoice_number",
             "status",
             "issue_date",

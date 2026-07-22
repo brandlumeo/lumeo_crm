@@ -532,6 +532,12 @@ export interface Invoice {
   company: CompanySummary;
   deal: number | null;
   customer: number;
+  customer_details?: {
+    name: string;
+    company: string | null;
+    email: string | null;
+    phone: string | null;
+  };
   invoice_number: string;
   status: "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "void";
   issue_date: string;
