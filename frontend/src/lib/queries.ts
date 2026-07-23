@@ -115,6 +115,7 @@ import {
   updateQuote,
   deleteQuote,
   fetchInvoices,
+  getInvoice,
   createInvoice,
   updateInvoice,
   deleteInvoice,
@@ -1190,6 +1191,14 @@ export function useInvoices(params?: ListParams) {
   return useQuery({
     queryKey: ["invoices", params],
     queryFn: () => fetchInvoices(params),
+  });
+}
+
+export function useInvoice(id: number) {
+  return useQuery({
+    queryKey: ["invoice", id],
+    queryFn: () => getInvoice(id),
+    enabled: !!id,
   });
 }
 

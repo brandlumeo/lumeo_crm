@@ -625,7 +625,7 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "invoice_number", "issue_date", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token", "amount_paid", "amount_due")
+        read_only_fields = ("id", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token", "amount_paid", "amount_due")
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])

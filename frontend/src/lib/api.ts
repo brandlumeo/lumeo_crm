@@ -1238,6 +1238,11 @@ export async function deleteQuote(id: number) {
 }
 
 
+export async function getInvoice(id: number) {
+  const { data } = await api.get<Invoice>(`${endpoints.invoices}${id}/`);
+  return data;
+}
+
 export async function updateInvoice(id: number, payload: any) {
   const { data } = await api.patch<Invoice>(`${endpoints.invoices}${id}/`, payload);
   return data;

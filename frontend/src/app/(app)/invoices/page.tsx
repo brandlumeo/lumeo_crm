@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment } from "@/lib/queries";
 import { downloadInvoicePdf } from "@/lib/api";
-import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Receipt } from "lucide-react";
+import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Receipt, Edit } from "lucide-react";
+import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 
 export default function InvoicesPage() {
@@ -164,6 +165,13 @@ export default function InvoicesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/invoices/${invoice.id}`}
+                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                          title="Edit Invoice"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Link>
                         <button
                           onClick={() => setDeleteInvoiceId(invoice.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-line"
