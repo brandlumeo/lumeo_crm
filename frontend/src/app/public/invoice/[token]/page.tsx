@@ -141,7 +141,10 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         {/* Invoice Document */}
         <div className={`rounded-2xl shadow-sm border p-8 md:p-12 ${
           invoice.company?.invoice_template === 'template1' ? 'bg-blue-50/30 border-blue-100' :
+          invoice.company?.invoice_template === 'template2' ? 'bg-white border-line shadow-md' :
           invoice.company?.invoice_template === 'template3' ? 'bg-zinc-900 border-zinc-800 text-white' :
+          invoice.company?.invoice_template === 'template4' ? 'bg-slate-50 border-slate-200 border-l-4 border-l-slate-800' :
+          invoice.company?.invoice_template === 'template5' ? 'bg-emerald-50/30 border-emerald-100' :
           'bg-paper border-line'
         }`}>
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8">
@@ -160,10 +163,18 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               <div className="mt-4 space-y-1">
                 <p className="text-sm text-muted">Issue Date: <span className="font-medium">{invoice.issue_date}</span></p>
                 {invoice.due_date && <p className="text-sm text-muted">Due Date: <span className="font-medium">{invoice.due_date}</span></p>}
+                {invoice.company?.show_project_on_invoice && invoice.deal_details && (
+                  <p className="text-sm text-muted">Project/Deal: <span className="font-medium">{invoice.deal_details.title}</span></p>
+                )}
+                {invoice.company?.show_tax_number_on_invoice && invoice.company?.tax_id && (
+                  <p className="text-sm text-muted">{invoice.company.tax_id_label || "Tax ID"}: <span className="font-medium">{invoice.company.tax_id}</span></p>
+                )}
               </div>
-              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                Status: <span className="capitalize">{invoice.status.replace("_", " ")}</span>
-              </div>
+              {invoice.company?.show_status_on_invoice && (
+                <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                  Status: <span className="capitalize">{invoice.status.replace("_", " ")}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -223,6 +234,21 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 <div>
                   <h4 className="text-sm font-semibold text-ink mb-1">Other Information / Bank Details</h4>
                   <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.company.invoice_other_information}</p>
+                </div>
+              )}
+              {invoice.company?.show_tax_calculation_message && (
+                <div>
+                  <p className="text-xs text-muted italic">Note: Tax is calculated based on applicable local rates.</p>
+                </div>
+              )}
+              {invoice.company?.show_authorised_signatory && (
+                <div className="pt-6">
+                  {invoice.company?.authorised_signatory_signature ? (
+                    <img src={invoice.company.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
+                  ) : (
+                    <div className="h-12 border-b border-line w-32 mb-2"></div>
+                  )}
+                  <p className="text-sm font-semibold text-ink">Authorised Signatory</p>
                 </div>
               )}
             </div>

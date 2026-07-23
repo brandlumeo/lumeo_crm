@@ -77,6 +77,9 @@ export function ActivityTimeline({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
   const [previewMode, setPreviewMode] = useState<"live" | "code">("live");
+  
+  const [callOutcome, setCallOutcome] = useState<string>("connected");
+  const [callReason, setCallReason] = useState<string>("");
 
   // Sync toEmail with entity's email if available
   useEffect(() => {
@@ -99,6 +102,8 @@ export function ActivityTimeline({
     mutationFn: createActivity,
     onSuccess: () => {
       setDescription("");
+      setCallOutcome("connected");
+      setCallReason("");
       queryClient.invalidateQueries({ queryKey: ["crm", "activities"] });
     },
   });
@@ -205,12 +210,23 @@ export function ActivityTimeline({
         console.error(err);
       }
     } else {
-      if (!description.trim()) return;
-      mutation.mutate({
+      if (activeTab === "call" && callOutcome === "not_connected" && !callReason) return;
+      if (activeTab !== "call" && !description.trim()) return;
+
+      const payload: any = {
         [entityType]: entityId,
         activity_type: activeTab,
-        description,
-      });
+        description: description || "Call Logged",
+      };
+
+      if (activeTab === "call") {
+        payload.call_outcome = callOutcome;
+        if (callOutcome === "not_connected") {
+          payload.call_reason = callReason;
+        }
+      }
+
+      mutation.mutate(payload);
     }
   };
 
@@ -457,12 +473,50 @@ export function ActivityTimeline({
               )}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
+              {activeTab === "call" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="block space-y-1">
+                    <span className="text-[11px] font-medium text-muted uppercase tracking-wider">Call Outcome</span>
+                    <select
+                      className="select w-full"
+                      value={callOutcome}
+                      onChange={(e) => {
+                        setCallOutcome(e.target.value);
+                        if (e.target.value === "connected") setCallReason("");
+                      }}
+                    >
+                      <option value="connected">Connected</option>
+                      <option value="not_connected">Not Connected</option>
+                    </select>
+                  </label>
+                  {callOutcome === "not_connected" && (
+                    <label className="block space-y-1">
+                      <span className="text-[11px] font-medium text-muted uppercase tracking-wider">Reason <span className="text-red-500">*</span></span>
+                      <select
+                        className="select w-full"
+                        value={callReason}
+                        onChange={(e) => setCallReason(e.target.value)}
+                        required
+                      >
+                        <option value="">-- Select Reason --</option>
+                        <option value="no_answer">No Answer</option>
+                        <option value="switched_off">Switched Off</option>
+                        <option value="busy">Busy</option>
+                        <option value="wrong_number">Wrong Number</option>
+                        <option value="invalid_number">Invalid Number</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
               <textarea
                 className="w-full bg-bone border border-line rounded-lg p-3 text-sm focus:border-ink transition-colors outline-none resize-none min-h-[80px]"
                 placeholder={`Log a ${activeTab}...`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                required={activeTab !== "call" || callOutcome === "connected"}
               />
               <div className="flex justify-start">
                 <button
@@ -490,7 +544,12 @@ export function ActivityTimeline({
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={isPending || !description.trim() || (isEmailTab && (!toEmail.trim() || !subject.trim()))}
+              disabled={
+                isPending || 
+                (activeTab !== "call" && !description.trim()) || 
+                (activeTab === "call" && callOutcome === "not_connected" && !callReason) || 
+                (isEmailTab && (!toEmail.trim() || !subject.trim()))
+              }
               className="btn btn-primary btn-sm disabled:opacity-50 flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
             >
               {isPending ? (
@@ -541,10 +600,17 @@ export function ActivityTimeline({
                         <span className="text-[11px] text-muted/80">
                           {formatDateTime(activity.created_at)}
                         </span>
+                        {activity.call_outcome && (
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] ml-2 font-medium ${activity.call_outcome === "connected" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {activity.call_outcome === "connected" ? "Connected" : activity.call_reason ? `Not Connected (${activity.call_reason.replace("_", " ")})` : "Not Connected"}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-[13px] text-ink-2 bg-bone-2 p-3 rounded-lg border border-line inline-block max-w-[85%] whitespace-pre-wrap">
-                        {activity.description}
-                      </div>
+                      {activity.description && (
+                        <div className="text-[13px] text-ink-2 bg-bone-2 p-3 rounded-lg border border-line inline-block max-w-[85%] whitespace-pre-wrap mt-1">
+                          {activity.description}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

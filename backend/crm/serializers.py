@@ -15,8 +15,12 @@ class CompanySummarySerializer(serializers.ModelSerializer):
             "id", "name", "slug", "status", "currency",
             "company_email", "company_website",
             "invoice_template", "invoice_logo", "invoice_terms", "invoice_other_information",
-            "show_client_company_name", "show_client_email", "show_client_phone", "show_client_address",
-            "show_tax_number_on_invoice"
+            "show_client_name", "show_client_company_name", "show_client_email", "show_client_phone", "show_client_address",
+            "show_tax_number_on_invoice", "show_project_on_invoice", "show_status_on_invoice", "hsn_sac_code_show",
+            "show_tax_calculation_message", "authorised_signatory_signature", "show_authorised_signatory",
+            "invoice_language", "invoice_prefix", "default_tax_rate",
+            "address_line1", "address_line2", "city", "state", "postal_code", "country",
+            "tax_id", "tax_id_label", "taxes", "invoice_due_after_days"
         )
 
 
@@ -585,6 +589,7 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(CompanyScopedSerializer):
     items = InvoiceLineItemSerializer(many=True, required=False)
     payments = InvoicePaymentSerializer(many=True, read_only=True)
+    deal_details = DealSerializer(source='deal', read_only=True)
     customer_details = CustomerSerializer(source='customer', read_only=True)
     amount_paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     amount_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
@@ -597,6 +602,7 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "company_id",
             "deal",
             "deal_id",
+            "deal_details",
             "customer",
             "customer_id",
             "customer_details",

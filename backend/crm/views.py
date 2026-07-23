@@ -828,9 +828,26 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     # Header Section
     doc_number = getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))
     
-    left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
+    left_p = None
+    if comp.invoice_logo:
+        try:
+            req = urllib.request.Request(comp.invoice_logo, headers={'User-Agent': 'Mozilla/5.0'})
+            img_data = io.BytesIO(urllib.request.urlopen(req, timeout=5).read())
+            left_p = RLImage(img_data, width=140, height=50, kind='proportional')
+        except Exception:
+            pass
     
-    meta_info = f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/><font size=10 color='#6B7280'>#{doc_number}</font><br/><br/>"
+    if not left_p:
+        left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
+    
+    meta_info = f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/>"
+    meta_info += f"<font size=10 color='#6B7280'>#{doc_number}</font><br/><br/>"
+
+    if comp.show_status_on_invoice and getattr(instance, 'status', None):
+        meta_info += f"<font size=9 color='#6B7280'>Status:</font> <font size=9 color='#111827'><b>{str(instance.status).upper()}</b></font><br/>"
+    
+    if comp.show_project_on_invoice and getattr(instance, 'deal', None):
+        meta_info += f"<font size=9 color='#6B7280'>Project/Deal:</font> <font size=9 color='#111827'>{instance.deal.title}</font><br/>"
     
     # Add title for Quote
     if doc_type == "Quote" and getattr(instance, 'title', None):
@@ -991,11 +1008,23 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         terms_p.append(Spacer(1, 6))
         terms_p.append(Paragraph(comp.invoice_other_information.replace('\n', '<br/>'), info_val_style))
         
+    if comp.show_tax_calculation_message:
+        if terms_p: terms_p.append(Spacer(1, 15))
+        terms_p.append(Paragraph("<font color='#6B7280'><i>Note: Tax is calculated based on applicable local rates.</i></font>", info_val_style))
+
     sig_p = []
     if comp.show_authorised_signatory:
         sig_p.append(Spacer(1, 20))
         if comp.authorised_signatory_signature:
-            sig_p.append(Paragraph("<i>[Signature Image Placeholder]</i>", styles['Normal']))
+            try:
+                req = urllib.request.Request(comp.authorised_signatory_signature, headers={'User-Agent': 'Mozilla/5.0'})
+                sig_data = io.BytesIO(urllib.request.urlopen(req, timeout=5).read())
+                sig_img = RLImage(sig_data, width=120, height=40, kind='proportional')
+                sig_p.append(sig_img)
+            except Exception:
+                sig_p.append(Paragraph("<i>[Signature Image Placeholder]</i>", styles['Normal']))
+        else:
+            sig_p.append(Paragraph("<i>[Signature Not Provided]</i>", styles['Normal']))
         sig_p.append(Paragraph("<b>Authorised Signatory</b>", styles['Normal']))
         
     if terms_p or sig_p:
