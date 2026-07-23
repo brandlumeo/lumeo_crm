@@ -27,8 +27,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     if (invoice) {
       setFormData({
         invoice_number: invoice.invoice_number || "",
-        customer_id: invoice.customer_id || "",
-        deal_id: invoice.deal_id || "",
+        customer_id: invoice.customer || "",
+        deal_id: invoice.deal || "",
         status: invoice.status || "draft",
         issue_date: invoice.issue_date || "",
         due_date: invoice.due_date || "",
