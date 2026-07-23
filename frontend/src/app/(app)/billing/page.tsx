@@ -528,7 +528,7 @@ export default function BillingPage() {
                     <span className="chip chip-positive bg-accent text-white border-accent">One-Time Fee</span>
                   </div>
                   <p className="text-[14px] text-muted max-w-2xl leading-relaxed">
-                    Skip the learning curve. Our onboarding experts will configure your workspace, set up custom fields, establish pipeline stages, and migrate all your existing data from previous CRMs (HubSpot, Salesforce, CSVs) so you can hit the ground running.
+                    Skip the learning curve. Our onboarding experts will configure your workspace, set up custom fields, establish pipeline stages, and migrate all your existing data from previous systems or spreadsheets so you can hit the ground running.
                   </p>
                   <ul className="flex flex-wrap gap-x-6 gap-y-2 mt-4">
                     <li className="flex items-center gap-1.5 text-[13px] text-ink-2">
