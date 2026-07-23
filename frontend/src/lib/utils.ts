@@ -8,11 +8,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatINR(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const currencyCode = typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currencyCode,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch(e) {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
 }
 
 export function formatCurrency(amount: number, currencyCode: string = "USD"): string {
@@ -33,12 +42,22 @@ export function formatCurrency(amount: number, currencyCode: string = "USD"): st
 }
 
 export function formatCompactINR(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    notation: "compact",
-    maximumFractionDigits: 2,
-  }).format(amount);
+  const currencyCode = typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currencyCode,
+      notation: "compact",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (e) {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      notation: "compact",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
 }
 
 export function formatShortDate(value: string) {

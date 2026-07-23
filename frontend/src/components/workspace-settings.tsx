@@ -196,6 +196,7 @@ export function WorkspaceForm() {
                     <option value="INR">INR (₹)</option>
                     <option value="AUD">AUD (A$)</option>
                     <option value="CAD">CAD (C$)</option>
+                    <option value="AED">AED (د.إ)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -369,6 +369,9 @@ export async function fetchMe() {
 
 export async function fetchCurrentCompany() {
   const { data } = await api.get<CompanyDetail>(endpoints.currentCompany);
+  if (typeof window !== "undefined" && data?.currency) {
+    (window as any).__CRM_CURRENCY__ = data.currency;
+  }
   return data;
 }
 
