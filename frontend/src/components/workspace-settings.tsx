@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Building, Loader2, CheckCircle, XCircle, Shield, 
@@ -20,6 +20,16 @@ export function WorkspaceForm() {
   const [domain, setDomain] = useState(company?.domain ?? "");
   const [companyEmail, setCompanyEmail] = useState(company?.company_email ?? "");
   const [companyWebsite, setCompanyWebsite] = useState(company?.company_website ?? "");
+
+  useEffect(() => {
+    if (company) {
+      setName(company.name ?? "");
+      setCurrency(company.currency ?? "USD");
+      setDomain(company.domain ?? "");
+      setCompanyEmail(company.company_email ?? "");
+      setCompanyWebsite(company.company_website ?? "");
+    }
+  }, [company]);
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
 
