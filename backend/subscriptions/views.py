@@ -321,7 +321,8 @@ class RequestSetupView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        admin_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'admin@lumeo.estgrp.in')
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@crm-saas.local')
+        admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'support@crm.estgrp.in')
         
         subject = f"Setup & Migration Request from {company.name}"
         message = (
@@ -337,7 +338,7 @@ class RequestSetupView(APIView):
             send_mail(
                 subject=subject,
                 message=message,
-                from_email=admin_email,
+                from_email=from_email,
                 recipient_list=[admin_email],
                 fail_silently=True,
             )
