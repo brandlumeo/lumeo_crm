@@ -18,7 +18,7 @@ export interface CompanySummary {
   show_project_on_invoice?: boolean;
   show_status_on_invoice?: boolean;
   show_authorised_signatory?: boolean;
-  show_tax_calculation_msg?: boolean;
+  show_tax_calculation_message?: boolean;
   tax_id?: string | null;
   tax_id_label?: string | null;
   authorised_signatory?: string | null;
