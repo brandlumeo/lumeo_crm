@@ -11,6 +11,7 @@ from django.conf import settings
 
 from .models import Subscription, PLAN_LIMITS
 from .serializers import PlanDetailSerializer, SubscriptionSerializer, build_plan_catalogue
+from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
 
@@ -303,3 +304,45 @@ class RazorpayWebhookView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"status": "ok"})
+
+
+class RequestSetupView(APIView):
+    """
+    POST  /api/v1/subscriptions/request-setup/
+    Sends an email to the platform admin notifying them that a company wants the setup & migration service.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        company = getattr(request.user, "company", None)
+        if not company:
+            return Response(
+                {"detail": "Authenticated user is not assigned to a company."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        admin_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'admin@lumeo.estgrp.in')
+        
+        subject = f"Setup & Migration Request from {company.name}"
+        message = (
+            f"Hello Admin,\n\n"
+            f"The company '{company.name}' has requested the Premium Setup & Data Migration service.\n\n"
+            f"Contact Details:\n"
+            f"User: {request.user.first_name} {request.user.last_name} ({request.user.email})\n"
+            f"Company: {company.name}\n\n"
+            f"Please reach out to them to begin the onboarding process.\n"
+        )
+
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=admin_email,
+                recipient_list=[admin_email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send setup request email: {e}")
+            # Still return success so the user isn't blocked by mail errors in dev
+        
+        return Response({"status": "success", "message": "Setup request sent."})

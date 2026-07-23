@@ -6,6 +6,7 @@ from .views import (
     CreateSubscriptionView,
     VerifySubscriptionView,
     RazorpayWebhookView,
+    RequestSetupView,
 )
 
 app_name = "subscriptions"
@@ -16,4 +17,5 @@ urlpatterns = [
     path("checkout/", CreateSubscriptionView.as_view(), name="checkout"),
     path("verify/", VerifySubscriptionView.as_view(), name="verify"),
     path("webhook/", RazorpayWebhookView.as_view(), name="webhook"),
+    path("request-setup/", RequestSetupView.as_view(), name="request-setup"),
 ]

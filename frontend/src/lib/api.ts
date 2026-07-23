@@ -123,6 +123,7 @@ const endpoints = {
   planCatalogue: "/subscriptions/plans/",
   checkoutSubscription: "/subscriptions/checkout/",
   verifySubscription: "/subscriptions/verify/",
+  requestSetup: "/subscriptions/request-setup/",
   notifications: "/notifications/",
   notificationsUnreadCount: "/notifications/unread-count/",
   notificationsMarkRead: "/notifications/mark-read/",
@@ -1350,3 +1351,9 @@ export async function deleteNotice(id: number) {
   await api.delete(`${endpoints.notices}${id}/`);
 }
 
+// ── Setup Request ───────────────────────────────────────────────────────────────────
+
+export async function requestSetup() {
+  const { data } = await api.post<{ status: string; message: string }>(endpoints.requestSetup);
+  return data;
+}

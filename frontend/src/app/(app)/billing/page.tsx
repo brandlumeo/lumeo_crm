@@ -4,6 +4,8 @@ import { toast } from "sonner";
 
 import { CheckCircle2, CreditCard, Users, TrendingUp, FileText, Zap, Shield, Clock, X, Sparkles, ShieldAlert, CheckCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { requestSetup } from "@/lib/api";
 import { useCurrentSubscription, usePlanCatalogue, useCreateSubscriptionCheckout, useVerifySubscription, useCurrentUser } from "@/lib/queries";
 import type { PlanDetail } from "@/lib/types";
 
@@ -283,6 +285,15 @@ export default function BillingPage() {
   // Mutation hooks
   const checkoutMutation = useCreateSubscriptionCheckout();
   const verifyMutation = useVerifySubscription();
+  const setupMutation = useMutation({
+    mutationFn: requestSetup,
+    onSuccess: () => {
+      toast.success("Setup request sent! Our onboarding team will contact you shortly.");
+    },
+    onError: () => {
+      toast.error("Failed to send setup request. Please try again.");
+    }
+  });
 
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   
@@ -550,10 +561,18 @@ export default function BillingPage() {
                 <div className="text-[12px] text-muted mb-4 font-medium">One-time payment</div>
                 <button 
                   type="button"
-                  className="btn bg-accent hover:bg-accent/90 text-white w-full md:w-auto shadow-sm px-6 py-2.5 transition-all"
-                  onClick={() => toast.success("Setup request sent! Our onboarding team will contact you shortly.")}
+                  className="btn bg-accent hover:bg-accent/90 text-white w-full md:w-auto shadow-sm px-6 py-2.5 transition-all flex items-center justify-center gap-2"
+                  onClick={() => setupMutation.mutate()}
+                  disabled={setupMutation.isPending}
                 >
-                  Request Setup
+                  {setupMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Request Setup"
+                  )}
                 </button>
               </div>
             </div>
