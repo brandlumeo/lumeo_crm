@@ -84,6 +84,7 @@ export function ActivityTimeline({
 
   const [timelineFilter, setTimelineFilter] = useState<"all" | "note" | "call" | "email" | "meeting">("all");
   const [timelineSearch, setTimelineSearch] = useState("");
+  const [activityToDelete, setActivityToDelete] = useState<number | null>(null);
 
   // Sync toEmail with entity's email if available
   useEffect(() => {
@@ -707,13 +708,9 @@ export function ActivityTimeline({
                           {user && (['owner', 'admin', 'manager'].includes(user.role?.toLowerCase()) || activity.created_by?.id === user.id || !activity.created_by) && (
                             <button
                               type="button"
-                              onClick={() => {
-                                if (confirm("Are you sure you want to delete this activity?")) {
-                                  deleteMutation.mutate(activity.id);
-                                }
-                              }}
+                              onClick={() => setActivityToDelete(activity.id)}
                               disabled={deleteMutation.isPending}
-                              className="text-muted hover:text-red-500 transition-colors"
+                              className="text-muted hover:text-rose-600 transition-colors"
                               title="Delete Activity"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -763,6 +760,43 @@ export function ActivityTimeline({
           </div>
         )}
       </div>
+
+      {activityToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-4 border border-rose-200 shadow-sm">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Delete Activity</h3>
+              <p className="text-[13px] leading-relaxed text-slate-500">
+                Are you sure you want to delete this activity? This action cannot be undone and it will be permanently removed from the timeline.
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setActivityToDelete(null)}
+                className="px-4 py-2 text-[13px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 rounded-lg transition-colors"
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteMutation.mutate(activityToDelete);
+                  setActivityToDelete(null);
+                }}
+                disabled={deleteMutation.isPending}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-[13px] font-semibold rounded-lg shadow-sm shadow-rose-600/20 transition-all flex items-center gap-2"
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete Activity"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
