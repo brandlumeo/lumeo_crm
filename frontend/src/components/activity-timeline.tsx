@@ -262,8 +262,12 @@ export function ActivityTimeline({
 
   const filteredTimeline = combinedTimeline.filter(item => {
     if (timelineFilter !== "all") {
-      if (timelineFilter === "email" && item._kind !== "email") return false;
-      if (timelineFilter !== "email" && item._kind === "activity" && item.activity_type !== timelineFilter) return false;
+      if (timelineFilter === "email") {
+        if (item._kind !== "email") return false;
+      } else {
+        if (item._kind !== "activity") return false;
+        if (item.activity_type !== timelineFilter) return false;
+      }
     }
     if (timelineSearch.trim()) {
       const q = timelineSearch.toLowerCase();
