@@ -245,6 +245,9 @@ class Company(models.Model):
     postal_code = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
     
+    company_email = models.EmailField(max_length=255, blank=True, null=True, help_text="Public email address of the company")
+    company_website = models.URLField(max_length=255, blank=True, null=True, help_text="Public website of the company")
+    
     timezone = models.CharField(max_length=50, default="UTC", help_text="Default timezone for the workspace.")
     date_format = models.CharField(max_length=20, default="MMM DD, YYYY", help_text="Default date format for the workspace.")
     time_format = models.CharField(max_length=10, default="12h", help_text="12h or 24h time format.")

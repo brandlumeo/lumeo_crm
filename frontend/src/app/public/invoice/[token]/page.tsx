@@ -155,6 +155,8 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </div>
             <div className="text-right">
               <h2 className={`text-xl font-semibold ${invoice.company?.invoice_template === 'template3' ? 'text-white' : 'text-ink'}`}>{invoice.company?.name || "Company"}</h2>
+              {invoice.company?.company_website && <p className={`text-sm ${invoice.company?.invoice_template === 'template3' ? 'text-gray-300' : 'text-muted'} mt-1`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
+              {invoice.company?.company_email && <p className={`text-sm ${invoice.company?.invoice_template === 'template3' ? 'text-gray-300' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
               <div className="mt-4 space-y-1">
                 <p className="text-sm text-muted">Issue Date: <span className="font-medium">{invoice.issue_date}</span></p>
                 {invoice.due_date && <p className="text-sm text-muted">Due Date: <span className="font-medium">{invoice.due_date}</span></p>}

@@ -13,6 +13,7 @@ class CompanySummarySerializer(serializers.ModelSerializer):
         model = Company
         fields = (
             "id", "name", "slug", "status", "currency",
+            "company_email", "company_website",
             "invoice_template", "invoice_logo", "invoice_terms", "invoice_other_information",
             "show_client_company_name", "show_client_email", "show_client_phone", "show_client_address",
             "show_tax_number_on_invoice"

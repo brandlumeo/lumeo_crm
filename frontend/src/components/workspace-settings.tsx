@@ -18,6 +18,8 @@ export function WorkspaceForm() {
   const [name, setName] = useState(company?.name ?? "");
   const [currency, setCurrency] = useState(company?.currency ?? "USD");
   const [domain, setDomain] = useState(company?.domain ?? "");
+  const [companyEmail, setCompanyEmail] = useState(company?.company_email ?? "");
+  const [companyWebsite, setCompanyWebsite] = useState(company?.company_website ?? "");
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
 
@@ -60,7 +62,7 @@ export function WorkspaceForm() {
         
         {isAdmin && (
           <button
-            onClick={() => mutation.mutate({ name, currency, domain: domain || null })}
+            onClick={() => mutation.mutate({ name, currency, domain: domain || null, company_email: companyEmail || null, company_website: companyWebsite || null })}
             disabled={mutation.isPending}
             className="btn btn-primary shadow-md hover:shadow-lg transition-all h-11 px-6 rounded-xl font-medium flex items-center gap-2 shrink-0 group relative overflow-hidden "
           >
@@ -117,6 +119,32 @@ export function WorkspaceForm() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={!isAdmin}
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
+                  Company Email
+                </label>
+                <input
+                  type="email"
+                  value={companyEmail}
+                  onChange={(e) => setCompanyEmail(e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="e.g. hello@brandlumeo.com"
+                  className={cn("input w-full h-11 bg-bone/30 focus:bg-paper text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
+                  Company Website
+                </label>
+                <input
+                  type="url"
+                  value={companyWebsite}
+                  onChange={(e) => setCompanyWebsite(e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="e.g. www.brandlumeo.com"
                   className={cn("input w-full h-11 bg-bone/30 focus:bg-paper text-[14px]", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
               </div>
