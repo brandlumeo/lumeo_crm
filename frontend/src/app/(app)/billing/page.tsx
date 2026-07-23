@@ -516,7 +516,51 @@ export default function BillingPage() {
             </div>
           </div>
 
-          <div className="card p-6 mt-8 animate-rise">
+          <div className="card border-accent/20 bg-accent-soft/30 overflow-hidden mb-8 animate-rise">
+            <div className="flex flex-col md:flex-row items-center justify-between p-6 md:p-8 gap-6">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-serif text-[24px] text-ink leading-none">Premium Setup & Data Migration</h3>
+                    <span className="chip chip-positive bg-accent text-white border-accent">One-Time Fee</span>
+                  </div>
+                  <p className="text-[14px] text-muted max-w-2xl leading-relaxed">
+                    Skip the learning curve. Our onboarding experts will configure your workspace, set up custom fields, establish pipeline stages, and migrate all your existing data from previous CRMs (HubSpot, Salesforce, CSVs) so you can hit the ground running.
+                  </p>
+                  <ul className="flex flex-wrap gap-x-6 gap-y-2 mt-4">
+                    <li className="flex items-center gap-1.5 text-[13px] text-ink-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> Full Data Import
+                    </li>
+                    <li className="flex items-center gap-1.5 text-[13px] text-ink-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> Custom Workflow Setup
+                    </li>
+                    <li className="flex items-center gap-1.5 text-[13px] text-ink-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> 2-Hr Team Training
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className="flex flex-col items-end shrink-0 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-line">
+                <div className="font-serif text-[32px] text-ink leading-none mb-1">
+                  ₹14,999
+                </div>
+                <div className="text-[12px] text-muted mb-4 font-medium">One-time payment</div>
+                <button 
+                  type="button"
+                  className="btn bg-accent hover:bg-accent/90 text-white w-full md:w-auto shadow-sm px-6 py-2.5 transition-all"
+                  onClick={() => toast.success("Setup request sent! Our onboarding team will contact you shortly.")}
+                >
+                  Request Setup
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 animate-rise">
+            <div className="card p-6">
             <div className="flex items-start gap-4">
               <FileText className="w-5 h-5 text-muted mt-0.5 shrink-0" />
               <div>

@@ -28,7 +28,7 @@ PLAN_LIMITS = {
         "max_leads_yearly": 6000,
         "max_deals_yearly": 1200,
         "price_monthly": 599,
-        "price_yearly": 4499,
+        "price_yearly": 5999,
     },
     Plan.PRO: {
         "max_users": 20,
