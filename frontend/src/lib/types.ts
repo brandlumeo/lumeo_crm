@@ -4,6 +4,8 @@ export interface CompanySummary {
   slug: string;
   status: string;
   currency: string;
+  company_email?: string | null;
+  company_website?: string | null;
   invoice_template?: string;
   invoice_logo?: string | null;
   invoice_terms?: string | null;
