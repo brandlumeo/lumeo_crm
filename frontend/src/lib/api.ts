@@ -527,6 +527,10 @@ export async function createActivity(payload: ActivityInput) {
   return data;
 }
 
+export async function deleteActivity(id: number) {
+  await api.delete(`${endpoints.activities}${id}/`);
+}
+
 export async function fetchLead(id: number) {
   const { data } = await api.get<Lead>(`${endpoints.leads}${id}/`);
   return data;

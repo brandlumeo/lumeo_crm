@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Activity, Phone, Users, Mail, FileText, CheckCircle2, ArrowRight, Eye, Code, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { Activity, Phone, Users, Mail, FileText, CheckCircle2, ArrowRight, Eye, Code, Sparkles, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import DOMPurify from "dompurify";
 
-import { createActivity, fetchLead, fetchDeal, fetchCustomer, aiAssistantAction } from "@/lib/api";
+import { createActivity, deleteActivity, fetchLead, fetchDeal, fetchCustomer, aiAssistantAction } from "@/lib/api";
 import { useActivities, useCurrentUser, useCurrentCompany, useEmailTemplates, useSendEmail, useEmailMessages } from "@/lib/queries";
 import { formatDateTime, getInitials, formatINR, toNumber } from "@/lib/utils";
 
@@ -104,6 +104,13 @@ export function ActivityTimeline({
       setDescription("");
       setCallOutcome("connected");
       setCallReason("");
+      queryClient.invalidateQueries({ queryKey: ["crm", "activities"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteActivity,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm", "activities"] });
     },
   });
@@ -604,6 +611,21 @@ export function ActivityTimeline({
                           <span className={`px-1.5 py-0.5 rounded text-[10px] ml-2 font-medium ${activity.call_outcome === "connected" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                             {activity.call_outcome === "connected" ? "Connected" : activity.call_reason ? `Not Connected (${activity.call_reason.replace("_", " ")})` : "Not Connected"}
                           </span>
+                        )}
+                        {(user?.role === 'admin' || activity.created_by?.id === user?.id) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this activity?")) {
+                                deleteMutation.mutate(activity.id);
+                              }
+                            }}
+                            disabled={deleteMutation.isPending}
+                            className="ml-auto text-muted hover:text-red-500 transition-colors"
+                            title="Delete Activity"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
                       {activity.description && (
