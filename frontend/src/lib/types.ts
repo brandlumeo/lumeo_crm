@@ -22,6 +22,10 @@ export interface CompanySummary {
   tax_id?: string | null;
   tax_id_label?: string | null;
   authorised_signatory?: string | null;
+  authorised_signatory_signature?: string | null;
+  show_client_name?: boolean;
+  hsn_sac_code_show?: boolean;
+  invoice_language?: string;
 }
 
 export interface CompanyDetail extends CompanySummary {
