@@ -561,25 +561,26 @@ export default function BillingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 animate-rise">
             <div className="card p-6">
-            <div className="flex items-start gap-4">
-              <FileText className="w-5 h-5 text-muted mt-0.5 shrink-0" />
-              <div>
-                <div className="font-medium text-ink mb-1">Invoice history</div>
-                <p className="text-[13px] text-muted">
-                  Invoice history and receipt downloads are synced via background webhook charging events. Real-time updates automatically display in your billing panel.
-                </p>
+              <div className="flex items-start gap-4">
+                <FileText className="w-5 h-5 text-muted mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-medium text-ink mb-1">Invoice history</div>
+                  <p className="text-[13px] text-muted">
+                    Invoice history and receipt downloads are synced via background webhook charging events. Real-time updates automatically display in your billing panel.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="card p-6 mt-4 animate-rise">
-            <div className="flex items-start gap-4">
-              <Users className="w-5 h-5 text-muted mt-0.5 shrink-0" />
-              <div>
-                <div className="font-medium text-ink mb-1">Team seat usage</div>
-                <p className="text-[13px] text-muted">
-                  Real-time seat tracking automatically monitors actual users vs the strict capacity ceiling of your plan limits. Custom invitations automatically disable once you reach the maximum allowed seats.
-                </p>
+            <div className="card p-6">
+              <div className="flex items-start gap-4">
+                <Users className="w-5 h-5 text-muted mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-medium text-ink mb-1">Team seat usage</div>
+                  <p className="text-[13px] text-muted">
+                    Real-time seat tracking automatically monitors actual users vs the strict capacity ceiling of your plan limits. Custom invitations automatically disable once you reach the maximum allowed seats.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
