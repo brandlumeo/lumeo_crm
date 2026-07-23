@@ -321,6 +321,7 @@ class Activity(models.Model):
         blank=True,
         related_name="created_activities",
     )
+    is_pinned = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

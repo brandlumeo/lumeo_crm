@@ -436,6 +436,7 @@ export interface Activity {
   customer: number | null;
   activity_type: "call" | "meeting" | "email" | "note" | "status_change";
   description: string;
+  is_pinned?: boolean;
   created_by: UserSummary | null;
   created_at: string;
 }
@@ -446,6 +447,7 @@ export interface ActivityInput {
   customer?: number;
   activity_type: string;
   description: string;
+  is_pinned?: boolean;
 }
 
 export interface Attachment {

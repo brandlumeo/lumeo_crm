@@ -531,6 +531,11 @@ export async function deleteActivity(id: number) {
   await api.delete(`${endpoints.activities}${id}/`);
 }
 
+export async function updateActivity(id: number, payload: Partial<ActivityInput>) {
+  const { data } = await api.patch<Activity>(`${endpoints.activities}${id}/`, payload);
+  return data;
+}
+
 export async function fetchLead(id: number) {
   const { data } = await api.get<Lead>(`${endpoints.leads}${id}/`);
   return data;

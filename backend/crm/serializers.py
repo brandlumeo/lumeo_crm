@@ -391,6 +391,7 @@ class ActivitySerializer(CompanyScopedSerializer):
             "call_outcome",
             "call_reason",
             "created_by",
+            "is_pinned",
             "created_at",
         )
         read_only_fields = ("id", "created_at", "created_by")

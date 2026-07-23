@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Activity, Phone, Users, Mail, FileText, CheckCircle2, ArrowRight, Eye, Code, Sparkles, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Activity, Phone, Users, Mail, FileText, CheckCircle2, ArrowRight, Eye, Code, Sparkles, ChevronDown, ChevronUp, Trash2, Search, Filter, X, Pin } from "lucide-react";
 import DOMPurify from "dompurify";
 
-import { createActivity, deleteActivity, fetchLead, fetchDeal, fetchCustomer, aiAssistantAction } from "@/lib/api";
+import { createActivity, deleteActivity, updateActivity, fetchLead, fetchDeal, fetchCustomer, aiAssistantAction } from "@/lib/api";
 import { useActivities, useCurrentUser, useCurrentCompany, useEmailTemplates, useSendEmail, useEmailMessages } from "@/lib/queries";
 import { formatDateTime, getInitials, formatINR, toNumber } from "@/lib/utils";
 
@@ -81,6 +81,9 @@ export function ActivityTimeline({
   const [callOutcome, setCallOutcome] = useState<string>("connected");
   const [callReason, setCallReason] = useState<string>("");
 
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "note" | "call" | "email" | "meeting">("all");
+  const [timelineSearch, setTimelineSearch] = useState("");
+
   // Sync toEmail with entity's email if available
   useEffect(() => {
     if (activeTab === "email") {
@@ -110,6 +113,13 @@ export function ActivityTimeline({
 
   const deleteMutation = useMutation({
     mutationFn: deleteActivity,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm", "activities"] });
+    },
+  });
+
+  const pinMutation = useMutation({
+    mutationFn: ({ id, is_pinned }: { id: number; is_pinned: boolean }) => updateActivity(id, { is_pinned }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm", "activities"] });
     },
@@ -243,7 +253,28 @@ export function ActivityTimeline({
   const combinedTimeline = [
     ...activities.map(a => ({ ...a, _kind: 'activity' as const, sort_date: new Date(a.created_at).getTime() })),
     ...emails.map(e => ({ ...e, _kind: 'email' as const, sort_date: new Date(e.received_at || e.created_at).getTime() }))
-  ].sort((a, b) => b.sort_date - a.sort_date);
+  ].sort((a, b) => {
+    const aPinned = (a as any).is_pinned ? 1 : 0;
+    const bPinned = (b as any).is_pinned ? 1 : 0;
+    if (aPinned !== bPinned) return bPinned - aPinned;
+    return b.sort_date - a.sort_date;
+  });
+
+  const filteredTimeline = combinedTimeline.filter(item => {
+    if (timelineFilter !== "all") {
+      if (timelineFilter === "email" && item._kind !== "email") return false;
+      if (timelineFilter !== "email" && item._kind === "activity" && item.activity_type !== timelineFilter) return false;
+    }
+    if (timelineSearch.trim()) {
+      const q = timelineSearch.toLowerCase();
+      if (item._kind === "email") {
+        return (item.subject?.toLowerCase().includes(q) || item.body_text?.toLowerCase().includes(q) || item.body_html?.toLowerCase().includes(q));
+      } else {
+        return item.description?.toLowerCase().includes(q);
+      }
+    }
+    return true;
+  });
 
   const isPending = mutation.isPending || sendEmailMutation.isPending;
   const isEmailTab = activeTab === "email";
@@ -575,16 +606,55 @@ export function ActivityTimeline({
       </div>
 
       <div className="p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 bg-slate-950/40 p-3 rounded-lg border border-line">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted" />
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(["all", "note", "call", "email", "meeting"] as const).map((type) => (
+                <button
+                  key={`filter_${type}`}
+                  onClick={() => setTimelineFilter(type)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-full capitalize transition-all ${
+                    timelineFilter === type 
+                      ? "bg-accent text-white shadow-sm" 
+                      : "bg-paper text-muted hover:bg-bone hover:text-ink border border-line"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="relative w-full sm:w-auto">
+            <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search history..."
+              value={timelineSearch}
+              onChange={(e) => setTimelineSearch(e.target.value)}
+              className="w-full sm:w-[220px] bg-paper border border-line rounded-full pl-8 pr-8 py-1.5 text-xs text-ink focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+            />
+            {timelineSearch && (
+              <button 
+                onClick={() => setTimelineSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {isLoading || isLoadingEmails ? (
           <div className="text-center text-muted text-sm py-8">Loading activities...</div>
-        ) : combinedTimeline.length === 0 ? (
+        ) : filteredTimeline.length === 0 ? (
           <div className="text-center py-8">
             <Activity className="w-8 h-8 mx-auto text-muted mb-2 opacity-40" />
-            <div className="text-sm text-muted">No activities recorded yet.</div>
+            <div className="text-sm text-muted">No activities match your filters.</div>
           </div>
         ) : (
           <div className="relative pl-3 border-l border-line space-y-6">
-            {combinedTimeline.map((item) => {
+            {filteredTimeline.map((item) => {
               if (item._kind === "activity") {
                 const activity = item as any;
                 const Icon = typeIcons[activity.activity_type] || Activity;
@@ -612,21 +682,38 @@ export function ActivityTimeline({
                             {activity.call_outcome === "connected" ? "Connected" : activity.call_reason ? `Not Connected (${activity.call_reason.replace("_", " ")})` : "Not Connected"}
                           </span>
                         )}
-                        {(user?.role === 'admin' || activity.created_by?.id === user?.id) && (
+                        {activity.is_pinned && (
+                          <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-2 border border-amber-200">
+                            <Pin className="w-2.5 h-2.5 fill-amber-600" />
+                            Pinned
+                          </span>
+                        )}
+                        <div className="ml-auto flex items-center gap-3">
                           <button
                             type="button"
-                            onClick={() => {
-                              if (confirm("Are you sure you want to delete this activity?")) {
-                                deleteMutation.mutate(activity.id);
-                              }
-                            }}
-                            disabled={deleteMutation.isPending}
-                            className="ml-auto text-muted hover:text-red-500 transition-colors"
-                            title="Delete Activity"
+                            onClick={() => pinMutation.mutate({ id: activity.id, is_pinned: !activity.is_pinned })}
+                            disabled={pinMutation.isPending}
+                            className={`text-muted transition-colors ${activity.is_pinned ? 'text-amber-500 hover:text-amber-600' : 'hover:text-amber-500'}`}
+                            title={activity.is_pinned ? "Unpin Activity" : "Pin Activity"}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Pin className={`w-3.5 h-3.5 ${activity.is_pinned ? 'fill-amber-500' : ''}`} />
                           </button>
-                        )}
+                          {(user?.role === 'admin' || activity.created_by?.id === user?.id) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this activity?")) {
+                                  deleteMutation.mutate(activity.id);
+                                }
+                              }}
+                              disabled={deleteMutation.isPending}
+                              className="text-muted hover:text-red-500 transition-colors"
+                              title="Delete Activity"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {activity.description && (
                         <div className="text-[13px] text-ink-2 bg-bone-2 p-3 rounded-lg border border-line inline-block max-w-[85%] whitespace-pre-wrap mt-1">
