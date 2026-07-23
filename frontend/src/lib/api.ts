@@ -651,6 +651,10 @@ export async function inviteTeamMember(payload: {
   return data;
 }
 
+export async function removeTeamMember(id: number): Promise<void> {
+  await api.delete(`${endpoints.team}${id}/`);
+}
+
 export async function fetchInviteDetails(token: string): Promise<any> {
   const { data } = await axios.get(apiBaseUrl + endpoints.acceptInvite, { params: { token } });
   return data;

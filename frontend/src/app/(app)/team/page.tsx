@@ -7,10 +7,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users2, Mail, Plus, X, Loader2, Check } from "lucide-react";
 
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
-import { fetchTeam, inviteTeamMember, api } from "@/lib/api";
+import { fetchTeam, inviteTeamMember, removeTeamMember, api } from "@/lib/api";
 import { SkeletonTable } from "@/components/skeleton-table";
-
-
 
 export default function TeamPage() {
   const queryClient = useQueryClient();
@@ -33,6 +31,17 @@ export default function TeamPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["team"],
     queryFn: fetchTeam,
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (id: number) => removeTeamMember(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      toast.success("Team member removed successfully");
+    },
+    onError: () => {
+      toast.error("Failed to remove team member");
+    }
   });
 
   const inviteMutation = useMutation({
@@ -182,6 +191,26 @@ export default function TeamPage() {
                       <span className="capitalize text-muted">
                         {company?.roles?.find((r: any) => r.id === user.role)?.name || user.role}
                       </span>
+                    )}
+                    
+                    {/* Remove Member Button */}
+                    {isOwnerOrAdmin && user.id !== currentUser?.id && user.role !== "owner" && (
+                      <button
+                        disabled={removeMutation.isPending && removeMutation.variables === user.id}
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to remove ${user.first_name || user.email} from the team?`)) {
+                            removeMutation.mutate(user.id);
+                          }
+                        }}
+                        className="ml-2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-rose-50 text-muted hover:text-rose-500 transition-colors"
+                        title="Remove member"
+                      >
+                        {removeMutation.isPending && removeMutation.variables === user.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <X className="w-4 h-4" />
+                        )}
+                      </button>
                     )}
                   </div>
                 </div>

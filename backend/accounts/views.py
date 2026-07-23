@@ -462,6 +462,24 @@ class TeamMemberUpdateView(APIView):
 
         return Response(UserSerializer(member).data)
 
+    def delete(self, request, pk):
+        if not request.user.has_management_access:
+            return Response({"detail": "Only admins and managers can manage team roles."}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            member = User.objects.get(pk=pk, company=request.user.company)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if member == request.user:
+            return Response({"detail": "You cannot remove yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if member.role == User.Role.OWNER and request.user.role != User.Role.OWNER:
+            return Response({"detail": "You cannot remove the owner."}, status=status.HTTP_403_FORBIDDEN)
+            
+        member.delete()
+        return Response({"detail": "Team member removed."}, status=status.HTTP_204_NO_CONTENT)
+
 
 class InviteMemberView(APIView):
     permission_classes = [IsAuthenticated]
