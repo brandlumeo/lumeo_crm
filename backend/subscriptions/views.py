@@ -327,7 +327,7 @@ class RequestSetupView(APIView):
         if 'info@' in from_email:
             from_email = 'notifications@lumeo.estgrp.in'
             
-        admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'info@brandlumeo.com')
+        admin_email = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', 'support@crm.estgrp.in')
         
         subject = f"Setup & Migration Request from {company.name}"
         message = (
