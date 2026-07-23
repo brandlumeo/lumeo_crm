@@ -14,6 +14,7 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
 import { CustomFieldsDisplay } from "@/components/custom-fields-display";
 import { LeadTasks } from "@/components/lead-tasks";
+import { LeadJourney } from "@/components/lead-journey";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
 
 const statusTone: Record<string, string> = {
@@ -347,6 +348,8 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       </div>
       
       <EditLeadModal lead={lead} open={showEditModal} onOpenChange={setShowEditModal} />
+
+      <LeadJourney lead={lead} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">
         <div className="space-y-6">
