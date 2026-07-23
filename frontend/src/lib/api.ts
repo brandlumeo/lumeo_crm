@@ -1107,7 +1107,7 @@ export async function submitPublicBooking(slug: string, payload: { name: string;
   return data;
 }
 
-export async function aiAssistantAction(payload: { action: "draft_email" | "summarize"; context?: string; prompt?: string }) {
+export async function aiAssistantAction(payload: { action: "draft_email" | "summarize" | "executive_brief"; context?: string; prompt?: string }) {
   const { data } = await api.post<{ result: string }>(`/crm/ai/assistant/`, payload);
   return data;
 }

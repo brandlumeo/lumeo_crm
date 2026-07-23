@@ -1571,6 +1571,17 @@ class AIAssistantView(APIView):
             summary = f"**AI Summary:**\n{summary.strip()}\n\n*Key takeaways:*\n- Customer showed interest\n- Next steps required"
             return Response({"result": summary})
             
+        elif action == "executive_brief":
+            if not context:
+                return Response({"error": "No context provided for executive brief"}, status=400)
+            
+            # Simulated AI output
+            brief = "**AI Executive Brief:**\n\n"
+            brief += "• **Status**: The lead has been highly engaged recently, showing strong intent to move forward.\n"
+            brief += "• **Key Points**: Multiple follow-ups have addressed feature requirements and pricing. The video was successfully completed.\n"
+            brief += "• **Next Steps**: Recommend scheduling a final alignment meeting to review the proposal."
+            return Response({"result": brief})
+
         return Response({"error": "Unknown action"}, status=400)
 
 class TicketViewSet(CompanyScopedModelViewSet):

@@ -7,6 +7,7 @@ import DOMPurify from "dompurify";
 
 import { createActivity, deleteActivity, updateActivity, fetchLead, fetchDeal, fetchCustomer, aiAssistantAction } from "@/lib/api";
 import { useActivities, useCurrentUser, useCurrentCompany, useEmailTemplates, useSendEmail, useEmailMessages } from "@/lib/queries";
+import { AIExecutiveBrief } from "./ai-executive-brief";
 import { formatDateTime, getInitials, formatINR, toNumber } from "@/lib/utils";
 
 // C6 fix: Safe HTML sanitizer — only allows basic formatting tags, no JS execution vectors
@@ -609,7 +610,8 @@ export function ActivityTimeline({
         </form>
       </div>
 
-      <div className="p-5">
+      <div className="flex-1 bg-paper border-l border-line p-6 overflow-y-auto">
+        <AIExecutiveBrief timelineData={combinedTimeline} />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 bg-slate-950/40 p-3 rounded-lg border border-line">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted" />
