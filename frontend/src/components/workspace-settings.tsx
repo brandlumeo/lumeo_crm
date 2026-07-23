@@ -62,7 +62,13 @@ export function WorkspaceForm() {
         
         {isAdmin && (
           <button
-            onClick={() => mutation.mutate({ name, currency, domain: domain || null, company_email: companyEmail || null, company_website: companyWebsite || null })}
+            onClick={() => {
+              let formattedWebsite = companyWebsite || null;
+              if (formattedWebsite && !formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
+                formattedWebsite = 'https://' + formattedWebsite;
+              }
+              mutation.mutate({ name, currency, domain: domain || null, company_email: companyEmail || null, company_website: formattedWebsite });
+            }}
             disabled={mutation.isPending}
             className="btn btn-primary shadow-md hover:shadow-lg transition-all h-11 px-6 rounded-xl font-medium flex items-center gap-2 shrink-0 group relative overflow-hidden "
           >
