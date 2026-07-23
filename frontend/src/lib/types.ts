@@ -15,6 +15,13 @@ export interface CompanySummary {
   show_client_phone?: boolean;
   show_client_address?: boolean;
   show_tax_number_on_invoice?: boolean;
+  show_project_on_invoice?: boolean;
+  show_invoice_status?: boolean;
+  show_authorised_signatory?: boolean;
+  show_tax_calculation_msg?: boolean;
+  tax_id?: string | null;
+  tax_id_label?: string | null;
+  authorised_signatory?: string | null;
 }
 
 export interface CompanyDetail extends CompanySummary {
