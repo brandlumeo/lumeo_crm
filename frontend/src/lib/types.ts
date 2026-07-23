@@ -16,7 +16,7 @@ export interface CompanySummary {
   show_client_address?: boolean;
   show_tax_number_on_invoice?: boolean;
   show_project_on_invoice?: boolean;
-  show_invoice_status?: boolean;
+  show_status_on_invoice?: boolean;
   show_authorised_signatory?: boolean;
   show_tax_calculation_msg?: boolean;
   tax_id?: string | null;
@@ -540,6 +540,10 @@ export interface Invoice {
   id: number;
   company: CompanySummary;
   deal: number | null;
+  deal_details?: {
+    id: number;
+    title: string;
+  };
   customer: number;
   customer_details?: {
     name: string;
