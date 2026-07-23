@@ -702,7 +702,7 @@ export function ActivityTimeline({
                           >
                             <Pin className={`w-3.5 h-3.5 ${activity.is_pinned ? 'fill-amber-500' : ''}`} />
                           </button>
-                          {(user?.role === 'admin' || activity.created_by?.id === user?.id) && (
+                          {user && (['owner', 'admin', 'manager'].includes(user.role?.toLowerCase()) || activity.created_by?.id === user.id || !activity.created_by) && (
                             <button
                               type="button"
                               onClick={() => {
