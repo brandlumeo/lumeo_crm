@@ -19,6 +19,8 @@ class CompanySerializer(serializers.ModelSerializer):
             "created_at",
             "currency",
             "domain",
+            "company_email",
+            "company_website",
             "address_line1",
             "address_line2",
             "city",
