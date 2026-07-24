@@ -1422,6 +1422,17 @@ class EmailMessageViewSet(CompanyScopedModelViewSet):
     ordering_fields = ("received_at", "created_at")
     ordering = ("-received_at",)
 
+    def apply_business_filters(self, queryset):
+        lead_id = self.request.query_params.get("lead")
+        customer_id = self.request.query_params.get("customer")
+        
+        if lead_id:
+            queryset = queryset.filter(lead_id=lead_id)
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+            
+        return queryset
+
 from .models import CalendarAccount, BookingLink
 from .serializers import CalendarAccountSerializer, BookingLinkSerializer
 
