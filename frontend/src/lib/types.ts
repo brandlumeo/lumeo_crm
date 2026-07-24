@@ -567,6 +567,8 @@ export interface Invoice {
   amount_paid?: string;
   amount_due?: string;
   payments?: any[];
+  settings?: any;
+  payment_methods?: any[];
   items: InvoiceLineItem[];
   public_token: string;
   signature_data: string | null;
