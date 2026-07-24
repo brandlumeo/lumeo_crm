@@ -45,7 +45,11 @@ class CompanySummarySerializer(serializers.ModelSerializer):
     default_tax_rate = serializers.SerializerMethodField()
 
     def _get_setting(self, obj, field_name, default=None):
-        if hasattr(obj, 'invoice_settings') and obj.invoice_settings:
+        try:
+            settings = obj.invoice_settings
+        except Exception:
+            settings = None
+        if settings:
             # Map field names if they changed
             mapping = {
                 'invoice_template': 'template_id',
@@ -53,7 +57,7 @@ class CompanySummarySerializer(serializers.ModelSerializer):
                 'show_tax_number_on_invoice': 'show_sender_tax_number'
             }
             mapped_name = mapping.get(field_name, field_name)
-            return getattr(obj.invoice_settings, mapped_name, default)
+            return getattr(settings, mapped_name, default)
         return default
 
     def get_invoice_template(self, obj): return self._get_setting(obj, 'invoice_template', 'template1')
@@ -671,9 +675,13 @@ class InvoiceSerializer(CompanyScopedSerializer):
     payment_methods = serializers.SerializerMethodField()
     
     def get_settings(self, obj):
-        if hasattr(obj.company, 'invoice_settings'):
-            return PublicInvoiceSettingsSerializer(obj.company.invoice_settings).data
-        return None
+        if not obj.company:
+            return None
+        try:
+            settings = obj.company.invoice_settings
+            return PublicInvoiceSettingsSerializer(settings).data
+        except Exception:
+            return None
 
     def get_payment_methods(self, obj):
         from companies.serializers import PaymentMethodSerializer
@@ -738,15 +746,18 @@ class InvoiceSerializer(CompanyScopedSerializer):
         from .models import Invoice
         company = user.company if hasattr(user, "company") else None
         
-        from datetime import date, timedelta
-        if 'due_date' not in validated_data and hasattr(user, "company") and hasattr(user.company, "invoice_settings"):
-            days = user.company.invoice_settings.invoice_due_after_days
-            if days:
-                validated_data['due_date'] = date.today() + timedelta(days=days)
-        if 'terms' not in validated_data and hasattr(user, "company") and hasattr(user.company, "invoice_settings"):
-            validated_data['terms'] = user.company.invoice_settings.invoice_terms
-        if 'notes' not in validated_data and hasattr(user, "company") and hasattr(user.company, "invoice_settings"):
-            validated_data['notes'] = user.company.invoice_settings.invoice_other_information
+        if hasattr(user, "company") and user.company:
+            from datetime import date, timedelta
+            try:
+                settings = user.company.invoice_settings
+                if 'due_date' not in validated_data and settings.invoice_due_after_days:
+                    validated_data['due_date'] = date.today() + timedelta(days=settings.invoice_due_after_days)
+                if 'terms' not in validated_data:
+                    validated_data['terms'] = settings.invoice_terms
+                if 'notes' not in validated_data:
+                    validated_data['notes'] = settings.invoice_other_information
+            except Exception:
+                pass
 
         count = Invoice.objects.filter(company=company).count() if company else 0
         next_number = str(count + 1).zfill(digits)
