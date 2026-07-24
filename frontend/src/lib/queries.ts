@@ -103,6 +103,8 @@ import {
   signPublicInvoice,
   payPublicInvoice,
   verifyPublicInvoicePayment,
+  getInvoiceSettings,
+  updateInvoiceSettings,
   fetchExpenseClaims,
   createExpenseClaim,
   approveExpenseClaim,
@@ -1481,5 +1483,24 @@ export function useDeleteProduct() {
   return useMutation({
     mutationFn: (id: number) => import("./api").then(m => m.deleteProduct(id)),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["crm", "products"] }); },
+  });
+}
+
+// Invoice Settings hooks
+export function useInvoiceSettings() {
+  return useQuery({
+    queryKey: ["invoiceSettings"],
+    queryFn: getInvoiceSettings,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useUpdateInvoiceSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateInvoiceSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoiceSettings"] });
+    },
   });
 }

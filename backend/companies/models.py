@@ -268,41 +268,6 @@ class Company(models.Model):
     razorpay_key_id = models.CharField(max_length=255, blank=True, null=True)
     razorpay_key_secret = models.CharField(max_length=255, blank=True, null=True)
     
-    invoice_prefix = models.CharField(max_length=20, default="INV-")
-    quote_prefix = models.CharField(max_length=20, default="QT-")
-    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
-    payment_terms = models.CharField(max_length=50, default="due_on_receipt")
-    
-    # Advanced Invoice Settings
-    invoice_logo = models.URLField(max_length=512, blank=True, null=True)
-    authorised_signatory_signature = models.URLField(max_length=512, blank=True, null=True)
-    invoice_language = models.CharField(max_length=50, default="en")
-    invoice_due_after_days = models.IntegerField(default=15)
-    send_reminder_before_days = models.IntegerField(default=0)
-    send_reminder_after_days = models.IntegerField(default=3)
-    
-    show_tax_number_on_invoice = models.BooleanField(default=False)
-    hsn_sac_code_show = models.BooleanField(default=False)
-    show_tax_calculation_message = models.BooleanField(default=False)
-    show_status_on_invoice = models.BooleanField(default=True)
-    show_authorised_signatory = models.BooleanField(default=False)
-    
-    show_client_name = models.BooleanField(default=True)
-    show_client_company_name = models.BooleanField(default=True)
-    show_client_email = models.BooleanField(default=True)
-    show_client_phone = models.BooleanField(default=True)
-    show_client_address = models.BooleanField(default=True)
-    show_project_on_invoice = models.BooleanField(default=True)
-    
-    invoice_template = models.CharField(max_length=50, default="template1")
-    
-    invoice_terms = models.TextField(default="Thank you for your business.", blank=True)
-    invoice_other_information = models.TextField(blank=True, null=True)
-    
-    contract_prefix = models.CharField(max_length=20, default="CONT")
-    contract_number_separator = models.CharField(max_length=5, default="#")
-    contract_number_digits = models.IntegerField(default=3)
-    
     tax_id = models.CharField(max_length=100, blank=True, null=True)
     tax_id_label = models.CharField(max_length=50, blank=True, null=True, help_text="e.g. VAT, EIN, GST")
     taxes = models.JSONField(default=list, blank=True)
@@ -484,3 +449,87 @@ class PlatformSettings(models.Model):
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(id=1)
         return obj
+
+class Unit(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="units")
+    name = models.CharField(max_length=50)
+    is_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+class PaymentMethod(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="payment_methods")
+    title = models.CharField(max_length=100)
+    details = models.TextField(blank=True)
+    qr_code = models.URLField(max_length=512, blank=True, null=True)
+
+    def __str__(self):
+        return self.title
+
+class InvoiceSettings(models.Model):
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="invoice_settings")
+    
+    # Core invoice behavior
+    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    invoice_due_after_days = models.PositiveIntegerField(default=15)
+    language = models.CharField(max_length=50, default="en")
+    currency = models.CharField(max_length=3, default="USD")
+
+    # Numbering
+    invoice_prefix = models.CharField(max_length=20, default="INV")
+    invoice_separator = models.CharField(max_length=5, default="-")
+    invoice_digits = models.PositiveIntegerField(default=5)
+
+    credit_note_prefix = models.CharField(max_length=20, default="CN")
+    credit_note_separator = models.CharField(max_length=5, default="-")
+    credit_note_digits = models.PositiveIntegerField(default=5)
+
+    estimate_prefix = models.CharField(max_length=20, default="EST")
+    estimate_separator = models.CharField(max_length=5, default="-")
+    estimate_digits = models.PositiveIntegerField(default=5)
+
+    estimate_request_prefix = models.CharField(max_length=20, default="ESTREQ")
+    estimate_request_separator = models.CharField(max_length=5, default="-")
+    estimate_request_digits = models.PositiveIntegerField(default=5)
+
+    order_prefix = models.CharField(max_length=20, default="ORD")
+    order_separator = models.CharField(max_length=5, default="-")
+    order_digits = models.PositiveIntegerField(default=5)
+
+    proposal_prefix = models.CharField(max_length=20, default="PROP")
+    proposal_separator = models.CharField(max_length=5, default="-")
+    proposal_digits = models.PositiveIntegerField(default=5)
+
+    # Templates
+    template_id = models.CharField(max_length=50, default="template_1")
+
+    # Client info visibility toggles
+    show_client_name = models.BooleanField(default=True)
+    show_client_email = models.BooleanField(default=True)
+    show_client_phone = models.BooleanField(default=True)
+    show_client_company_name = models.BooleanField(default=True)
+    show_client_address = models.BooleanField(default=True)
+    show_project_on_invoice = models.BooleanField(default=True)
+
+    # Document field toggles
+    show_sender_tax_number = models.BooleanField(default=False)
+    show_receiver_tax_number = models.BooleanField(default=False)
+    show_hsn_sac_code = models.BooleanField(default=False)
+    show_status_on_invoice = models.BooleanField(default=True)
+    show_tax_calculation_message = models.BooleanField(default=False)
+    show_authorised_signatory = models.BooleanField(default=False)
+    
+    authorised_signatory_signature = models.URLField(max_length=512, blank=True, null=True)
+    invoice_logo = models.URLField(max_length=512, blank=True, null=True)
+
+    # Terms & other info
+    invoice_terms = models.TextField(default="Thank you for your business.", blank=True)
+    invoice_other_information = models.TextField(blank=True, null=True)
+
+    # Reminders
+    send_reminder_before_days = models.PositiveIntegerField(default=0)
+    send_reminder_after_days = models.PositiveIntegerField(default=3)
+
+    def __str__(self):
+        return f"Invoice Settings for {self.company.name}"

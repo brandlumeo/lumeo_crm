@@ -14,6 +14,8 @@ from django.db.models import Q
 
 from rest_framework.decorators import action
 from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice
+from companies.models import Unit, PaymentMethod, InvoiceSettings
+from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
 from .serializers import (
     CustomerSerializer,
@@ -306,6 +308,20 @@ class LeadViewSet(CompanyScopedModelViewSet):
             
         return response
 
+class UnitViewSet(CompanyScopedModelViewSet):
+    queryset = Unit.objects.all()
+    serializer_class = UnitSerializer
+    search_fields = ["name"]
+
+class PaymentMethodViewSet(CompanyScopedModelViewSet):
+    queryset = PaymentMethod.objects.all()
+    serializer_class = PaymentMethodSerializer
+    search_fields = ["title"]
+
+class InvoiceSettingsViewSet(CompanyScopedModelViewSet):
+    queryset = InvoiceSettings.objects.all()
+    serializer_class = InvoiceSettingsSerializer
+    
 class CustomerViewSet(CompanyScopedModelViewSet):
     permission_module = "Clients"
     serializer_class = CustomerSerializer
@@ -789,7 +805,14 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     styles = getSampleStyleSheet()
     
     comp = instance.company
-    template = comp.invoice_template if hasattr(comp, 'invoice_template') else "template1"
+    settings = getattr(comp, 'invoice_settings', None)
+    
+    def get_setting(name, mapped_name=None, default=None):
+        if settings and hasattr(settings, mapped_name or name):
+            return getattr(settings, mapped_name or name)
+        return default
+
+    template = get_setting("invoice_template", "template_id", "template1")
     
     # Theme colors based on template
     if template == "template1":  # Modern Blue
@@ -829,9 +852,10 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     doc_number = getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))
     
     left_p = None
-    if comp.invoice_logo:
+    logo_url = get_setting("invoice_logo")
+    if logo_url:
         try:
-            req = urllib.request.Request(comp.invoice_logo, headers={'User-Agent': 'Mozilla/5.0'})
+            req = urllib.request.Request(logo_url, headers={'User-Agent': 'Mozilla/5.0'})
             img_data = io.BytesIO(urllib.request.urlopen(req, timeout=5).read())
             left_p = RLImage(img_data, width=140, height=50, kind='proportional')
         except Exception:
@@ -843,10 +867,10 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     meta_info = f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/>"
     meta_info += f"<font size=10 color='#6B7280'>#{doc_number}</font><br/><br/>"
 
-    if comp.show_status_on_invoice and getattr(instance, 'status', None):
+    if get_setting("show_status_on_invoice", default=True) and getattr(instance, 'status', None):
         meta_info += f"<font size=9 color='#6B7280'>Status:</font> <font size=9 color='#111827'><b>{str(instance.status).upper()}</b></font><br/>"
     
-    if comp.show_project_on_invoice and getattr(instance, 'deal', None):
+    if get_setting("show_project_on_invoice", default=True) and getattr(instance, 'deal', None):
         meta_info += f"<font size=9 color='#6B7280'>Project/Deal:</font> <font size=9 color='#111827'>{instance.deal.title}</font><br/>"
     
     # Add title for Quote
@@ -889,11 +913,11 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         customer_obj = getattr(instance.deal, 'customer', getattr(instance.deal, 'lead', None))
     
     if customer_obj:
-        if comp.show_client_name: cust_name = f"<b>{getattr(customer_obj, 'name', '')}</b><br/>"
-        if comp.show_client_company_name and hasattr(customer_obj, 'company'): cust_company = f"{customer_obj.company.name}<br/>"
-        if comp.show_client_email: cust_email = f"{getattr(customer_obj, 'email', '')}<br/>"
-        if comp.show_client_phone and hasattr(customer_obj, 'phone'): cust_phone = f"{customer_obj.phone}<br/>"
-        if comp.show_client_address and getattr(customer_obj, 'custom_data', {}).get('address'): cust_address = f"{customer_obj.custom_data.get('address')}<br/>"
+        if get_setting("show_client_name", default=True): cust_name = f"<b>{getattr(customer_obj, 'name', '')}</b><br/>"
+        if get_setting("show_client_company_name", default=True) and hasattr(customer_obj, 'company'): cust_company = f"{customer_obj.company.name}<br/>"
+        if get_setting("show_client_email", default=True): cust_email = f"{getattr(customer_obj, 'email', '')}<br/>"
+        if get_setting("show_client_phone", default=True) and hasattr(customer_obj, 'phone'): cust_phone = f"{customer_obj.phone}<br/>"
+        if get_setting("show_client_address", default=True) and getattr(customer_obj, 'custom_data', {}).get('address'): cust_address = f"{customer_obj.custom_data.get('address')}<br/>"
     else:
         cust_name = "<b>Customer Record</b>"
         
@@ -907,7 +931,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if address_parts:
         sender_text += f"<br/>{', '.join(address_parts)}"
 
-    if comp.tax_id and comp.show_tax_number_on_invoice:
+    if comp.tax_id and get_setting("show_sender_tax_number", default=False):
         sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
         
     from_label = "BILLED FROM" if doc_type == "Invoice" else "PREPARED BY"
@@ -987,7 +1011,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     # Terms & Signature
     terms_p = []
-    terms_text = comp.invoice_terms
+    terms_text = get_setting("invoice_terms", default="Thank you for your business.")
     
     notes_style = ParagraphStyle('Notes', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#6B7280"), fontName='Helvetica-Oblique')
     info_val_style = ParagraphStyle('InfoVal', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#4B5563"), leading=13)
@@ -1002,22 +1026,24 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             terms_p.append(Spacer(1, 6))
             terms_p.append(Paragraph(terms_text.replace('\n', '<br/>'), info_val_style))
     
-    if comp.invoice_other_information:
+    other_info = get_setting("invoice_other_information", default="")
+    if other_info:
         if terms_p: terms_p.append(Spacer(1, 15))
         terms_p.append(Paragraph("<font color='#111827'><b>Other Information</b></font>", bold_style))
         terms_p.append(Spacer(1, 6))
-        terms_p.append(Paragraph(comp.invoice_other_information.replace('\n', '<br/>'), info_val_style))
+        terms_p.append(Paragraph(other_info.replace('\n', '<br/>'), info_val_style))
         
-    if comp.show_tax_calculation_message:
+    if get_setting("show_tax_calculation_message", default=False):
         if terms_p: terms_p.append(Spacer(1, 15))
         terms_p.append(Paragraph("<font color='#6B7280'><i>Note: Tax is calculated based on applicable local rates.</i></font>", info_val_style))
 
     sig_p = []
-    if comp.show_authorised_signatory:
+    if get_setting("show_authorised_signatory", default=False):
         sig_p.append(Spacer(1, 20))
-        if comp.authorised_signatory_signature:
+        auth_sig = get_setting("authorised_signatory_signature")
+        if auth_sig:
             try:
-                req = urllib.request.Request(comp.authorised_signatory_signature, headers={'User-Agent': 'Mozilla/5.0'})
+                req = urllib.request.Request(auth_sig, headers={'User-Agent': 'Mozilla/5.0'})
                 sig_data = io.BytesIO(urllib.request.urlopen(req, timeout=5).read())
                 sig_img = RLImage(sig_data, width=120, height=40, kind='proportional')
                 sig_p.append(sig_img)

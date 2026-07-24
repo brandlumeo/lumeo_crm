@@ -18,10 +18,64 @@ class CompanySummarySerializer(serializers.ModelSerializer):
             "show_client_name", "show_client_company_name", "show_client_email", "show_client_phone", "show_client_address",
             "show_tax_number_on_invoice", "show_project_on_invoice", "show_status_on_invoice", "hsn_sac_code_show",
             "show_tax_calculation_message", "authorised_signatory_signature", "show_authorised_signatory",
-            "invoice_language", "invoice_prefix", "default_tax_rate",
+            "invoice_language", "invoice_prefix", "quote_prefix", "default_tax_rate",
             "address_line1", "address_line2", "city", "state", "postal_code", "country",
-            "tax_id", "tax_id_label", "taxes", "invoice_due_after_days"
+            "tax_id", "tax_id_label", "taxes"
         )
+    
+    invoice_template = serializers.SerializerMethodField()
+    invoice_logo = serializers.SerializerMethodField()
+    invoice_terms = serializers.SerializerMethodField()
+    invoice_other_information = serializers.SerializerMethodField()
+    show_client_name = serializers.SerializerMethodField()
+    show_client_company_name = serializers.SerializerMethodField()
+    show_client_email = serializers.SerializerMethodField()
+    show_client_phone = serializers.SerializerMethodField()
+    show_client_address = serializers.SerializerMethodField()
+    show_tax_number_on_invoice = serializers.SerializerMethodField()
+    show_project_on_invoice = serializers.SerializerMethodField()
+    show_status_on_invoice = serializers.SerializerMethodField()
+    hsn_sac_code_show = serializers.SerializerMethodField()
+    show_tax_calculation_message = serializers.SerializerMethodField()
+    authorised_signatory_signature = serializers.SerializerMethodField()
+    show_authorised_signatory = serializers.SerializerMethodField()
+    invoice_language = serializers.SerializerMethodField()
+    invoice_prefix = serializers.SerializerMethodField()
+    quote_prefix = serializers.SerializerMethodField()
+    default_tax_rate = serializers.SerializerMethodField()
+
+    def _get_setting(self, obj, field_name, default=None):
+        if hasattr(obj, 'invoice_settings') and obj.invoice_settings:
+            # Map field names if they changed
+            mapping = {
+                'invoice_template': 'template_id',
+                'invoice_language': 'language',
+                'show_tax_number_on_invoice': 'show_sender_tax_number'
+            }
+            mapped_name = mapping.get(field_name, field_name)
+            return getattr(obj.invoice_settings, mapped_name, default)
+        return default
+
+    def get_invoice_template(self, obj): return self._get_setting(obj, 'invoice_template', 'template1')
+    def get_invoice_logo(self, obj): return self._get_setting(obj, 'invoice_logo')
+    def get_invoice_terms(self, obj): return self._get_setting(obj, 'invoice_terms')
+    def get_invoice_other_information(self, obj): return self._get_setting(obj, 'invoice_other_information')
+    def get_show_client_name(self, obj): return self._get_setting(obj, 'show_client_name', True)
+    def get_show_client_company_name(self, obj): return self._get_setting(obj, 'show_client_company_name', True)
+    def get_show_client_email(self, obj): return self._get_setting(obj, 'show_client_email', True)
+    def get_show_client_phone(self, obj): return self._get_setting(obj, 'show_client_phone', True)
+    def get_show_client_address(self, obj): return self._get_setting(obj, 'show_client_address', True)
+    def get_show_tax_number_on_invoice(self, obj): return self._get_setting(obj, 'show_tax_number_on_invoice', False)
+    def get_show_project_on_invoice(self, obj): return self._get_setting(obj, 'show_project_on_invoice', True)
+    def get_show_status_on_invoice(self, obj): return self._get_setting(obj, 'show_status_on_invoice', True)
+    def get_hsn_sac_code_show(self, obj): return self._get_setting(obj, 'hsn_sac_code_show', False)
+    def get_show_tax_calculation_message(self, obj): return self._get_setting(obj, 'show_tax_calculation_message', False)
+    def get_authorised_signatory_signature(self, obj): return self._get_setting(obj, 'authorised_signatory_signature')
+    def get_show_authorised_signatory(self, obj): return self._get_setting(obj, 'show_authorised_signatory', False)
+    def get_invoice_language(self, obj): return self._get_setting(obj, 'invoice_language', 'en')
+    def get_invoice_prefix(self, obj): return self._get_setting(obj, 'invoice_prefix', 'INV-')
+    def get_quote_prefix(self, obj): return self._get_setting(obj, 'estimate_prefix', 'QT-')
+    def get_default_tax_rate(self, obj): return self._get_setting(obj, 'default_tax_rate', 0.0)
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
@@ -524,7 +578,12 @@ class QuoteSerializer(CompanyScopedSerializer):
         # Auto generate quote number
         import uuid
         user = self.context.get("request").user
-        prefix = getattr(user.company, "quote_prefix", "QT-") if user and hasattr(user, "company") else "QT-"
+        prefix = "QT-"
+        if user and hasattr(user, "company"):
+            try:
+                prefix = user.company.invoice_settings.estimate_prefix or "QT-"
+            except Exception:
+                pass
         validated_data["quote_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
         
         quote = super().create(validated_data)
@@ -587,6 +646,8 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at", "receipt_number")
 
 
+from companies.serializers import PublicInvoiceSettingsSerializer
+
 class InvoiceSerializer(CompanyScopedSerializer):
     items = InvoiceLineItemSerializer(many=True, required=False)
     payments = InvoicePaymentSerializer(many=True, read_only=True)
@@ -594,6 +655,12 @@ class InvoiceSerializer(CompanyScopedSerializer):
     customer_details = CustomerSerializer(source='customer', read_only=True)
     amount_paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     amount_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    settings = serializers.SerializerMethodField()
+    
+    def get_settings(self, obj):
+        if hasattr(obj.company, 'invoice_settings'):
+            return PublicInvoiceSettingsSerializer(obj.company.invoice_settings).data
+        return None
 
     class Meta:
         model = Invoice
@@ -618,6 +685,7 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "payments",
             "amount_paid",
             "amount_due",
+            "settings",
             "public_token",
             "signature_data",
             "signed_at",
@@ -634,7 +702,12 @@ class InvoiceSerializer(CompanyScopedSerializer):
         # Auto generate invoice number
         import uuid
         user = self.context.get("request").user
-        prefix = getattr(user.company, "invoice_prefix", "INV-") if user and hasattr(user, "company") else "INV-"
+        prefix = "INV-"
+        if user and hasattr(user, "company"):
+            try:
+                prefix = user.company.invoice_settings.invoice_prefix or "INV-"
+            except Exception:
+                pass
         validated_data["invoice_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
         
         invoice = super().create(validated_data)

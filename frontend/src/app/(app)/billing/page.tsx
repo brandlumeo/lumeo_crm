@@ -507,7 +507,7 @@ export default function BillingPage() {
                 >
                   Yearly
                   <span className="bg-accent text-white text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded">
-                    Up to -17%
+                    Up to 37%
                   </span>
                 </button>
               </div>

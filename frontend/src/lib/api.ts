@@ -696,6 +696,17 @@ export async function updateCompany(payload: Partial<CompanyDetail>) {
   return data;
 }
 
+// Invoice Settings
+export const getInvoiceSettings = async () => {
+  const res = await api.get<any[]>("/crm/invoice-settings/");
+  return res.data[0] || null;
+};
+
+export const updateInvoiceSettings = async ({ id, data }: { id: number; data: any }) => {
+  const res = await api.put(`/crm/invoice-settings/${id}/`, data);
+  return res.data;
+};
+
 export async function fetchQuotes(params?: ListParams) {
   return listPage<Quote>(endpoints.quotes, params);
 }

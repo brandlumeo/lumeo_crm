@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from django.db import models
 
-from .models import Company
-
+from .models import Company, Unit, PaymentMethod, InvoiceSettings
 
 class CompanySerializer(serializers.ModelSerializer):
     is_trial_active = serializers.BooleanField(read_only=True)
@@ -41,33 +40,6 @@ class CompanySerializer(serializers.ModelSerializer):
             "paypal_secret",
             "razorpay_key_id",
             "razorpay_key_secret",
-            "invoice_prefix",
-            "quote_prefix",
-            "default_tax_rate",
-            "payment_terms",
-            "invoice_logo",
-            "authorised_signatory_signature",
-            "invoice_language",
-            "invoice_due_after_days",
-            "send_reminder_before_days",
-            "send_reminder_after_days",
-            "show_tax_number_on_invoice",
-            "hsn_sac_code_show",
-            "show_tax_calculation_message",
-            "show_status_on_invoice",
-            "show_authorised_signatory",
-            "show_client_name",
-            "show_client_company_name",
-            "show_client_email",
-            "show_client_phone",
-            "show_client_address",
-            "show_project_on_invoice",
-            "invoice_template",
-            "invoice_terms",
-            "invoice_other_information",
-            "contract_prefix",
-            "contract_number_separator",
-            "contract_number_digits",
             "tax_id",
             "tax_id_label",
             "taxes",
@@ -192,3 +164,28 @@ class CompanySerializer(serializers.ModelSerializer):
                 ret["paypal_secret"] = "********"
 
         return ret
+
+class UnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Unit
+        fields = '__all__'
+        read_only_fields = ('company',)
+
+class PaymentMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentMethod
+        fields = '__all__'
+        read_only_fields = ('company',)
+
+class InvoiceSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceSettings
+        fields = '__all__'
+        read_only_fields = ('company',)
+
+class PublicInvoiceSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceSettings
+        # Exclude internal configs like reminder sweeps
+        exclude = ('id', 'company', 'send_reminder_before_days', 'send_reminder_after_days')
+        read_only_fields = [f.name for f in InvoiceSettings._meta.fields]

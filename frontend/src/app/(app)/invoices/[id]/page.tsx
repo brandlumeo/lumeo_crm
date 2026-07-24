@@ -243,7 +243,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
             {formData.items.map((item: any, i: number) => (
               <div key={i} className="flex gap-4 items-start p-4 bg-bone/50 border border-line rounded-lg">
                 <div className="flex-1 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-muted mb-1">Item Name / Service *</label>
                       <input
@@ -252,16 +252,6 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                         placeholder="e.g. Web Development"
                         value={item.name}
                         onChange={(e) => handleItemChange(i, "name", e.target.value)}
-                        className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Additional Details (HSN/SAC, etc.)</label>
-                      <input
-                        type="text"
-                        placeholder="Optional details or codes"
-                        value={item.description}
-                        onChange={(e) => handleItemChange(i, "description", e.target.value)}
                         className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                       />
                     </div>

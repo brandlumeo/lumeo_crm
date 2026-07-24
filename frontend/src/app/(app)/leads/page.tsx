@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
+import { LeadDetailsSlideover } from "@/components/lead-details-slideover";
 
 const PAGE_SIZE = 20;
 
@@ -36,6 +37,7 @@ export default function LeadsPage() {
   const [status, setStatus] = useState("");
   const [sortColumn, setSortColumn] = useState("-updated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [form, setForm] = useState<LeadInput>({
     name: "",
     email: "",
@@ -203,9 +205,9 @@ export default function LeadsPage() {
                   sortable: true,
                   render: (lead) => (
                     <div>
-                      <Link href={`/leads/${lead.id}`} className="font-medium text-ink hover:text-accent transition-colors hover:underline">
+                      <button onClick={() => setSelectedLeadId(lead.id)} className="font-medium text-ink hover:text-accent transition-colors hover:underline text-left">
                         {lead.name}
-                      </Link>
+                      </button>
                       <div className="text-[12px] text-muted mt-0.5">{lead.email}</div>
                     </div>
                   ),
@@ -665,6 +667,14 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
+
+      <LeadDetailsSlideover 
+        leadId={selectedLeadId} 
+        open={selectedLeadId !== null} 
+        onOpenChange={(open) => {
+          if (!open) setSelectedLeadId(null);
+        }} 
+      />
     </PageShell>
   );
 }

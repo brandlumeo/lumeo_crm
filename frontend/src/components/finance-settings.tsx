@@ -1,71 +1,131 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   DollarSign, Loader2, CheckCircle, XCircle, Shield, 
   FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell
 } from "lucide-react";
-import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
+import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings } from "@/lib/queries";
 import { updateCompany } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export function FinanceSettingsForm() {
   const { data: company } = useCurrentCompany();
   const { data: user } = useCurrentUser();
+  const { data: invoiceSettings, isLoading: settingsLoading } = useInvoiceSettings();
+  const updateSettingsMutation = useUpdateInvoiceSettings();
   const queryClient = useQueryClient();
 
-  const [invoicePrefix, setInvoicePrefix] = useState(company?.invoice_prefix ?? "INV-");
-  const [quotePrefix, setQuotePrefix] = useState(company?.quote_prefix ?? "QT-");
-  const [defaultTaxRate, setDefaultTaxRate] = useState(company?.default_tax_rate ?? "0.00");
-  const [paymentTerms, setPaymentTerms] = useState(company?.payment_terms ?? "due_on_receipt");
+  const [invoicePrefix, setInvoicePrefix] = useState("INV-");
+  const [quotePrefix, setQuotePrefix] = useState("QT-");
+  const [defaultTaxRate, setDefaultTaxRate] = useState("0.00");
+  const [paymentTerms, setPaymentTerms] = useState("due_on_receipt");
 
-  const [invoiceTemplate, setInvoiceTemplate] = useState(company?.invoice_template ?? "template1");
-  const [invoiceLogo, setInvoiceLogo] = useState(company?.invoice_logo ?? "");
-  const [authorisedSignatory, setAuthorisedSignatory] = useState(company?.authorised_signatory_signature ?? "");
-  const [invoiceLanguage, setInvoiceLanguage] = useState(company?.invoice_language ?? "en");
-  const [dueAfterDays, setDueAfterDays] = useState(company?.invoice_due_after_days ?? 15);
-  const [sendReminderBefore, setSendReminderBefore] = useState(company?.send_reminder_before_days ?? 0);
-  const [sendReminderAfter, setSendReminderAfter] = useState(company?.send_reminder_after_days ?? 3);
+  const [invoiceTemplate, setInvoiceTemplate] = useState("template1");
+  const [invoiceLogo, setInvoiceLogo] = useState("");
+  const [authorisedSignatory, setAuthorisedSignatory] = useState("");
+  const [invoiceLanguage, setInvoiceLanguage] = useState("en");
+  const [dueAfterDays, setDueAfterDays] = useState(15);
+  const [sendReminderBefore, setSendReminderBefore] = useState(0);
+  const [sendReminderAfter, setSendReminderAfter] = useState(3);
   
-  const [showTaxNumber, setShowTaxNumber] = useState(company?.show_tax_number_on_invoice ?? false);
-  const [showHsnSac, setShowHsnSac] = useState(company?.hsn_sac_code_show ?? false);
-  const [showTaxCalcMessage, setShowTaxCalcMessage] = useState(company?.show_tax_calculation_message ?? false);
-  const [showStatus, setShowStatus] = useState(company?.show_status_on_invoice ?? true);
-  const [showAuthSignatory, setShowAuthSignatory] = useState(company?.show_authorised_signatory ?? false);
+  const [showTaxNumber, setShowTaxNumber] = useState(false);
+  const [showHsnSac, setShowHsnSac] = useState(false);
+  const [showTaxCalcMessage, setShowTaxCalcMessage] = useState(false);
+  const [showStatus, setShowStatus] = useState(true);
+  const [showAuthSignatory, setShowAuthSignatory] = useState(false);
   
-  const [showClientName, setShowClientName] = useState(company?.show_client_name ?? true);
-  const [showClientCompany, setShowClientCompany] = useState(company?.show_client_company_name ?? true);
-  const [showClientEmail, setShowClientEmail] = useState(company?.show_client_email ?? true);
-  const [showClientPhone, setShowClientPhone] = useState(company?.show_client_phone ?? true);
-  const [showClientAddress, setShowClientAddress] = useState(company?.show_client_address ?? true);
-  const [showProject, setShowProject] = useState(company?.show_project_on_invoice ?? true);
+  const [showClientName, setShowClientName] = useState(true);
+  const [showClientCompany, setShowClientCompany] = useState(true);
+  const [showClientEmail, setShowClientEmail] = useState(true);
+  const [showClientPhone, setShowClientPhone] = useState(true);
+  const [showClientAddress, setShowClientAddress] = useState(true);
+  const [showProject, setShowProject] = useState(true);
   
-  const [invoiceTerms, setInvoiceTerms] = useState(company?.invoice_terms ?? "Thank you for your business.");
-  const [invoiceOtherInfo, setInvoiceOtherInfo] = useState(company?.invoice_other_information ?? "");
+  const [invoiceTerms, setInvoiceTerms] = useState("Thank you for your business.");
+  const [invoiceOtherInfo, setInvoiceOtherInfo] = useState("");
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: updateCompany,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["company", "current"] });
-      setMsg({ type: "success", text: "Finance settings updated successfully." });
-      setTimeout(() => setMsg(null), 4000);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    onError: () => {
-      setMsg({ type: "error", text: "Failed to update finance settings. Please try again." });
-    },
-  });
+  // Initialize from settings when loaded
+  useEffect(() => {
+    if (invoiceSettings) {
+      setInvoicePrefix(invoiceSettings.invoice_prefix ?? "INV-");
+      setQuotePrefix(invoiceSettings.estimate_prefix ?? "QT-");
+      setDefaultTaxRate(invoiceSettings.default_tax_rate ?? "0.00");
+      setInvoiceTemplate(invoiceSettings.template_id ?? "template1");
+      setInvoiceLogo(invoiceSettings.invoice_logo ?? "");
+      setAuthorisedSignatory(invoiceSettings.authorised_signatory_signature ?? "");
+      setInvoiceLanguage(invoiceSettings.language ?? "en");
+      setDueAfterDays(invoiceSettings.invoice_due_after_days ?? 15);
+      setSendReminderBefore(invoiceSettings.send_reminder_before_days ?? 0);
+      setSendReminderAfter(invoiceSettings.send_reminder_after_days ?? 3);
+      setShowTaxNumber(invoiceSettings.show_sender_tax_number ?? false);
+      setShowHsnSac(invoiceSettings.show_hsn_sac_code ?? false);
+      setShowTaxCalcMessage(invoiceSettings.show_tax_calculation_message ?? false);
+      setShowStatus(invoiceSettings.show_status_on_invoice ?? true);
+      setShowAuthSignatory(invoiceSettings.show_authorised_signatory ?? false);
+      setShowClientName(invoiceSettings.show_client_name ?? true);
+      setShowClientCompany(invoiceSettings.show_client_company_name ?? true);
+      setShowClientEmail(invoiceSettings.show_client_email ?? true);
+      setShowClientPhone(invoiceSettings.show_client_phone ?? true);
+      setShowClientAddress(invoiceSettings.show_client_address ?? true);
+      setShowProject(invoiceSettings.show_project_on_invoice ?? true);
+      setInvoiceTerms(invoiceSettings.invoice_terms ?? "Thank you for your business.");
+      setInvoiceOtherInfo(invoiceSettings.invoice_other_information ?? "");
+    }
+  }, [invoiceSettings]);
 
-  if (!company) return (
+  if (!company || settingsLoading) return (
     <div className="flex flex-col items-center justify-center py-12 text-muted animate-pulse">
       <Loader2 className="w-8 h-8 animate-spin mb-4 text-brand/40" />
       <div className="text-sm font-medium tracking-wide uppercase">Loading settings...</div>
     </div>
   );
+
+  const handleSave = () => {
+    if (!invoiceSettings?.id) return;
+    
+    updateSettingsMutation.mutate({
+      id: invoiceSettings.id,
+      data: {
+        invoice_prefix: invoicePrefix,
+        estimate_prefix: quotePrefix,
+        default_tax_rate: defaultTaxRate,
+        template_id: invoiceTemplate,
+        invoice_logo: invoiceLogo,
+        authorised_signatory_signature: authorisedSignatory,
+        language: invoiceLanguage,
+        invoice_due_after_days: dueAfterDays,
+        send_reminder_before_days: sendReminderBefore,
+        send_reminder_after_days: sendReminderAfter,
+        show_sender_tax_number: showTaxNumber,
+        show_hsn_sac_code: showHsnSac,
+        show_tax_calculation_message: showTaxCalcMessage,
+        show_status_on_invoice: showStatus,
+        show_authorised_signatory: showAuthSignatory,
+        show_client_name: showClientName,
+        show_client_company_name: showClientCompany,
+        show_client_email: showClientEmail,
+        show_client_phone: showClientPhone,
+        show_client_address: showClientAddress,
+        show_project_on_invoice: showProject,
+        invoice_terms: invoiceTerms,
+        invoice_other_information: invoiceOtherInfo,
+      }
+    }, {
+      onSuccess: () => {
+        setMsg({ type: "success", text: "Finance settings updated successfully." });
+        setTimeout(() => setMsg(null), 4000);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+      onError: () => {
+        setMsg({ type: "error", text: "Failed to update finance settings. Please try again." });
+      }
+    });
+  };
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -85,37 +145,14 @@ export function FinanceSettingsForm() {
         
         {isAdmin && (
           <button
-            onClick={() => mutation.mutate({
-              invoice_prefix: invoicePrefix,
-              quote_prefix: quotePrefix,
-              default_tax_rate: defaultTaxRate,
-              payment_terms: paymentTerms,
-              invoice_template: invoiceTemplate,
-              invoice_logo: invoiceLogo,
-              authorised_signatory_signature: authorisedSignatory,
-              invoice_language: invoiceLanguage,
-              invoice_due_after_days: dueAfterDays,
-              send_reminder_before_days: sendReminderBefore,
-              send_reminder_after_days: sendReminderAfter,
-              show_tax_number_on_invoice: showTaxNumber,
-              hsn_sac_code_show: showHsnSac,
-              show_tax_calculation_message: showTaxCalcMessage,
-              show_status_on_invoice: showStatus,
-              show_authorised_signatory: showAuthSignatory,
-              show_client_name: showClientName,
-              show_client_company_name: showClientCompany,
-              show_client_email: showClientEmail,
-              show_client_phone: showClientPhone,
-              show_client_address: showClientAddress,
-              show_project_on_invoice: showProject,
-              invoice_terms: invoiceTerms,
-              invoice_other_information: invoiceOtherInfo,
-            })}
-            disabled={mutation.isPending}
-            className="btn btn-primary shadow-md hover:shadow-lg transition-all h-11 px-6 rounded-xl font-medium flex items-center gap-2 shrink-0 group relative overflow-hidden"
+            onClick={handleSave}
+            disabled={updateSettingsMutation.isPending}
+            className={cn(
+              "btn px-6 py-2.5 rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2",
+              updateSettingsMutation.isPending ? "btn-secondary opacity-70" : "btn-primary bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
+            )}
           >
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-            {mutation.isPending ? (
+            {updateSettingsMutation.isPending ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
             ) : (
               <><CheckCircle className="w-4 h-4" /> Save Settings</>

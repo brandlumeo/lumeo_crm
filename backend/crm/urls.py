@@ -14,6 +14,9 @@ from .views import (
     ProductViewSet,
     QuoteViewSet,
     InvoiceViewSet,
+    UnitViewSet,
+    PaymentMethodViewSet,
+    InvoiceSettingsViewSet,
     CustomFieldDefinitionViewSet,
     WorkflowRuleViewSet,
     WorkflowSequenceViewSet,
@@ -58,6 +61,9 @@ router.register("attachments", AttachmentViewSet, basename="attachment")
 router.register("products", ProductViewSet, basename="product")
 router.register("quotes", QuoteViewSet, basename="quote")
 router.register("invoices", InvoiceViewSet, basename="invoice")
+router.register("invoice-settings", InvoiceSettingsViewSet, basename="invoice-settings")
+router.register("units", UnitViewSet, basename="unit")
+router.register("payment-methods", PaymentMethodViewSet, basename="payment-method")
 router.register("custom-fields", CustomFieldDefinitionViewSet, basename="custom-field")
 router.register("workflow-rules", WorkflowRuleViewSet, basename="workflow-rule")
 router.register("workflow-sequences", WorkflowSequenceViewSet, basename="workflow-sequence")
