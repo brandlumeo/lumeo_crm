@@ -473,6 +473,7 @@ export interface Product {
   description: string;
   price: string;
   tax_rate: string;
+  hsn_sac_code?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -484,6 +485,7 @@ export interface ProductInput {
   description?: string;
   price: string;
   tax_rate?: string;
+  hsn_sac_code?: string;
   is_active?: boolean;
 }
 
