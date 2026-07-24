@@ -1504,3 +1504,8 @@ export function useUpdateInvoiceSettings() {
     },
   });
 }
+
+export function usePaymentMethods() { return useQuery({ queryKey: ['paymentMethods'], queryFn: () => import('./api').then(m => m.getPaymentMethods()) }); }
+export function useCreatePaymentMethod() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (data: any) => import('./api').then(m => m.createPaymentMethod(data)), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['paymentMethods'] }); } }); }
+export function useUpdatePaymentMethod() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (args: {id: number, data: any}) => import('./api').then(m => m.updatePaymentMethod(args)), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['paymentMethods'] }); } }); }
+export function useDeletePaymentMethod() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (id: number) => import('./api').then(m => m.deletePaymentMethod(id)), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['paymentMethods'] }); } }); }

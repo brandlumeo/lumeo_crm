@@ -4,18 +4,19 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   DollarSign, Loader2, CheckCircle, XCircle, Shield, 
-  FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard
+  FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard, Cloud, UploadCloud, Link as LinkIcon
 } from "lucide-react";
-import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings } from "@/lib/queries";
+import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings, usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod, useUpdateCompany } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 export function FinanceSettingsForm() {
   const { data: company } = useCurrentCompany();
   const { data: user } = useCurrentUser();
   const { data: invoiceSettings, isLoading: settingsLoading } = useInvoiceSettings();
+  const { data: paymentMethods, isLoading: paymentMethodsLoading } = usePaymentMethods();
   const updateSettingsMutation = useUpdateInvoiceSettings();
 
-  const [activeTab, setActiveTab] = useState("general"); // general, prefix, template, units
+  const [activeTab, setActiveTab] = useState("general"); // general, template, prefix, units, quickbooks, payment
 
   // General Settings
   const [defaultTaxRate, setDefaultTaxRate] = useState("0.00");
@@ -62,6 +63,19 @@ export function FinanceSettingsForm() {
   // Template Settings
   const [invoiceTemplate, setInvoiceTemplate] = useState("template1");
 
+  // Quickbooks Settings
+  const [quickbooksSyncStatus, setQuickbooksSyncStatus] = useState(false);
+
+  // Payment Gateways Settings
+  const [stripePublicKey, setStripePublicKey] = useState("");
+  const [stripeSecretKey, setStripeSecretKey] = useState("");
+  const [paypalClientId, setPaypalClientId] = useState("");
+  const [paypalSecret, setPaypalSecret] = useState("");
+  const [razorpayKeyId, setRazorpayKeyId] = useState("");
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
+
+  const updateCompanyMutation = useUpdateCompany();
+
   const isAdmin = user?.role === "owner" || user?.role === "admin";
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -88,6 +102,7 @@ export function FinanceSettingsForm() {
       setShowProject(invoiceSettings.show_project_on_invoice ?? true);
       setInvoiceTerms(invoiceSettings.invoice_terms ?? "Thank you for your business.");
       setInvoiceOtherInfo(invoiceSettings.invoice_other_information ?? "");
+      setQuickbooksSyncStatus(invoiceSettings.quickbooks_sync_status ?? false);
 
       setInvoicePrefix(invoiceSettings.invoice_prefix ?? "INV");
       setInvoiceSeparator(invoiceSettings.invoice_separator ?? "-");
@@ -105,7 +120,16 @@ export function FinanceSettingsForm() {
       setOrderSeparator(invoiceSettings.order_separator ?? "-");
       setOrderDigits(invoiceSettings.order_digits ?? 5);
     }
-  }, [invoiceSettings]);
+    
+    if (company) {
+      setStripePublicKey(company.stripe_public_key ?? "");
+      setStripeSecretKey(company.stripe_secret_key ?? "");
+      setPaypalClientId(company.paypal_client_id ?? "");
+      setPaypalSecret(company.paypal_secret ?? "");
+      setRazorpayKeyId(company.razorpay_key_id ?? "");
+      setRazorpayKeySecret(company.razorpay_key_secret ?? "");
+    }
+  }, [invoiceSettings, company]);
 
   if (!company || settingsLoading) return (
     <div className="flex flex-col items-center justify-center py-12 text-muted animate-pulse">
@@ -141,6 +165,7 @@ export function FinanceSettingsForm() {
         show_project_on_invoice: showProject,
         invoice_terms: invoiceTerms,
         invoice_other_information: invoiceOtherInfo,
+        quickbooks_sync_status: quickbooksSyncStatus,
         
         invoice_prefix: invoicePrefix,
         invoice_separator: invoiceSeparator,
@@ -160,8 +185,23 @@ export function FinanceSettingsForm() {
       }
     }, {
       onSuccess: () => {
-        setMsg({ type: "success", text: "Finance settings updated successfully." });
-        setTimeout(() => setMsg(null), 4000);
+        // Also update company settings (payment gateways)
+        updateCompanyMutation.mutate({
+          id: company.id,
+          data: {
+            stripe_public_key: stripePublicKey,
+            stripe_secret_key: stripeSecretKey,
+            paypal_client_id: paypalClientId,
+            paypal_secret: paypalSecret,
+            razorpay_key_id: razorpayKeyId,
+            razorpay_key_secret: razorpayKeySecret,
+          }
+        }, {
+          onSuccess: () => {
+            setMsg({ type: "success", text: "Finance settings updated successfully." });
+            setTimeout(() => setMsg(null), 4000);
+          }
+        });
       },
       onError: () => {
         setMsg({ type: "error", text: "Failed to update finance settings. Please try again." });
@@ -188,16 +228,16 @@ export function FinanceSettingsForm() {
           </div>
         </div>
         
-        {isAdmin && (
+        {isAdmin && activeTab !== "payment" && (
           <button
             onClick={handleSave}
-            disabled={updateSettingsMutation.isPending}
+            disabled={updateSettingsMutation.isPending || updateCompanyMutation.isPending}
             className={cn(
               "btn px-6 py-2.5 rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2",
-              updateSettingsMutation.isPending ? "btn-secondary opacity-70" : "btn-primary bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
+              (updateSettingsMutation.isPending || updateCompanyMutation.isPending) ? "btn-secondary opacity-70" : "btn-primary bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
             )}
           >
-            {updateSettingsMutation.isPending ? (
+            {(updateSettingsMutation.isPending || updateCompanyMutation.isPending) ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
             ) : (
               <><CheckCircle className="w-4 h-4" /> Save Settings</>
@@ -231,6 +271,8 @@ export function FinanceSettingsForm() {
           { id: "template", label: "Invoice Template", icon: LayoutDashboard },
           { id: "prefix", label: "Prefix Settings", icon: Hash },
           { id: "units", label: "Units", icon: Grid },
+          { id: "quickbooks", label: "Quickbooks Settings", icon: Cloud },
+          { id: "payment", label: "Invoice Payment Details", icon: Wallet },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -255,7 +297,7 @@ export function FinanceSettingsForm() {
           <div className="space-y-8 animate-fade-in">
             {/* Payment Details & Branding */}
             <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8">
-              <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Invoice Payment Details</h4>
+              <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Invoice Appearance</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
                  <div className="space-y-1.5">
                     <label className="text-[13.5px] font-medium text-ink">Invoice Logo</label>
@@ -522,6 +564,7 @@ export function FinanceSettingsForm() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
+                        {/* Mock units until full CRUD */}
                         <tr className="hover:bg-bone/20 transition-colors">
                             <td className="px-6 py-4">1</td>
                             <td className="px-6 py-4 font-medium text-ink">Hours</td>
@@ -547,10 +590,242 @@ export function FinanceSettingsForm() {
             </div>
           </div>
         )}
+        
+        {/* TAB: QUICKBOOKS SETTINGS */}
+        {activeTab === "quickbooks" && (
+          <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8 animate-fade-in">
+            <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Quickbooks Settings</h4>
+            
+            <div className="bg-cyan-50 text-cyan-800 border border-cyan-200 rounded-xl p-4 text-[13.5px] flex gap-3 shadow-sm items-start mb-6">
+                <LinkIcon className="w-5 h-5 shrink-0 text-cyan-600 mt-0.5" />
+                <span className="font-medium">It is only One-Way Sync. If you create an invoice or payment here then an invoice or payment will be created on Quickbooks too.</span>
+            </div>
+            
+            <div className="max-w-md">
+                <ToggleSwitch 
+                    label="Sync Status" 
+                    checked={quickbooksSyncStatus} 
+                    onChange={setQuickbooksSyncStatus} 
+                    disabled={!isAdmin} 
+                />
+            </div>
+          </div>
+        )}
+        
+        {/* TAB: INVOICE PAYMENT DETAILS */}
+        {activeTab === "payment" && (
+          <div className="space-y-6">
+            <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8 animate-fade-in">
+                <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Payment Gateways</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Razorpay */}
+                    <div className="space-y-4">
+                        <h5 className="font-medium text-ink flex items-center gap-2"><Wallet className="w-4 h-4" /> Razorpay</h5>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-[13px] font-medium text-muted block mb-1">Key ID</label>
+                                <input type="text" value={razorpayKeyId} onChange={e => setRazorpayKeyId(e.target.value)} disabled={!isAdmin} className="input w-full bg-bone/30 focus:bg-white" placeholder="rzp_test_..." />
+                            </div>
+                            <div>
+                                <label className="text-[13px] font-medium text-muted block mb-1">Key Secret</label>
+                                <input type="password" value={razorpayKeySecret} onChange={e => setRazorpayKeySecret(e.target.value)} disabled={!isAdmin} className="input w-full bg-bone/30 focus:bg-white" placeholder="Secret Key" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stripe */}
+                    <div className="space-y-4">
+                        <h5 className="font-medium text-ink flex items-center gap-2"><DollarSign className="w-4 h-4" /> Stripe</h5>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-[13px] font-medium text-muted block mb-1">Public Key</label>
+                                <input type="text" value={stripePublicKey} onChange={e => setStripePublicKey(e.target.value)} disabled={!isAdmin} className="input w-full bg-bone/30 focus:bg-white" placeholder="pk_test_..." />
+                            </div>
+                            <div>
+                                <label className="text-[13px] font-medium text-muted block mb-1">Secret Key</label>
+                                <input type="password" value={stripeSecretKey} onChange={e => setStripeSecretKey(e.target.value)} disabled={!isAdmin} className="input w-full bg-bone/30 focus:bg-white" placeholder="sk_test_..." />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PayPal */}
+                    <div className="space-y-4 md:col-span-2 max-w-md">
+                        <h5 className="font-medium text-ink flex items-center gap-2"><Wallet className="w-4 h-4" /> PayPal</h5>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-[13px] font-medium text-muted block mb-1">Client ID</label>
+                                <input type="text" value={paypalClientId} onChange={e => setPaypalClientId(e.target.value)} disabled={!isAdmin} className="input w-full bg-bone/30 focus:bg-white" placeholder="Client ID" />
+                            </div>
+                            <div>
+                                <label className="text-[13px] font-medium text-muted block mb-1">Secret</label>
+                                <input type="password" value={paypalSecret} onChange={e => setPaypalSecret(e.target.value)} disabled={!isAdmin} className="input w-full bg-bone/30 focus:bg-white" placeholder="Secret" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <PaymentDetailsTab isAdmin={isAdmin} paymentMethods={paymentMethods || []} isLoading={paymentMethodsLoading} />
+          </div>
+        )}
 
       </div>
     </div>
   );
+}
+
+// Payment Details Tab Subcomponent
+function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: boolean, paymentMethods: any[], isLoading: boolean }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingMethod, setEditingMethod] = useState<any | null>(null);
+    const createMutation = useCreatePaymentMethod();
+    const updateMutation = useUpdatePaymentMethod();
+    const deleteMutation = useDeletePaymentMethod();
+    
+    const [title, setTitle] = useState("");
+    const [details, setDetails] = useState("");
+    const [qrCode, setQrCode] = useState("");
+
+    const openModal = (method: any | null = null) => {
+        setEditingMethod(method);
+        setTitle(method ? method.title : "");
+        setDetails(method ? method.details : "");
+        setQrCode(method ? (method.qr_code || "") : "");
+        setIsModalOpen(true);
+    };
+
+    const handleSave = () => {
+        if (!title.trim()) return;
+        
+        const payload = { title, details, qr_code: qrCode };
+        
+        if (editingMethod) {
+            updateMutation.mutate({ id: editingMethod.id, data: payload }, {
+                onSuccess: () => setIsModalOpen(false)
+            });
+        } else {
+            createMutation.mutate(payload, {
+                onSuccess: () => setIsModalOpen(false)
+            });
+        }
+    };
+    
+    const handleDelete = (id: number) => {
+        if (confirm("Are you sure you want to delete this payment method?")) {
+            deleteMutation.mutate(id);
+        }
+    };
+
+    return (
+        <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
+            <div className="p-6 md:p-8 flex items-center justify-between border-b border-line/50">
+              <h4 className="text-[16px] font-semibold text-ink">Invoice Payment Details</h4>
+              {isAdmin && (
+                <button 
+                  onClick={() => openModal()}
+                  className="btn btn-primary text-[13px] px-4 py-2 bg-ink hover:bg-ink/80 text-white rounded-lg flex items-center gap-2 transition-colors">
+                    <Plus className="w-4 h-4" /> Add Payment Detail
+                </button>
+              )}
+            </div>
+            
+            {isLoading ? (
+                <div className="p-12 flex justify-center text-muted"><Loader2 className="w-8 h-8 animate-spin" /></div>
+            ) : paymentMethods.length === 0 ? (
+                <div className="p-12 text-center flex flex-col items-center justify-center text-muted">
+                    <div className="w-16 h-16 bg-bone rounded-full flex items-center justify-center mb-4">
+                        <Wallet className="w-8 h-8 opacity-50" />
+                    </div>
+                    <p className="text-[14px]">No payment details configured yet.</p>
+                </div>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[13.5px]">
+                        <thead className="bg-bone/40 text-muted border-b border-line">
+                            <tr>
+                                <th className="px-6 py-4 font-medium">Title</th>
+                                <th className="px-6 py-4 font-medium">Payment Details</th>
+                                <th className="px-6 py-4 font-medium text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                            {paymentMethods.map((method: any) => (
+                                <tr key={method.id} className="hover:bg-bone/20 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-ink w-1/4">{method.title}</td>
+                                    <td className="px-6 py-4 text-muted max-w-md whitespace-pre-wrap">{method.details}</td>
+                                    <td className="px-6 py-4 text-right w-32">
+                                        {isAdmin && (
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button onClick={() => openModal(method)} className="p-2 text-muted hover:text-brand bg-bone/30 hover:bg-brand/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
+                                                <button onClick={() => handleDelete(method.id)} className="p-2 text-muted hover:text-rose-600 bg-bone/30 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+            
+            {/* Payment Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-paper w-full max-w-xl rounded-2xl shadow-xl overflow-hidden animate-rise">
+                        <div className="flex items-center justify-between p-5 border-b border-line">
+                            <h3 className="font-semibold text-[16px] text-ink">{editingMethod ? "Edit Payment Detail" : "Add Payment Detail"}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="p-1.5 text-muted hover:text-ink rounded-lg transition-colors"><XCircle className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div className="space-y-1.5">
+                                <label className="text-[13px] font-medium text-muted">Title <span className="text-rose-500">*</span></label>
+                                <input 
+                                    type="text" 
+                                    value={title} 
+                                    onChange={e => setTitle(e.target.value)} 
+                                    placeholder="Payment Description (e.g. HDFC)"
+                                    className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line" 
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[13px] font-medium text-muted">Payment Details</label>
+                                <textarea 
+                                    value={details} 
+                                    onChange={e => setDetails(e.target.value)} 
+                                    placeholder="Add Payment Method Details (e.g., Bank Account, Transfer Information)"
+                                    className="input w-full p-3 min-h-[100px] bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line resize-none" 
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[13px] font-medium text-muted">QR Code URL</label>
+                                <div className="border-2 border-dashed border-line rounded-xl p-6 flex flex-col items-center justify-center bg-bone/20 hover:bg-bone/40 transition-colors group text-center relative overflow-hidden">
+                                    <input 
+                                        type="url" 
+                                        value={qrCode} 
+                                        onChange={e => setQrCode(e.target.value)} 
+                                        placeholder="Enter image URL for QR code..."
+                                        className="w-full h-11 px-4 text-[13px] bg-white border border-line rounded-lg focus:outline-brand/50 z-10"
+                                    />
+                                    {qrCode && (
+                                        <div className="mt-4 p-2 bg-white rounded-lg border border-line shadow-sm relative">
+                                            <img src={qrCode} alt="QR Code Preview" className="w-24 h-24 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-3 p-5 border-t border-line bg-bone/30">
+                            <button onClick={() => setIsModalOpen(false)} className="btn text-[14px] px-5 py-2 hover:bg-bone/80 text-muted font-medium transition-colors">Close</button>
+                            <button onClick={handleSave} disabled={!title.trim() || createMutation.isPending || updateMutation.isPending} className="btn bg-brand hover:bg-brand-600 text-white px-6 py-2 rounded-xl text-[14px] font-medium flex items-center gap-2 shadow-sm transition-all disabled:opacity-50">
+                                {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 // Subcomponents
