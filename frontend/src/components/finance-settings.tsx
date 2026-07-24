@@ -7,6 +7,7 @@ import {
   FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard, Cloud, UploadCloud, Link as LinkIcon
 } from "lucide-react";
 import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings, usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod, useUpdateCompany } from "@/lib/queries";
+import { uploadAttachment } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export function FinanceSettingsForm() {
@@ -206,6 +207,38 @@ export function FinanceSettingsForm() {
     });
   };
 
+  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      setMsg({ type: "success", text: "Uploading logo..." });
+      const attachment = await uploadAttachment(formData);
+      setInvoiceLogo(attachment.file);
+      setMsg({ type: "success", text: "Logo uploaded successfully. Make sure to click Save Settings." });
+      setTimeout(() => setMsg(null), 4000);
+    } catch (err) {
+      setMsg({ type: "error", text: "Failed to upload logo." });
+    }
+  };
+
+  const handleUploadSignature = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      setMsg({ type: "success", text: "Uploading signature..." });
+      const attachment = await uploadAttachment(formData);
+      setAuthorisedSignatory(attachment.file);
+      setMsg({ type: "success", text: "Signature uploaded successfully. Make sure to click Save Settings." });
+      setTimeout(() => setMsg(null), 4000);
+    } catch (err) {
+      setMsg({ type: "error", text: "Failed to upload signature." });
+    }
+  };
+
   const generatePreview = (prefix: string, separator: string, digits: number) => {
     return `${prefix}${separator}${"1".padStart(digits, "0")}`;
   };
@@ -299,6 +332,7 @@ export function FinanceSettingsForm() {
                  <div className="space-y-1.5">
                     <label className="text-[13.5px] font-medium text-ink">Invoice Logo</label>
                     <div className="w-full h-32 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center bg-bone/30 hover:bg-bone/50 transition-colors cursor-pointer text-muted relative overflow-hidden group">
+                        <input type="file" accept="image/*" onChange={handleUploadLogo} disabled={!isAdmin} className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full" title="Upload Logo" />
                         {invoiceLogo ? (
                           <img src={invoiceLogo} alt="Logo" className="object-contain w-full h-full p-2" />
                         ) : (
@@ -312,6 +346,7 @@ export function FinanceSettingsForm() {
                  <div className="space-y-1.5">
                     <label className="text-[13.5px] font-medium text-ink">Authorised Signature</label>
                     <div className="w-full h-32 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center bg-bone/30 hover:bg-bone/50 transition-colors cursor-pointer text-muted relative overflow-hidden group">
+                        <input type="file" accept="image/*" onChange={handleUploadSignature} disabled={!isAdmin} className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full" title="Upload Signature" />
                         {authorisedSignatory ? (
                           <img src={authorisedSignatory} alt="Signature" className="object-contain w-full h-full p-2" />
                         ) : (
