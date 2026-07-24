@@ -1368,3 +1368,24 @@ export async function requestSetup() {
   const { data } = await api.post<{ status: string; message: string }>(endpoints.requestSetup);
   return data;
 }
+
+// ── Payment Methods ───────────────────────────────────────────────────────────────────
+
+export const getPaymentMethods = async () => {
+  const res = await api.get<any[]>("/companies/payment-methods/");
+  return res.data;
+};
+
+export const createPaymentMethod = async (data: any) => {
+  const res = await api.post("/companies/payment-methods/", data);
+  return res.data;
+};
+
+export const updatePaymentMethod = async ({ id, data }: { id: number; data: any }) => {
+  const res = await api.put(`/companies/payment-methods/${id}/`, data);
+  return res.data;
+};
+
+export const deletePaymentMethod = async (id: number) => {
+  await api.delete(`/companies/payment-methods/${id}/`);
+};
