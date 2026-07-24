@@ -378,8 +378,8 @@ class Attachment(models.Model):
     def clean(self):
         super().clean()
         linked_objects = [self.lead_id, self.deal_id, self.customer_id]
-        if sum(x is not None for x in linked_objects) != 1:
-            raise ValidationError("An attachment must be linked to exactly one of Lead, Deal, or Customer.")
+        if sum(x is not None for x in linked_objects) > 1:
+            raise ValidationError("An attachment cannot be linked to more than one of Lead, Deal, or Customer.")
 
     def save(self, *args, **kwargs):
         if self.file and not self.file_name:
