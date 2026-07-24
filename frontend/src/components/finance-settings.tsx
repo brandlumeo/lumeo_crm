@@ -215,7 +215,7 @@ export function FinanceSettingsForm() {
     try {
       setMsg({ type: "success", text: "Uploading logo..." });
       const attachment = await uploadAttachment(formData);
-      setInvoiceLogo(attachment.file);
+      setInvoiceLogo(attachment.file_url);
       setMsg({ type: "success", text: "Logo uploaded successfully. Make sure to click Save Settings." });
       setTimeout(() => setMsg(null), 4000);
     } catch (err) {
@@ -231,7 +231,7 @@ export function FinanceSettingsForm() {
     try {
       setMsg({ type: "success", text: "Uploading signature..." });
       const attachment = await uploadAttachment(formData);
-      setAuthorisedSignatory(attachment.file);
+      setAuthorisedSignatory(attachment.file_url);
       setMsg({ type: "success", text: "Signature uploaded successfully. Make sure to click Save Settings." });
       setTimeout(() => setMsg(null), 4000);
     } catch (err) {
