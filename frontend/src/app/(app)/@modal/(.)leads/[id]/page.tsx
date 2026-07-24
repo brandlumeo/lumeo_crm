@@ -13,6 +13,7 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
 import { CustomFieldsDisplay } from "@/components/custom-fields-display";
 import { LeadTasks } from "@/components/lead-tasks";
+import { LeadJourney } from "@/components/lead-journey";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
 import { Drawer } from "@/components/drawer";
 
@@ -404,6 +405,8 @@ export default function InterceptedLeadPage({ params }: { params: Promise<{ id: 
         </div>
         
         <EditLeadModal lead={lead} open={showEditModal} onOpenChange={setShowEditModal} />
+        
+        <LeadJourney lead={lead} />
         
         <PredictiveScoreCard lead={lead} />
         
