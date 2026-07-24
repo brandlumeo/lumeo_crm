@@ -576,15 +576,24 @@ class QuoteSerializer(CompanyScopedSerializer):
         items_data = validated_data.pop("items", [])
         
         # Auto generate quote number
-        import uuid
         user = self.context.get("request").user
-        prefix = "QT-"
+        prefix = "QT"
+        separator = "-"
+        digits = 5
         if user and hasattr(user, "company"):
             try:
-                prefix = user.company.invoice_settings.estimate_prefix or "QT-"
+                settings = user.company.invoice_settings
+                prefix = settings.estimate_prefix or "QT"
+                separator = settings.invoice_separator or "-"
+                digits = settings.invoice_digits or 5
             except Exception:
                 pass
-        validated_data["quote_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
+                
+        from .models import Quote
+        company = user.company if hasattr(user, "company") else None
+        count = Quote.objects.filter(company=company).count() if company else 0
+        next_number = str(count + 1).zfill(digits)
+        validated_data["quote_number"] = f"{prefix}{separator}{next_number}"
         
         quote = super().create(validated_data)
         
@@ -656,11 +665,17 @@ class InvoiceSerializer(CompanyScopedSerializer):
     amount_paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     amount_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     settings = serializers.SerializerMethodField()
+    payment_methods = serializers.SerializerMethodField()
     
     def get_settings(self, obj):
         if hasattr(obj.company, 'invoice_settings'):
             return PublicInvoiceSettingsSerializer(obj.company.invoice_settings).data
         return None
+
+    def get_payment_methods(self, obj):
+        from companies.serializers import PaymentMethodSerializer
+        methods = obj.company.payment_methods.all()
+        return PaymentMethodSerializer(methods, many=True).data
 
     class Meta:
         model = Invoice
@@ -678,14 +693,17 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "status",
             "issue_date",
             "due_date",
+            "notes",
+            "terms",
             "subtotal",
             "tax_amount",
             "total",
-            "items",
-            "payments",
             "amount_paid",
             "amount_due",
+            "items",
+            "payments",
             "settings",
+            "payment_methods",
             "public_token",
             "signature_data",
             "signed_at",
@@ -700,15 +718,25 @@ class InvoiceSerializer(CompanyScopedSerializer):
         items_data = validated_data.pop("items", [])
         
         # Auto generate invoice number
-        import uuid
         user = self.context.get("request").user
-        prefix = "INV-"
+        prefix = "INV"
+        separator = "-"
+        digits = 5
         if user and hasattr(user, "company"):
             try:
-                prefix = user.company.invoice_settings.invoice_prefix or "INV-"
+                settings = user.company.invoice_settings
+                prefix = settings.invoice_prefix or "INV"
+                separator = settings.invoice_separator or "-"
+                digits = settings.invoice_digits or 5
             except Exception:
                 pass
-        validated_data["invoice_number"] = f"{prefix}{uuid.uuid4().hex[:8].upper()}"
+                
+        # Count existing invoices to generate next number
+        from .models import Invoice
+        company = user.company if hasattr(user, "company") else None
+        count = Invoice.objects.filter(company=company).count() if company else 0
+        next_number = str(count + 1).zfill(digits)
+        validated_data["invoice_number"] = f"{prefix}{separator}{next_number}"
         
         invoice = super().create(validated_data)
         

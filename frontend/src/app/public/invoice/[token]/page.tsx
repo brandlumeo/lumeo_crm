@@ -140,37 +140,37 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         
         {/* Invoice Document */}
         <div className={`rounded-2xl shadow-sm border p-8 md:p-12 ${
-          invoice.company?.invoice_template === 'template1' ? 'bg-blue-50/30 border-blue-100' :
-          invoice.company?.invoice_template === 'template2' ? 'bg-white border-line shadow-md' :
-          invoice.company?.invoice_template === 'template3' ? 'bg-zinc-900 border-zinc-800 text-white' :
-          invoice.company?.invoice_template === 'template4' ? 'bg-slate-50 border-slate-200 border-l-4 border-l-slate-800' :
-          invoice.company?.invoice_template === 'template5' ? 'bg-emerald-50/30 border-emerald-100' :
+          invoice.settings?.template_id === 'template1' ? 'bg-blue-50/30 border-blue-100' :
+          invoice.settings?.template_id === 'template2' ? 'bg-white border-line shadow-md' :
+          invoice.settings?.template_id === 'template3' ? 'bg-zinc-900 border-zinc-800 text-white' :
+          invoice.settings?.template_id === 'template4' ? 'bg-slate-50 border-slate-200 border-l-4 border-l-slate-800' :
+          invoice.settings?.template_id === 'template5' ? 'bg-emerald-50/30 border-emerald-100' :
           'bg-paper border-line'
         }`}>
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8">
             <div>
-              {invoice.company?.invoice_logo ? (
-                <img src={invoice.company.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" />
+              {invoice.settings?.invoice_logo ? (
+                <img src={invoice.settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" />
               ) : (
-                <h1 className={`text-4xl font-bold mb-2 ${invoice.company?.invoice_template === 'template3' ? 'text-white' : 'text-ink'}`}>INVOICE</h1>
+                <h1 className={`text-4xl font-bold mb-2 ${invoice.settings?.template_id === 'template3' ? 'text-white' : 'text-ink'}`}>INVOICE</h1>
               )}
               <p className="text-muted text-sm uppercase tracking-wider font-medium">{invoice.invoice_number}</p>
             </div>
             <div className="text-right">
-              <h2 className={`text-xl font-semibold ${invoice.company?.invoice_template === 'template3' ? 'text-white' : 'text-ink'}`}>{invoice.company?.name || "Company"}</h2>
-              {invoice.company?.company_website && <p className={`text-sm ${invoice.company?.invoice_template === 'template3' ? 'text-gray-300' : 'text-muted'} mt-1`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
-              {invoice.company?.company_email && <p className={`text-sm ${invoice.company?.invoice_template === 'template3' ? 'text-gray-300' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
+              <h2 className={`text-xl font-semibold ${invoice.settings?.template_id === 'template3' ? 'text-white' : 'text-ink'}`}>{invoice.company?.name || "Company"}</h2>
+              {invoice.company?.company_website && <p className={`text-sm ${invoice.settings?.template_id === 'template3' ? 'text-gray-300' : 'text-muted'} mt-1`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
+              {invoice.company?.company_email && <p className={`text-sm ${invoice.settings?.template_id === 'template3' ? 'text-gray-300' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
               <div className="mt-4 space-y-1">
                 <p className="text-sm text-muted">Issue Date: <span className="font-medium">{invoice.issue_date}</span></p>
                 {invoice.due_date && <p className="text-sm text-muted">Due Date: <span className="font-medium">{invoice.due_date}</span></p>}
-                {invoice.company?.show_project_on_invoice && invoice.deal_details && (
+                {invoice.settings?.show_project_on_invoice && invoice.deal_details && (
                   <p className="text-sm text-muted">Project/Deal: <span className="font-medium">{invoice.deal_details.title}</span></p>
                 )}
-                {invoice.company?.show_tax_number_on_invoice && invoice.company?.tax_id && (
+                {invoice.settings?.show_sender_tax_number && invoice.company?.tax_id && (
                   <p className="text-sm text-muted">{invoice.company.tax_id_label || "Tax ID"}: <span className="font-medium">{invoice.company.tax_id}</span></p>
                 )}
               </div>
-              {invoice.company?.show_status_on_invoice && (
+              {invoice.settings?.show_status_on_invoice && (
                 <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                   Status: <span className="capitalize">{invoice.status.replace("_", " ")}</span>
                 </div>
@@ -181,13 +181,13 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
           <div className="mb-8">
             <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2">Billed To</h3>
             <div className="font-medium text-lg">{invoice.customer_details?.name}</div>
-            {invoice.company?.show_client_company_name && typeof (invoice.customer_details as any)?.company_name === 'string' && (
+            {invoice.settings?.show_client_company_name && typeof (invoice.customer_details as any)?.company_name === 'string' && (
               <div className="text-muted">{(invoice.customer_details as any).company_name}</div>
             )}
-            {invoice.company?.show_client_email && invoice.customer_details?.email && (
+            {invoice.settings?.show_client_email && invoice.customer_details?.email && (
               <div className="text-muted">{invoice.customer_details.email}</div>
             )}
-            {invoice.company?.show_client_phone && invoice.customer_details?.phone && (
+            {invoice.settings?.show_client_phone && invoice.customer_details?.phone && (
               <div className="text-muted">{invoice.customer_details.phone}</div>
             )}
           </div>
@@ -224,27 +224,27 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             
             {/* Terms and Info Section */}
             <div className="flex-1 space-y-6">
-              {invoice.company?.invoice_terms && (
+              {invoice.settings?.invoice_terms && (
                 <div>
                   <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>
-                  <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.company.invoice_terms}</p>
+                  <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.settings.invoice_terms}</p>
                 </div>
               )}
-              {invoice.company?.invoice_other_information && (
+              {invoice.settings?.invoice_other_information && (
                 <div>
                   <h4 className="text-sm font-semibold text-ink mb-1">Other Information / Bank Details</h4>
-                  <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.company.invoice_other_information}</p>
+                  <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.settings.invoice_other_information}</p>
                 </div>
               )}
-              {invoice.company?.show_tax_calculation_message && (
+              {invoice.settings?.show_tax_calculation_message && (
                 <div>
                   <p className="text-xs text-muted italic">Note: Tax is calculated based on applicable local rates.</p>
                 </div>
               )}
-              {invoice.company?.show_authorised_signatory && (
+              {invoice.settings?.show_authorised_signatory && (
                 <div className="pt-6">
-                  {invoice.company?.authorised_signatory_signature ? (
-                    <img src={invoice.company.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
+                  {invoice.settings?.authorised_signatory_signature ? (
+                    <img src={invoice.settings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
                   ) : (
                     <div className="h-12 border-b border-line w-32 mb-2"></div>
                   )}
@@ -350,23 +350,44 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
         {/* Payment Section */}
         {(parseFloat(invoice.amount_due || "0") > 0) && (
-          <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 text-center">
-            <h3 className="text-2xl font-semibold text-ink mb-2">Pay Invoice</h3>
-            <p className="text-muted mb-8">Securely pay this invoice using Razorpay.</p>
-            <button
-              onClick={handlePay}
-              disabled={payMutation.isPending || verifyMutation.isPending}
-              className="bg-ink text-paper px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2 min-w-[200px] justify-center"
-            >
-              {payMutation.isPending || verifyMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5" />
-                  Pay {formatCurrency(parseFloat(invoice.amount_due || "0"), invoice.company?.currency)}
-                </>
+          <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
+            <h3 className="text-2xl font-semibold text-ink mb-6 text-center">Payment Methods</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px]">
+                <p className="text-muted mb-6">Securely pay this invoice using Razorpay.</p>
+                <button
+                  onClick={handlePay}
+                  disabled={payMutation.isPending || verifyMutation.isPending}
+                  className="bg-ink text-paper px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2 w-full max-w-[250px] justify-center"
+                >
+                  {payMutation.isPending || verifyMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      Pay {formatCurrency(parseFloat(invoice.amount_due || "0"), invoice.company?.currency)}
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {invoice.payment_methods && invoice.payment_methods.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-ink mb-3 border-b border-line pb-2">Other Payment Options</h4>
+                  {invoice.payment_methods.map((method: any) => (
+                    <div key={method.id} className="p-4 bg-bone/50 border border-line rounded-lg">
+                      <h5 className="font-semibold text-ink mb-2">{method.title}</h5>
+                      <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{method.details}</p>
+                      {method.qr_code && (
+                        <div className="mt-4">
+                          <img src={method.qr_code} alt="QR Code" className="w-32 h-32 object-contain rounded-md bg-white p-2 border border-line" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
           </div>
         )}
       </div>
