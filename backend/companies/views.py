@@ -98,3 +98,20 @@ class UnitViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         company = getattr(self.request.user, "company", None)
         serializer.save(company=company)
+
+from .models import PaymentMethod
+from .serializers import PaymentMethodSerializer
+
+class PaymentMethodViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PaymentMethodSerializer
+
+    def get_queryset(self):
+        company = getattr(self.request.user, "company", None)
+        if not company:
+            return PaymentMethod.objects.none()
+        return PaymentMethod.objects.filter(company=company)
+
+    def perform_create(self, serializer):
+        company = getattr(self.request.user, "company", None)
+        serializer.save(company=company)

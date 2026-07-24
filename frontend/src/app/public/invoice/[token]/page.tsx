@@ -199,7 +199,8 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
           <div className="overflow-x-auto">
             <table className="w-full text-left mb-8 min-w-[600px]">
-                <tr>
+              <thead>
+                <tr className="border-b border-line">
                   <th className="py-3 font-medium text-muted">Item</th>
                   {invoice.settings?.show_hsn_sac_code && (
                     <th className="py-3 font-medium text-muted text-right">HSN/SAC</th>

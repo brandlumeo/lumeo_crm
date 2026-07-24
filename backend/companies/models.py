@@ -531,5 +531,8 @@ class InvoiceSettings(models.Model):
     send_reminder_before_days = models.PositiveIntegerField(default=0)
     send_reminder_after_days = models.PositiveIntegerField(default=3)
 
+    # Quickbooks
+    quickbooks_sync_status = models.BooleanField(default=False)
+
     def __str__(self):
         return f"Invoice Settings for {self.company.name}"

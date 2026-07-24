@@ -1,11 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CurrentCompanyView, InvoiceSettingsView, UnitViewSet
+from .views import CurrentCompanyView, InvoiceSettingsView, UnitViewSet, PaymentMethodViewSet
 
 app_name = "companies"
 
 router = DefaultRouter()
 router.register("units", UnitViewSet, basename="unit")
+router.register("payment-methods", PaymentMethodViewSet, basename="payment-method")
 
 urlpatterns = [
     path("current/", CurrentCompanyView.as_view(), name="current"),
