@@ -698,12 +698,12 @@ export async function updateCompany(payload: Partial<CompanyDetail>) {
 
 // Invoice Settings
 export const getInvoiceSettings = async () => {
-  const res = await api.get<any[]>("/crm/invoice-settings/");
-  return res.data[0] || null;
+  const res = await api.get<any>("/companies/invoice-settings/");
+  return res.data || null;
 };
 
-export const updateInvoiceSettings = async ({ id, data }: { id: number; data: any }) => {
-  const res = await api.put(`/crm/invoice-settings/${id}/`, data);
+export const updateInvoiceSettings = async ({ id, data }: { id?: number; data: any }) => {
+  const res = await api.put(`/companies/invoice-settings/`, data);
   return res.data;
 };
 
