@@ -537,6 +537,7 @@ export interface InvoiceLineItem {
   quantity: number;
   unit_price: string;
   tax_rate: string;
+  hsn_sac_code?: string;
   subtotal?: string;
   tax_amount?: string;
   total?: string;
@@ -556,6 +557,11 @@ export interface Invoice {
     company: string | null;
     email: string | null;
     phone: string | null;
+    address?: string | null;
+    custom_data?: {
+      address?: string | null;
+      [key: string]: any;
+    };
   };
   invoice_number: string;
   status: "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "void";
