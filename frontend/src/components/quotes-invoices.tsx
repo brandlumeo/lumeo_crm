@@ -16,6 +16,7 @@ import {
   downloadInvoicePdf,
 } from "@/lib/api";
 import { formatDateTime, formatINR, toNumber } from "@/lib/utils";
+import { useInvoiceSettings } from "@/lib/queries";
 import type { Quote, Invoice } from "@/lib/types";
 
 interface QuotesInvoicesProps {
@@ -24,6 +25,7 @@ interface QuotesInvoicesProps {
 
 export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
   const queryClient = useQueryClient();
+  const { data: invoiceSettings } = useInvoiceSettings();
   const [activeTab, setActiveTab] = useState<"quotes" | "invoices">("quotes");
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [builderType, setBuilderType] = useState<"quote" | "invoice">("quote");
@@ -40,6 +42,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
       quantity: number;
       unit_price: string;
       tax_rate: string;
+      hsn_sac_code?: string;
     }[]
   >([]);
 
@@ -110,6 +113,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         description: selectedProd.description || "",
         unit_price: selectedProd.price,
         tax_rate: selectedProd.tax_rate,
+        hsn_sac_code: selectedProd.hsn_sac_code || "",
       };
       return updated;
     });
@@ -129,7 +133,14 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
   const addItemRow = () => {
     setItems((current) => [
       ...current,
-      { name: "", description: "", quantity: 1, unit_price: "0", tax_rate: "0" },
+      { 
+        name: "", 
+        description: "", 
+        quantity: 1, 
+        unit_price: "0", 
+        tax_rate: invoiceSettings?.default_tax_rate?.toString() || "0",
+        hsn_sac_code: ""
+      },
     ]);
   };
 
@@ -397,7 +408,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   {items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_80px_120px_100px_40px] gap-3 p-3 bg-bone-2 border border-line rounded-lg items-end"
+                      className={`grid grid-cols-1 md:grid-cols-[1.5fr_1fr_80px_120px_100px_40px] gap-3 p-3 bg-bone-2 border border-line rounded-lg items-end ${invoiceSettings?.show_hsn_sac_code ? "md:grid-cols-[1.5fr_1fr_100px_80px_120px_100px_40px]" : ""}`}
                     >
                       <label className="block">
                         <span className="label-meta text-[11px]">Product Auto-fill</span>
@@ -463,6 +474,17 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                           onChange={(e) => updateItemField(idx, "tax_rate", e.target.value)}
                         />
                       </label>
+
+                      {invoiceSettings?.show_hsn_sac_code && (
+                        <label className="block">
+                          <span className="label-meta text-[11px]">HSN/SAC</span>
+                          <input
+                            className="input"
+                            value={item.hsn_sac_code || ""}
+                            onChange={(e) => updateItemField(idx, "hsn_sac_code", e.target.value)}
+                          />
+                        </label>
+                      )}
 
                       <button
                         type="button"

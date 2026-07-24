@@ -513,6 +513,7 @@ class ProductSerializer(CompanyScopedSerializer):
             "description",
             "price",
             "tax_rate",
+            "hsn_sac_code",
             "is_active",
             "created_at",
             "updated_at",
@@ -535,6 +536,7 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "tax_rate",
+            "hsn_sac_code",
             "subtotal",
             "tax_amount",
             "total",
@@ -632,6 +634,7 @@ class InvoiceLineItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "tax_rate",
+            "hsn_sac_code",
             "subtotal",
             "tax_amount",
             "total",
@@ -734,6 +737,17 @@ class InvoiceSerializer(CompanyScopedSerializer):
         # Count existing invoices to generate next number
         from .models import Invoice
         company = user.company if hasattr(user, "company") else None
+        
+        from datetime import date, timedelta
+        if 'due_date' not in validated_data and hasattr(user, "company") and hasattr(user.company, "invoice_settings"):
+            days = user.company.invoice_settings.invoice_due_after_days
+            if days:
+                validated_data['due_date'] = date.today() + timedelta(days=days)
+        if 'terms' not in validated_data and hasattr(user, "company") and hasattr(user.company, "invoice_settings"):
+            validated_data['terms'] = user.company.invoice_settings.invoice_terms
+        if 'notes' not in validated_data and hasattr(user, "company") and hasattr(user.company, "invoice_settings"):
+            validated_data['notes'] = user.company.invoice_settings.invoice_other_information
+
         count = Invoice.objects.filter(company=company).count() if company else 0
         next_number = str(count + 1).zfill(digits)
         validated_data["invoice_number"] = f"{prefix}{separator}{next_number}"

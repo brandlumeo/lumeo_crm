@@ -494,6 +494,7 @@ class QuoteLineItem(models.Model):
     description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    hsn_sac_code = models.CharField(max_length=50, blank=True, null=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     @property
@@ -598,6 +599,7 @@ class InvoiceLineItem(models.Model):
     description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    hsn_sac_code = models.CharField(max_length=50, blank=True, null=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     @property
@@ -1158,6 +1160,7 @@ class OrderItem(models.Model):
     description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    hsn_sac_code = models.CharField(max_length=50, blank=True, null=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     @property

@@ -524,3 +524,47 @@ def check_subscription_expiry(self):
     except Exception as exc:
         logger.exception("check_subscription_expiry failed: %s", exc)
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3)
+def process_invoice_reminders(self):
+    try:
+        from crm.models import Invoice
+        from companies.models import Company
+        from datetime import date, timedelta
+        
+        today = date.today()
+        reminders_sent = 0
+        
+        # We need to find invoices that are in 'sent' or 'viewed' or 'partial' status (not paid, void, draft)
+        active_invoices = Invoice.objects.filter(status__in=['sent', 'viewed', 'partial']).select_related('company', 'customer')
+        
+        for invoice in active_invoices:
+            settings = getattr(invoice.company, 'invoice_settings', None)
+            if not settings:
+                continue
+                
+            due_date = invoice.due_date
+            if not due_date:
+                continue
+                
+            # Send reminder before
+            if settings.send_reminder_before_days and settings.send_reminder_before_days > 0:
+                target_date = due_date - timedelta(days=settings.send_reminder_before_days)
+                if target_date == today:
+                    # Send before reminder
+                    send_invoice_email.delay(invoice.id)
+                    reminders_sent += 1
+                    
+            # Send reminder after
+            if settings.send_reminder_after_days and settings.send_reminder_after_days > 0:
+                target_date = due_date + timedelta(days=settings.send_reminder_after_days)
+                if target_date == today:
+                    # Send after reminder
+                    send_invoice_email.delay(invoice.id)
+                    reminders_sent += 1
+                    
+        return {'reminders_sent': reminders_sent}
+    except Exception as exc:
+        logger.exception('process_invoice_reminders failed: %s', exc)
+        raise self.retry(exc=exc)

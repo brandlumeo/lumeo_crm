@@ -954,21 +954,33 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     left_normal = ParagraphStyle('LeftNormal', parent=styles['Normal'], alignment=0)
     left_label = ParagraphStyle('LeftLabel', parent=meta_label_style, alignment=0, fontName='Helvetica-Bold')
     
-    table_data = [[
-        Paragraph("<b>Item & Description</b>", left_label),
+    show_hsn = get_setting("show_hsn_sac_code", default=False)
+    
+    header_row = [Paragraph("<b>Item & Description</b>", left_label)]
+    if show_hsn:
+        header_row.append(Paragraph("<b>HSN/SAC</b>", left_label))
+    header_row.extend([
         Paragraph("<b>Qty</b>", left_label),
         Paragraph("<b>Rate</b>", left_label),
         Paragraph("<b>Amount</b>", left_label)
-    ]]
+    ])
+    
+    table_data = [header_row]
+    
     for item in instance.items.all():
-        table_data.append([
-            Paragraph(f"{item.name}<br/><font color='#666666'>{item.description}</font>", styles['Normal']),
+        hsn = getattr(item, "hsn_sac_code", "") or "-"
+        row = [Paragraph(f"{item.name}<br/><font color='#666666'>{item.description}</font>", styles['Normal'])]
+        if show_hsn:
+            row.append(Paragraph(hsn, left_normal))
+        row.extend([
             Paragraph(str(item.quantity), left_normal),
             Paragraph(f"{curr}{item.unit_price:,.2f}", left_normal),
             Paragraph(f"{curr}{item.total:,.2f}", left_normal)
         ])
+        table_data.append(row)
     
-    items_table = Table(table_data, colWidths=[240, 50, 100, 110])
+    col_widths = [200, 60, 50, 90, 100] if show_hsn else [240, 50, 100, 110]
+    items_table = Table(table_data, colWidths=col_widths)
     ts = [
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('BOTTOMPADDING', (0,0), (-1,0), 10),

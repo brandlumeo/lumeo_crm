@@ -57,6 +57,10 @@ app.conf.beat_schedule = {
         "task": "crm.tasks.process_due_workflow_steps_task",
         "schedule": crontab(),
     },
+    "process-invoice-reminders": {
+        "task": "notifications.tasks.process_invoice_reminders",
+        "schedule": crontab(hour=8, minute=30),
+    },
 }
 
 app.conf.timezone = "UTC"

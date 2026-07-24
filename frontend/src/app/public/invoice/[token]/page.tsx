@@ -180,7 +180,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
           <div className="mb-8">
             <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2">Billed To</h3>
-            <div className="font-medium text-lg">{invoice.customer_details?.name}</div>
+            {invoice.settings?.show_client_name !== false && (
+              <div className="font-medium text-lg">{invoice.customer_details?.name}</div>
+            )}
             {invoice.settings?.show_client_company_name && typeof (invoice.customer_details as any)?.company_name === 'string' && (
               <div className="text-muted">{(invoice.customer_details as any).company_name}</div>
             )}
@@ -190,13 +192,18 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             {invoice.settings?.show_client_phone && invoice.customer_details?.phone && (
               <div className="text-muted">{invoice.customer_details.phone}</div>
             )}
+            {invoice.settings?.show_client_address && invoice.customer_details?.custom_data?.address && (
+              <div className="text-muted mt-1 whitespace-pre-wrap">{invoice.customer_details.custom_data.address}</div>
+            )}
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left mb-8 min-w-[600px]">
-              <thead className="border-b border-line">
                 <tr>
                   <th className="py-3 font-medium text-muted">Item</th>
+                  {invoice.settings?.show_hsn_sac_code && (
+                    <th className="py-3 font-medium text-muted text-right">HSN/SAC</th>
+                  )}
                   <th className="py-3 font-medium text-muted text-right">Qty</th>
                   <th className="py-3 font-medium text-muted text-right">Price</th>
                   <th className="py-3 font-medium text-muted text-right">Total</th>
@@ -209,6 +216,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                       <div className="font-medium text-ink">{item.name}</div>
                       {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                     </td>
+                    {invoice.settings?.show_hsn_sac_code && (
+                      <td className="py-4 text-right text-ink">{item.hsn_sac_code || '-'}</td>
+                    )}
                     <td className="py-4 text-right text-ink">{item.quantity}</td>
                     <td className="py-4 text-right text-ink">{formatCurrency(parseFloat(item.unit_price), invoice.company?.currency)}</td>
                     <td className="py-4 text-right font-medium text-ink">
