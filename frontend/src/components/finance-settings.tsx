@@ -187,15 +187,12 @@ export function FinanceSettingsForm() {
       onSuccess: () => {
         // Also update company settings (payment gateways)
         updateCompanyMutation.mutate({
-          id: company.id,
-          data: {
-            stripe_public_key: stripePublicKey,
-            stripe_secret_key: stripeSecretKey,
-            paypal_client_id: paypalClientId,
-            paypal_secret: paypalSecret,
-            razorpay_key_id: razorpayKeyId,
-            razorpay_key_secret: razorpayKeySecret,
-          }
+          stripe_public_key: stripePublicKey,
+          stripe_secret_key: stripeSecretKey,
+          paypal_client_id: paypalClientId,
+          paypal_secret: paypalSecret,
+          razorpay_key_id: razorpayKeyId,
+          razorpay_key_secret: razorpayKeySecret,
         }, {
           onSuccess: () => {
             setMsg({ type: "success", text: "Finance settings updated successfully." });
