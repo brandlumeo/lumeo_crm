@@ -536,7 +536,7 @@ export default function BillingPage() {
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-serif text-[24px] text-ink leading-none">Premium Setup & Data Migration</h3>
-                    <span className="chip chip-positive bg-accent text-white border-accent">One-Time Fee</span>
+                    <span className="chip chip-positive bg-accent text-white border-accent">Tailored to your needs</span>
                   </div>
                   <p className="text-[14px] text-muted max-w-2xl leading-relaxed">
                     Skip the learning curve. Our onboarding experts will configure your workspace, set up custom fields, establish pipeline stages, and migrate all your existing data from previous systems or spreadsheets so you can hit the ground running.
@@ -555,10 +555,10 @@ export default function BillingPage() {
                 </div>
               </div>
               <div className="flex flex-col items-end shrink-0 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-line">
-                <div className="font-serif text-[32px] text-ink leading-none mb-1">
-                  ₹14,999
+                <div className="font-serif text-[24px] text-ink mb-1">
+                  Custom Quote
                 </div>
-                <div className="text-[12px] text-muted mb-4 font-medium">One-time payment</div>
+                <div className="text-[12px] text-muted mb-4 font-medium">Based on company size & complexity</div>
                 <button 
                   type="button"
                   className="btn bg-accent hover:bg-accent/90 text-white w-full md:w-auto shadow-sm px-6 py-2.5 transition-all flex items-center justify-center gap-2"
