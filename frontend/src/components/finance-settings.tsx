@@ -331,8 +331,8 @@ export function FinanceSettingsForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
                  <div className="space-y-1.5">
                     <label className="text-[13.5px] font-medium text-ink">Invoice Logo</label>
-                    <div className="w-full h-32 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center bg-bone/30 hover:bg-bone/50 transition-colors cursor-pointer text-muted relative overflow-hidden group">
-                        <input type="file" accept="image/*" onChange={handleUploadLogo} disabled={!isAdmin} className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full" title="Upload Logo" />
+                    <label className="w-full h-32 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center bg-bone/30 hover:bg-bone/50 transition-colors cursor-pointer text-muted relative overflow-hidden group">
+                        <input type="file" accept="image/*" onChange={handleUploadLogo} disabled={!isAdmin} className="hidden" title="Upload Logo" />
                         {invoiceLogo ? (
                           <img src={invoiceLogo} alt="Logo" className="object-contain w-full h-full p-2" />
                         ) : (
@@ -341,12 +341,12 @@ export function FinanceSettingsForm() {
                             <span className="text-[13px] font-medium">Choose a file</span>
                           </>
                         )}
-                    </div>
+                    </label>
                  </div>
                  <div className="space-y-1.5">
                     <label className="text-[13.5px] font-medium text-ink">Authorised Signature</label>
-                    <div className="w-full h-32 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center bg-bone/30 hover:bg-bone/50 transition-colors cursor-pointer text-muted relative overflow-hidden group">
-                        <input type="file" accept="image/*" onChange={handleUploadSignature} disabled={!isAdmin} className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full" title="Upload Signature" />
+                    <label className="w-full h-32 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center bg-bone/30 hover:bg-bone/50 transition-colors cursor-pointer text-muted relative overflow-hidden group">
+                        <input type="file" accept="image/*" onChange={handleUploadSignature} disabled={!isAdmin} className="hidden" title="Upload Signature" />
                         {authorisedSignatory ? (
                           <img src={authorisedSignatory} alt="Signature" className="object-contain w-full h-full p-2" />
                         ) : (
@@ -355,7 +355,7 @@ export function FinanceSettingsForm() {
                             <span className="text-[13px] font-medium">Choose a file</span>
                           </>
                         )}
-                    </div>
+                    </label>
                  </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
