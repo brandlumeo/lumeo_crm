@@ -66,14 +66,21 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
 
   return (
     <div className="min-h-screen bg-bone py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300">
         
         {/* Quote Document */}
-        <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
+        <div className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 ${
+          quote.company?.invoice_settings?.template_id === 'template1' ? 'bg-white border-line' :
+          quote.company?.invoice_settings?.template_id === 'template2' ? 'bg-white border-line font-serif' :
+          quote.company?.invoice_settings?.template_id === 'template3' ? 'bg-white border-line border-t-8 border-t-accent' :
+          quote.company?.invoice_settings?.template_id === 'template4' ? 'bg-slate-50 border-slate-200 border-l-8 border-l-slate-800' :
+          quote.company?.invoice_settings?.template_id === 'template5' ? 'bg-white border-transparent shadow-xl ring-1 ring-black/5' :
+          'bg-paper border-line'
+        }`}>
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line pb-8 mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-ink mb-2">QUOTE</h1>
-              <p className="text-muted text-sm uppercase tracking-wider font-medium">{quote.quote_number}</p>
+              <h1 className="text-4xl md:text-5xl font-bold text-ink mb-2 tracking-tight">QUOTE</h1>
+              <p className="text-muted text-sm md:text-base uppercase tracking-wider font-semibold">{quote.quote_number}</p>
             </div>
             <div className="text-right">
               <h2 className="text-xl font-semibold text-ink">{quote.company?.name || "Company"}</h2>

@@ -136,15 +136,15 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
   return (
     <div className="min-h-screen bg-bone py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300">
         
         {/* Invoice Document */}
-        <div className={`rounded-2xl shadow-sm border p-8 md:p-12 ${
-          invoice.settings?.template_id === 'template1' ? 'bg-blue-50/30 border-blue-100' :
-          invoice.settings?.template_id === 'template2' ? 'bg-white border-line shadow-md' :
-          invoice.settings?.template_id === 'template3' ? 'bg-zinc-900 border-zinc-800 text-white' :
-          invoice.settings?.template_id === 'template4' ? 'bg-slate-50 border-slate-200 border-l-4 border-l-slate-800' :
-          invoice.settings?.template_id === 'template5' ? 'bg-emerald-50/30 border-emerald-100' :
+        <div className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 ${
+          invoice.settings?.template_id === 'template1' ? 'bg-white border-line' :
+          invoice.settings?.template_id === 'template2' ? 'bg-white border-line font-serif' :
+          invoice.settings?.template_id === 'template3' ? 'bg-white border-line border-t-8 border-t-accent' :
+          invoice.settings?.template_id === 'template4' ? 'bg-slate-50 border-slate-200 border-l-8 border-l-slate-800' :
+          invoice.settings?.template_id === 'template5' ? 'bg-white border-transparent shadow-xl ring-1 ring-black/5' :
           'bg-paper border-line'
         }`}>
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8">
@@ -152,14 +152,14 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               {invoice.settings?.invoice_logo ? (
                 <img src={invoice.settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" />
               ) : (
-                <h1 className={`text-4xl font-bold mb-2 ${invoice.settings?.template_id === 'template3' ? 'text-white' : 'text-ink'}`}>INVOICE</h1>
+                <h1 className="text-4xl md:text-5xl font-bold mb-2 text-ink tracking-tight">INVOICE</h1>
               )}
-              <p className="text-muted text-sm uppercase tracking-wider font-medium">{invoice.invoice_number}</p>
+              <p className="text-muted text-sm md:text-base uppercase tracking-wider font-semibold">{invoice.invoice_number}</p>
             </div>
             <div className="text-right">
-              <h2 className={`text-xl font-semibold ${invoice.settings?.template_id === 'template3' ? 'text-white' : 'text-ink'}`}>{invoice.company?.name || "Company"}</h2>
-              {invoice.company?.company_website && <p className={`text-sm ${invoice.settings?.template_id === 'template3' ? 'text-gray-300' : 'text-muted'} mt-1`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
-              {invoice.company?.company_email && <p className={`text-sm ${invoice.settings?.template_id === 'template3' ? 'text-gray-300' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
+              <h2 className="text-xl md:text-2xl font-semibold text-ink">{invoice.company?.name || "Company"}</h2>
+              {invoice.company?.company_website && <p className="text-sm md:text-base text-muted mt-1"><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
+              {invoice.company?.company_email && <p className="text-sm md:text-base text-muted"><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
               <div className="mt-4 space-y-1">
                 <p className="text-sm text-muted">Issue Date: <span className="font-medium">{invoice.issue_date}</span></p>
                 {invoice.due_date && <p className="text-sm text-muted">Due Date: <span className="font-medium">{invoice.due_date}</span></p>}

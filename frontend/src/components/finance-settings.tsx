@@ -473,48 +473,47 @@ export function FinanceSettingsForm() {
                      {/* Mock miniature template designs */}
                      {template.id === "template1" && (
                        <>
-                         <div className="h-8 bg-blue-600/10 w-full flex items-center px-3"><div className="w-1/2 h-2 bg-blue-600/40 rounded-full" /></div>
-                         <div className="flex-1 p-3 space-y-3">
-                           <div className="w-1/3 h-1.5 bg-line rounded-full" />
-                           <div className="w-full h-10 bg-bone/40 rounded-md mt-2" />
+                         <div className="flex-1 p-3 space-y-3 bg-white">
+                           <div className="w-1/3 h-2 bg-slate-800 rounded-sm" />
+                           <div className="w-1/4 h-1 bg-slate-400 rounded-sm" />
+                           <div className="w-full h-[1px] bg-line my-1" />
+                           <div className="w-full h-10 bg-bone/40 rounded-sm border border-line" />
                          </div>
                        </>
                      )}
                      {template.id === "template2" && (
-                       <div className="flex-1 p-4 space-y-4">
-                         <div className="w-1/4 h-2 bg-slate-800/20 rounded-full mx-auto" />
-                         <div className="w-full h-[1px] bg-line" />
-                         <div className="w-full h-8 bg-bone/40 rounded-md" />
+                       <div className="flex-1 p-4 space-y-4 bg-white font-serif">
+                         <div className="w-1/4 h-2 bg-slate-800 rounded-sm mx-auto" />
+                         <div className="w-full h-[1px] bg-slate-800" />
+                         <div className="w-full h-8 bg-bone/40 rounded-sm border border-slate-200" />
                        </div>
                      )}
                      {template.id === "template3" && (
-                       <>
-                         <div className="flex-1 p-3 space-y-2 mt-2">
-                            <div className="w-1/2 h-2 bg-red-500/40 rounded-full" />
-                            <div className="w-full h-6 bg-red-500/10 rounded-md mt-2" />
+                       <div className="flex-1 bg-white flex flex-col relative">
+                         <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
+                         <div className="p-3 mt-1 space-y-2">
+                            <div className="w-1/2 h-2 bg-slate-800 rounded-sm" />
+                            <div className="w-full h-10 bg-bone/40 rounded-sm border border-line" />
                          </div>
-                         <div className="h-3 bg-red-500 w-full" />
-                       </>
+                       </div>
                      )}
                      {template.id === "template4" && (
-                       <div className="flex-1 flex">
-                          <div className="w-1/4 h-full bg-slate-800/5" />
-                          <div className="w-3/4 p-3 space-y-2 mt-2">
-                             <div className="w-1/2 h-2 bg-line rounded-full" />
-                             <div className="w-full h-10 bg-bone/40 rounded-md mt-2" />
+                       <div className="flex-1 flex bg-slate-50 relative">
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-800" />
+                          <div className="w-full pl-3 p-3 space-y-2 mt-1">
+                             <div className="w-1/2 h-2 bg-slate-800 rounded-sm" />
+                             <div className="w-full h-10 bg-white rounded-sm border border-line shadow-sm" />
                           </div>
                        </div>
                      )}
                      {template.id === "template5" && (
-                       <>
-                         <div className="flex justify-between p-3">
-                           <div className="w-1/3 h-2 bg-slate-800/30 rounded-full" />
-                           <div className="w-1/4 h-2 bg-slate-800/10 rounded-full" />
+                       <div className="flex-1 bg-white shadow-inner p-3 flex flex-col">
+                         <div className="flex justify-between mb-3">
+                           <div className="w-1/3 h-2 bg-slate-800 rounded-sm" />
+                           <div className="w-1/4 h-1.5 bg-slate-400 rounded-sm" />
                          </div>
-                         <div className="flex-1 px-3 pb-3">
-                           <div className="w-full h-10 bg-bone/40 rounded-md border border-line/50" />
-                         </div>
-                       </>
+                         <div className="w-full h-10 bg-slate-50/50 rounded-sm border border-slate-100 ring-1 ring-black/5" />
+                       </div>
                      )}
                   </div>
                   <div className="flex items-center justify-between w-full px-1">
