@@ -15,7 +15,24 @@ import {
   Play,
   LogOut,
   Paperclip,
+  Home,
+  Building,
+  ArrowRight,
+  AlertTriangle,
 } from "lucide-react";
+
+const getAvatarTint = (name: string) => {
+  const char = name ? name[0].toUpperCase() : "?";
+  const tints = [
+    "bg-emerald-100 text-emerald-700",
+    "bg-blue-100 text-blue-700",
+    "bg-amber-100 text-amber-700",
+    "bg-purple-100 text-purple-700",
+    "bg-rose-100 text-rose-700",
+    "bg-cyan-100 text-cyan-700",
+  ];
+  return tints[char.charCodeAt(0) % tints.length];
+};
 import {
   useAttendanceStatus,
   usePunchIn,
@@ -523,58 +540,122 @@ export default function AttendancePage() {
 
       {/* Manager Company Shift Logs Panel */}
       {isManager && (
-        <div className="card p-6 border border-line bg-paper flex flex-col gap-4">
-          <div className="flex items-center gap-2 border-b border-line-2 pb-3">
-            <Users className="w-5 h-5 text-accent" />
-            <h2 className="font-serif text-[20px]">Company Shift Logs Overview</h2>
+        <div className="card p-6 border border-line bg-paper flex flex-col gap-5">
+          <div className="flex items-center justify-between border-b border-line-2 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-100/50">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-serif text-[18px] font-medium text-ink">Company Shift Logs</h2>
+                <p className="text-[12px] text-muted mt-0.5">Overview of all staff check-ins and check-outs</p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Search staff" 
+                className="pl-8 pr-3 py-1.5 text-sm border border-line rounded-lg focus:outline-none focus:border-accent w-48 text-ink bg-bone-2 placeholder:text-muted/60"
+              />
+              <svg className="w-4 h-4 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[200px]">
             {companyHistoryLoading ? (
               <p className="text-xs text-muted">Loading company shift logs...</p>
             ) : companyHistory.length === 0 ? (
               <p className="text-xs text-muted italic">No shifts recorded by staff yet.</p>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-line text-muted uppercase tracking-wider">
-                    <th className="py-2 font-medium">Staff Member</th>
-                    <th className="py-2 font-medium">Shift Date</th>
-                    <th className="py-2 font-medium">Location</th>
-                    <th className="py-2 font-medium">Timestamps</th>
-                    <th className="py-2 font-medium">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companyHistory.map((log) => (
-                    <tr key={log.id} className="border-b border-line-2 last:border-0 hover:bg-bone/30">
-                      <td className="py-2.5 font-medium">
-                        {log.user_full_name}
-                        <div className="text-[10px] text-muted font-normal font-mono mt-0.5">{log.user_email}</div>
-                      </td>
-                      <td className="py-2.5">{formatLongDate(new Date(log.clock_in))}</td>
-                      <td className="py-2.5 capitalize font-mono text-[11px]">{log.work_location}</td>
-                      <td className="py-2.5 text-muted leading-tight">
-                        In: {new Date(log.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {log.clock_out ? (
-                          <>
-                            <br />
-                            Out: {new Date(log.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </>
-                        ) : (
-                          <>
-                            <br />
-                            <span className="text-emerald-600 font-medium text-[10px]">Active Shift</span>
-                          </>
-                        )}
-                      </td>
-                      <td className="py-2.5 font-semibold text-ink-2">
-                        {calcDuration(log.clock_in, log.clock_out)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="space-y-6">
+                {Object.entries(companyHistory.reduce((acc: any, log: any) => {
+                  const dateObj = new Date(log.clock_in);
+                  const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+                  if (!acc[dateStr]) acc[dateStr] = [];
+                  acc[dateStr].push(log);
+                  return acc;
+                }, {})).map(([dateStr, logs]: [string, any]) => (
+                  <div key={dateStr}>
+                    <div className="mb-2 text-[10px] font-bold text-muted uppercase tracking-wider pl-1">{dateStr}</div>
+                    <div className="bg-paper border border-line rounded-[12px] overflow-hidden shadow-sm">
+                      <div className="divide-y divide-line">
+                        {logs.map((log: any) => {
+                          const nameChar = (log.user_full_name?.[0] || log.user_email?.[0] || "?").toUpperCase();
+                          const isWfh = log.work_location?.toLowerCase() === "wfh";
+                          
+                          // Duration Logic (flag anomalies)
+                          const durationStr = calcDuration(log.clock_in, log.clock_out);
+                          let isAnomalous = false;
+                          if (log.clock_out) {
+                            const diffHours = (new Date(log.clock_out).getTime() - new Date(log.clock_in).getTime()) / (1000 * 60 * 60);
+                            if (diffHours > 16) isAnomalous = true;
+                          }
+
+                          return (
+                            <div key={log.id} className="flex items-center justify-between px-5 py-3 hover:bg-[#FAF9F7] transition-colors">
+                              {/* Left Side: Avatar & Name */}
+                              <div className="flex items-center gap-4 min-w-[200px] flex-1">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-medium ${getAvatarTint(nameChar)}`}>
+                                  {nameChar}
+                                </div>
+                                <div>
+                                  <div className="text-[13px] font-medium text-ink leading-tight">{log.user_full_name}</div>
+                                  <div className="text-[11px] text-muted mt-0.5">{log.user_email}</div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-8 justify-end">
+                                {/* Location Badge */}
+                                <div className="w-[80px] flex justify-start">
+                                  <span className={cn(
+                                    "inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium shadow-sm",
+                                    isWfh ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-paper border border-line text-muted"
+                                  )}>
+                                    {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
+                                    {isWfh ? "WFH" : "Office"}
+                                  </span>
+                                </div>
+
+                                {/* Timestamps */}
+                                <div className="flex items-center justify-center gap-2 text-[12px] font-medium text-muted w-[150px]">
+                                  <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                  {log.clock_out && (
+                                    <>
+                                      <ArrowRight className="w-3 h-3 text-muted/60" />
+                                      <span>{new Date(log.clock_out).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                    </>
+                                  )}
+                                </div>
+
+                                {/* Duration / Status */}
+                                <div className="w-[90px] flex justify-end">
+                                  {log.clock_out ? (
+                                    <span className={cn(
+                                      "text-[12px] font-bold flex items-center gap-1.5",
+                                      isAnomalous ? "text-amber-600" : "text-ink"
+                                    )}>
+                                      {durationStr}
+                                      {isAnomalous && <AlertTriangle className="w-3.5 h-3.5" />}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                      Live
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
