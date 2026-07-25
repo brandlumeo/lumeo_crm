@@ -661,117 +661,180 @@ export default function AttendancePage() {
         </div>
       )}
 
+      {/* Current Status Strip */}
+      <div className="bg-paper border border-line rounded-[14px] p-4 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm gap-4">
+        <div className="flex items-center gap-4 min-w-[200px]">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${getAvatarTint(user?.email || '?')}`}>
+            {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+          </div>
+          <div>
+            <div className="text-[13.5px] font-medium text-ink leading-tight">{user?.email}</div>
+            <div className="text-[11px] text-muted mt-0.5">Today, {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-6 sm:justify-end">
+           {status?.is_clocked_in && status.active_log ? (
+             <>
+               <div className="flex justify-start">
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium shadow-sm",
+                    status.active_log.work_location?.toLowerCase() === "wfh" ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-paper border border-line text-muted"
+                  )}>
+                    {status.active_log.work_location?.toLowerCase() === "wfh" ? <Home className="w-3.5 h-3.5" /> : <Building className="w-3.5 h-3.5" />}
+                    {status.active_log.work_location?.toLowerCase() === "wfh" ? "WFH" : "Office"}
+                  </span>
+               </div>
+               <div className="flex items-center justify-center gap-2 text-[12px] font-medium text-muted">
+                 <span>{formatTime(status.active_log.clock_in)}</span>
+                 <ArrowRight className="w-3 h-3 text-muted/60" />
+                 <span>--:--</span>
+               </div>
+               <div className="w-[60px] flex justify-end">
+                 <span className="text-[12px] font-bold text-ink">
+                    Ongoing
+                 </span>
+               </div>
+             </>
+           ) : (
+             <span className="text-[12px] font-medium text-muted italic">Not currently checked in.</span>
+           )}
+        </div>
+      </div>
+
       {/* Double Column: History lists */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Personal Leave History */}
-        <div className="card p-0 border border-line bg-paper flex flex-col gap-0">
-          <div className="card-head">
-            <h2 className="card-title">
-              <FileText className="w-4 h-4 text-ink-2" />
-              My Leave Requests
-            </h2>
+        <div className="card p-0 border border-line bg-paper flex flex-col overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-line-2 p-5 bg-paper/50">
+            <div className="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-100/50">
+              <FileText className="w-4 h-4" />
+            </div>
+            <h2 className="font-serif text-[17px] font-medium text-ink">My Leave Requests</h2>
           </div>
 
           <div className="overflow-x-auto p-0">
             {leavesLoading ? (
-              <p className="text-xs text-muted">Loading leave logs...</p>
+              <p className="text-xs text-muted p-5">Loading leave logs...</p>
             ) : leaves.length === 0 ? (
-              <p className="text-xs text-muted italic">No leave applications lodged yet.</p>
+              <p className="text-xs text-muted italic p-5">No leave applications lodged yet.</p>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-line text-muted uppercase tracking-wider">
-                    <th className="py-2 font-medium">Type</th>
-                    <th className="py-2 font-medium">Dates</th>
-                    <th className="py-2 font-medium">Status</th>
-                    <th className="py-2 font-medium">Manager Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div className="divide-y divide-line">
                   {leaves.map((l) => (
-                    <tr key={l.id} className="border-b border-line-2 last:border-0 table-row-hover">
-                      <td className="py-3 px-4 font-medium capitalize font-mono text-[11px]">{l.leave_type}</td>
-                      <td className="py-2.5 text-muted">
-                        {l.start_date} to {l.end_date}
+                    <div key={l.id} className="flex items-start sm:items-center justify-between p-5 hover:bg-[#FAF9F7] transition-colors">
+                      <div className="flex flex-col gap-1.5">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded text-[11px] font-medium inline-block w-fit border",
+                          l.leave_type === 'sick' ? "bg-rose-50 text-rose-700 border-rose-100" 
+                          : l.leave_type === 'casual' ? "bg-blue-50 text-blue-700 border-blue-100"
+                          : "bg-bone-2 text-ink border-line"
+                        )}>
+                          <span className="capitalize">{l.leave_type}</span>
+                        </span>
+                        <div className="text-[12px] text-muted">
+                          {l.start_date === l.end_date ? l.start_date : `${l.start_date} → ${l.end_date}`}
+                        </div>
                         {l.attachment && (
-                          <div className="mt-1">
-                            <a href={getMediaUrl(l.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-800 hover:underline">
-                              <Paperclip className="w-3 h-3" /> Document Attached
-                            </a>
-                          </div>
+                          <a href={getMediaUrl(l.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:underline mt-0.5">
+                            <Paperclip className="w-3 h-3" /> Document attached
+                          </a>
                         )}
-                      </td>
-                      <td className="py-2.5">
+                      </div>
+                      
+                      <div>
                         <span
                           className={cn(
-                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                            l.status === "approved"
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              : l.status === "rejected"
-                              ? "bg-red-50 text-red-800 border border-red-200"
-                              : "bg-amber-50 text-amber-800 border border-amber-200"
+                            "flex items-center gap-1.5 text-[12px] font-medium bg-paper px-2.5 py-1 rounded-md border shadow-sm",
+                            l.status === "approved" ? "text-emerald-700 border-emerald-100 bg-emerald-50"
+                            : l.status === "rejected" ? "text-red-700 border-red-100 bg-red-50"
+                            : "text-amber-700 border-amber-100 bg-amber-50"
                           )}
                         >
-                          {l.status}
+                          {l.status === "approved" && <CheckCircle className="w-3.5 h-3.5" />}
+                          {l.status === "rejected" && <AlertTriangle className="w-3.5 h-3.5" />}
+                          {l.status === "pending" && <Clock className="w-3.5 h-3.5" />}
+                          <span className="capitalize">{l.status}</span>
                         </span>
-                      </td>
-                      <td className="py-2.5 text-muted italic">{l.manager_notes || "—"}</td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+              </div>
             )}
           </div>
         </div>
 
         {/* Shifts Logs */}
-        <div className="card p-0 border border-line bg-paper flex flex-col gap-0">
-          <div className="card-head">
-            <h2 className="card-title">
-              <Clock className="w-4 h-4 text-ink-2" />
-              Recent Shift Telemetry
-            </h2>
+        <div className="card p-0 border border-line bg-paper flex flex-col overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-line-2 p-5 bg-paper/50">
+            <div className="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-100/50">
+              <Clock className="w-4 h-4" />
+            </div>
+            <h2 className="font-serif text-[17px] font-medium text-ink">Recent Shift Telemetry</h2>
           </div>
 
           <div className="overflow-x-auto p-0">
             {historyLoading ? (
-              <p className="text-xs text-muted">Loading shifts...</p>
+              <p className="text-xs text-muted p-5">Loading shifts...</p>
             ) : history.length === 0 ? (
-              <p className="text-xs text-muted italic">No shifts recorded yet.</p>
+              <p className="text-xs text-muted italic p-5">No shifts recorded yet.</p>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-line text-muted uppercase tracking-wider">
-                    <th className="py-2 font-medium">Shift Date</th>
-                    <th className="py-2 font-medium">Location</th>
-                    <th className="py-2 font-medium">Timestamps</th>
-                    <th className="py-2 font-medium">Break Time</th>
-                    <th className="py-2 font-medium">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.slice(0, 10).map((log) => (
-                    <tr key={log.id} className="border-b border-line-2 last:border-0 table-row-hover">
-                      <td className="py-3 px-4 font-medium">{formatLongDate(new Date(log.clock_in))}</td>
-                      <td className="py-2.5 capitalize font-mono text-[11px]">{log.work_location}</td>
-                      <td className="py-2.5 text-muted leading-tight">
-                        In: {new Date(log.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {log.clock_out && (
-                          <>
-                            <br />
-                            Out: {new Date(log.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </>
-                        )}
-                      </td>
-                      <td className="py-2.5 font-mono text-muted">{calcBreakDuration(log.breaks)}</td>
-                      <td className="py-2.5 font-semibold text-ink-2">
-                        {calcDuration(log.clock_in, log.clock_out)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="divide-y divide-line">
+                  {history.slice(0, 10).map((log) => {
+                    const isWfh = log.work_location?.toLowerCase() === "wfh";
+                    const durationStr = calcDuration(log.clock_in, log.clock_out);
+                    let isAnomalous = false;
+                    if (log.clock_out) {
+                      const diffHours = (new Date(log.clock_out).getTime() - new Date(log.clock_in).getTime()) / (1000 * 60 * 60);
+                      if (diffHours > 16) isAnomalous = true;
+                    }
+                    const dateObj = new Date(log.clock_in);
+                    const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+                    return (
+                      <div key={log.id} className="flex items-center justify-between p-5 hover:bg-[#FAF9F7] transition-colors">
+                        <div className="flex flex-col gap-2">
+                          <div className="text-[12px] font-bold text-ink">{dateStr}</div>
+                          <div className="flex items-center gap-3 text-[11px] text-muted">
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm text-[10.5px] font-medium border",
+                              isWfh ? "bg-purple-50 text-purple-700 border-purple-100" : "bg-paper border-line text-muted"
+                            )}>
+                              {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
+                              {isWfh ? "WFH" : "Office"}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                              {log.clock_out && (
+                                <>
+                                  <ArrowRight className="w-3 h-3 text-muted/60" />
+                                  <span>{new Date(log.clock_out).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end">
+                          {log.clock_out ? (
+                            <span className={cn(
+                              "text-[12px] font-bold flex items-center gap-1.5",
+                              isAnomalous ? "text-amber-600" : "text-ink"
+                            )}>
+                              {durationStr}
+                              {isAnomalous && <AlertTriangle className="w-3.5 h-3.5" />}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                              Live
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             )}
           </div>
         </div>
