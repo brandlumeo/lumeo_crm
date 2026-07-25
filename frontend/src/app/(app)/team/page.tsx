@@ -10,6 +10,29 @@ import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
 import { fetchTeam, inviteTeamMember, removeTeamMember, api } from "@/lib/api";
 import { SkeletonTable } from "@/components/skeleton-table";
 
+const getAvatarTint = (name: string) => {
+  const char = name ? name[0].toUpperCase() : "?";
+  const tints = [
+    "bg-emerald-100 text-emerald-700",
+    "bg-blue-100 text-blue-700",
+    "bg-amber-100 text-amber-700",
+    "bg-purple-100 text-purple-700",
+    "bg-rose-100 text-rose-700",
+    "bg-cyan-100 text-cyan-700",
+  ];
+  return tints[char.charCodeAt(0) % tints.length];
+};
+
+const getRoleBadge = (roleName: string) => {
+  const r = roleName.toLowerCase();
+  if (r === "owner") return <span className="border border-line bg-paper px-3 py-1 rounded-full text-xs font-medium text-ink shadow-sm">Owner</span>;
+  if (r === "it") return <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wider">{roleName}</span>;
+  if (r === "employee") return <span className="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize">{roleName}</span>;
+  if (r === "secondary admin" || r.includes("admin")) return <span className="bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize">{roleName}</span>;
+  if (r === "accounts") return <span className="bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize">{roleName}</span>;
+  return <span className="text-sm text-muted font-medium capitalize">{roleName}</span>;
+};
+
 export default function TeamPage() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
@@ -117,150 +140,164 @@ export default function TeamPage() {
       ) : error ? (
         <div className="text-sm text-red-500 py-12">Failed to load team data.</div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-10">
           {/* Active Users */}
-          <div className="bg-paper border border-line rounded-lg overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-line bg-bone/30">
-              <h2 className="text-sm font-medium text-ink">Active Members</h2>
-            </div>
-            <div className="divide-y divide-line">
-              {data?.users?.map((user) => (
-                <div key={user.id} className="flex items-center justify-between px-5 py-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-bone border border-line flex items-center justify-center text-ink font-medium">
-                      {(user.first_name?.[0] || user.username?.[0] || "?").toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-ink">
-                        {user.first_name} {user.last_name}
-                        {user.id === currentUser?.id && (
-                          <span className="ml-2 text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            You
-                          </span>
-                        )}
+          <div>
+            <div className="mb-3 text-[11px] font-bold text-muted uppercase tracking-wider pl-1">Team Members</div>
+            <div className="bg-paper border border-line rounded-[14px] overflow-hidden shadow-sm">
+              <div className="divide-y divide-line">
+                {data?.users?.map((user) => {
+                  const isOwner = user.role === "owner";
+                  const isCurrentUser = user.id === currentUser?.id;
+                  const nameChar = (user.first_name?.[0] || user.username?.[0] || "?").toUpperCase();
+                  
+                  return (
+                  <div key={user.id} className={`flex items-center justify-between px-5 py-4 ${isOwner ? "bg-[#FAF9F7]" : ""}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${getAvatarTint(nameChar)}`}>
+                        {nameChar}
                       </div>
-                      <div className="text-[13px] text-muted">{user.email || user.username}</div>
-                      {(user.designation || user.department) && (
-                        <div className="flex items-center gap-2 mt-1 text-[12px] text-muted/80 font-serif italic">
-                          {user.designation && <span>{user.designation}</span>}
-                          {user.designation && user.department && <span>•</span>}
-                          {user.department && <span>{user.department}</span>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    {isOwnerOrAdmin && user.role !== "admin" && user.role !== "owner" && user.role !== "manager" && user.role !== "customer" && user.role !== "client" && (
-                      <label className="flex items-center gap-2 cursor-pointer mr-2 border-r border-line pr-4">
-                        <span className="text-[11px] font-medium text-muted uppercase tracking-wider">Secondary Admin Access</span>
-                        <div className="relative inline-flex items-center h-4 rounded-full w-7">
-                          <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={user.can_manage_team}
-                            disabled={updateMutation.isPending}
-                            onChange={(e) => updateMutation.mutate({ id: user.id, can_manage_team: e.target.checked })}
-                          />
-                          <div className="w-7 h-4 bg-bone-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-ink"></div>
-                        </div>
-                      </label>
-                    )}
-                    {isManagerOrAbove && user.role !== "admin" && user.role !== "owner" && user.role !== "client" ? (
-                      <div className="relative group flex items-center">
-                        <select
-                          value={user.role}
-                          disabled={updateMutation.isPending}
-                          onChange={(e) => updateMutation.mutate({ id: user.id, role: e.target.value })}
-                          className="bg-transparent border-none text-[13px] text-muted focus:ring-0 capitalize appearance-none cursor-pointer hover:text-ink transition-colors pl-0 pr-4"
-                        >
-                          {company?.roles?.map((r: any) => {
-                            if (r.id === "client" || r.name.toLowerCase() === "client") return null;
-                            if (r.id === "admin" || r.isAdmin) return null;
-                            return <option key={r.id} value={r.id}>{r.name}</option>;
-                          })}
-                          {!company?.roles?.find((r: any) => r.id === user.role) && (
-                            <option value={user.role}>{user.role}</option>
+                      <div>
+                        <div className="text-sm font-medium text-ink flex items-center gap-2">
+                          {user.first_name} {user.last_name}
+                          {isCurrentUser && (
+                            <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                              You
+                            </span>
                           )}
-                        </select>
-                        <div className="absolute bottom-full left-1/4 -translate-x-1/2 mb-1 px-2 py-1 bg-ink text-white text-[10px] font-medium rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-10 pointer-events-none shadow-md">
-                          Change Role
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-ink"></div>
                         </div>
-                      </div>
-                    ) : (
-                      <span className="capitalize text-muted">
-                        {company?.roles?.find((r: any) => r.id === user.role)?.name || user.role}
-                      </span>
-                    )}
-                    
-                    {/* Remove Member Button */}
-                    {isOwnerOrAdmin && user.id !== currentUser?.id && user.role !== "owner" && (
-                      <button
-                        disabled={removeMutation.isPending && removeMutation.variables === user.id}
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to remove ${user.first_name || user.email} from the team?`)) {
-                            removeMutation.mutate(user.id);
-                          }
-                        }}
-                        className="ml-2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-rose-50 text-muted hover:text-rose-500 transition-colors"
-                        title="Remove member"
-                      >
-                        {removeMutation.isPending && removeMutation.variables === user.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <X className="w-4 h-4" />
+                        <div className="text-[13px] text-muted">{user.email || user.username}</div>
+                        {(user.designation || user.department) && (
+                          <div className="flex items-center gap-2 mt-0.5 text-[12px] text-muted/80 font-serif italic">
+                            {user.designation && <span>{user.designation}</span>}
+                            {user.designation && user.department && <span>•</span>}
+                            {user.department && <span>{user.department}</span>}
+                          </div>
                         )}
-                      </button>
-                    )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      {isOwnerOrAdmin && user.role !== "admin" && user.role !== "owner" && user.role !== "manager" && user.role !== "customer" && user.role !== "client" && (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <span className="text-[12px] text-muted">Admin access</span>
+                          <div className="relative inline-flex items-center h-4 rounded-full w-7">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={user.can_manage_team}
+                              disabled={updateMutation.isPending}
+                              onChange={(e) => updateMutation.mutate({ id: user.id, can_manage_team: e.target.checked })}
+                            />
+                            <div className="w-7 h-4 bg-bone-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                          </div>
+                        </label>
+                      )}
+                      
+                      <div className="flex items-center gap-3">
+                        {isManagerOrAbove && user.role !== "admin" && user.role !== "owner" && user.role !== "client" ? (
+                          <div className="relative group flex items-center">
+                            <select
+                              value={user.role}
+                              disabled={updateMutation.isPending}
+                              onChange={(e) => updateMutation.mutate({ id: user.id, role: e.target.value })}
+                              className="bg-transparent border-none text-sm text-muted focus:ring-0 capitalize appearance-none cursor-pointer hover:text-ink transition-colors pl-0 pr-4"
+                            >
+                              {company?.roles?.map((r: any) => {
+                                if (r.id === "client" || r.name.toLowerCase() === "client") return null;
+                                if (r.id === "admin" || r.isAdmin) return null;
+                                return <option key={r.id} value={r.id}>{r.name}</option>;
+                              })}
+                              {!company?.roles?.find((r: any) => r.id === user.role) && (
+                                <option value={user.role}>{user.role}</option>
+                              )}
+                            </select>
+                          </div>
+                        ) : (
+                          getRoleBadge(company?.roles?.find((r: any) => r.id === user.role)?.name || user.role)
+                        )}
+                        
+                        {/* Remove Member Button */}
+                        {isOwnerOrAdmin && !isCurrentUser && !isOwner && (
+                          <button
+                            disabled={removeMutation.isPending && removeMutation.variables === user.id}
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to remove ${user.first_name || user.email} from the team?`)) {
+                                removeMutation.mutate(user.id);
+                              }
+                            }}
+                            className="ml-2 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-slate-500 transition-colors"
+                            title="Remove member"
+                          >
+                            {removeMutation.isPending && removeMutation.variables === user.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <X className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )})}
+              </div>
             </div>
           </div>
 
           {/* Pending Invites */}
           {data?.invites && data.invites.length > 0 && (
-            <div className="bg-paper border border-line rounded-lg overflow-hidden shadow-sm opacity-90">
-              <div className="px-5 py-4 border-b border-line bg-bone/30">
-                <h2 className="text-sm font-medium text-ink">Pending Invites</h2>
-              </div>
-              <div className="divide-y divide-line">
-                {data.invites.map((invite) => (
-                  <div key={invite.id} className="flex items-center justify-between px-5 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-bone-2 border border-line border-dashed flex items-center justify-center text-muted">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-ink">
-                          {invite.first_name || invite.last_name ? `${invite.first_name || ""} ${invite.last_name || ""}`.trim() : invite.email}
-                          {(invite.first_name || invite.last_name) && <span className="text-[13px] text-muted font-normal ml-2">({invite.email})</span>}
+            <div>
+              <div className="mb-3 text-[11px] font-bold text-muted uppercase tracking-wider pl-1">Pending Invites</div>
+              <div className="bg-paper border border-line rounded-[14px] overflow-hidden shadow-sm opacity-90">
+                <div className="divide-y divide-line">
+                  {data.invites.map((invite) => (
+                    <div key={invite.id} className="flex items-center justify-between px-5 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full border-2 border-line border-dashed flex items-center justify-center text-muted/60">
+                          <Mail className="w-4 h-4" />
                         </div>
-                        {(invite.designation || invite.department) && (
-                          <div className="flex items-center gap-2 mt-0.5 text-[12px] text-muted/80 font-serif italic">
-                            {invite.designation && <span>{invite.designation}</span>}
-                            {invite.designation && invite.department && <span>•</span>}
-                            {invite.department && <span>{invite.department}</span>}
+                        <div>
+                          <div className="text-sm font-medium text-ink">
+                            {invite.first_name || invite.last_name ? `${invite.first_name || ""} ${invite.last_name || ""}`.trim() : invite.email}
+                            {(invite.first_name || invite.last_name) && <span className="text-[13px] text-muted font-normal ml-2">({invite.email})</span>}
                           </div>
-                        )}
-                        <div className="text-[12px] text-muted mt-0.5">
-                          {invite.is_expired ? (
-                            <span className="text-red-500">Expired</span>
-                          ) : invite.expires_at ? (
-                            <span>Expires {new Date(invite.expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
-                          ) : (
-                            <span>Pending acceptance</span>
+                          {(invite.designation || invite.department) && (
+                            <div className="flex items-center gap-2 mt-0.5 text-[12px] text-muted/80 font-serif italic">
+                              {invite.designation && <span>{invite.designation}</span>}
+                              {invite.designation && invite.department && <span>•</span>}
+                              {invite.department && <span>{invite.department}</span>}
+                            </div>
                           )}
                         </div>
                       </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-[12px] flex items-center gap-3">
+                          {invite.is_expired ? (
+                            <>
+                              <span className="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded-full font-medium">Expired</span>
+                              <button 
+                                onClick={() => {
+                                  // Resend logic
+                                  toast.success("Feature coming soon");
+                                }}
+                                className="text-blue-600 font-medium hover:underline"
+                              >
+                                Resend
+                              </button>
+                            </>
+                          ) : invite.expires_at ? (
+                            <span className="text-muted">Expires {new Date(invite.expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                          ) : (
+                            <span className="text-muted">Pending acceptance</span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          {getRoleBadge(company?.roles?.find((r: any) => r.id === invite.role)?.name || invite.role)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="capitalize text-muted">
-                        {company?.roles?.find((r: any) => r.id === invite.role)?.name || invite.role}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
