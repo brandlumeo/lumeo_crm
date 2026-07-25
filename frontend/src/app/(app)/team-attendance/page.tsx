@@ -153,7 +153,12 @@ export default function TeamAttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {matrixData.matrix.map((row: any) => (
+                {matrixData.matrix.map((row: any) => {
+                  const lateCount = row.counts?.late || 0;
+                  const presentCount = row.counts?.present || 0;
+                  const totalPresent = presentCount + lateCount;
+                  
+                  return (
                   <tr key={row.id} className="border-b border-line-2 last:border-0 hover:bg-bone-2 transition-colors">
                     <td className="py-3 px-5 sticky left-0 bg-paper z-20 border-r border-line shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-bone-2 transition-colors">
                       <div className="font-medium text-ink text-[13.5px] truncate max-w-[220px]">{row.name}</div>
@@ -174,19 +179,30 @@ export default function TeamAttendancePage() {
                     {/* Aggregates columns */}
                     <td className="py-3 px-4 text-center border-l border-line">
                       <div className="flex h-1.5 w-12 bg-slate-200 rounded-full overflow-hidden mx-auto">
-                        <div className="bg-emerald-500 h-full" style={{ width: `${(row.counts?.present || 0) / matrixData.days_in_month * 100}%` }} />
-                        <div className="bg-amber-500 h-full" style={{ width: `${(row.counts?.late || 0) / matrixData.days_in_month * 100}%` }} />
+                        <div className="bg-emerald-500 h-full" style={{ width: `${totalPresent / matrixData.days_in_month * 100}%` }} />
                         <div className="bg-orange-400 h-full" style={{ width: `${(row.counts?.half_day || 0) / matrixData.days_in_month * 100}%` }} />
                         <div className="bg-[#378ADD] h-full" style={{ width: `${(row.counts?.leave || 0) / matrixData.days_in_month * 100}%` }} />
                       </div>
                     </td>
-                    <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.present || 0) > 0 ? "font-bold text-emerald-600" : "font-normal text-slate-400"}`}>{row.counts?.present || 0}</td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className={`text-[13px] ${totalPresent > 0 ? "font-bold text-emerald-600" : "font-normal text-slate-400"}`}>
+                          {totalPresent}
+                        </span>
+                        {lateCount > 0 && (
+                          <span className="flex items-center justify-center gap-0.5 bg-amber-50 border border-amber-200/60 text-amber-600 text-[9px] font-bold px-1 py-0.5 rounded-sm" title={`${lateCount} Late Arrivals`}>
+                            <Clock className="w-2.5 h-2.5 stroke-[2.5]" />
+                            {lateCount}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.absent || 0) > 0 ? "font-bold text-slate-500" : "font-normal text-slate-400"}`}>{row.counts?.absent || 0}</td>
                     <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.half_day || 0) > 0 ? "font-bold text-orange-500" : "font-normal text-slate-400"}`}>{row.counts?.half_day || 0}</td>
-                    <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.late || 0) > 0 ? "font-bold text-amber-500" : "font-normal text-slate-400"}`}>{row.counts?.late || 0}</td>
+                    <td className={`py-3 px-4 text-center text-[13px] ${lateCount > 0 ? "font-bold text-amber-500" : "font-normal text-slate-400"}`}>{lateCount}</td>
                     <td className={`py-3 px-4 text-center text-[13px] pr-6 ${(row.counts?.leave || 0) > 0 ? "font-bold text-[#378ADD]" : "font-normal text-slate-400"}`}>{row.counts?.leave || 0}</td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           )}
