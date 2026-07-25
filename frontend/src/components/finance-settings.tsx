@@ -946,7 +946,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: bo
             
             {isLoading ? (
                 <div className="p-12 flex justify-center text-muted"><Loader2 className="w-8 h-8 animate-spin" /></div>
-            ) : !(paymentMethods?.results || paymentMethods || []).length ? (
+            ) : !((paymentMethods as any)?.results || paymentMethods || []).length ? (
                 <div className="p-12 text-center flex flex-col items-center justify-center animate-fade-in">
                     <div className="w-16 h-16 bg-bone rounded-full flex items-center justify-center mb-4">
                         <Wallet className="w-8 h-8 text-muted" />
@@ -964,7 +964,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: bo
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-line">
-                            {(paymentMethods?.results || paymentMethods || []).map((method: any) => (
+                            {((paymentMethods as any)?.results || paymentMethods || []).map((method: any) => (
                                 <tr key={method.id} className="hover:bg-bone/20 transition-colors">
                                     <td className="px-6 py-4 font-medium text-ink w-1/4">{method.title}</td>
                                     <td className="px-6 py-4 text-muted max-w-md whitespace-pre-wrap">{method.details}</td>
