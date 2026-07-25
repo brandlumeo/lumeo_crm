@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Logo } from "@/components/logo";
 import { useState, useEffect } from "react";
 import {
   CheckSquare,
@@ -245,15 +246,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside className="print:hidden bg-paper border-r border-line p-3.5 flex flex-col gap-5 sticky top-0 h-screen w-[240px] shrink-0 overflow-y-auto self-start">
       <div className="flex items-center justify-between px-2 pb-3.5 border-b border-line-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-ink rounded-md grid place-items-center text-bone font-serif italic text-[20px] leading-none pb-0.5">
-            L
-          </div>
-          <div className="font-serif text-xl flex items-baseline">
-            Lume<em className="text-accent not-italic">o</em>
-            <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted ml-2 font-medium">CRM</span>
-          </div>
-        </div>
+        <Logo />
         {onClose && (
           <button onClick={onClose} className="md:hidden text-muted hover:text-ink">
             <X className="w-5 h-5" />

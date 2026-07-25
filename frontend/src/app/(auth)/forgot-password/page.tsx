@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import { requestPasswordReset } from "@/lib/api";
+import { Logo } from "@/components/logo";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -31,13 +32,8 @@ export default function ForgotPasswordPage() {
       {/* Left column — form */}
       <div className="flex flex-col px-8 py-10 sm:px-16">
         {/* Logo */}
-        <Link href="/login" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-ink rounded-md grid place-items-center text-bone font-serif italic text-[20px] leading-none pb-0.5">
-            L
-          </div>
-          <div className="font-serif text-[22px]">
-            Lume<em className="text-accent not-italic">o</em>
-          </div>
+        <Link href="/login" className="flex w-fit">
+          <Logo />
         </Link>
 
         <div className="flex-1 grid place-items-center">

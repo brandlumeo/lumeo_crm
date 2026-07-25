@@ -7,6 +7,7 @@ import { ArrowRight, Eye, EyeOff, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Logo } from "@/components/logo";
 
 import { getAccessToken, login, verify2FA } from "@/lib/api";
 
@@ -157,14 +158,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="flex flex-col px-8 py-10 sm:px-16">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-ink rounded-md grid place-items-center text-bone font-serif italic text-[20px] leading-none pb-0.5">
-            L
-          </div>
-          <div className="font-serif text-[22px] flex items-baseline">
-            Lume<em className="text-accent not-italic">o</em>
-            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted ml-2 font-medium">CRM</span>
-          </div>
+        <Link href="/" className="flex w-fit">
+          <Logo />
         </Link>
 
         <div className="flex-1 grid place-items-center">
