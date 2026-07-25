@@ -1671,7 +1671,7 @@ class PublicQuoteView(APIView):
 
     def get(self, request, token):
         quote = get_object_or_404(Quote, public_token=token)
-        serializer = QuoteSerializer(quote)
+        serializer = QuoteSerializer(quote, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request, token):
@@ -1697,7 +1697,7 @@ class PublicInvoiceView(APIView):
 
     def get(self, request, token):
         invoice = get_object_or_404(Invoice, public_token=token)
-        serializer = InvoiceSerializer(invoice)
+        serializer = InvoiceSerializer(invoice, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request, token):

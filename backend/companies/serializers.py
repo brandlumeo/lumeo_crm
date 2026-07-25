@@ -178,8 +178,8 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
         read_only_fields = ('company',)
 
 class InvoiceSettingsSerializer(serializers.ModelSerializer):
-    invoice_logo = serializers.SerializerMethodField()
-    authorised_signatory_signature = serializers.SerializerMethodField()
+    invoice_logo = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    authorised_signatory_signature = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = InvoiceSettings
@@ -194,12 +194,6 @@ class InvoiceSettingsSerializer(serializers.ModelSerializer):
         if request is not None:
             return request.build_absolute_uri(relative_url)
         return relative_url
-
-    def get_invoice_logo(self, obj):
-        return self._get_absolute_url(obj.invoice_logo)
-
-    def get_authorised_signatory_signature(self, obj):
-        return self._get_absolute_url(obj.authorised_signatory_signature)
 
     def _normalize_url(self, url):
         """Strip origin from an absolute URL to keep only the /media/... relative path."""
@@ -220,6 +214,14 @@ class InvoiceSettingsSerializer(serializers.ModelSerializer):
             ret['invoice_logo'] = self._normalize_url(ret['invoice_logo'])
         if 'authorised_signatory_signature' in ret:
             ret['authorised_signatory_signature'] = self._normalize_url(ret['authorised_signatory_signature'])
+        return ret
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if ret.get('invoice_logo'):
+            ret['invoice_logo'] = self._get_absolute_url(ret['invoice_logo'])
+        if ret.get('authorised_signatory_signature'):
+            ret['authorised_signatory_signature'] = self._get_absolute_url(ret['authorised_signatory_signature'])
         return ret
 
 
