@@ -70,11 +70,11 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         
         {/* Quote Document */}
         <div className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 ${
-          quote.company?.invoice_settings?.template_id === 'template1' ? 'bg-white border-line' :
-          quote.company?.invoice_settings?.template_id === 'template2' ? 'bg-white border-line font-serif' :
-          quote.company?.invoice_settings?.template_id === 'template3' ? 'bg-white border-line border-t-8 border-t-accent' :
-          quote.company?.invoice_settings?.template_id === 'template4' ? 'bg-slate-50 border-slate-200 border-l-8 border-l-slate-800' :
-          quote.company?.invoice_settings?.template_id === 'template5' ? 'bg-white border-transparent shadow-xl ring-1 ring-black/5' :
+          quote.company?.invoice_template === 'template1' ? 'bg-white border-line' :
+          quote.company?.invoice_template === 'template2' ? 'bg-white border-line font-serif' :
+          quote.company?.invoice_template === 'template3' ? 'bg-white border-line border-t-8 border-t-accent' :
+          quote.company?.invoice_template === 'template4' ? 'bg-slate-50 border-slate-200 border-l-8 border-l-slate-800' :
+          quote.company?.invoice_template === 'template5' ? 'bg-white border-transparent shadow-xl ring-1 ring-black/5' :
           'bg-paper border-line'
         }`}>
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line pb-8 mb-8">
