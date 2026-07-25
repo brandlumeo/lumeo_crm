@@ -165,12 +165,10 @@ function isBrowser() {
   return typeof window !== "undefined";
 }// ── Auth helpers ─────────────────────────────────────────────────────────────
 //
-// Hybrid pattern:
-//  • Access token  → sessionStorage (survives page refresh in same tab,
-//                    cleared when the browser/tab is closed, NOT localStorage)
-//  • Refresh token → HttpOnly cookie (set by Django, never touchable by JS)
-//  • lumeo_session → plain cookie (set by Django, lets Next.js middleware
-//                    know the user is authenticated without reading the token)
+// Hybrid pattern + Local Storage Fallback:
+//  • Access token  → sessionStorage
+//  • Refresh token → localStorage (to bypass third-party cookie blocking) + HttpOnly cookie
+//  • lumeo_session → plain cookie (for Next.js middleware)
 
 export function getAccessToken(): string | null {
   if (!isBrowser()) return null;
@@ -179,8 +177,13 @@ export function getAccessToken(): string | null {
 
 export function storeTokens(tokens: TokenPair): void {
   if (!isBrowser()) return;
-  // Only store the access token — refresh token lives in HttpOnly cookie
+  
   sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+  
+  if (tokens.refresh) {
+    localStorage.setItem("lumeo_refresh_token", tokens.refresh);
+  }
+  
   // Set the lumeo_session indicator cookie on the frontend domain so Next.js middleware detects it across decoupled domains
   document.cookie = "lumeo_session=1; path=/; max-age=2592000; SameSite=Lax; Secure";
 }
@@ -188,6 +191,7 @@ export function storeTokens(tokens: TokenPair): void {
 export async function clearSession(): Promise<void> {
   if (!isBrowser()) return;
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem("lumeo_refresh_token");
   document.cookie = "lumeo_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
   // Tell backend to clear the HttpOnly refresh cookie
   try {
@@ -234,15 +238,20 @@ let refreshPromise: Promise<string | null> | null = null;
 
 async function silentTokenRefresh(): Promise<string | null> {
   try {
-    // Refresh endpoint reads the HttpOnly lumeo_refresh cookie and
-    // returns a new access token in the response body.
-    const { data } = await axios.post<{ access: string }>(
+    const refreshToken = localStorage.getItem("lumeo_refresh_token");
+    
+    // Refresh endpoint reads the HttpOnly lumeo_refresh cookie OR the refresh body param
+    // returns a new access and refresh token in the response body.
+    const { data } = await axios.post<{ access: string; refresh?: string }>(
       `${apiBaseUrl}${endpoints.refresh}`,
-      {},
+      { refresh: refreshToken || undefined },
       { withCredentials: true },
     );
     if (data.access) {
       sessionStorage.setItem(ACCESS_TOKEN_KEY, data.access);
+      if (data.refresh) {
+        localStorage.setItem("lumeo_refresh_token", data.refresh);
+      }
       return data.access;
     }
     return null;

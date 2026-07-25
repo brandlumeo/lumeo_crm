@@ -497,6 +497,7 @@ export interface QuoteLineItem {
   quantity: number;
   unit_price: string;
   tax_rate: string;
+  hsn_sac_code?: string;
   subtotal?: string;
   tax_amount?: string;
   total?: string;

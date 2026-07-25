@@ -168,8 +168,11 @@ class CookieTokenObtainView(APIView):
                 })
 
         refresh = MyRefreshToken.for_user(user)
-        # Return access token in body — frontend stores in sessionStorage
-        response = Response({"access": str(refresh.access_token)})
+        # Return both tokens in body to avoid third-party cookie blocking on decoupled domains
+        response = Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        })
         _set_auth_cookies(response, refresh)
         return response
 
@@ -235,7 +238,10 @@ class Verify2FAView(APIView):
 
         # Success: login user and issue token
         refresh = MyRefreshToken.for_user(user)
-        response = Response({"access": str(refresh.access_token)})
+        response = Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        })
         _set_auth_cookies(response, refresh)
         return response
 
@@ -249,10 +255,11 @@ class CookieTokenRefreshView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        raw_refresh = request.COOKIES.get(COOKIE_REFRESH_TOKEN_NAME)
+        # Support both cookie and body to fix third-party cookie blocking
+        raw_refresh = request.COOKIES.get(COOKIE_REFRESH_TOKEN_NAME) or request.data.get("refresh")
         if not raw_refresh:
             return Response(
-                {"detail": "Refresh token cookie not found."},
+                {"detail": "Refresh token not found in cookies or request body."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -266,8 +273,11 @@ class CookieTokenRefreshView(APIView):
             _clear_auth_cookies(response)
             return response
 
-        # Return new access token in body
-        response = Response({"access": str(refresh.access_token)})
+        # Return both tokens to keep localStorage updated
+        response = Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        })
         _set_auth_cookies(response, refresh)
         return response
 
@@ -280,7 +290,7 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        raw_refresh = request.COOKIES.get(COOKIE_REFRESH_TOKEN_NAME)
+        raw_refresh = request.COOKIES.get(COOKIE_REFRESH_TOKEN_NAME) or request.data.get("refresh")
         if raw_refresh:
             try:
                 # Attempt to blacklist — only works if INSTALLED_APPS includes
