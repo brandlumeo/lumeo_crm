@@ -172,25 +172,34 @@ function isBrowser() {
 
 export function getAccessToken(): string | null {
   if (!isBrowser()) return null;
-  return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  return localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function storeTokens(tokens: TokenPair): void {
+export function storeTokens(tokens: TokenPair, rememberMe = true): void {
   if (!isBrowser()) return;
   
-  sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
-  
-  if (tokens.refresh) {
-    localStorage.setItem("lumeo_refresh_token", tokens.refresh);
+  if (rememberMe) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+    if (tokens.refresh) {
+      localStorage.setItem("lumeo_refresh_token", tokens.refresh);
+    }
+  } else {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+    if (tokens.refresh) {
+      sessionStorage.setItem("lumeo_refresh_token", tokens.refresh);
+    }
   }
   
   // Set the lumeo_session indicator cookie on the frontend domain so Next.js middleware detects it across decoupled domains
-  document.cookie = "lumeo_session=1; path=/; max-age=2592000; SameSite=Lax; Secure";
+  const maxAge = rememberMe ? "max-age=2592000;" : "";
+  document.cookie = `lumeo_session=1; path=/; ${maxAge} SameSite=Lax; Secure`;
 }
 
 export async function clearSession(): Promise<void> {
   if (!isBrowser()) return;
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem("lumeo_refresh_token");
   localStorage.removeItem("lumeo_refresh_token");
   document.cookie = "lumeo_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure";
   // Tell backend to clear the HttpOnly refresh cookie
@@ -238,7 +247,7 @@ let refreshPromise: Promise<string | null> | null = null;
 
 async function silentTokenRefresh(): Promise<string | null> {
   try {
-    const refreshToken = localStorage.getItem("lumeo_refresh_token");
+    const refreshToken = localStorage.getItem("lumeo_refresh_token") || sessionStorage.getItem("lumeo_refresh_token");
     
     // Refresh endpoint reads the HttpOnly lumeo_refresh cookie OR the refresh body param
     // returns a new access and refresh token in the response body.
@@ -348,11 +357,12 @@ async function fetchAllPages<T>(path: string, params?: ListParams) {
 }
 
 export async function login(payload: LoginPayload) {
-  const { data } = await api.post<any>(endpoints.token, payload);
+  const { rememberMe, ...apiPayload } = payload;
+  const { data } = await api.post<any>(endpoints.token, apiPayload);
   if (data.two_factor_required) {
     return data;
   }
-  storeTokens(data);
+  storeTokens(data, rememberMe);
   return data;
 }
 
@@ -360,9 +370,11 @@ export async function verify2FA(payload: {
   username: string;
   password: string;
   two_factor_code: string;
+  rememberMe?: boolean;
 }) {
-  const { data } = await api.post<TokenPair>("/accounts/token/verify-2fa/", payload);
-  storeTokens(data);
+  const { rememberMe, ...apiPayload } = payload;
+  const { data } = await api.post<TokenPair>("/accounts/token/verify-2fa/", apiPayload);
+  storeTokens(data, rememberMe);
   return data;
 }
 

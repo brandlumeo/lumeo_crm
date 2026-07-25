@@ -277,6 +277,7 @@ export interface PaginatedResponse<T> {
 export interface LoginPayload {
   username: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface TokenPair {

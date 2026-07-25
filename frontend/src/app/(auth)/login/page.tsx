@@ -3,7 +3,7 @@
 import type { Route } from "next";
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +36,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // 2FA state
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
@@ -59,7 +60,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await login({ username, password });
+      const response = await login({ username, password, rememberMe });
       if (response && response.two_factor_required) {
         setTwoFactorRequired(true);
         setLoading(false);
@@ -115,7 +116,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await verify2FA({ username, password, two_factor_code: twoFactorCode });
+      await verify2FA({ username, password, two_factor_code: twoFactorCode, rememberMe });
       await queryClient.invalidateQueries();
       
       const { fetchMe } = require("@/lib/api");
@@ -219,6 +220,32 @@ export default function LoginPage() {
                     <div className="chip chip-warning justify-center">{error}</div>
                   ) : null}
 
+                  <div className="flex items-center justify-between my-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div className="w-4 h-4 rounded-[4px] border border-line-2 bg-bone-2 peer-checked:bg-ink peer-checked:border-ink transition-all flex items-center justify-center shadow-sm group-hover:border-ink/30">
+                          <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 scale-50 peer-checked:scale-100 transition-all duration-200" strokeWidth={2.5} />
+                        </div>
+                      </div>
+                      <span className="text-[13px] font-medium text-muted group-hover:text-ink transition-colors select-none">
+                        Stay signed in
+                      </span>
+                    </label>
+
+                    <Link
+                      href="/forgot-password"
+                      className="text-[13px] font-medium text-muted hover:text-ink transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loading}
@@ -227,13 +254,6 @@ export default function LoginPage() {
                     {loading ? "Signing in..." : "Sign in"}
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-
-                  <Link
-                    href="/forgot-password"
-                    className="text-center text-[13px] text-muted hover:text-ink transition-colors"
-                  >
-                    Forgot your password?
-                  </Link>
                 </form>
 
                 <div className="mt-6 flex flex-col items-center gap-3">
