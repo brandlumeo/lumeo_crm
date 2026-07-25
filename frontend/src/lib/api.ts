@@ -257,9 +257,16 @@ async function silentTokenRefresh(): Promise<string | null> {
       { withCredentials: true },
     );
     if (data.access) {
-      sessionStorage.setItem(ACCESS_TOKEN_KEY, data.access);
-      if (data.refresh) {
-        localStorage.setItem("lumeo_refresh_token", data.refresh);
+      if (localStorage.getItem(ACCESS_TOKEN_KEY) !== null) {
+        localStorage.setItem(ACCESS_TOKEN_KEY, data.access);
+        if (data.refresh) {
+          localStorage.setItem("lumeo_refresh_token", data.refresh);
+        }
+      } else {
+        sessionStorage.setItem(ACCESS_TOKEN_KEY, data.access);
+        if (data.refresh) {
+          sessionStorage.setItem("lumeo_refresh_token", data.refresh);
+        }
       }
       return data.access;
     }
