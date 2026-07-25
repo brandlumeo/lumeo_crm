@@ -144,11 +144,12 @@ export default function TeamAttendancePage() {
                       </th>
                     );
                   })}
-                  <th className="py-4 px-4 text-center border-l border-line text-emerald-600 bg-emerald-50/50">Present</th>
-                  <th className="py-4 px-4 text-center text-rose-600 bg-rose-50/50">Absent</th>
-                  <th className="py-4 px-4 text-center text-amber-600 bg-amber-50/50">Half</th>
-                  <th className="py-4 px-4 text-center text-orange-600 bg-orange-50/50">Late</th>
-                  <th className="py-4 px-4 text-center text-blue-600 bg-blue-50/50 pr-6">Leave</th>
+                  <th className="py-4 px-4 text-center border-l border-line min-w-[80px]">Mix</th>
+                  <th className="py-4 px-4 text-center">Present</th>
+                  <th className="py-4 px-4 text-center">Absent</th>
+                  <th className="py-4 px-4 text-center">Half</th>
+                  <th className="py-4 px-4 text-center">Late</th>
+                  <th className="py-4 px-4 text-center pr-6">Leave</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,11 +172,19 @@ export default function TeamAttendancePage() {
                     })}
                     
                     {/* Aggregates columns */}
-                    <td className="py-3 px-4 text-center border-l border-line font-bold text-emerald-600 bg-emerald-50/30 text-[13px]">{row.counts?.present || 0}</td>
-                    <td className="py-3 px-4 text-center font-bold text-rose-600 bg-rose-50/30 text-[13px]">{row.counts?.absent || 0}</td>
-                    <td className="py-3 px-4 text-center font-bold text-amber-600 bg-amber-50/30 text-[13px]">{row.counts?.half_day || 0}</td>
-                    <td className="py-3 px-4 text-center font-bold text-orange-600 bg-orange-50/30 text-[13px]">{row.counts?.late || 0}</td>
-                    <td className="py-3 px-4 text-center font-bold text-blue-600 bg-blue-50/30 text-[13px] pr-6">{row.counts?.leave || 0}</td>
+                    <td className="py-3 px-4 text-center border-l border-line">
+                      <div className="flex h-1.5 w-12 bg-slate-200 rounded-full overflow-hidden mx-auto">
+                        <div className="bg-emerald-500 h-full" style={{ width: `${(row.counts?.present || 0) / matrixData.days_in_month * 100}%` }} />
+                        <div className="bg-amber-500 h-full" style={{ width: `${(row.counts?.late || 0) / matrixData.days_in_month * 100}%` }} />
+                        <div className="bg-orange-400 h-full" style={{ width: `${(row.counts?.half_day || 0) / matrixData.days_in_month * 100}%` }} />
+                        <div className="bg-[#378ADD] h-full" style={{ width: `${(row.counts?.leave || 0) / matrixData.days_in_month * 100}%` }} />
+                      </div>
+                    </td>
+                    <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.present || 0) > 0 ? "font-bold text-emerald-600" : "font-normal text-slate-400"}`}>{row.counts?.present || 0}</td>
+                    <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.absent || 0) > 0 ? "font-bold text-slate-500" : "font-normal text-slate-400"}`}>{row.counts?.absent || 0}</td>
+                    <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.half_day || 0) > 0 ? "font-bold text-orange-500" : "font-normal text-slate-400"}`}>{row.counts?.half_day || 0}</td>
+                    <td className={`py-3 px-4 text-center text-[13px] ${(row.counts?.late || 0) > 0 ? "font-bold text-amber-500" : "font-normal text-slate-400"}`}>{row.counts?.late || 0}</td>
+                    <td className={`py-3 px-4 text-center text-[13px] pr-6 ${(row.counts?.leave || 0) > 0 ? "font-bold text-[#378ADD]" : "font-normal text-slate-400"}`}>{row.counts?.leave || 0}</td>
                   </tr>
                 ))}
               </tbody>
