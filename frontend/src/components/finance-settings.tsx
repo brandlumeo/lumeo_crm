@@ -63,6 +63,18 @@ export function FinanceSettingsForm() {
 
   // Template Settings
   const [invoiceTemplate, setInvoiceTemplate] = useState("template1");
+  const [templateAccentColor, setTemplateAccentColor] = useState("#4F46E5");
+  const [templateFontFamily, setTemplateFontFamily] = useState("Inter");
+  const [templateScale, setTemplateScale] = useState("Standard");
+  const [footerText, setFooterText] = useState("Thank you for your business.");
+
+  // Company & Bank Details
+  const [companyTaxId, setCompanyTaxId] = useState("");
+  const [companyRegistrationNumber, setCompanyRegistrationNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankRoutingNumber, setBankRoutingNumber] = useState("");
 
   // Quickbooks Settings
   const [quickbooksSyncStatus, setQuickbooksSyncStatus] = useState(false);
@@ -120,6 +132,17 @@ export function FinanceSettingsForm() {
       setOrderPrefix(invoiceSettings.order_prefix ?? "ORD");
       setOrderSeparator(invoiceSettings.order_separator ?? "-");
       setOrderDigits(invoiceSettings.order_digits ?? 5);
+      
+      setTemplateAccentColor(invoiceSettings.template_accent_color ?? "#4F46E5");
+      setTemplateFontFamily(invoiceSettings.template_font_family ?? "Inter");
+      setTemplateScale(invoiceSettings.template_scale ?? "Standard");
+      setFooterText(invoiceSettings.footer_text ?? "Thank you for your business.");
+      setCompanyTaxId(invoiceSettings.company_tax_id ?? "");
+      setCompanyRegistrationNumber(invoiceSettings.company_registration_number ?? "");
+      setBankName(invoiceSettings.bank_name ?? "");
+      setBankAccountName(invoiceSettings.bank_account_name ?? "");
+      setBankAccountNumber(invoiceSettings.bank_account_number ?? "");
+      setBankRoutingNumber(invoiceSettings.bank_routing_number ?? "");
     }
     
     if (company) {
@@ -168,6 +191,17 @@ export function FinanceSettingsForm() {
         invoice_other_information: invoiceOtherInfo,
         quickbooks_sync_status: quickbooksSyncStatus,
         
+        template_accent_color: templateAccentColor,
+        template_font_family: templateFontFamily,
+        template_scale: templateScale,
+        footer_text: footerText,
+        company_tax_id: companyTaxId,
+        company_registration_number: companyRegistrationNumber,
+        bank_name: bankName,
+        bank_account_name: bankAccountName,
+        bank_account_number: bankAccountNumber,
+        bank_routing_number: bankRoutingNumber,
+
         invoice_prefix: invoicePrefix,
         invoice_separator: invoiceSeparator,
         invoice_digits: invoiceDigits,
@@ -443,6 +477,85 @@ export function FinanceSettingsForm() {
                 </div>
               </div>
             </div>
+            
+            {/* Premium Template Info */}
+            <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8 mt-8">
+                <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Company & Bank Details (For Premium Templates)</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-5">
+                        <div className="space-y-1.5">
+                            <label className="text-[13.5px] font-medium text-ink">Company Tax ID / VAT Number</label>
+                            <input
+                                type="text"
+                                value={companyTaxId}
+                                onChange={(e) => setCompanyTaxId(e.target.value)}
+                                disabled={!isAdmin}
+                                placeholder="e.g. GB123456789"
+                                className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[13.5px] font-medium text-ink">Company Registration Number</label>
+                            <input
+                                type="text"
+                                value={companyRegistrationNumber}
+                                onChange={(e) => setCompanyRegistrationNumber(e.target.value)}
+                                disabled={!isAdmin}
+                                placeholder="e.g. 01234567"
+                                className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[13.5px] font-medium text-ink">Bank Name</label>
+                                <input
+                                    type="text"
+                                    value={bankName}
+                                    onChange={(e) => setBankName(e.target.value)}
+                                    disabled={!isAdmin}
+                                    placeholder="e.g. Chase Bank"
+                                    className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[13.5px] font-medium text-ink">Account Name</label>
+                                <input
+                                    type="text"
+                                    value={bankAccountName}
+                                    onChange={(e) => setBankAccountName(e.target.value)}
+                                    disabled={!isAdmin}
+                                    placeholder="e.g. Acme Corp"
+                                    className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[13.5px] font-medium text-ink">Account Number</label>
+                                <input
+                                    type="text"
+                                    value={bankAccountNumber}
+                                    onChange={(e) => setBankAccountNumber(e.target.value)}
+                                    disabled={!isAdmin}
+                                    className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[13.5px] font-medium text-ink">Routing / SWIFT Code</label>
+                                <input
+                                    type="text"
+                                    value={bankRoutingNumber}
+                                    onChange={(e) => setBankRoutingNumber(e.target.value)}
+                                    disabled={!isAdmin}
+                                    className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
           </div>
         )}
 
@@ -527,6 +640,77 @@ export function FinanceSettingsForm() {
                   </div>
                 </div>
               ))}
+            </div>
+            
+            <div className="mt-8 pt-8 border-t border-line/50 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-5">
+                    <h5 className="text-[14px] font-semibold text-ink">Template Style Customization</h5>
+                    
+                    <div className="space-y-1.5">
+                        <label className="text-[13.5px] font-medium text-ink">Accent Color (Hex)</label>
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="color"
+                                value={templateAccentColor}
+                                onChange={(e) => setTemplateAccentColor(e.target.value)}
+                                disabled={!isAdmin}
+                                className="w-11 h-11 rounded cursor-pointer border-0 p-0"
+                            />
+                            <input
+                                type="text"
+                                value={templateAccentColor}
+                                onChange={(e) => setTemplateAccentColor(e.target.value)}
+                                disabled={!isAdmin}
+                                className="input flex-1 h-11 bg-bone/30 focus:bg-paper"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                        <label className="text-[13.5px] font-medium text-ink">Primary Font</label>
+                        <select
+                            value={templateFontFamily}
+                            onChange={(e) => setTemplateFontFamily(e.target.value)}
+                            disabled={!isAdmin}
+                            className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                        >
+                            <option value="Inter">Inter (Modern & Clean)</option>
+                            <option value="Roboto">Roboto (Classic)</option>
+                            <option value="Outfit">Outfit (Geometric & Bold)</option>
+                            <option value="serif">Serif (Traditional)</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[13.5px] font-medium text-ink">Font Scaling</label>
+                        <select
+                            value={templateScale}
+                            onChange={(e) => setTemplateScale(e.target.value)}
+                            disabled={!isAdmin}
+                            className="input w-full h-11 bg-bone/30 focus:bg-paper"
+                        >
+                            <option value="Small">Small</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Large">Large (Best for high-res monitors)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div className="space-y-5">
+                    <h5 className="text-[14px] font-semibold text-ink">Footer Settings</h5>
+                    <div className="space-y-1.5">
+                        <label className="text-[13.5px] font-medium text-ink">Global Footer Text</label>
+                        <textarea
+                            value={footerText}
+                            onChange={(e) => setFooterText(e.target.value)}
+                            disabled={!isAdmin}
+                            rows={4}
+                            className="input w-full bg-bone/30 focus:bg-paper resize-none py-3"
+                            placeholder="e.g. Thank you for your business. Please remit payment within 15 days."
+                        />
+                        <p className="text-[12px] text-muted">This text will appear at the absolute bottom of every invoice page, below the totals.</p>
+                    </div>
+                </div>
             </div>
           </div>
         )}
