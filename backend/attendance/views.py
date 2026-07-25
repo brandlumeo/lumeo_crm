@@ -808,6 +808,7 @@ class AttendanceMatrixView(APIView):
                 "id": user.id,
                 "name": user.get_full_name() or user.username,
                 "role": user.role,
+                "designation": user.designation,
                 "days": user_days,
                 "counts": counts
             })

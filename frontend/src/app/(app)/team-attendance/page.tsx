@@ -131,7 +131,7 @@ export default function TeamAttendancePage() {
             <table className="min-w-max w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-bone border-b border-line text-muted uppercase tracking-wider text-[11px] font-semibold">
-                  <th className="py-4 px-5 sticky left-0 bg-bone z-20 border-r border-line shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] min-w-[200px]">Employee</th>
+                  <th className="py-4 px-5 sticky left-0 bg-bone z-20 border-r border-line shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] min-w-[200px]">Team Member</th>
                   {Array.from({ length: matrixData.days_in_month }).map((_, i) => {
                     const dateObj = new Date(currentDate.year, currentDate.month - 1, i + 1);
                     const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
@@ -162,7 +162,7 @@ export default function TeamAttendancePage() {
                   <tr key={row.id} className="border-b border-line-2 last:border-0 hover:bg-bone-2 transition-colors">
                     <td className="py-3 px-5 sticky left-0 bg-paper z-20 border-r border-line shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-bone-2 transition-colors">
                       <div className="font-medium text-ink text-[13.5px] truncate max-w-[220px]">{row.name}</div>
-                      <div className="text-[11px] text-muted capitalize mt-0.5">{row.role}</div>
+                      <div className="text-[11px] text-muted capitalize mt-0.5">{row.designation || row.role}</div>
                     </td>
                     {Array.from({ length: matrixData.days_in_month }).map((_, i) => {
                       const dayString = (i + 1).toString();
