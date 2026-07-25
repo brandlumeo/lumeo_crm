@@ -132,13 +132,18 @@ export default function TeamAttendancePage() {
               <thead>
                 <tr className="bg-bone border-b border-line text-muted uppercase tracking-wider text-[11px] font-semibold">
                   <th className="py-4 px-5 sticky left-0 bg-bone z-20 border-r border-line shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] min-w-[200px]">Employee</th>
-                  {Array.from({ length: matrixData.days_in_month }).map((_, i) => (
-                    <th key={i} className="py-4 px-2 text-center min-w-[44px]">
-                      <div className="flex flex-col items-center gap-1">
-                        <span>{i + 1}</span>
-                      </div>
-                    </th>
-                  ))}
+                  {Array.from({ length: matrixData.days_in_month }).map((_, i) => {
+                    const dateObj = new Date(currentDate.year, currentDate.month - 1, i + 1);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                    return (
+                      <th key={i} className="py-3 px-2 text-center min-w-[44px]">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="text-[12px] font-bold text-ink">{i + 1}</span>
+                          <span className="text-[9px] font-medium text-muted uppercase tracking-wider">{dayName}</span>
+                        </div>
+                      </th>
+                    );
+                  })}
                   <th className="py-4 px-4 text-center border-l border-line text-emerald-600 bg-emerald-50/50">Present</th>
                   <th className="py-4 px-4 text-center text-rose-600 bg-rose-50/50">Absent</th>
                   <th className="py-4 px-4 text-center text-amber-600 bg-amber-50/50">Half</th>
