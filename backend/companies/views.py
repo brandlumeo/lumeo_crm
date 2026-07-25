@@ -60,7 +60,7 @@ class InvoiceSettingsView(APIView):
         from .models import InvoiceSettings
         from .serializers import InvoiceSettingsSerializer
         settings, _ = InvoiceSettings.objects.get_or_create(company=company)
-        return Response(InvoiceSettingsSerializer(settings).data)
+        return Response(InvoiceSettingsSerializer(settings, context={'request': request}).data)
 
     def put(self, request):
         company = getattr(request.user, "company", None)
@@ -75,10 +75,10 @@ class InvoiceSettingsView(APIView):
         from .serializers import InvoiceSettingsSerializer
         settings, _ = InvoiceSettings.objects.get_or_create(company=company)
         
-        serializer = InvoiceSettingsSerializer(settings, data=request.data, partial=True)
+        serializer = InvoiceSettingsSerializer(settings, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(InvoiceSettingsSerializer(serializer.instance, context={'request': request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 from rest_framework import viewsets

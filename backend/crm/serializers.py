@@ -60,8 +60,17 @@ class CompanySummarySerializer(serializers.ModelSerializer):
             return getattr(settings, mapped_name, default)
         return default
 
+    def _build_absolute_url(self, relative_url):
+        """Convert a relative /media/... path to a full absolute URL using the request context."""
+        if not relative_url:
+            return None
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(relative_url)
+        return relative_url
+
     def get_invoice_template(self, obj): return self._get_setting(obj, 'invoice_template', 'template1')
-    def get_invoice_logo(self, obj): return self._get_setting(obj, 'invoice_logo')
+    def get_invoice_logo(self, obj): return self._build_absolute_url(self._get_setting(obj, 'invoice_logo'))
     def get_invoice_terms(self, obj): return self._get_setting(obj, 'invoice_terms')
     def get_invoice_other_information(self, obj): return self._get_setting(obj, 'invoice_other_information')
     def get_show_client_name(self, obj): return self._get_setting(obj, 'show_client_name', True)
@@ -74,7 +83,7 @@ class CompanySummarySerializer(serializers.ModelSerializer):
     def get_show_status_on_invoice(self, obj): return self._get_setting(obj, 'show_status_on_invoice', True)
     def get_hsn_sac_code_show(self, obj): return self._get_setting(obj, 'hsn_sac_code_show', False)
     def get_show_tax_calculation_message(self, obj): return self._get_setting(obj, 'show_tax_calculation_message', False)
-    def get_authorised_signatory_signature(self, obj): return self._get_setting(obj, 'authorised_signatory_signature')
+    def get_authorised_signatory_signature(self, obj): return self._build_absolute_url(self._get_setting(obj, 'authorised_signatory_signature'))
     def get_show_authorised_signatory(self, obj): return self._get_setting(obj, 'show_authorised_signatory', False)
     def get_invoice_language(self, obj): return self._get_setting(obj, 'invoice_language', 'en')
     def get_invoice_prefix(self, obj): return self._get_setting(obj, 'invoice_prefix', 'INV-')
@@ -679,7 +688,8 @@ class InvoiceSerializer(CompanyScopedSerializer):
             return None
         try:
             settings = obj.company.invoice_settings
-            return PublicInvoiceSettingsSerializer(settings).data
+            request = self.context.get('request')
+            return PublicInvoiceSettingsSerializer(settings, context={'request': request}).data
         except Exception:
             return None
 

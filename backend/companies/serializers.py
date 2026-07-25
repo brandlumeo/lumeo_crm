@@ -178,14 +178,72 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
         read_only_fields = ('company',)
 
 class InvoiceSettingsSerializer(serializers.ModelSerializer):
+    invoice_logo = serializers.SerializerMethodField()
+    authorised_signatory_signature = serializers.SerializerMethodField()
+
     class Meta:
         model = InvoiceSettings
         fields = '__all__'
         read_only_fields = ('company',)
 
+    def _get_absolute_url(self, relative_url):
+        """Convert a stored relative /media/... path to a full absolute URL using the request."""
+        if not relative_url:
+            return None
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(relative_url)
+        return relative_url
+
+    def get_invoice_logo(self, obj):
+        return self._get_absolute_url(obj.invoice_logo)
+
+    def get_authorised_signatory_signature(self, obj):
+        return self._get_absolute_url(obj.authorised_signatory_signature)
+
+    def _normalize_url(self, url):
+        """Strip origin from an absolute URL to keep only the /media/... relative path."""
+        if not url:
+            return url
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        # If it already looks like a relative path, return as-is
+        if not parsed.scheme:
+            return url
+        # Return just the path portion (e.g. /media/attachments/logo.png)
+        return parsed.path
+
+    def to_internal_value(self, data):
+        ret = super().to_internal_value(data)
+        # Normalize logo and signature URLs before saving to DB
+        if 'invoice_logo' in ret:
+            ret['invoice_logo'] = self._normalize_url(ret['invoice_logo'])
+        if 'authorised_signatory_signature' in ret:
+            ret['authorised_signatory_signature'] = self._normalize_url(ret['authorised_signatory_signature'])
+        return ret
+
+
 class PublicInvoiceSettingsSerializer(serializers.ModelSerializer):
+    invoice_logo = serializers.SerializerMethodField()
+    authorised_signatory_signature = serializers.SerializerMethodField()
+
     class Meta:
         model = InvoiceSettings
         # Exclude internal configs like reminder sweeps
         exclude = ('id', 'company', 'send_reminder_before_days', 'send_reminder_after_days')
         read_only_fields = [f.name for f in InvoiceSettings._meta.fields]
+
+    def _get_absolute_url(self, relative_url):
+        if not relative_url:
+            return None
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(relative_url)
+        return relative_url
+
+    def get_invoice_logo(self, obj):
+        return self._get_absolute_url(obj.invoice_logo)
+
+    def get_authorised_signatory_signature(self, obj):
+        return self._get_absolute_url(obj.authorised_signatory_signature)
+
