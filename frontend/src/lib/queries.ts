@@ -276,7 +276,7 @@ export function useLead(id: number) {
   return useQuery({
     queryKey: ["crm", "leads", id],
     queryFn: () => fetchLead(id),
-    enabled: authenticated(),
+    enabled: authenticated() && !!id,
   });
 }
 
@@ -284,7 +284,7 @@ export function useDeal(id: number) {
   return useQuery({
     queryKey: ["crm", "deals", id],
     queryFn: () => fetchDeal(id),
-    enabled: authenticated(),
+    enabled: authenticated() && !!id,
   });
 }
 
