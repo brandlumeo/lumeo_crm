@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAttendanceMatrix, useCurrentUser } from "@/lib/queries";
 import { downloadAttendanceMatrixCSV } from "@/lib/api";
-import { Users, Download, ChevronLeft, ChevronRight, StarHalf } from "lucide-react";
+import { Users, Download, ChevronLeft, ChevronRight, StarHalf, Check, X, Clock, Plane, Star, CalendarDays } from "lucide-react";
 
 export default function TeamAttendancePage() {
   const { data: user } = useCurrentUser();
@@ -57,15 +57,15 @@ export default function TeamAttendancePage() {
   
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'present': return <div title="Present" className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-100 text-emerald-600 font-bold text-xs">✔</div>;
-      case 'absent': return <div title="Absent" className="flex items-center justify-center w-6 h-6 rounded-md bg-rose-100 text-rose-600 font-bold text-xs">✖</div>;
-      case 'half_day': return <div title="Half Day" className="flex items-center justify-center w-6 h-6 rounded-md bg-amber-100 text-amber-600 font-bold text-xs"><StarHalf className="w-3.5 h-3.5 fill-amber-500" /></div>;
-      case 'late': return <div title="Late" className="flex items-center justify-center w-6 h-6 rounded-md bg-orange-100 text-orange-600 font-bold text-[10px]">⏱</div>;
-      case 'leave': return <div title="On Leave" className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-100 text-blue-600 font-bold text-xs">✈</div>;
-      case 'holiday': return <div title="Holiday" className="flex items-center justify-center w-6 h-6 rounded-md bg-purple-100 text-purple-600 font-bold text-[10px]">⭐</div>;
-      case 'day_off': return <div title="Day Off" className="flex items-center justify-center w-6 h-6 rounded-md bg-slate-100 text-slate-500 font-bold text-[10px]">📅</div>;
-      case 'future': return <div className="w-6 h-6" />;
-      default: return <div className="w-6 h-6 text-xs text-muted">-</div>;
+      case 'present': return <div title="Present" className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-400 text-white shadow-sm"><Check className="w-4 h-4 stroke-[3]" /></div>;
+      case 'absent': return <div title="Absent" className="flex items-center justify-center w-7 h-7 rounded-full bg-paper border border-line-2 text-muted shadow-sm"><X className="w-4 h-4 stroke-[2.5]" /></div>;
+      case 'half_day': return <div title="Half Day" className="flex items-center justify-center w-7 h-7 rounded-full bg-orange-400 text-white shadow-sm"><StarHalf className="w-4 h-4 stroke-[2.5]" /></div>;
+      case 'late': return <div title="Late" className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-400 text-white shadow-sm"><Clock className="w-4 h-4 stroke-[2.5]" /></div>;
+      case 'leave': return <div title="On Leave" className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-400 text-white shadow-sm"><Plane className="w-4 h-4 stroke-[2.5]" /></div>;
+      case 'holiday': return <div title="Holiday" className="flex items-center justify-center w-7 h-7 rounded-full bg-purple-400 text-white shadow-sm"><Star className="w-4 h-4 stroke-[2.5] fill-white" /></div>;
+      case 'day_off': return <div title="Day Off" className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-400 shadow-sm"><CalendarDays className="w-4 h-4 stroke-[2.5]" /></div>;
+      case 'future': return <div className="w-7 h-7" />;
+      default: return <div className="w-7 h-7 text-xs text-muted">-</div>;
     }
   };
 
