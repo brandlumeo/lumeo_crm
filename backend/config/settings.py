@@ -403,6 +403,9 @@ if GS_BUCKET_NAME:
             GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_info)
         except Exception as e:
             print(f"Failed to load Google Cloud Credentials: {e}")
+    
+    # Disable signed URLs since we are making the bucket public
+    GS_QUERYSTRING_AUTH = False
 
 # Razorpay Configuration
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', '')
