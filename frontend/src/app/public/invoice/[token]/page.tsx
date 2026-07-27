@@ -2,7 +2,8 @@
 import { toast } from "sonner";
 
 
-import { useState, useRef, use } from "react";
+import { useState, useRef, use, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyPublicInvoicePayment } from "@/lib/queries";
 import SignatureCanvas from "react-signature-canvas";
 import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-react";
@@ -23,10 +24,21 @@ function loadRazorpayScript(): Promise<boolean> {
 export default function PublicInvoicePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
   const token = resolvedParams.token;
+  const searchParams = useSearchParams();
+  const shouldPrint = searchParams.get('print') === 'true';
+
   const { data: invoice, isLoading, error } = usePublicInvoice(token);
   const signMutation = useSignPublicInvoice();
   const payMutation = usePayPublicInvoice();
   const verifyMutation = useVerifyPublicInvoicePayment();
+
+  useEffect(() => {
+    if (shouldPrint && invoice && !isLoading) {
+      setTimeout(() => {
+        window.print();
+      }, 800); // Give images and fonts a moment to load before printing
+    }
+  }, [shouldPrint, invoice, isLoading]);
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);

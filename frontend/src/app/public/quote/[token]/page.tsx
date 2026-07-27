@@ -2,7 +2,8 @@
 import { toast } from "sonner";
 
 
-import { useState, useRef, use } from "react";
+import { useState, useRef, use, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePublicQuote, useSignPublicQuote } from "@/lib/queries";
 import SignatureCanvas from "react-signature-canvas";
 import { Loader2, CheckCircle2, FileText, Download } from "lucide-react";
@@ -12,8 +13,19 @@ import { formatCurrency } from "@/lib/utils";
 export default function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
   const token = resolvedParams.token;
+  const searchParams = useSearchParams();
+  const shouldPrint = searchParams.get('print') === 'true';
+
   const { data: quote, isLoading, error } = usePublicQuote(token);
   const signMutation = useSignPublicQuote();
+
+  useEffect(() => {
+    if (shouldPrint && quote && !isLoading) {
+      setTimeout(() => {
+        window.print();
+      }, 800);
+    }
+  }, [shouldPrint, quote, isLoading]);
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);

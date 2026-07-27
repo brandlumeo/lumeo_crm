@@ -157,7 +157,7 @@ export default function QuotesPage() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => downloadQuotePdf(quote.id, quote.quote_number)}
+                          onClick={() => window.open(`/public/quote/${quote.public_token}?print=true`, '_blank')}
                           className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
                           title="Download PDF"
                         >

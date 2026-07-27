@@ -184,7 +184,7 @@ export default function InvoicesPage() {
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => downloadInvoicePdf(invoice.id, invoice.invoice_number)}
+                          onClick={() => window.open(`/public/invoice/${invoice.public_token}?print=true`, '_blank')}
                           className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
                           title="Download PDF"
                         >

@@ -271,7 +271,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                       {formatINR(toNumber(quote.total))}
                     </span>
                     <button
-                      onClick={() => void downloadQuotePdf(quote.id, quote.quote_number)}
+                      onClick={() => window.open(`/public/quote/${quote.public_token}?print=true`, '_blank')}
                       className="p-1.5 hover:bg-bone rounded border border-transparent hover:border-line text-muted hover:text-ink transition-colors"
                       title="Download PDF"
                     >
@@ -313,7 +313,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                     {formatINR(toNumber(invoice.total))}
                   </span>
                   <button
-                    onClick={() => void downloadInvoicePdf(invoice.id, invoice.invoice_number)}
+                    onClick={() => window.open(`/public/invoice/${invoice.public_token}?print=true`, '_blank')}
                     className="p-1.5 hover:bg-bone rounded border border-transparent hover:border-line text-muted hover:text-ink transition-colors"
                     title="Download PDF"
                   >
