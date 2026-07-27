@@ -407,6 +407,27 @@ if GS_BUCKET_NAME:
     # Disable signed URLs since we are making the bucket public
     GS_QUERYSTRING_AUTH = False
 
+# S3 / Supabase Storage Configuration
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
+if AWS_ACCESS_KEY_ID:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', '')
+    AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', '')
+    
+    # Supabase uses path-style S3 URLs
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_DEFAULT_ACL = 'public-read'
+    
+    # Allow custom domain for serving files (e.g. Supabase's public storage URL)
+    aws_s3_custom_domain = env('AWS_S3_CUSTOM_DOMAIN', '')
+    if aws_s3_custom_domain:
+        AWS_S3_CUSTOM_DOMAIN = aws_s3_custom_domain
+    
+    AWS_QUERYSTRING_AUTH = False # Public URLs do not need to be signed
+
 # Razorpay Configuration
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', '')
