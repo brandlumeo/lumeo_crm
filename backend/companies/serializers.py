@@ -196,16 +196,22 @@ class InvoiceSettingsSerializer(serializers.ModelSerializer):
         return relative_url
 
     def _normalize_url(self, url):
-        """Strip origin from an absolute URL to keep only the /media/... relative path."""
+        """Strip origin from an absolute URL only if it's an http/https URL pointing to our own media, otherwise keep as is."""
         if not url:
+            return url
+        if url.startswith('data:'):
             return url
         from urllib.parse import urlparse
         parsed = urlparse(url)
         # If it already looks like a relative path, return as-is
         if not parsed.scheme:
             return url
-        # Return just the path portion (e.g. /media/attachments/logo.png)
-        return parsed.path
+        # If it's an external URL (e.g. S3, Cloudinary), returning just the path would break it.
+        # But for backward compatibility with the intent of this function (stripping backend domain),
+        # we will just return the path IF it starts with /media/ and it's an http/https URL.
+        if parsed.scheme in ['http', 'https'] and parsed.path.startswith('/media/'):
+            return parsed.path
+        return url
 
     def to_internal_value(self, data):
         ret = super().to_internal_value(data)

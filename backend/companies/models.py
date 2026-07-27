@@ -534,5 +534,19 @@ class InvoiceSettings(models.Model):
     # Quickbooks
     quickbooks_sync_status = models.BooleanField(default=False)
 
+    # Premium Template Fields
+    company_tax_id = models.CharField(max_length=100, blank=True, null=True, help_text="VAT / Tax ID for the company")
+    company_registration_number = models.CharField(max_length=100, blank=True, null=True, help_text="Company Registration Number")
+    
+    bank_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_account_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_account_number = models.CharField(max_length=100, blank=True, null=True)
+    bank_routing_number = models.CharField(max_length=100, blank=True, null=True, help_text="Routing / Sort Code / SWIFT")
+    
+    template_accent_color = models.CharField(max_length=20, default="#4F46E5", help_text="Hex code for template accent")
+    template_font_family = models.CharField(max_length=50, default="Inter", help_text="Primary font family")
+    template_scale = models.CharField(max_length=20, default="Standard", help_text="Font scaling: Small, Standard, Large")
+    footer_text = models.TextField(default="Thank you for your business.", blank=True)
+
     def __str__(self):
         return f"Invoice Settings for {self.company.name}"

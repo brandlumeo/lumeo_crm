@@ -26,7 +26,21 @@ from crm.payment_webhooks import (
     paystack_webhook
 )
 
+from django.http import JsonResponse
+def test_s3(request):
+    try:
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import traceback
+        path = default_storage.save('test_live.txt', ContentFile(b'hello live'))
+        url = default_storage.url(path)
+        return JsonResponse({"status": "success", "path": path, "url": url})
+    except Exception as e:
+        import traceback
+        return JsonResponse({"status": "error", "error": str(e), "traceback": traceback.format_exc()})
+
 urlpatterns = [
+    path('test_s3/', test_s3),
     path('admin/', admin.site.urls),
     
     # Global Webhook endpoints (Matching frontend URL strings precisely)
