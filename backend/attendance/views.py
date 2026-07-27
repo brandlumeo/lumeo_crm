@@ -409,11 +409,11 @@ class ExpenseClaimListCreateView(APIView):
         else:
             expenses = ExpenseClaim.objects.filter(user=request.user)
 
-        serializer = ExpenseClaimSerializer(expenses, many=True)
+        serializer = ExpenseClaimSerializer(expenses, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = ExpenseClaimSerializer(data=request.data)
+        serializer = ExpenseClaimSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save(
                 user=request.user,
@@ -463,7 +463,7 @@ class ExpenseClaimApprovalView(APIView):
         expense.approved_by = request.user
         expense.save()
 
-        serializer = ExpenseClaimSerializer(expense)
+        serializer = ExpenseClaimSerializer(expense, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
