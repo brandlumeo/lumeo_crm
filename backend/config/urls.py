@@ -28,16 +28,34 @@ from crm.payment_webhooks import (
 
 from django.http import JsonResponse
 def test_s3(request):
+    results = {}
+    # 1. Test S3 upload
     try:
         from django.core.files.storage import default_storage
         from django.core.files.base import ContentFile
-        import traceback
         path = default_storage.save('test_live.txt', ContentFile(b'hello live'))
         url = default_storage.url(path)
-        return JsonResponse({"status": "success", "path": path, "url": url})
+        results["s3"] = {"status": "success", "url": url}
     except Exception as e:
         import traceback
-        return JsonResponse({"status": "error", "error": str(e), "traceback": traceback.format_exc()})
+        results["s3"] = {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+    # 2. Test InvoiceSettings serializer on the first object
+    try:
+        from companies.models import InvoiceSettings
+        from companies.serializers import InvoiceSettingsSerializer
+        obj = InvoiceSettings.objects.first()
+        if obj:
+            data = InvoiceSettingsSerializer(obj, context={'request': None}).data
+            results["invoice_settings"] = {"status": "success", "invoice_logo": str(data.get("invoice_logo"))}
+        else:
+            results["invoice_settings"] = {"status": "no_objects"}
+    except Exception as e:
+        import traceback
+        results["invoice_settings"] = {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+    return JsonResponse(results)
+
 
 urlpatterns = [
     path('test_s3/', test_s3),
