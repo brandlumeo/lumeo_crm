@@ -1038,11 +1038,7 @@ export async function fetchExpenses(all?: boolean) {
 }
 
 export async function submitExpense(formData: FormData) {
-  const { data } = await api.post<ExpenseClaim>(endpoints.attendanceExpenses, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const { data } = await api.post<ExpenseClaim>(endpoints.attendanceExpenses, formData);
   return data;
 }
 
@@ -1249,14 +1245,12 @@ export async function fetchExpenseClaims(all = false) {
 }
 
 export async function createExpenseClaim(payload: FormData) {
-  const { data } = await api.post<ExpenseClaim>(endpoints.attendanceExpenses, payload, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post<ExpenseClaim>(endpoints.attendanceExpenses, payload);
   return data;
 }
 
 export async function approveExpenseClaim(id: string, payload: { status: "approved" | "rejected"; manager_notes?: string }) {
-  const { data } = await api.post<ExpenseClaim>(`${endpoints.attendanceExpenses}${id}/approve/`, payload);
+  const { data } = await api.patch<ExpenseClaim>(`${endpoints.attendanceExpenses}${id}/approve/`, payload);
   return data;
 }
 
