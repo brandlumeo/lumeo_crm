@@ -60,14 +60,21 @@ class CompanySummarySerializer(serializers.ModelSerializer):
             return getattr(settings, mapped_name, default)
         return default
 
-    def _build_absolute_url(self, relative_url):
-        """Convert a relative /media/... path to a full absolute URL using the request context."""
-        if not relative_url:
+    def _build_absolute_url(self, stored_url):
+        """Return the correct public URL for a stored logo/signature value.
+
+        External http/https URLs (S3, Supabase, CDN) are already fully-qualified
+        and must be returned unchanged. Only legacy relative /media/... paths need
+        to be prefixed with the backend origin.
+        """
+        if not stored_url:
             return None
+        if stored_url.startswith(('http://', 'https://')):
+            return stored_url
         request = self.context.get('request')
         if request is not None:
-            return request.build_absolute_uri(relative_url)
-        return relative_url
+            return request.build_absolute_uri(stored_url)
+        return stored_url
 
     def get_invoice_template(self, obj): return self._get_setting(obj, 'invoice_template', 'template1')
     def get_invoice_logo(self, obj): return self._build_absolute_url(self._get_setting(obj, 'invoice_logo'))

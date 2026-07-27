@@ -186,31 +186,50 @@ class InvoiceSettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('company',)
 
-    def _get_absolute_url(self, relative_url):
-        """Convert a stored relative /media/... path to a full absolute URL using the request."""
-        if not relative_url:
+    def _get_absolute_url(self, stored_url):
+        """Return the correct public URL for a stored logo/signature value.
+
+        - If the stored value is already an absolute http/https URL (e.g. an S3 URL),
+          return it unchanged — calling build_absolute_uri on it would prepend the
+          backend domain a second time and break the link.
+        - If it looks like a legacy relative /media/... path, prefix it with the
+          backend origin so the browser can fetch it.
+        - Otherwise return as-is.
+        """
+        if not stored_url:
             return None
+        if stored_url.startswith(('http://', 'https://')):
+            # Already a fully-qualified URL (S3, Supabase, CDN, etc.) — don't touch it.
+            return stored_url
+        # Legacy relative path — build a full URL from the current request.
         request = self.context.get('request')
         if request is not None:
-            return request.build_absolute_uri(relative_url)
-        return relative_url
+            return request.build_absolute_uri(stored_url)
+        return stored_url
 
     def _normalize_url(self, url):
-        """Strip origin from an absolute URL only if it's an http/https URL pointing to our own media, otherwise keep as is."""
+        """Normalise a URL before saving it to the database.
+
+        - External http/https URLs (S3, Supabase, etc.) are stored exactly as provided.
+        - data: URIs (base64 inline images) are stored as-is.
+        - Legacy absolute URLs pointing to our own /media/ path are stored as just
+          the relative path so they stay portable across domain changes.
+        - Anything else is stored unchanged.
+        """
         if not url:
             return url
         if url.startswith('data:'):
             return url
-        from urllib.parse import urlparse
-        parsed = urlparse(url)
-        # If it already looks like a relative path, return as-is
-        if not parsed.scheme:
+        if url.startswith(('http://', 'https://')):
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            # Only strip the origin for old-style /media/ paths on our own backend.
+            # External CDN / S3 URLs must be stored in full.
+            if parsed.path.startswith('/media/'):
+                return parsed.path
+            # External URL (S3, Supabase, etc.) — store as-is.
             return url
-        # If it's an external URL (e.g. S3, Cloudinary), returning just the path would break it.
-        # But for backward compatibility with the intent of this function (stripping backend domain),
-        # we will just return the path IF it starts with /media/ and it's an http/https URL.
-        if parsed.scheme in ['http', 'https'] and parsed.path.startswith('/media/'):
-            return parsed.path
+        # Relative path — store as-is.
         return url
 
     def to_internal_value(self, data):
@@ -231,6 +250,7 @@ class InvoiceSettingsSerializer(serializers.ModelSerializer):
         return ret
 
 
+
 class PublicInvoiceSettingsSerializer(serializers.ModelSerializer):
     invoice_logo = serializers.SerializerMethodField()
     authorised_signatory_signature = serializers.SerializerMethodField()
@@ -241,13 +261,16 @@ class PublicInvoiceSettingsSerializer(serializers.ModelSerializer):
         exclude = ('id', 'company', 'send_reminder_before_days', 'send_reminder_after_days')
         read_only_fields = [f.name for f in InvoiceSettings._meta.fields]
 
-    def _get_absolute_url(self, relative_url):
-        if not relative_url:
+    def _get_absolute_url(self, stored_url):
+        if not stored_url:
             return None
+        # External URLs (S3, Supabase, CDN) are already fully-qualified — return as-is.
+        if stored_url.startswith(('http://', 'https://')):
+            return stored_url
         request = self.context.get('request')
         if request is not None:
-            return request.build_absolute_uri(relative_url)
-        return relative_url
+            return request.build_absolute_uri(stored_url)
+        return stored_url
 
     def get_invoice_logo(self, obj):
         return self._get_absolute_url(obj.invoice_logo)
