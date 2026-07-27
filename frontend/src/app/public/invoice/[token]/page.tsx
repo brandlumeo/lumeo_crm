@@ -162,12 +162,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   const scaleClass = scale === 'Large' ? 'text-lg' : scale === 'Small' ? 'text-sm' : 'text-base';
 
   return (
-    <div className={`min-h-screen bg-bone py-12 px-4 sm:px-6 lg:px-8 ${fontClass} ${scaleClass}`}>
-      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300">
+    <div className={`min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0 ${fontClass} ${scaleClass}`}>
+      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
         {/* INVOICE DOCUMENT */}
         <div 
-          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 bg-white ${
+          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
             tpl === 'template3' ? 'border-none overflow-hidden' : 
             tpl === 'template4' ? 'border-line flex flex-col md:flex-row p-0 overflow-hidden' : 
             'border-line'
