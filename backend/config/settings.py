@@ -387,6 +387,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Google Cloud Storage for Media (Fallback to local if not provided)
+GS_BUCKET_NAME = env('GS_BUCKET_NAME', '')
+if GS_BUCKET_NAME:
+    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    GS_PROJECT_ID = env('GS_PROJECT_ID', '')
+    
+    # Optional: Read credentials from JSON string
+    gs_credentials_json = env('GS_CREDENTIALS_JSON', '')
+    if gs_credentials_json:
+        import json
+        from google.oauth2 import service_account
+        try:
+            creds_info = json.loads(gs_credentials_json)
+            GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_info)
+        except Exception as e:
+            print(f"Failed to load Google Cloud Credentials: {e}")
+
 # Razorpay Configuration
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', '')
