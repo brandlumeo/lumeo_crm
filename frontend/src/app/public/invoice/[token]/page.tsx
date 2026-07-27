@@ -33,6 +33,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   const verifyMutation = useVerifyPublicInvoicePayment();
 
   useEffect(() => {
+    if (invoice) {
+      document.title = `Invoice_${invoice.invoice_number}`;
+    }
     if (shouldPrint && invoice && !isLoading) {
       setTimeout(() => {
         window.print();

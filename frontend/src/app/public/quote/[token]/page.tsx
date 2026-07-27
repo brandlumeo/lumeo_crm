@@ -20,6 +20,9 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   const signMutation = useSignPublicQuote();
 
   useEffect(() => {
+    if (quote) {
+      document.title = `Quote_${quote.quote_number}`;
+    }
     if (shouldPrint && quote && !isLoading) {
       setTimeout(() => {
         window.print();
