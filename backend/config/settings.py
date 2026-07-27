@@ -378,8 +378,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# WhiteNoise: serve compressed static files with far-future cache headers
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Modern Django 4.2+ STORAGES dict
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # trigger reload
@@ -390,7 +397,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Google Cloud Storage for Media (Fallback to local if not provided)
 GS_BUCKET_NAME = env('GS_BUCKET_NAME', '')
 if GS_BUCKET_NAME:
-    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    STORAGES["default"]["BACKEND"] = 'storages.backends.gcloud.GoogleCloudStorage'
     GS_PROJECT_ID = env('GS_PROJECT_ID', '')
     
     # Optional: Read credentials from JSON string
@@ -410,7 +417,7 @@ if GS_BUCKET_NAME:
 # S3 / Supabase Storage Configuration
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
 if AWS_ACCESS_KEY_ID:
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STORAGES["default"]["BACKEND"] = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
     AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
     AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', '')
