@@ -27,6 +27,19 @@ from crm.payment_webhooks import (
 )
 
 from django.http import JsonResponse
+
+def run_migrations(request):
+    """Emergency endpoint: runs pending Django migrations without shell access."""
+    try:
+        from django.core.management import call_command
+        from io import StringIO
+        out = StringIO()
+        call_command('migrate', '--noinput', stdout=out, verbosity=2)
+        return JsonResponse({"status": "success", "output": out.getvalue()})
+    except Exception as e:
+        import traceback
+        return JsonResponse({"status": "error", "error": str(e), "traceback": traceback.format_exc()})
+
 def test_s3(request):
     results = {}
     # 1. Test S3 upload
@@ -58,6 +71,7 @@ def test_s3(request):
 
 
 urlpatterns = [
+    path('run_migrations/', run_migrations),
     path('test_s3/', test_s3),
     path('admin/', admin.site.urls),
     
