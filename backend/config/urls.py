@@ -34,7 +34,16 @@ def run_migrations(request):
         from django.core.management import call_command
         from io import StringIO
         out = StringIO()
+        
+        out.write("--- showmigrations ---\n")
+        call_command('showmigrations', stdout=out)
+        
+        out.write("\n--- makemigrations --dry-run ---\n")
+        call_command('makemigrations', '--dry-run', stdout=out)
+
+        out.write("\n--- migrate ---\n")
         call_command('migrate', '--noinput', stdout=out, verbosity=2)
+
         return JsonResponse({"status": "success", "output": out.getvalue()})
     except Exception as e:
         import traceback
