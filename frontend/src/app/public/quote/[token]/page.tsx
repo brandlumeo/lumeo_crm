@@ -238,7 +238,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         </div>
 
         {/* E-Signature Section */}
-        <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
+        <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
           {isSigned ? (
             <div className="text-center py-8">
               <div className="mx-auto w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">

@@ -411,7 +411,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         </div>
 
         {/* E-Signature Section */}
-        <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
+        <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
           {isSigned ? (
             <div className="text-center py-8">
               <div className="mx-auto w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">
@@ -482,10 +482,10 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
         {/* Payment Section */}
         {(parseFloat(invoice.amount_due || "0") > 0) && (
-          <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
-            <h3 className="text-2xl font-semibold text-ink mb-6 text-center">Payment Methods</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px]">
+          <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12 ${(!invoice.payment_methods || invoice.payment_methods.length === 0) ? 'print:hidden' : ''}`}>
+            <h3 className="text-2xl font-semibold text-ink mb-6 text-center print:text-left print:text-xl">Payment Methods</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start print:block">
+              <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px] print:hidden">
                 <p className="text-muted mb-6">Securely pay this invoice using Razorpay.</p>
                 <button
                   onClick={handlePay}
