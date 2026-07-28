@@ -182,7 +182,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             )}
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 min-w-[600px] print:min-w-full">
+              <table className="w-full text-left mb-8 print:min-w-full">
                 <thead>
                   <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 font-medium text-muted">Item</th>
