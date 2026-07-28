@@ -188,7 +188,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {invoice.company?.company_website && <p className="text-sm opacity-80 mt-1">{invoice.company.company_website.replace(/^https?:\/\//, '')}</p>}
                 {invoice.company?.company_email && <p className="text-sm opacity-80">{invoice.company.company_email}</p>}
                 
-                {invoice.settings?.company_tax_id && (
+                {invoice.settings?.company_tax_id && invoice.settings?.show_sender_tax_number !== false && (
                   <div className="mt-8 pt-8 border-t border-white/20">
                     <p className="text-xs opacity-70 uppercase tracking-wider mb-1">Tax ID / VAT</p>
                     <p className="text-sm font-medium">{invoice.settings.company_tax_id}</p>
@@ -223,7 +223,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   {invoice.company?.company_website && <p className={`text-sm md:text-base mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
                   {invoice.company?.company_email && <p className={`text-sm md:text-base ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
                   
-                  {invoice.settings?.company_tax_id && (
+                  {invoice.settings?.company_tax_id && invoice.settings?.show_sender_tax_number !== false && (
                      <p className={`text-sm mt-2 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Tax ID: <span className="font-medium">{invoice.settings.company_tax_id}</span></p>
                   )}
                   {invoice.settings?.company_registration_number && (

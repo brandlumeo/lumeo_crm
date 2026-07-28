@@ -120,7 +120,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 {quote.company?.company_website && <p className="text-sm opacity-80 mt-1">{quote.company.company_website.replace(/^https?:\/\//, '')}</p>}
                 {quote.company?.company_email && <p className="text-sm opacity-80">{quote.company.company_email}</p>}
                 
-                {settings.company_tax_id && (
+                {settings.company_tax_id && settings.show_sender_tax_number !== false && (
                   <div className="mt-8 pt-8 border-t border-white/20">
                     <p className="text-xs opacity-70 uppercase tracking-wider mb-1">Tax ID / VAT</p>
                     <p className="text-sm font-medium">{settings.company_tax_id}</p>
