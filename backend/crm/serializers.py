@@ -615,6 +615,11 @@ class QuoteSerializer(CompanyScopedSerializer):
         company = user.company if hasattr(user, "company") else None
         count = Quote.objects.filter(company=company).count() if company else 0
         next_number = str(count + 1).zfill(digits)
+        
+        # Prevent double separators if prefix already includes it
+        if separator and prefix.endswith(separator):
+            prefix = prefix[:-len(separator)]
+            
         validated_data["quote_number"] = f"{prefix}{separator}{next_number}"
         
         quote = super().create(validated_data)
@@ -778,6 +783,11 @@ class InvoiceSerializer(CompanyScopedSerializer):
 
         count = Invoice.objects.filter(company=company).count() if company else 0
         next_number = str(count + 1).zfill(digits)
+        
+        # Prevent double separators if prefix already includes it
+        if separator and prefix.endswith(separator):
+            prefix = prefix[:-len(separator)]
+            
         validated_data["invoice_number"] = f"{prefix}{separator}{next_number}"
         
         invoice = super().create(validated_data)

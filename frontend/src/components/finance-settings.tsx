@@ -274,7 +274,11 @@ export function FinanceSettingsForm() {
   };
 
   const generatePreview = (prefix: string, separator: string, digits: number) => {
-    return `${prefix}${separator}${"1".padStart(digits, "0")}`;
+    let cleanPrefix = prefix || "";
+    if (separator && cleanPrefix.endsWith(separator)) {
+      cleanPrefix = cleanPrefix.slice(0, -separator.length);
+    }
+    return `${cleanPrefix}${separator}${"1".padStart(digits, "0")}`;
   };
 
   return (

@@ -44,7 +44,11 @@ export function ContractSettingsForm() {
 
   // Generate example
   const exampleDigits = String(1).padStart(contractNumberDigits, '0');
-  const contractNumberExample = `${contractPrefix}${contractNumberSeparator}${exampleDigits}`;
+  let cleanContractPrefix = contractPrefix || "";
+  if (contractNumberSeparator && cleanContractPrefix.endsWith(contractNumberSeparator)) {
+    cleanContractPrefix = cleanContractPrefix.slice(0, -contractNumberSeparator.length);
+  }
+  const contractNumberExample = `${cleanContractPrefix}${contractNumberSeparator}${exampleDigits}`;
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
