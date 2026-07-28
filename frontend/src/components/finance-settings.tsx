@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   DollarSign, Loader2, CheckCircle, XCircle, Shield, 
-  FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard, Cloud, UploadCloud, Link as LinkIcon
+  FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard, Cloud, UploadCloud, Link as LinkIcon, Check
 } from "lucide-react";
-import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings, usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod, useUpdateCompany } from "@/lib/queries";
+import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings, usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod, useUpdateCompany, useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,18 @@ export function FinanceSettingsForm() {
   const { data: paymentMethods, isLoading: paymentMethodsLoading } = usePaymentMethods();
   const updateSettingsMutation = useUpdateInvoiceSettings();
 
+  const { data: unitsData, isLoading: unitsLoading } = useUnits();
+  const units = Array.isArray(unitsData) ? unitsData : (unitsData as any)?.results || [];
+  const createUnitMutation = useCreateUnit();
+  const updateUnitMutation = useUpdateUnit();
+  const deleteUnitMutation = useDeleteUnit();
+
   const [activeTab, setActiveTab] = useState("general"); // general, template, prefix, units, quickbooks, payment
+  
+  const [newUnitName, setNewUnitName] = useState("");
+  const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
+  const [editingUnitName, setEditingUnitName] = useState("");
+
 
   // General Settings
   const [defaultTaxRate, setDefaultTaxRate] = useState("0.00");
@@ -268,8 +279,31 @@ export function FinanceSettingsForm() {
       setAuthorisedSignatory(attachment.file_url);
       setMsg({ type: "success", text: "Signature uploaded successfully. Make sure to click Save Settings." });
       setTimeout(() => setMsg(null), 4000);
-    } catch (err) {
-      setMsg({ type: "error", text: "Failed to upload signature." });
+    } catch (error) {
+      setMsg({ type: "error", text: "Failed to upload authorised signatory." });
+    }
+  };
+
+  const handleAddUnit = () => {
+    if (!newUnitName.trim()) return;
+    createUnitMutation.mutate({ name: newUnitName.trim(), is_default: false }, {
+      onSuccess: () => setNewUnitName("")
+    });
+  };
+
+  const handleUpdateUnit = (id: number) => {
+    if (!editingUnitName.trim()) return;
+    updateUnitMutation.mutate({ id, data: { name: editingUnitName.trim() } }, {
+      onSuccess: () => {
+        setEditingUnitId(null);
+        setEditingUnitName("");
+      }
+    });
+  };
+
+  const handleDeleteUnit = (id: number) => {
+    if (window.confirm("Are you sure you want to delete this unit type?")) {
+      deleteUnitMutation.mutate(id);
     }
   };
 
@@ -783,27 +817,72 @@ export function FinanceSettingsForm() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
-                        {/* Mock units until full CRUD */}
-                        <tr className="hover:bg-bone/20 transition-colors">
-                            <td className="px-6 py-4">1</td>
-                            <td className="px-6 py-4 font-medium text-ink">Hours</td>
-                            <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    <button className="p-2 text-muted hover:text-brand bg-bone/30 hover:bg-brand/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
-                                    <button className="p-2 text-muted hover:text-rose-600 bg-bone/30 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr className="hover:bg-bone/20 transition-colors">
-                            <td className="px-6 py-4">2</td>
-                            <td className="px-6 py-4 font-medium text-ink">Kg</td>
-                            <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    <button className="p-2 text-muted hover:text-brand bg-bone/30 hover:bg-brand/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
-                                    <button className="p-2 text-muted hover:text-rose-600 bg-bone/30 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            </td>
-                        </tr>
+                        {unitsLoading ? (
+                            <tr>
+                                <td colSpan={3} className="px-6 py-8 text-center text-muted">
+                                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 opacity-50" />
+                                    Loading units...
+                                </td>
+                            </tr>
+                        ) : units.length === 0 ? (
+                            <tr>
+                                <td colSpan={3} className="px-6 py-8 text-center text-muted">No unit types added yet.</td>
+                            </tr>
+                        ) : (
+                            units.map((unit: any, i: number) => (
+                                <tr key={unit.id} className="hover:bg-bone/20 transition-colors">
+                                    <td className="px-6 py-4">{i + 1}</td>
+                                    <td className="px-6 py-4 font-medium text-ink">
+                                        {editingUnitId === unit.id ? (
+                                            <input 
+                                                type="text" 
+                                                value={editingUnitName} 
+                                                onChange={e => setEditingUnitName(e.target.value)}
+                                                className="input h-8 text-sm px-2 w-32"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            unit.name
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            {editingUnitId === unit.id ? (
+                                                <>
+                                                    <button onClick={() => handleUpdateUnit(unit.id)} className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"><Check className="w-4 h-4" /></button>
+                                                    <button onClick={() => { setEditingUnitId(null); setEditingUnitName(""); }} className="p-2 text-muted hover:bg-bone/30 rounded-lg transition-colors"><XCircle className="w-4 h-4" /></button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button onClick={() => { setEditingUnitId(unit.id); setEditingUnitName(unit.name); }} disabled={!isAdmin} className="p-2 text-muted hover:text-brand bg-bone/30 hover:bg-brand/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
+                                                    <button onClick={() => handleDeleteUnit(unit.id)} disabled={!isAdmin} className="p-2 text-muted hover:text-rose-600 bg-bone/30 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                        {isAdmin && (
+                            <tr className="bg-bone/10">
+                                <td className="px-6 py-4 text-muted"><Plus className="w-4 h-4" /></td>
+                                <td className="px-6 py-4">
+                                    <input 
+                                        type="text" 
+                                        value={newUnitName} 
+                                        onChange={e => setNewUnitName(e.target.value)}
+                                        placeholder="Add new unit (e.g. Hours, Kg)"
+                                        className="input h-9 text-sm px-3 w-48 bg-white border-dashed"
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddUnit()}
+                                    />
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <button onClick={handleAddUnit} disabled={!newUnitName.trim() || createUnitMutation.isPending} className="btn btn-secondary text-sm h-9 px-3">
+                                        Add
+                                    </button>
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

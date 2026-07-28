@@ -82,13 +82,6 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
   // Font Scaling: Tailwind classes (text-xl, text-2xl, text-sm …) use **rem** units,
   // which resolve against the <html> element's font-size — not any ancestor div.
-  // Setting fontSize on a container div has zero effect on rem-based children.
-  // The correct fix is to change document.documentElement.style.fontSize so that
-  // all rem values scale proportionally across every element on the invoice.
-  //
-  //   Small    = 13px base → text-xl (1.25rem) = 16.25px
-  //   Standard = 15px base → text-xl (1.25rem) = 18.75px  (browser default is 16px)
-  //   Large    = 17px base → text-xl (1.25rem) = 21.25px
   const SCALE_ROOT_PX: Record<string, string> = {
     Small:    '13px',
     Standard: '15px',
@@ -96,12 +89,34 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   };
 
   useEffect(() => {
-    const root = document.documentElement;
-    const prev = root.style.fontSize;          // save whatever was set before
-    root.style.fontSize = SCALE_ROOT_PX[scale] ?? SCALE_ROOT_PX['Standard'];
-    return () => { root.style.fontSize = prev; };  // restore on unmount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scale]);
+    // 1. Force html root font size to scale rem units across the entire page
+    const fontSizePx = SCALE_ROOT_PX[scale] ?? '15px';
+    document.documentElement.style.setProperty('font-size', fontSizePx, 'important');
+    
+    // 2. Inject global CSS to force the font family on all elements, overriding Tailwind
+    const styleId = 'lumeo-invoice-styles';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `
+      :root {
+        font-size: ${fontSizePx} !important;
+      }
+      .invoice-container, .invoice-container * {
+        font-family: ${resolvedFontStack} !important;
+      }
+    `;
+
+    return () => {
+      document.documentElement.style.removeProperty('font-size');
+      if (styleEl && styleEl.parentNode) {
+        styleEl.parentNode.removeChild(styleEl);
+      }
+    };
+  }, [scale, resolvedFontStack]);
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -214,8 +229,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
   return (
     <div
-      className="min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
-      style={{ fontFamily: resolvedFontStack }}
+      className="invoice-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
     >
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
@@ -242,7 +256,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {invoice.company?.company_website && <p className="text-sm opacity-80 mt-1">{invoice.company.company_website.replace(/^https?:\/\//, '')}</p>}
                 {invoice.company?.company_email && <p className="text-sm opacity-80">{invoice.company.company_email}</p>}
                 
-                {invoice.settings?.company_tax_id && invoice.settings?.show_sender_tax_number !== false && (
+                {invoice.settings?.company_tax_id && invoice.settings?.show_sender_tax_number === true && (
                   <div className="mt-8 pt-8 border-t border-white/20">
                     <p className="text-xs opacity-70 uppercase tracking-wider mb-1">Tax ID / VAT</p>
                     <p className="text-sm font-medium">{invoice.settings.company_tax_id}</p>
@@ -277,7 +291,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   {invoice.company?.company_website && <p className={`text-sm md:text-base mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
                   {invoice.company?.company_email && <p className={`text-sm md:text-base ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
                   
-                  {invoice.settings?.company_tax_id && invoice.settings?.show_sender_tax_number !== false && (
+                  {invoice.settings?.company_tax_id && invoice.settings?.show_sender_tax_number === true && (
                      <p className={`text-sm mt-2 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Tax ID: <span className="font-medium">{invoice.settings.company_tax_id}</span></p>
                   )}
                   {invoice.settings?.company_registration_number && (
@@ -368,7 +382,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                       {invoice.settings?.show_hsn_sac_code && (
                         <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
                       )}
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.quantity}</td>
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">
+                        {item.quantity} {item.unit || ""}
+                      </td>
                       <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}</td>
                       <td className="py-4 px-2 pr-4 sm:pr-6 text-right font-medium text-ink whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}
@@ -398,15 +414,13 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{invoice.settings.invoice_other_information}</p>
                     )}
                     {invoice.settings?.bank_name && (
-                      <div className="text-sm text-muted bg-bone/50 p-4 rounded-lg border border-line">
-                        <div className="grid grid-cols-2 gap-2">
-                          <span className="font-medium break-words">Bank Name:</span> <span className="break-words">{invoice.settings.bank_name}</span>
-                          <span className="font-medium break-words">Account Name:</span> <span className="break-words">{invoice.settings.bank_account_name}</span>
-                          <span className="font-medium break-words">Account No:</span> <span className="break-all">{invoice.settings.bank_account_number}</span>
-                          {invoice.settings.bank_routing_number && (
-                            <><span className="font-medium break-words">Routing / SWIFT:</span> <span className="break-all">{invoice.settings.bank_routing_number}</span></>
-                          )}
-                        </div>
+                      <div className="text-sm text-muted bg-bone/50 p-4 rounded-lg border border-line space-y-1.5">
+                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Bank Name:</span> <span className="break-words flex-1">{invoice.settings.bank_name}</span></div>
+                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account Name:</span> <span className="break-words flex-1">{invoice.settings.bank_account_name}</span></div>
+                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account No:</span> <span className="break-all flex-1">{invoice.settings.bank_account_number}</span></div>
+                        {invoice.settings.bank_routing_number && (
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Routing / SWIFT:</span> <span className="break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
+                        )}
                       </div>
                     )}
                   </div>

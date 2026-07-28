@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment } from "@/lib/queries";
+import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment, useUnits } from "@/lib/queries";
 import { downloadInvoicePdf } from "@/lib/api";
 import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Receipt, Edit } from "lucide-react";
 import Link from "next/link";
@@ -19,12 +19,12 @@ export default function InvoicesPage() {
   const addPaymentMutation = useAddInvoicePayment();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
     currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     customer_id: null, 
     deal_id: null, 
     due_date: "",
-    items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
+    items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
   });
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -36,6 +36,9 @@ export default function InvoicesPage() {
   const invoices = data?.results || [];
   const customers = customerData?.results || [];
   const deals = dealData?.results || [];
+  
+  const { data: unitsData } = useUnits();
+  const units = Array.isArray(unitsData) ? unitsData : (unitsData as any)?.results || [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +54,7 @@ export default function InvoicesPage() {
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
+        setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
       }
     });
   };
@@ -283,7 +286,7 @@ export default function InvoicesPage() {
                   <h3 className="text-sm font-medium text-ink">Line Items</h3>
                   <button
                     type="button"
-                    onClick={() => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] })}
+                    onClick={() => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] })}
                     className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
@@ -321,6 +324,22 @@ export default function InvoicesPage() {
                               }}
                               className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                             />
+                          </div>
+                          <div className="w-24">
+                            <select
+                              value={item.unit || ""}
+                              onChange={(e) => {
+                                const newItems = [...newInvoice.items];
+                                newItems[index].unit = e.target.value;
+                                setNewInvoice({ ...newInvoice, items: newItems });
+                              }}
+                              className="w-full px-2 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                            >
+                              <option value="">None</option>
+                              {units.map((u: any) => (
+                                <option key={u.id} value={u.name}>{u.name}</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="flex-1">
                             <input

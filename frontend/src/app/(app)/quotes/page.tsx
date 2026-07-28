@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, useCustomerPage, useDealPage, useCurrentCompany } from "@/lib/queries";
+import { useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, useCustomerPage, useDealPage, useCurrentCompany, useUnits } from "@/lib/queries";
 import { downloadQuotePdf } from "@/lib/api";
 import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -19,13 +19,13 @@ export default function QuotesPage() {
   const updateMutation = useUpdateQuote();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
     currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     title: "",
     customer_id: null, 
     deal_id: null, 
     valid_until: "",
-    items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
+    items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
   });
   const [deleteQuoteId, setDeleteQuoteId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -33,6 +33,9 @@ export default function QuotesPage() {
   const quotes = data?.results || [];
   const customers = customerData?.results || [];
   const deals = dealData?.results || [];
+  
+  const { data: unitsData } = useUnits();
+  const units = Array.isArray(unitsData) ? unitsData : (unitsData as any)?.results || [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +55,7 @@ export default function QuotesPage() {
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
+        setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
       }
     });
   };
@@ -279,7 +282,7 @@ export default function QuotesPage() {
                   <h3 className="text-sm font-medium text-ink">Line Items</h3>
                   <button
                     type="button"
-                    onClick={() => setNewQuote({ ...newQuote, items: [...newQuote.items, { name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] })}
+                    onClick={() => setNewQuote({ ...newQuote, items: [...newQuote.items, { name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] })}
                     className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
@@ -317,6 +320,22 @@ export default function QuotesPage() {
                               }}
                               className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                             />
+                          </div>
+                          <div className="w-24">
+                            <select
+                              value={item.unit || ""}
+                              onChange={(e) => {
+                                const newItems = [...newQuote.items];
+                                newItems[index].unit = e.target.value;
+                                setNewQuote({ ...newQuote, items: newItems });
+                              }}
+                              className="w-full px-2 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                            >
+                              <option value="">None</option>
+                              {units.map((u: any) => (
+                                <option key={u.id} value={u.name}>{u.name}</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="flex-1">
                             <input

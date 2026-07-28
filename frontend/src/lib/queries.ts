@@ -1487,3 +1487,32 @@ export function usePaymentMethods() { return useQuery({ queryKey: ['paymentMetho
 export function useCreatePaymentMethod() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (data: any) => import('./api').then(m => m.createPaymentMethod(data)), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['paymentMethods'] }); } }); }
 export function useUpdatePaymentMethod() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (args: {id: number, data: any}) => import('./api').then(m => m.updatePaymentMethod(args)), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['paymentMethods'] }); } }); }
 export function useDeletePaymentMethod() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (id: number) => import('./api').then(m => m.deletePaymentMethod(id)), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['paymentMethods'] }); } }); }
+
+// ── Units ───────────────────────────────────────────────────────────────────
+export function useUnits() { 
+  return useQuery({ 
+    queryKey: ['units'], 
+    queryFn: () => import('./api').then(m => m.fetchUnits()) 
+  }); 
+}
+export function useCreateUnit() { 
+  const queryClient = useQueryClient(); 
+  return useMutation({ 
+    mutationFn: (data: any) => import('./api').then(m => m.createUnit(data)), 
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['units'] }); } 
+  }); 
+}
+export function useUpdateUnit() { 
+  const queryClient = useQueryClient(); 
+  return useMutation({ 
+    mutationFn: (args: {id: number, data: any}) => import('./api').then(m => m.updateUnit(args)), 
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['units'] }); } 
+  }); 
+}
+export function useDeleteUnit() { 
+  const queryClient = useQueryClient(); 
+  return useMutation({ 
+    mutationFn: (id: string | number) => import('./api').then(m => m.deleteUnit(id)), 
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['units'] }); } 
+  }); 
+}

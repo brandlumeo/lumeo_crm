@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useInvoice, useUpdateInvoice, useCustomerPage, useDealPage, useCurrentCompany } from "@/lib/queries";
+import { useInvoice, useUpdateInvoice, useCustomerPage, useDealPage, useCurrentCompany, useUnits } from "@/lib/queries";
 import { Loader2, ArrowLeft, Plus, Trash2, Save, FileText } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -20,6 +20,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   
   const customers = customersData?.results || [];
   const deals = dealsData?.results || [];
+  const { data: unitsData } = useUnits();
+  const units = Array.isArray(unitsData) ? unitsData : (unitsData as any)?.results || [];
 
   const [formData, setFormData] = useState<any>(null);
 
@@ -38,7 +40,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           quantity: item.quantity || 1,
           unit_price: parseFloat(item.unit_price) || 0,
           tax_rate: parseFloat(item.tax_rate) || 0,
-        })) : [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
+          unit: item.unit || "",
+        })) : [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
       });
     }
   }, [invoice]);
@@ -60,7 +63,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   const addItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
+      items: [...formData.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
     });
   };
 
@@ -259,14 +262,26 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-muted mb-1">Quantity *</label>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(i, "quantity", parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(i, "quantity", parseInt(e.target.value) || 1)}
+                          className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        />
+                        <select
+                          value={item.unit || ""}
+                          onChange={(e) => handleItemChange(i, "unit", e.target.value)}
+                          className="w-24 px-2 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        >
+                          <option value="">None</option>
+                          {units.map((u: any) => (
+                            <option key={u.id} value={u.name}>{u.name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-muted mb-1">Unit Price ({curr}) *</label>

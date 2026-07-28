@@ -475,6 +475,7 @@ export interface Product {
   price: string;
   tax_rate: string;
   hsn_sac_code?: string;
+  unit?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -487,7 +488,14 @@ export interface ProductInput {
   price: string;
   tax_rate?: string;
   hsn_sac_code?: string;
+  unit?: string;
   is_active?: boolean;
+}
+
+export interface Unit {
+  id: number;
+  name: string;
+  is_default: boolean;
 }
 
 export interface QuoteLineItem {
@@ -499,6 +507,7 @@ export interface QuoteLineItem {
   unit_price: string;
   tax_rate: string;
   hsn_sac_code?: string;
+  unit?: string;
   subtotal?: string;
   tax_amount?: string;
   total?: string;
@@ -544,6 +553,7 @@ export interface InvoiceLineItem {
   unit_price: string;
   tax_rate: string;
   hsn_sac_code?: string;
+  unit?: string;
   subtotal?: string;
   tax_amount?: string;
   total?: string;

@@ -76,12 +76,32 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   };
 
   useEffect(() => {
-    const root = document.documentElement;
-    const prev = root.style.fontSize;
-    root.style.fontSize = SCALE_ROOT_PX[quoteScale] ?? SCALE_ROOT_PX['Standard'];
-    return () => { root.style.fontSize = prev; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quoteScale]);
+    const fontSizePx = SCALE_ROOT_PX[quoteScale] ?? '15px';
+    document.documentElement.style.setProperty('font-size', fontSizePx, 'important');
+    
+    const styleId = 'lumeo-quote-styles';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `
+      :root {
+        font-size: ${fontSizePx} !important;
+      }
+      .quote-container, .quote-container * {
+        font-family: ${resolvedFontStack} !important;
+      }
+    `;
+
+    return () => {
+      document.documentElement.style.removeProperty('font-size');
+      if (styleEl && styleEl.parentNode) {
+        styleEl.parentNode.removeChild(styleEl);
+      }
+    };
+  }, [quoteScale, resolvedFontStack]);
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -140,8 +160,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
 
   return (
     <div
-      className="min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
-      style={{ fontFamily: resolvedFontStack }}
+      className="quote-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
     >
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
@@ -246,7 +265,9 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                         <div className="font-medium text-ink">{item.name}</div>
                         {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.quantity}</td>
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">
+                        {item.quantity} {item.unit || ""}
+                      </td>
                       <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
                       <td className="py-4 px-2 pr-4 sm:pr-6 text-right font-medium text-ink whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.currency || quote.company?.currency)}

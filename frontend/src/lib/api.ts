@@ -279,8 +279,12 @@ api.interceptors.request.use(async (config) => {
   config.headers = config.headers ?? {};
 
   if (!isAuthEndpoint) {
-    // Proactively refresh if token is expiring within 2 minutes
-    if (isTokenExpiringSoon(120)) {
+    const token = getAccessToken();
+    const hasSession = isBrowser() && document.cookie.includes("lumeo_session");
+    const needsRefresh = (!token && hasSession) || isTokenExpiringSoon(120);
+
+    // Proactively refresh if token is expiring within 2 minutes or missing but session exists
+    if (needsRefresh) {
       refreshPromise ??= silentTokenRefresh().finally(() => {
         refreshPromise = null;
       });
@@ -289,11 +293,8 @@ api.interceptors.request.use(async (config) => {
         config.headers.Authorization = `Bearer ${freshToken}`;
       }
       // If refresh failed, fall through and let the response interceptor handle the 401
-    } else {
-      const token = getAccessToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    } else if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
   }
 
@@ -1440,5 +1441,28 @@ export const updatePaymentMethod = async ({ id, data }: { id: number; data: any 
 };
 
 export const deletePaymentMethod = async (id: number) => {
-  await api.delete(`/companies/payment-methods/${id}/`);
+  const res = await api.delete(`/companies/payment-methods/${id}/`);
+  return res.data;
+};
+
+// ── Units ───────────────────────────────────────────────────────────────────
+
+export const fetchUnits = async () => {
+  const res = await api.get("/companies/units/");
+  return res.data;
+};
+
+export const createUnit = async (data: any) => {
+  const res = await api.post("/companies/units/", data);
+  return res.data;
+};
+
+export const updateUnit = async ({ id, data }: { id: number; data: any }) => {
+  const res = await api.patch(`/companies/units/${id}/`, data);
+  return res.data;
+};
+
+export const deleteUnit = async (id: number | string) => {
+  const res = await api.delete(`/companies/units/${id}/`);
+  return res.data;
 };
