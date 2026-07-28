@@ -199,9 +199,9 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                         {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
                       <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.quantity}</td>
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.invoice.currency || company?.currency)}</td>
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
                       <td className="py-4 px-2 text-right font-medium text-ink whitespace-nowrap">
-                        {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.currency || quote.invoice.currency || company?.currency)}
+                        {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.currency || quote.company?.currency)}
                       </td>
                     </tr>
                   ))}
@@ -213,17 +213,17 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               <div className="w-full max-w-sm space-y-3">
                 <div className="flex justify-between text-muted">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.invoice.currency || company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
                 </div>
                 <div className="flex justify-between text-muted">
                   <span>Tax</span>
-                  <span>{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.invoice.currency || company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
                 </div>
                 <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
                   <span style={tpl === 'template3' ? { color: 'white' } : {}}>Total</span>
-                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.total), quote.currency || quote.invoice.currency || company?.currency)}</span>
+                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.total), quote.currency || quote.company?.currency)}</span>
                 </div>
               </div>
             </div>
