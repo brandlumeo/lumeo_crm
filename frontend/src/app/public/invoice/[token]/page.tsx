@@ -79,8 +79,29 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   }, [fontFamily]);
 
   const scale = invoice?.settings?.template_scale || 'Standard';
-  const scalePx: Record<string, string> = { Small: '13px', Standard: '15px', Large: '17px' };
-  const resolvedFontSize = scalePx[scale] ?? scalePx['Standard'];
+
+  // Font Scaling: Tailwind classes (text-xl, text-2xl, text-sm …) use **rem** units,
+  // which resolve against the <html> element's font-size — not any ancestor div.
+  // Setting fontSize on a container div has zero effect on rem-based children.
+  // The correct fix is to change document.documentElement.style.fontSize so that
+  // all rem values scale proportionally across every element on the invoice.
+  //
+  //   Small    = 13px base → text-xl (1.25rem) = 16.25px
+  //   Standard = 15px base → text-xl (1.25rem) = 18.75px  (browser default is 16px)
+  //   Large    = 17px base → text-xl (1.25rem) = 21.25px
+  const SCALE_ROOT_PX: Record<string, string> = {
+    Small:    '13px',
+    Standard: '15px',
+    Large:    '17px',
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.style.fontSize;          // save whatever was set before
+    root.style.fontSize = SCALE_ROOT_PX[scale] ?? SCALE_ROOT_PX['Standard'];
+    return () => { root.style.fontSize = prev; };  // restore on unmount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scale]);
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -194,7 +215,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   return (
     <div
       className="min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
-      style={{ fontFamily: resolvedFontStack, fontSize: resolvedFontSize }}
+      style={{ fontFamily: resolvedFontStack }}
     >
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         

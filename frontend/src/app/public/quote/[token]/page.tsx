@@ -66,8 +66,22 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   }, [fontFamily]);
 
   const quoteScale = quoteSettings.template_scale || 'Standard';
-  const scalePx: Record<string, string> = { Small: '13px', Standard: '15px', Large: '17px' };
-  const resolvedFontSize = scalePx[quoteScale] ?? scalePx['Standard'];
+
+  // Font Scaling: must change document.documentElement.style.fontSize because
+  // Tailwind uses rem units (resolved from <html>), not from any ancestor div.
+  const SCALE_ROOT_PX: Record<string, string> = {
+    Small:    '13px',
+    Standard: '15px',
+    Large:    '17px',
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.style.fontSize;
+    root.style.fontSize = SCALE_ROOT_PX[quoteScale] ?? SCALE_ROOT_PX['Standard'];
+    return () => { root.style.fontSize = prev; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteScale]);
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -127,7 +141,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   return (
     <div
       className="min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
-      style={{ fontFamily: resolvedFontStack, fontSize: resolvedFontSize }}
+      style={{ fontFamily: resolvedFontStack }}
     >
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
