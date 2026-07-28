@@ -30,6 +30,45 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
     }
   }, [shouldPrint, quote, isLoading]);
 
+  // ── Font & Scale ────────────────────────────────────────────────
+  // Defined before any early return (Rules of Hooks).
+  // quote?.settings may be undefined while loading — defaults handle that.
+  const quoteSettings = (quote as any)?.settings || (quote?.company as any)?.invoice_settings || {};
+  const fontFamily = quoteSettings.template_font_family || 'Inter';
+
+  const FONT_GOOGLE_URL: Record<string, string> = {
+    Inter:  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    Roboto: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+    Outfit: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap',
+  };
+
+  const FONT_STACK: Record<string, string> = {
+    Inter:  '"Inter", ui-sans-serif, system-ui, sans-serif',
+    Roboto: '"Roboto", ui-sans-serif, system-ui, sans-serif',
+    Outfit: '"Outfit", ui-sans-serif, system-ui, sans-serif',
+    serif:  'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+  };
+
+  const resolvedFontStack = FONT_STACK[fontFamily] ?? FONT_STACK['Inter'];
+
+  // Inject the Google Fonts <link> unconditionally — must be before any early return.
+  useEffect(() => {
+    const url = FONT_GOOGLE_URL[fontFamily];
+    if (!url) return;
+    const id = `gfont-${fontFamily}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontFamily]);
+
+  const quoteScale = quoteSettings.template_scale || 'Standard';
+  const scalePx: Record<string, string> = { Small: '13px', Standard: '15px', Large: '17px' };
+  const resolvedFontSize = scalePx[quoteScale] ?? scalePx['Standard'];
+
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
 
@@ -84,45 +123,6 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   const settings = (quote as any).settings || (quote.company as any)?.invoice_settings || {};
   const tpl = settings.template_id || (quote.company as any)?.invoice_template || 'template1';
   const accentColor = settings.template_accent_color || '#4F46E5';
-  
-  // ── Font & Scale ─────────────────────────────────────────────────────────
-  const fontFamily = settings.template_font_family || 'Inter';
-
-  const FONT_GOOGLE_URL: Record<string, string> = {
-    Inter:  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-    Roboto: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
-    Outfit: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap',
-  };
-
-  const FONT_STACK: Record<string, string> = {
-    Inter:  '"Inter", ui-sans-serif, system-ui, sans-serif',
-    Roboto: '"Roboto", ui-sans-serif, system-ui, sans-serif',
-    Outfit: '"Outfit", ui-sans-serif, system-ui, sans-serif',
-    serif:  'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
-  };
-
-  const resolvedFontStack = FONT_STACK[fontFamily] ?? FONT_STACK['Inter'];
-
-  // Inject the Google Fonts stylesheet for the selected font (no-op for 'serif')
-  useEffect(() => {
-    const url = FONT_GOOGLE_URL[fontFamily];
-    if (!url) return;
-    const id = `gfont-${fontFamily}`;
-    if (document.getElementById(id)) return;
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = url;
-    document.head.appendChild(link);
-  }, [fontFamily]);
-
-  const scale = settings.template_scale || 'Standard';
-  const scalePx: Record<string, string> = {
-    Small:    '13px',
-    Standard: '15px',
-    Large:    '17px',
-  };
-  const resolvedFontSize = scalePx[scale] ?? scalePx['Standard'];
 
   return (
     <div

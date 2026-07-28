@@ -43,6 +43,45 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
     }
   }, [shouldPrint, invoice, isLoading]);
 
+  // ── Font & Scale ────────────────────────────────────────────────
+  // These must be defined before any early return (Rules of Hooks).
+  // Reading from optional invoice?.settings is safe — undefined values fall back to defaults.
+  const fontFamily = invoice?.settings?.template_font_family || 'Inter';
+
+  const FONT_GOOGLE_URL: Record<string, string> = {
+    Inter:  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    Roboto: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+    Outfit: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap',
+  };
+
+  const FONT_STACK: Record<string, string> = {
+    Inter:  '"Inter", ui-sans-serif, system-ui, sans-serif',
+    Roboto: '"Roboto", ui-sans-serif, system-ui, sans-serif',
+    Outfit: '"Outfit", ui-sans-serif, system-ui, sans-serif',
+    serif:  'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+  };
+
+  const resolvedFontStack = FONT_STACK[fontFamily] ?? FONT_STACK['Inter'];
+
+  // Inject the Google Fonts <link> so the font is actually downloaded.
+  // Runs unconditionally — React requires hooks before any early return.
+  useEffect(() => {
+    const url = FONT_GOOGLE_URL[fontFamily];
+    if (!url) return; // 'serif' uses system font — no external load needed
+    const id = `gfont-${fontFamily}`;
+    if (document.getElementById(id)) return; // already injected
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontFamily]);
+
+  const scale = invoice?.settings?.template_scale || 'Standard';
+  const scalePx: Record<string, string> = { Small: '13px', Standard: '15px', Large: '17px' };
+  const resolvedFontSize = scalePx[scale] ?? scalePx['Standard'];
+
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
 
@@ -151,49 +190,6 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
   const tpl = invoice.settings?.template_id || 'template1';
   const accentColor = invoice.settings?.template_accent_color || '#4F46E5';
-  
-  // ── Font & Scale ─────────────────────────────────────────────────────────
-  // Map setting values to real CSS font-family stacks.
-  // We inject a Google Fonts <link> so the font is actually loaded — without
-  // this the browser would silently fall back to the system sans-serif.
-  const fontFamily = invoice.settings?.template_font_family || 'Inter';
-
-  const FONT_GOOGLE_URL: Record<string, string> = {
-    Inter:  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-    Roboto: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
-    Outfit: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap',
-  };
-
-  const FONT_STACK: Record<string, string> = {
-    Inter:  '"Inter", ui-sans-serif, system-ui, sans-serif',
-    Roboto: '"Roboto", ui-sans-serif, system-ui, sans-serif',
-    Outfit: '"Outfit", ui-sans-serif, system-ui, sans-serif',
-    serif:  'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
-  };
-
-  const resolvedFontStack = FONT_STACK[fontFamily] ?? FONT_STACK['Inter'];
-
-  // Inject the Google Fonts stylesheet for the selected font (no-op for 'serif')
-  useEffect(() => {
-    const url = FONT_GOOGLE_URL[fontFamily];
-    if (!url) return; // serif uses system font — no external load needed
-    const id = `gfont-${fontFamily}`;
-    if (document.getElementById(id)) return; // already injected
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = url;
-    document.head.appendChild(link);
-  }, [fontFamily]);
-
-  // Scale → base font-size in rem
-  const scale = invoice.settings?.template_scale || 'Standard';
-  const scalePx: Record<string, string> = {
-    Small:    '13px',
-    Standard: '15px',
-    Large:    '17px',
-  };
-  const resolvedFontSize = scalePx[scale] ?? scalePx['Standard'];
 
   return (
     <div
