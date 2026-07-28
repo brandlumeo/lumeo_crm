@@ -19,7 +19,8 @@ export default function QuotesPage() {
   const updateMutation = useUpdateQuote();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newQuote, setNewQuote] = useState<{ title: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+    currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     title: "",
     customer_id: null, 
     deal_id: null, 
@@ -42,7 +43,8 @@ export default function QuotesPage() {
     const payload: any = { 
       title: newQuote.title,
       customer: newQuote.customer_id, 
-      items: validItems 
+      items: validItems,
+      currency: newQuote.currency || "INR"
     };
     if (newQuote.deal_id) payload.deal = newQuote.deal_id;
     if (newQuote.valid_until) payload.valid_until = newQuote.valid_until;
@@ -50,7 +52,7 @@ export default function QuotesPage() {
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewQuote({ title: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
+        setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
       }
     });
   };
@@ -250,6 +252,24 @@ export default function QuotesPage() {
                     onChange={(e) => setNewQuote({ ...newQuote, valid_until: e.target.value })}
                     className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-ink mb-1.5">Currency</label>
+                  <select
+                    value={newQuote.currency || "INR"}
+                    onChange={(e) => setNewQuote({ ...newQuote, currency: e.target.value })}
+                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="SGD">SGD (S$)</option>
+                    <option value="AED">AED (د.إ)</option>
+                  </select>
                 </div>
               </div>
 

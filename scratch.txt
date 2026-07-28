@@ -1,0 +1,27 @@
+ue)}
+                      />
+                    </label>
+                  </>
+                )}
+                
+                <label className="block">
+                  <span className="label">Currency</span>
+                  <select
+                    className="input"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="SGD">SGD (S$)</option>
+                    <option value="AED">AED (د.إ)</option>
+                  </select>
+                </label>
+              </div>
+
+              {/* Items Section */}
+              <div class

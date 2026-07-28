@@ -19,7 +19,8 @@ export default function InvoicesPage() {
   const addPaymentMutation = useAddInvoicePayment();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newInvoice, setNewInvoice] = useState<{ customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+    currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     customer_id: null, 
     deal_id: null, 
     due_date: "",
@@ -43,14 +44,14 @@ export default function InvoicesPage() {
     // Filter out items without a name
     const validItems = newInvoice.items.filter(item => item.name.trim() !== "");
 
-    const payload: any = { customer: newInvoice.customer_id, items: validItems };
+    const payload: any = { customer: newInvoice.customer_id, items: validItems, currency: newInvoice.currency || "INR" };
     if (newInvoice.deal_id) payload.deal = newInvoice.deal_id;
     if (newInvoice.due_date) payload.due_date = newInvoice.due_date;
     
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewInvoice({ customer_id: null, deal_id: null, due_date: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
+        setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0 }] });
       }
     });
   };
@@ -253,6 +254,24 @@ export default function InvoicesPage() {
                   {deals.map((d: any) => (
                     <option key={d.id} value={d.id}>{d.title}</option>
                   ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1.5">Currency</label>
+                <select
+                  value={newInvoice.currency || "INR"}
+                  onChange={(e) => setNewInvoice({ ...newInvoice, currency: e.target.value })}
+                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                >
+                  <option value="INR">INR (₹)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="AUD">AUD (A$)</option>
+                  <option value="CAD">CAD (C$)</option>
+                  <option value="SGD">SGD (S$)</option>
+                  <option value="AED">AED (د.إ)</option>
                 </select>
               </div>
 
