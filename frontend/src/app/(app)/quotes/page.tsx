@@ -142,7 +142,7 @@ export default function QuotesPage() {
                       </select>
                     </td>
                     <td className="px-6 py-3 font-medium text-ink">
-                      {formatCurrency(parseFloat(quote.total), company?.currency)}
+                      {formatCurrency(parseFloat(quote.total), quote.currency || company?.currency)}
                     </td>
                     <td className="px-6 py-3 text-muted">
                       {new Date(quote.created_at).toLocaleDateString()}

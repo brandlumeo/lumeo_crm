@@ -1,153 +1,15 @@
-"use client";
-import { toast } from "sonner";
+import re
+import os
 
+file_path = "src/app/public/invoice/[token]/page.tsx"
 
-import { useState, useRef, use, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyPublicInvoicePayment } from "@/lib/queries";
-import SignatureCanvas from "react-signature-canvas";
-import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-react";
-import { InvoiceLineItem } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+with open(file_path, "r", encoding="utf-8") as f:
+    content = f.read()
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if ((window as any).Razorpay) return resolve(true);
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+# We want to replace the `return (` block.
+# Let's find: `  const isSigned = !!invoice.signature_data;`
 
-export default function PublicInvoicePage({ params }: { params: Promise<{ token: string }> }) {
-  const resolvedParams = use(params);
-  const token = resolvedParams.token;
-  const searchParams = useSearchParams();
-  const shouldPrint = searchParams.get('print') === 'true';
-
-  const { data: invoice, isLoading, error } = usePublicInvoice(token);
-  const signMutation = useSignPublicInvoice();
-  const payMutation = usePayPublicInvoice();
-  const verifyMutation = useVerifyPublicInvoicePayment();
-
-  useEffect(() => {
-    if (invoice) {
-      document.title = `Invoice_${invoice.invoice_number}`;
-    }
-    if (shouldPrint && invoice && !isLoading) {
-      setTimeout(() => {
-        window.print();
-      }, 800); // Give images and fonts a moment to load before printing
-    }
-  }, [shouldPrint, invoice, isLoading]);
-
-  const [signedByName, setSignedByName] = useState("");
-  const sigCanvas = useRef<SignatureCanvas>(null);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-bone flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-ink" />
-      </div>
-    );
-  }
-
-  if (error || !invoice) {
-    return (
-      <div className="min-h-screen bg-bone flex items-center justify-center p-4 text-center">
-        <div>
-          <h1 className="text-2xl font-bold text-ink mb-2">Invoice Not Found</h1>
-          <p className="text-muted">This invoice may have been deleted or the link is invalid.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleClearSignature = () => {
-    sigCanvas.current?.clear();
-  };
-
-  const handleSign = () => {
-    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
-      toast.error("Please provide a signature.");
-      return;
-    }
-    if (!signedByName.trim()) {
-      toast.error("Please print your name.");
-      return;
-    }
-
-    const signatureData = sigCanvas.current.getCanvas().toDataURL("image/png");
-    
-    signMutation.mutate({
-      token,
-      payload: {
-        signature_data: signatureData,
-        signed_by_name: signedByName,
-      }
-    });
-  };
-
-  const handlePay = async () => {
-    try {
-      const loaded = await loadRazorpayScript();
-      if (!loaded) {
-        toast.error("Failed to load Razorpay Checkout SDK. Check your internet connection.");
-        return;
-      }
-      
-      payMutation.mutate(
-        { token },
-        {
-          onSuccess: (data) => {
-            const options = {
-              key: data.key,
-              amount: data.amount,
-              currency: data.currency,
-              name: invoice?.company?.name || "Payment",
-              description: `Invoice ${invoice?.invoice_number}`,
-              order_id: data.order_id,
-              handler: function (response: any) {
-                verifyMutation.mutate({
-                  token,
-                  payload: {
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_signature: response.razorpay_signature,
-                  }
-                }, {
-                  onSuccess: () => {
-                    toast.success("Payment verified and successful!");
-                  },
-                  onError: (err: any) => {
-                    toast.error(err.response?.data?.error || "Failed to verify payment.");
-                  }
-                });
-              },
-              prefill: {
-                name: "",
-                email: "",
-              },
-              theme: {
-                color: "#18181b",
-              },
-            };
-            const rzp = new (window as any).Razorpay(options);
-            rzp.open();
-          },
-          onError: (err: any) => {
-            toast.error(err.response?.data?.error || "Failed to initialize payment.");
-          }
-        }
-      );
-    } catch (error) {
-      toast.error("Something went wrong");
-    }
-  };
-
-  const isSigned = !!invoice.signature_data;
+new_render = """  const isSigned = !!invoice.signature_data;
 
   const tpl = invoice.settings?.template_id || 'template1';
   const accentColor = invoice.settings?.template_accent_color || '#4F46E5';
@@ -162,12 +24,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   const scaleClass = scale === 'Large' ? 'text-lg' : scale === 'Small' ? 'text-sm' : 'text-base';
 
   return (
-    <div className={`min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0 ${fontClass} ${scaleClass}`}>
-      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
+    <div className={`min-h-screen bg-bone py-12 px-4 sm:px-6 lg:px-8 ${fontClass} ${scaleClass}`}>
+      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300">
         
         {/* INVOICE DOCUMENT */}
         <div 
-          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
+          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 bg-white ${
             tpl === 'template3' ? 'border-none overflow-hidden' : 
             tpl === 'template4' ? 'border-line flex flex-col md:flex-row p-0 overflow-hidden' : 
             'border-line'
@@ -185,7 +47,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 )}
                 
                 <h2 className="text-xl font-semibold mb-2">{invoice.company?.name || "Company"}</h2>
-                {invoice.company?.company_website && <p className="text-sm opacity-80 mt-1">{invoice.company.company_website.replace(/^https?:\/\//, '')}</p>}
+                {invoice.company?.company_website && <p className="text-sm opacity-80 mt-1">{invoice.company.company_website.replace(/^https?:\\/\\//, '')}</p>}
                 {invoice.company?.company_email && <p className="text-sm opacity-80">{invoice.company.company_email}</p>}
                 
                 {invoice.settings?.company_tax_id && (
@@ -220,7 +82,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 </div>
                 <div className="text-right">
                   <h2 className="text-xl md:text-2xl font-semibold">{invoice.company?.name || "Company"}</h2>
-                  {invoice.company?.company_website && <p className={`text-sm md:text-base mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
+                  {invoice.company?.company_website && <p className={`text-sm md:text-base mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={invoice.company.company_website.startsWith('http') ? invoice.company.company_website : `https://${invoice.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{invoice.company.company_website.replace(/^https?:\\/\\//, '')}</a></p>}
                   {invoice.company?.company_email && <p className={`text-sm md:text-base ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={`mailto:${invoice.company.company_email}`} className="hover:underline">{invoice.company.company_email}</a></p>}
                   
                   {invoice.settings?.company_tax_id && (
@@ -291,17 +153,17 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               )}
             </div>
 
-            <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 min-w-[600px] print:min-w-full">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left mb-8 min-w-[600px]">
                 <thead>
                   <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 font-medium text-muted">Item</th>
                     {invoice.settings?.show_hsn_sac_code && (
-                      <th className="py-3 font-medium text-muted text-right whitespace-nowrap">HSN/SAC</th>
+                      <th className="py-3 font-medium text-muted text-right">HSN/SAC</th>
                     )}
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Qty</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Price</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Total</th>
+                    <th className="py-3 font-medium text-muted text-right">Qty</th>
+                    <th className="py-3 font-medium text-muted text-right">Price</th>
+                    <th className="py-3 font-medium text-muted text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -312,12 +174,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                         {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
                       {invoice.settings?.show_hsn_sac_code && (
-                        <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
+                        <td className="py-4 px-2 text-right text-ink">{item.hsn_sac_code || '-'}</td>
                       )}
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.quantity}</td>
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}</td>
-                      <td className="py-4 px-2 text-right font-medium text-ink whitespace-nowrap">
-                        {formatCurrency(item.quantity * parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}
+                      <td className="py-4 px-2 text-right text-ink">{item.quantity}</td>
+                      <td className="py-4 px-2 text-right text-ink">{formatCurrency(parseFloat(item.unit_price), invoice.company?.currency)}</td>
+                      <td className="py-4 px-2 text-right font-medium text-ink">
+                        {formatCurrency(item.quantity * parseFloat(item.unit_price), invoice.company?.currency)}
                       </td>
                     </tr>
                   ))}
@@ -378,25 +240,25 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               <div className="w-full max-w-sm space-y-3">
                 <div className="flex justify-between text-muted">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(parseFloat(invoice.subtotal), invoice.currency || invoice.company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(invoice.subtotal), invoice.company?.currency)}</span>
                 </div>
                 <div className="flex justify-between text-muted">
                   <span>Tax</span>
-                  <span>{formatCurrency(parseFloat(invoice.tax_amount), invoice.currency || invoice.company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(invoice.tax_amount), invoice.company?.currency)}</span>
                 </div>
                 <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line">
                   <span>Total</span>
-                  <span>{formatCurrency(parseFloat(invoice.total), invoice.currency || invoice.company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(invoice.total), invoice.company?.currency)}</span>
                 </div>
                 <div className="flex justify-between text-emerald-600 font-medium pt-1">
                   <span>Amount Paid</span>
-                  <span>{formatCurrency(parseFloat(invoice.amount_paid || "0"), invoice.currency || invoice.company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(invoice.amount_paid || "0"), invoice.company?.currency)}</span>
                 </div>
                 <div className="flex justify-between text-xl font-bold text-red-600 pt-3 border-t border-line"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
                   <span style={tpl === 'template3' ? { color: 'white' } : {}}>Amount Due</span>
-                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(invoice.amount_due || invoice.total), invoice.currency || invoice.company?.currency)}</span>
+                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(invoice.amount_due || invoice.total), invoice.company?.currency)}</span>
                 </div>
               </div>
             </div>
@@ -411,7 +273,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         </div>
 
         {/* E-Signature Section */}
-        <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
+        <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
           {isSigned ? (
             <div className="text-center py-8">
               <div className="mx-auto w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">
@@ -482,10 +344,10 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
         {/* Payment Section */}
         {(parseFloat(invoice.amount_due || "0") > 0) && (
-          <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12 ${(!invoice.payment_methods || invoice.payment_methods.length === 0) ? 'print:hidden' : ''}`}>
-            <h3 className="text-2xl font-semibold text-ink mb-6 text-center print:text-left print:text-xl">Payment Methods</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start print:block">
-              <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px] print:hidden">
+          <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12">
+            <h3 className="text-2xl font-semibold text-ink mb-6 text-center">Payment Methods</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px]">
                 <p className="text-muted mb-6">Securely pay this invoice using Razorpay.</p>
                 <button
                   onClick={handlePay}
@@ -497,7 +359,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   ) : (
                     <>
                       <CreditCard className="w-5 h-5" />
-                      Pay {formatCurrency(parseFloat(invoice.amount_due || "0"), invoice.currency || invoice.company?.currency)}
+                      Pay {formatCurrency(parseFloat(invoice.amount_due || "0"), invoice.company?.currency)}
                     </>
                   )}
                 </button>
@@ -526,3 +388,13 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
     </div>
   );
 }
+"""
+
+start_idx = content.find("  const isSigned = !!invoice.signature_data;")
+if start_idx != -1:
+    new_content = content[:start_idx] + new_render
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(new_content)
+    print("Successfully updated invoice layout")
+else:
+    print("Could not find start index")

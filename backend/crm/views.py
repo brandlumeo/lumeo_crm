@@ -924,7 +924,8 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     recipient_text = f"{cust_name}{cust_company}{cust_email}{cust_phone}{cust_address}"
         
     currency_symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': 'Rs. '}
-    curr = currency_symbols.get(comp.currency, f"{comp.currency} ")
+    doc_currency = getattr(instance, 'currency', None) or comp.currency or "USD"
+    curr = currency_symbols.get(doc_currency, f"{doc_currency} ")
     
     sender_text = f"<b>{comp.name}</b>"
     address_parts = [p for p in [comp.address_line1, comp.address_line2, comp.city, comp.state, comp.postal_code, comp.country] if p]

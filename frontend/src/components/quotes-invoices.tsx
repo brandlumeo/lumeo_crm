@@ -34,6 +34,9 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
   const [title, setTitle] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [currency, setCurrency] = useState(
+    typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR"
+  );
   const [items, setItems] = useState<
     {
       product?: number;
@@ -96,6 +99,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
     setTitle("");
     setSelectedCustomer("");
     setDueDate("");
+    setCurrency(typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR");
     setItems([]);
   };
 
@@ -170,6 +174,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
       quoteMutation.mutate({
         deal: dealId,
         title,
+        currency,
         items,
       });
     } else {
@@ -180,6 +185,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
       invoiceMutation.mutate({
         deal: dealId,
         customer: parseInt(selectedCustomer, 10),
+        currency,
         due_date: dueDate || undefined,
         items,
       });
@@ -267,9 +273,9 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-serif text-[14px] text-ink">
-                      {formatINR(toNumber(quote.total))}
-                    </span>
+                    <div className="font-serif text-ink font-semibold">
+                      {formatINR(toNumber(quote.total), quote.currency)}
+                    </div>
                     <button
                       onClick={() => window.open(`/public/quote/${quote.public_token}?print=true`, '_blank')}
                       className="p-1.5 hover:bg-bone rounded border border-transparent hover:border-line text-muted hover:text-ink transition-colors"
@@ -309,9 +315,9 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="font-serif text-[14px] text-ink">
-                    {formatINR(toNumber(invoice.total))}
-                  </span>
+                  <div className="font-serif text-ink font-semibold">
+                    {formatINR(toNumber(invoice.total), invoice.currency)}
+                  </div>
                   <button
                     onClick={() => window.open(`/public/invoice/${invoice.public_token}?print=true`, '_blank')}
                     className="p-1.5 hover:bg-bone rounded border border-transparent hover:border-line text-muted hover:text-ink transition-colors"
@@ -387,6 +393,24 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                     </label>
                   </>
                 )}
+                
+                <label className="block">
+                  <span className="label">Currency</span>
+                  <select
+                    className="input"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="SGD">SGD (S$)</option>
+                    <option value="AED">AED (د.إ)</option>
+                  </select>
+                </label>
               </div>
 
               {/* Items Section */}
@@ -506,13 +530,13 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
               {/* Running Totals Block */}
               <div className="border-t border-line pt-4 flex flex-col items-end gap-2 text-right">
                 <div className="text-[13px] text-muted">
-                  Subtotal: <span className="font-serif font-medium text-ink ml-2">{formatINR(subtotal)}</span>
+                  Subtotal: <span className="font-serif font-medium text-ink ml-2">{formatINR(subtotal, currency)}</span>
                 </div>
                 <div className="text-[13px] text-muted">
-                  Tax: <span className="font-serif font-medium text-ink ml-2">{formatINR(taxAmount)}</span>
+                  Tax: <span className="font-serif font-medium text-ink ml-2">{formatINR(taxAmount, currency)}</span>
                 </div>
                 <div className="text-[16px] text-ink font-serif font-semibold border-t border-line pt-2">
-                  Total: <span className="ml-2 text-accent">{formatINR(grandTotal)}</span>
+                  Total: <span className="ml-2 text-accent">{formatINR(grandTotal, currency)}</span>
                 </div>
               </div>
 

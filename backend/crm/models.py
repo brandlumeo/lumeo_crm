@@ -452,6 +452,7 @@ class Quote(models.Model):
         default=Status.DRAFT,
     )
     valid_until = models.DateField(null=True, blank=True)
+    currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -548,6 +549,7 @@ class Invoice(models.Model):
     )
     issue_date = models.DateField(auto_now_add=True)
     due_date = models.DateField(null=True, blank=True)
+    currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -1128,6 +1130,7 @@ class Order(models.Model):
     order_number = models.CharField(max_length=50, unique=True, db_index=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
     notes = models.TextField(blank=True)
+    currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)

@@ -80,7 +80,7 @@ export default function PortalDashboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-[15px]">
-                        {formatCurrency(parseFloat(inv.total), inv.company?.currency)}
+                        {formatCurrency(parseFloat(inv.total), inv.currency || inv.invoice.currency || company?.currency)}
                       </td>
                     </tr>
                   ))}

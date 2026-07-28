@@ -158,7 +158,7 @@ export default function InvoicesPage() {
                       </select>
                     </td>
                     <td className="px-6 py-4 font-medium text-ink">
-                      {formatCurrency(parseFloat(invoice.total), company?.currency)}
+                      {formatCurrency(parseFloat(invoice.total), invoice.currency || company?.currency)}
                     </td>
                     <td className="px-6 py-4 text-muted">
                       {invoice.issue_date}
@@ -434,15 +434,15 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="p-4 bg-bone border border-line rounded-lg text-center">
                   <div className="text-sm text-muted mb-1">Total</div>
-                  <div className="font-semibold text-ink">{formatCurrency(parseFloat(selectedInvoice.total), company?.currency)}</div>
+                  <div className="font-semibold text-ink">{formatCurrency(parseFloat(selectedInvoice.total), selectedInvoice.currency || company?.currency)}</div>
                 </div>
                 <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
                   <div className="text-sm text-emerald-600 mb-1">Paid</div>
-                  <div className="font-semibold text-emerald-700">{formatCurrency(parseFloat(selectedInvoice.amount_paid || "0"), company?.currency)}</div>
+                  <div className="font-semibold text-emerald-700">{formatCurrency(parseFloat(selectedInvoice.amount_paid || "0"), selectedInvoice.currency || company?.currency)}</div>
                 </div>
                 <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-center">
                   <div className="text-sm text-red-600 mb-1">Due</div>
-                  <div className="font-semibold text-red-700">{formatCurrency(parseFloat(selectedInvoice.amount_due || "0"), company?.currency)}</div>
+                  <div className="font-semibold text-red-700">{formatCurrency(parseFloat(selectedInvoice.amount_due || "0"), selectedInvoice.currency || company?.currency)}</div>
                 </div>
               </div>
 
@@ -457,7 +457,7 @@ export default function InvoicesPage() {
                           <div className="text-xs text-muted mt-0.5">{payment.payment_date} • {payment.receipt_number}</div>
                         </div>
                         <div className="font-semibold text-emerald-600">
-                          {formatCurrency(parseFloat(payment.amount), company?.currency)}
+                          {formatCurrency(parseFloat(payment.amount), selectedInvoice.currency || company?.currency)}
                         </div>
                       </div>
                     ))}

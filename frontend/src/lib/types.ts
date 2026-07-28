@@ -510,6 +510,7 @@ export interface Quote {
   deal: number | null;
   quote_number: string;
   title: string;
+  currency?: string;
   status: "draft" | "sent" | "accepted" | "declined" | "expired";
   valid_until: string | null;
   subtotal: string;
@@ -528,6 +529,7 @@ export interface Quote {
 export interface QuoteInput {
   deal?: number;
   title: string;
+  currency?: string;
   status?: string;
   valid_until?: string;
   items: QuoteLineItem[];
@@ -568,6 +570,7 @@ export interface Invoice {
     };
   };
   invoice_number: string;
+  currency?: string;
   status: "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "void";
   issue_date: string;
   due_date: string | null;
@@ -592,6 +595,7 @@ export interface Invoice {
 export interface InvoiceInput {
   deal?: number;
   customer: number;
+  currency?: string;
   status?: string;
   due_date?: string;
   items: InvoiceLineItem[];

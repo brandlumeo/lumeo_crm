@@ -62,7 +62,7 @@ export default function PortalInvoicesPage() {
                   <td className="p-3">{inv.invoice_number}</td>
                   <td className="p-3">{formatDateTime(inv.issue_date)}</td>
                   <td className="p-3 capitalize">{inv.status}</td>
-                  <td className="p-3 text-right font-medium">{formatCurrency(parseFloat(inv.total), inv.company?.currency)}</td>
+                  <td className="p-3 text-right font-medium">{formatCurrency(parseFloat(inv.total), inv.currency || inv.invoice.currency || company?.currency)}</td>
                   <td className="p-3 text-right">
                     <a href={`/public/invoice/${inv.public_token}`} target="_blank" className="btn btn-secondary text-xs py-1 px-2">View</a>
                   </td>

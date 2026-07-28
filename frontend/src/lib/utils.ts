@@ -7,8 +7,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatINR(amount: number): string {
-  const currencyCode = typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR";
+export function formatINR(amount: number, overrideCurrency?: string): string {
+  const baseCurrency = typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR";
+  const currencyCode = overrideCurrency || baseCurrency;
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
