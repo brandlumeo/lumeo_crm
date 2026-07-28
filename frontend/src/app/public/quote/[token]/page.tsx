@@ -188,7 +188,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                     <th className="py-3 font-medium text-muted">Item</th>
                     <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Qty</th>
                     <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Price</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Total</th>
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -200,7 +200,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                       </td>
                       <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.quantity}</td>
                       <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
-                      <td className="py-4 px-2 text-right font-medium text-ink whitespace-nowrap">
+                      <td className="py-4 px-2 pr-4 sm:pr-6 text-right font-medium text-ink whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.currency || quote.company?.currency)}
                       </td>
                     </tr>
