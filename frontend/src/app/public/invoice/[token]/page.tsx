@@ -346,11 +346,11 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                     {invoice.settings?.bank_name && (
                       <div className="text-sm text-muted bg-bone/50 p-4 rounded-lg border border-line">
                         <div className="grid grid-cols-2 gap-2">
-                          <span className="font-medium">Bank Name:</span> <span>{invoice.settings.bank_name}</span>
-                          <span className="font-medium">Account Name:</span> <span>{invoice.settings.bank_account_name}</span>
-                          <span className="font-medium">Account No:</span> <span>{invoice.settings.bank_account_number}</span>
+                          <span className="font-medium break-words">Bank Name:</span> <span className="break-words">{invoice.settings.bank_name}</span>
+                          <span className="font-medium break-words">Account Name:</span> <span className="break-words">{invoice.settings.bank_account_name}</span>
+                          <span className="font-medium break-words">Account No:</span> <span className="break-all">{invoice.settings.bank_account_number}</span>
                           {invoice.settings.bank_routing_number && (
-                            <><span className="font-medium">Routing/SWIFT:</span> <span>{invoice.settings.bank_routing_number}</span></>
+                            <><span className="font-medium break-words">Routing / SWIFT:</span> <span className="break-all">{invoice.settings.bank_routing_number}</span></>
                           )}
                         </div>
                       </div>
