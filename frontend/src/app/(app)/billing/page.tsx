@@ -549,7 +549,7 @@ export default function BillingPage() {
                       <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> Custom Workflow Setup
                     </li>
                     <li className="flex items-center gap-1.5 text-[13px] text-ink-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> 2-Hr Team Training
+                      <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> Team Training
                     </li>
                   </ul>
                 </div>
