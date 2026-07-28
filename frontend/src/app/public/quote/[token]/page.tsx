@@ -181,14 +181,14 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </div>
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left mb-8 min-w-[600px]">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="w-full text-left mb-8 min-w-[600px] print:min-w-full">
                 <thead>
                   <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 font-medium text-muted">Item</th>
-                    <th className="py-3 font-medium text-muted text-right">Qty</th>
-                    <th className="py-3 font-medium text-muted text-right">Price</th>
-                    <th className="py-3 font-medium text-muted text-right">Total</th>
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Qty</th>
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Price</th>
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -198,9 +198,9 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                         <div className="font-medium text-ink">{item.name}</div>
                         {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
-                      <td className="py-4 px-2 text-right text-ink">{item.quantity}</td>
-                      <td className="py-4 px-2 text-right text-ink">{formatCurrency(parseFloat(item.unit_price), quote.company?.currency)}</td>
-                      <td className="py-4 px-2 text-right font-medium text-ink">
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.quantity}</td>
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.company?.currency)}</td>
+                      <td className="py-4 px-2 text-right font-medium text-ink whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.company?.currency)}
                       </td>
                     </tr>
