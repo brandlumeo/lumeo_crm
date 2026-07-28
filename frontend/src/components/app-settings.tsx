@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Settings, Loader2, CheckCircle, XCircle, Shield, 
@@ -30,9 +30,12 @@ export function AppSettingsForm() {
   
   // Just mock URL based on standard format shown in screenshot, since it relies on some backend key
   // We'll just construct a domain using window if available or a generic string
-  const signupUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/client-signup/${company?.id}`
-    : `https://crm.app/client-signup/${company?.id}`;
+  const [signupUrl, setSignupUrl] = useState(`https://crm.app/client-signup/${company?.id}`);
+  useEffect(() => {
+    if (typeof window !== "undefined" && company?.id) {
+      setSignupUrl(`${window.location.origin}/client-signup/${company.id}`);
+    }
+  }, [company?.id]);
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);

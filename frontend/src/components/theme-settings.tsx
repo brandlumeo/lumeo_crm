@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Palette, CheckCircle } from "lucide-react";
 
 export function ThemeSettingsForm() {
@@ -9,13 +9,18 @@ export function ThemeSettingsForm() {
     return localStorage.getItem(key) ?? fallback;
   };
 
-  const [colorScheme, setColorScheme] = useState(() => getStored("theme_color", "orange"));
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return document.documentElement.classList.contains("dark");
-  });
-  const [fontSize, setFontSize] = useState(() => getStored("theme_font_size", "medium"));
+  const [colorScheme, setColorScheme] = useState("orange");
+  const [darkMode, setDarkMode] = useState(false);
+  const [fontSize, setFontSize] = useState("medium");
   const [saved, setSaved] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setColorScheme(getStored("theme_color", "orange"));
+    setDarkMode(document.documentElement.classList.contains("dark"));
+    setFontSize(getStored("theme_font_size", "medium"));
+  }, []);
 
   const colorSchemes = [
     { id: "orange", label: "Ember", hex: "#FF5B1F", desc: "The default warm brand accent.", gradient: "from-orange-400 to-red-500" },
@@ -75,6 +80,10 @@ export function ThemeSettingsForm() {
       setTimeout(() => setSaved(false), 3500);
     }
   };
+
+  if (!mounted) {
+    return <div className="animate-pulse flex h-32 w-full bg-bone/30 rounded-2xl" />;
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
