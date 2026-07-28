@@ -219,30 +219,6 @@ export async function clearSession(): Promise<void> {
 
 // ── Axios interceptors ────────────────────────────────────────────────────────
 
-// Request: inject access token as Authorization header
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  config.headers = config.headers ?? {};
-  if (
-    token &&
-    !config.url?.includes(endpoints.token) &&
-    !config.url?.includes(endpoints.refresh) &&
-    !config.url?.includes(endpoints.register) &&
-    !config.url?.includes(endpoints.passwordResetRequest)
-  ) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  
-  // Prevent browser caching for GET requests (specifically for settings/matrix endpoints)
-  if (config.method?.toLowerCase() === 'get') {
-    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-    config.headers['Pragma'] = 'no-cache';
-    config.headers['Expires'] = '0';
-  }
-  
-  return config;
-});
-
 let refreshPromise: Promise<string | null> | null = null;
 
 async function silentTokenRefresh(): Promise<string | null> {
@@ -275,6 +251,61 @@ async function silentTokenRefresh(): Promise<string | null> {
     return null;
   }
 }
+
+
+/** Returns true if the JWT access token expires within `bufferSeconds` seconds. */
+function isTokenExpiringSoon(bufferSeconds = 120): boolean {
+  const token = getAccessToken();
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload?.exp) return false;
+    return payload.exp * 1000 - Date.now() < bufferSeconds * 1000;
+  } catch {
+    return false;
+  }
+}
+
+// Request: inject access token as Authorization header.
+// If the token is about to expire, proactively refresh it first to avoid
+// a cascade of 401 errors from simultaneous requests.
+api.interceptors.request.use(async (config) => {
+  const isAuthEndpoint =
+    config.url?.includes(endpoints.token) ||
+    config.url?.includes(endpoints.refresh) ||
+    config.url?.includes(endpoints.register) ||
+    config.url?.includes(endpoints.passwordResetRequest);
+
+  config.headers = config.headers ?? {};
+
+  if (!isAuthEndpoint) {
+    // Proactively refresh if token is expiring within 2 minutes
+    if (isTokenExpiringSoon(120)) {
+      refreshPromise ??= silentTokenRefresh().finally(() => {
+        refreshPromise = null;
+      });
+      const freshToken = await refreshPromise;
+      if (freshToken) {
+        config.headers.Authorization = `Bearer ${freshToken}`;
+      }
+      // If refresh failed, fall through and let the response interceptor handle the 401
+    } else {
+      const token = getAccessToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+  }
+
+  // Prevent browser caching for GET requests (specifically for settings/matrix endpoints)
+  if (config.method?.toLowerCase() === 'get') {
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+  }
+
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,
