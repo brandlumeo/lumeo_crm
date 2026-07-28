@@ -873,11 +873,21 @@ export function FinanceSettingsForm() {
                                         onChange={e => setNewUnitName(e.target.value)}
                                         placeholder="Add new unit (e.g. Hours, Kg)"
                                         className="input h-9 text-sm px-3 w-48 bg-white border-dashed"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddUnit()}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleAddUnit();
+                                            }
+                                        }}
                                     />
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <button onClick={handleAddUnit} disabled={!newUnitName.trim() || createUnitMutation.isPending} className="btn btn-secondary text-sm h-9 px-3">
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => { e.preventDefault(); handleAddUnit(); }} 
+                                        disabled={!newUnitName || newUnitName.trim() === "" || createUnitMutation.isPending === true} 
+                                        className="btn btn-secondary text-sm h-9 px-3"
+                                    >
                                         Add
                                     </button>
                                 </td>
