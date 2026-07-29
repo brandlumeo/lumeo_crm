@@ -171,11 +171,13 @@ class CompanyScopedModelViewSet(ModelViewSet):
 
 class ServiceCategoryViewSet(CompanyScopedModelViewSet):
     permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    queryset = ServiceCategory.objects.all()
     serializer_class = ServiceCategorySerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["name"]
     ordering_fields = ["name", "created_at"]
     ordering = ["name"]
+    pagination_class = None
 
 class LeadViewSet(CompanyScopedModelViewSet):
     permission_module = "Leads"
