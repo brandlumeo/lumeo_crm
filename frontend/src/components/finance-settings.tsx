@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   DollarSign, Loader2, CheckCircle, XCircle, Shield, 
@@ -29,6 +29,7 @@ export function FinanceSettingsForm() {
   const [unitError, setUnitError] = useState("");
   const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
   const [editingUnitName, setEditingUnitName] = useState("");
+  const newUnitInputRef = useRef<HTMLInputElement>(null);
 
 
   // General Settings
@@ -827,7 +828,12 @@ export function FinanceSettingsForm() {
             <div className="p-6 md:p-8 flex items-center justify-between border-b border-line/50">
               <h4 className="text-[16px] font-semibold text-ink">Unit Types</h4>
               {isAdmin && (
-                <button className="btn btn-primary text-[13px] px-4 py-2 bg-ink hover:bg-ink/80 text-white rounded-lg flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    newUnitInputRef.current?.focus();
+                  }}
+                  className="btn btn-primary text-[13px] px-4 py-2 bg-ink hover:bg-ink/80 text-white rounded-lg flex items-center gap-2"
+                >
                     <Plus className="w-4 h-4" /> Add Unit Type
                 </button>
               )}
@@ -894,6 +900,7 @@ export function FinanceSettingsForm() {
                                 <td className="px-6 py-4 text-muted"><Plus className="w-4 h-4" /></td>
                                 <td className="px-6 py-4">
                                     <input 
+                                        ref={newUnitInputRef}
                                         type="text" 
                                         value={newUnitName} 
                                         onChange={e => {
