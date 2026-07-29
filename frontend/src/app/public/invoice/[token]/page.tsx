@@ -88,35 +88,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
     Large:    '17px',
   };
 
-  useEffect(() => {
-    // 1. Force html root font size to scale rem units across the entire page
-    const fontSizePx = SCALE_ROOT_PX[scale] ?? '15px';
-    document.documentElement.style.setProperty('font-size', fontSizePx, 'important');
-    
-    // 2. Inject global CSS to force the font family on all elements, overriding Tailwind
-    const styleId = 'lumeo-invoice-styles';
-    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
-    styleEl.innerHTML = `
-      :root {
-        font-size: ${fontSizePx} !important;
-      }
-      .invoice-container, .invoice-container * {
-        font-family: ${resolvedFontStack} !important;
-      }
-    `;
-
-    return () => {
-      document.documentElement.style.removeProperty('font-size');
-      if (styleEl && styleEl.parentNode) {
-        styleEl.parentNode.removeChild(styleEl);
-      }
-    };
-  }, [scale, resolvedFontStack]);
+  const fontSizePx = SCALE_ROOT_PX[scale] ?? '15px';
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -228,10 +200,19 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   const accentColor = invoice.settings?.template_accent_color || '#4F46E5';
 
   return (
-    <div
-      className="invoice-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
-    >
-      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        :root {
+          font-size: ${fontSizePx} !important;
+        }
+        .invoice-container, .invoice-container * {
+          font-family: ${resolvedFontStack} !important;
+        }
+      `}} />
+      <div
+        className="invoice-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
+      >
+        <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
         {/* INVOICE DOCUMENT */}
         <div 
@@ -551,6 +532,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         {/* Payment Section */}
         {(parseFloat(invoice.amount_due || "0") > 0) && (
           <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12 ${(!invoice.payment_methods || invoice.payment_methods.length === 0) ? 'print:hidden' : ''}`}>
+            <style>{`
+              :root { --accent-color: ${accentColor}; }
+            `}</style>
             <h3 className="text-2xl font-semibold text-ink mb-6 text-center print:text-left print:text-xl">Payment Methods</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start print:block">
               <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px] print:hidden">
@@ -592,5 +576,6 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         )}
       </div>
     </div>
+    </>
   );
 }

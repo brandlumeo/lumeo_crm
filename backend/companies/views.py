@@ -96,8 +96,32 @@ class UnitViewSet(viewsets.ModelViewSet):
         return Unit.objects.filter(company=company)
 
     def perform_create(self, serializer):
+        from rest_framework import exceptions
         company = getattr(self.request.user, "company", None)
-        serializer.save(company=company)
+        name = serializer.validated_data.get('name', '').strip()
+        if Unit.objects.filter(company=company, name__iexact=name).exists():
+            raise exceptions.ValidationError({"name": ["A unit with this name already exists."]})
+        serializer.save(company=company, name=name)
+
+    def perform_update(self, serializer):
+        from rest_framework import exceptions
+        from crm.models import InvoiceLineItem, QuoteLineItem, Product
+        company = getattr(self.request.user, "company", None)
+        name = serializer.validated_data.get('name', '').strip()
+        
+        if name:
+            if Unit.objects.filter(company=company, name__iexact=name).exclude(pk=self.get_object().pk).exists():
+                raise exceptions.ValidationError({"name": ["A unit with this name already exists."]})
+                
+            old_name = self.get_object().name
+            if old_name != name:
+                # Update all related models in crm that stored this unit name as string
+                InvoiceLineItem.objects.filter(invoice__company=company, unit=old_name).update(unit=name)
+                QuoteLineItem.objects.filter(quote__company=company, unit=old_name).update(unit=name)
+                Product.objects.filter(company=company, unit=old_name).update(unit=name)
+            serializer.save(name=name)
+        else:
+            serializer.save()
 
 from .models import PaymentMethod
 from .serializers import PaymentMethodSerializer

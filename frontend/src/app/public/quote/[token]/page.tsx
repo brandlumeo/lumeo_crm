@@ -75,33 +75,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
     Large:    '17px',
   };
 
-  useEffect(() => {
-    const fontSizePx = SCALE_ROOT_PX[quoteScale] ?? '15px';
-    document.documentElement.style.setProperty('font-size', fontSizePx, 'important');
-    
-    const styleId = 'lumeo-quote-styles';
-    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
-    styleEl.innerHTML = `
-      :root {
-        font-size: ${fontSizePx} !important;
-      }
-      .quote-container, .quote-container * {
-        font-family: ${resolvedFontStack} !important;
-      }
-    `;
-
-    return () => {
-      document.documentElement.style.removeProperty('font-size');
-      if (styleEl && styleEl.parentNode) {
-        styleEl.parentNode.removeChild(styleEl);
-      }
-    };
-  }, [quoteScale, resolvedFontStack]);
+  const fontSizePx = SCALE_ROOT_PX[quoteScale] ?? '15px';
 
   const [signedByName, setSignedByName] = useState("");
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -159,10 +133,19 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   const accentColor = settings.template_accent_color || '#4F46E5';
 
   return (
-    <div
-      className="quote-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
-    >
-      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        :root {
+          font-size: ${fontSizePx} !important;
+        }
+        .quote-container, .quote-container * {
+          font-family: ${resolvedFontStack} !important;
+        }
+      `}} />
+      <div
+        className="quote-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
+      >
+        <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
         {/* QUOTE DOCUMENT */}
         <div 
@@ -375,7 +358,17 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             </div>
           )}
         </div>
+        {/* Action Panel for Mobile */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden flex gap-3 z-50">
+          <button 
+            onClick={() => window.print()}
+            className="flex-1 btn btn-secondary h-12"
+          >
+            <Download className="w-4 h-4 mr-2" /> Download
+          </button>
+        </div>
       </div>
     </div>
+    </>
   );
 }

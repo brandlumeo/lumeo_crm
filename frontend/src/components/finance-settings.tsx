@@ -26,6 +26,7 @@ export function FinanceSettingsForm() {
   const [activeTab, setActiveTab] = useState("general"); // general, template, prefix, units, quickbooks, payment
   
   const [newUnitName, setNewUnitName] = useState("");
+  const [unitError, setUnitError] = useState("");
   const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
   const [editingUnitName, setEditingUnitName] = useState("");
 
@@ -285,24 +286,49 @@ export function FinanceSettingsForm() {
   };
 
   const handleAddUnit = () => {
+    setUnitError("");
     if (!newUnitName.trim()) return;
+    
+    const nameLower = newUnitName.trim().toLowerCase();
+    if (units.some((u: any) => u.name.toLowerCase() === nameLower)) {
+      setUnitError("A unit with this name already exists.");
+      return;
+    }
+
     createUnitMutation.mutate({ name: newUnitName.trim(), is_default: false }, {
-      onSuccess: () => setNewUnitName("")
+      onSuccess: () => {
+        setNewUnitName("");
+        setUnitError("");
+      },
+      onError: (err: any) => {
+        setUnitError(err?.response?.data?.name?.[0] || "Failed to add unit.");
+      }
     });
   };
 
   const handleUpdateUnit = (id: number) => {
+    setUnitError("");
     if (!editingUnitName.trim()) return;
+    
+    const nameLower = editingUnitName.trim().toLowerCase();
+    if (units.some((u: any) => u.id !== id && u.name.toLowerCase() === nameLower)) {
+      alert("A unit with this name already exists.");
+      return;
+    }
+
     updateUnitMutation.mutate({ id, data: { name: editingUnitName.trim() } }, {
       onSuccess: () => {
         setEditingUnitId(null);
         setEditingUnitName("");
+      },
+      onError: (err: any) => {
+        alert(err?.response?.data?.name?.[0] || "Failed to update unit.");
       }
     });
   };
 
   const handleDeleteUnit = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this unit type?")) {
+    if (window.confirm("Are you sure you want to delete this unit type? Existing invoice line items will retain the old unit label as static text.")) {
       deleteUnitMutation.mutate(id);
     }
   };
@@ -870,9 +896,12 @@ export function FinanceSettingsForm() {
                                     <input 
                                         type="text" 
                                         value={newUnitName} 
-                                        onChange={e => setNewUnitName(e.target.value)}
+                                        onChange={e => {
+                                            setNewUnitName(e.target.value);
+                                            if (unitError) setUnitError("");
+                                        }}
                                         placeholder="Add new unit (e.g. Hours, Kg)"
-                                        className="input h-9 text-sm px-3 w-48 bg-white border-dashed"
+                                        className={cn("input h-9 text-sm px-3 w-48 bg-white border-dashed", unitError ? "border-rose-500 focus:ring-rose-500" : "")}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
@@ -880,6 +909,9 @@ export function FinanceSettingsForm() {
                                             }
                                         }}
                                     />
+                                    {unitError && (
+                                        <p className="text-xs text-rose-500 mt-1 font-medium">{unitError}</p>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <button 
