@@ -394,8 +394,8 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
             </div>
     
             <div className="animate-rise space-y-6" style={{ animationDelay: "50ms" }}>
-              <LeadTasks leadId={lead.id} />
               <ActivityTimeline entityId={lead.id} entityType="lead" />
+              <LeadTasks leadId={lead.id} />
               <DocumentLibrary entityId={lead.id} entityType="lead" />
             </div>
           </div>
