@@ -43,6 +43,7 @@ from .views import (
     OrderViewSet,
     EventViewSet,
     NoticeViewSet,
+    ServiceCategoryViewSet,
 )
 
 from .ai_views import AIChatView
@@ -51,6 +52,7 @@ app_name = "crm"
 
 
 router = DefaultRouter()
+router.register("service-categories", ServiceCategoryViewSet, basename="service-category")
 router.register("leads", LeadViewSet, basename="lead")
 router.register("customers", CustomerViewSet, basename="customer")
 router.register("deals", DealViewSet, basename="deal")
