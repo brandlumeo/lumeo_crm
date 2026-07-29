@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   DollarSign, Loader2, CheckCircle, XCircle, Shield, 
-  FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard, Cloud, UploadCloud, Link as LinkIcon, Check
+  FileText, Hash, Percent, CalendarDays, Wallet, Image, AlignLeft, Users, Settings2, Bell, Grid, Plus, Trash2, Edit2, LayoutDashboard, Cloud, UploadCloud, Link as LinkIcon, Check, AlertTriangle
 } from "lucide-react";
 import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings, usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod, useUpdateCompany, useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/api";
@@ -30,8 +30,7 @@ export function FinanceSettingsForm() {
   const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
   const [editingUnitName, setEditingUnitName] = useState("");
   const newUnitInputRef = useRef<HTMLInputElement>(null);
-
-
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, type: 'unit' | 'payment_method' | null, id: number | null, title: string, message: string }>({ isOpen: false, type: null, id: null, title: '', message: '' });
   // General Settings
   const [defaultTaxRate, setDefaultTaxRate] = useState("0.00");
   const [invoiceLogo, setInvoiceLogo] = useState("");
@@ -329,9 +328,13 @@ export function FinanceSettingsForm() {
   };
 
   const handleDeleteUnit = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this unit type? Existing invoice line items will retain the old unit label as static text.")) {
-      deleteUnitMutation.mutate(id);
-    }
+    setDeleteConfirm({
+      isOpen: true,
+      type: 'unit',
+      id: id,
+      title: 'Delete Unit Type',
+      message: 'Are you sure you want to delete this unit type? Existing invoice line items will retain the old unit label as static text.'
+    });
   };
 
   const generatePreview = (prefix: string, separator: string, digits: number) => {
@@ -1073,9 +1076,13 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: bo
     };
     
     const handleDelete = (id: number) => {
-        if (confirm("Are you sure you want to delete this payment method?")) {
-            deleteMutation.mutate(id);
-        }
+        setDeleteConfirm({
+            isOpen: true,
+            type: 'payment_method',
+            id: id,
+            title: 'Delete Payment Method',
+            message: 'Are you sure you want to delete this payment method? This action cannot be undone.'
+        });
     };
 
     return (
@@ -1182,6 +1189,55 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: bo
                                 {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                                 Save
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {deleteConfirm.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-paper w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-line animate-in zoom-in-95 duration-200 m-4">
+                        <div className="p-6 md:p-8 flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-6">
+                                <AlertTriangle className="w-8 h-8 text-rose-500" />
+                            </div>
+                            <h3 className="text-xl font-bold text-ink mb-3">{deleteConfirm.title}</h3>
+                            <p className="text-[15px] text-muted leading-relaxed mb-8">
+                                {deleteConfirm.message}
+                            </p>
+                            
+                            <div className="flex items-center gap-3 w-full">
+                                <button 
+                                    onClick={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))} 
+                                    className="flex-1 btn bg-bone hover:bg-bone/80 text-ink px-6 py-3 rounded-2xl text-[14px] font-semibold transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (deleteConfirm.id) {
+                                            if (deleteConfirm.type === 'unit') {
+                                                deleteUnitMutation.mutate(deleteConfirm.id, {
+                                                    onSettled: () => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))
+                                                });
+                                            } else if (deleteConfirm.type === 'payment_method') {
+                                                deleteMutation.mutate(deleteConfirm.id, {
+                                                    onSettled: () => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))
+                                                });
+                                            }
+                                        }
+                                    }}
+                                    disabled={deleteUnitMutation.isPending || deleteMutation.isPending}
+                                    className="flex-1 btn bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-2xl text-[14px] font-semibold flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                                >
+                                    {(deleteUnitMutation.isPending || deleteMutation.isPending) ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Trash2 className="w-4 h-4" />
+                                    )}
+                                    Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
