@@ -388,13 +388,14 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
                 </div>
               </div>
               
+              <ActivityTimeline entityId={lead.id} entityType="lead" />
+              
               <PredictiveScoreCard lead={lead} />
               
               <CustomFieldsDisplay modelName="lead" customData={lead.custom_data} />
             </div>
     
             <div className="animate-rise space-y-6" style={{ animationDelay: "50ms" }}>
-              <ActivityTimeline entityId={lead.id} entityType="lead" />
               <LeadTasks leadId={lead.id} />
               <DocumentLibrary entityId={lead.id} entityType="lead" />
             </div>
