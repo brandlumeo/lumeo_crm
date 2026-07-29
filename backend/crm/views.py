@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -41,6 +41,7 @@ from .serializers import (
     OrderSerializer,
     EventSerializer,
     NoticeSerializer,
+    ServiceCategorySerializer,
 )
 from .emailing import send_crm_email
 
@@ -168,6 +169,13 @@ class CompanyScopedModelViewSet(ModelViewSet):
 
         return queryset
 
+class ServiceCategoryViewSet(CompanyScopedModelViewSet):
+    permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
+    serializer_class = ServiceCategorySerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at"]
+    ordering = ["name"]
 
 class LeadViewSet(CompanyScopedModelViewSet):
     permission_module = "Leads"

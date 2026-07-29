@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Ticket, TicketComment
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory
 
 
 User = get_user_model()
@@ -191,6 +191,11 @@ class CompanyScopedSerializer(serializers.ModelSerializer):
     def validate_company_relations(self, attrs, company):
         return attrs
 
+class ServiceCategorySerializer(CompanyScopedSerializer):
+    class Meta:
+        model = ServiceCategory
+        fields = ("id", "company", "company_id", "name", "color", "created_at")
+        read_only_fields = ("company", "company_id", "created_at")
 
 class LeadSerializer(CompanyScopedSerializer):
     assigned_to = UserSummarySerializer(read_only=True)
@@ -200,6 +205,14 @@ class LeadSerializer(CompanyScopedSerializer):
         write_only=True,
         required=False,
         allow_null=True,
+    )
+    categories = ServiceCategorySerializer(many=True, read_only=True)
+    category_ids = serializers.PrimaryKeyRelatedField(
+        source="categories",
+        queryset=ServiceCategory.objects.none(),
+        many=True,
+        write_only=True,
+        required=False
     )
 
     class Meta:
@@ -218,6 +231,8 @@ class LeadSerializer(CompanyScopedSerializer):
             "custom_data",
             "score",
             "score_rationale",
+            "categories",
+            "category_ids",
             "created_at",
             "updated_at",
         )
@@ -231,8 +246,12 @@ class LeadSerializer(CompanyScopedSerializer):
         if user and user.is_authenticated:
             if user.is_superuser:
                 self.fields["assigned_to_id"].queryset = User.objects.all()
+                self.fields["category_ids"].queryset = ServiceCategory.objects.all()
             elif user.company_id is not None:
                 self.fields["assigned_to_id"].queryset = User.objects.filter(
+                    company_id=user.company_id
+                )
+                self.fields["category_ids"].queryset = ServiceCategory.objects.filter(
                     company_id=user.company_id
                 )
 
@@ -242,6 +261,14 @@ class LeadSerializer(CompanyScopedSerializer):
             raise serializers.ValidationError(
                 {"assigned_to_id": "Assigned user must belong to the same company."}
             )
+        
+        categories = attrs.get("categories")
+        if categories:
+            for cat in categories:
+                if cat.company_id != company.id:
+                    raise serializers.ValidationError(
+                        {"category_ids": "Categories must belong to the same company."}
+                    )
         return attrs
 
     def create(self, validated_data):

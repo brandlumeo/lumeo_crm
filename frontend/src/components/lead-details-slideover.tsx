@@ -2,11 +2,11 @@
 
 import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X } from "lucide-react";
+import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X, Layers } from "lucide-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
-import { createTask, updateLead, fetchTeam } from "@/lib/api";
+import { createTask, updateLead, fetchTeam, fetchServiceCategories } from "@/lib/api";
 import { useLead, useScoreLead, useCurrentCompany } from "@/lib/queries";
 import { Lead } from "@/lib/types";
 import { PageShell } from "@/components/page-shell";
@@ -180,6 +180,12 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
     source: lead.source || "",
     status: lead.status || "new",
     assigned_to_id: lead.assigned_to?.id || null,
+    category_ids: lead.categories?.map(c => c.id) || [],
+  });
+
+  const { data: serviceCategories = [] } = useQuery({
+    queryKey: ["service_categories"],
+    queryFn: fetchServiceCategories,
   });
 
   const mutation = useMutation({
@@ -278,6 +284,25 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
                 </select>
               </label>
             </div>
+            
+            <label className="block">
+              <span className="label">Service / Category</span>
+              <select
+                className="select w-full"
+                value={form.category_ids[0] || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(f => ({ ...f, category_ids: val ? [Number(val)] : [] }));
+                }}
+              >
+                <option value="">Select a service category...</option>
+                {serviceCategories.map((cat: any) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             
             <label className="block">
               <span className="label">Assigned To</span>
@@ -381,6 +406,26 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
                     <Briefcase className="w-4 h-4 text-muted shrink-0" />
                     <span className="text-ink-2 truncate">Assigned: {getDisplayName(lead.assigned_to) || "Unassigned"}</span>
                   </div>
+                  {lead.categories && lead.categories.length > 0 && (
+                    <div className="flex items-start gap-3 text-[13px]">
+                      <Layers className="w-4 h-4 text-muted shrink-0 mt-0.5" />
+                      <div className="flex flex-wrap gap-1.5">
+                        {lead.categories.map((cat: any) => (
+                          <span 
+                            key={cat.id} 
+                            className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border"
+                            style={{ 
+                              backgroundColor: `${cat.color || "#6B7280"}1A`, 
+                              borderColor: `${cat.color || "#6B7280"}33`,
+                              color: cat.color || "#6B7280" 
+                            }}
+                          >
+                            {cat.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 text-[13px]">
                     <Calendar className="w-4 h-4 text-muted shrink-0" />
                     <span className="text-ink-2 truncate">Added: {formatDateTime(lead.created_at)}</span>

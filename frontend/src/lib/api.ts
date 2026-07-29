@@ -8,6 +8,8 @@ import type {
   DealInput,
   Lead,
   LeadInput,
+  ServiceCategory,
+  ServiceCategoryInput,
   ListParams,
   LoginPayload,
   Notification,
@@ -1464,5 +1466,27 @@ export const updateUnit = async ({ id, data }: { id: number; data: any }) => {
 
 export const deleteUnit = async (id: number | string) => {
   const res = await api.delete(`/companies/units/${id}/`);
+  return res.data;
+};
+
+// ── Service Categories ──────────────────────────────────────────────────────────
+
+export const fetchServiceCategories = async () => {
+  const res = await api.get<ServiceCategory[]>("/crm/service-categories/");
+  return res.data;
+};
+
+export const createServiceCategory = async (data: ServiceCategoryInput) => {
+  const res = await api.post<ServiceCategory>("/crm/service-categories/", data);
+  return res.data;
+};
+
+export const updateServiceCategory = async ({ id, data }: { id: number; data: Partial<ServiceCategoryInput> }) => {
+  const res = await api.patch<ServiceCategory>(`/crm/service-categories/${id}/`, data);
+  return res.data;
+};
+
+export const deleteServiceCategory = async (id: number | string) => {
+  const res = await api.delete(`/crm/service-categories/${id}/`);
   return res.data;
 };

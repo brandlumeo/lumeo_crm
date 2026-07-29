@@ -7,7 +7,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Mail, Users, User, Download, Upload, X, Loader2 } from "lucide-react";
 
-import { createLead, exportLeads, updateLead, sendEmail, fetchTeam } from "@/lib/api";
+import { createLead, exportLeads, updateLead, sendEmail, fetchTeam, fetchServiceCategories } from "@/lib/api";
 import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany, useDeleteLead } from "@/lib/queries";
 import type { LeadInput } from "@/lib/types";
 import { formatDateTime, getDisplayName } from "@/lib/utils";
@@ -45,6 +45,12 @@ export default function LeadsPage() {
     source: "",
     status: company?.default_lead_status || "new",
     custom_data: {},
+    category_ids: [],
+  });
+
+  const { data: serviceCategories = [] } = useQuery({
+    queryKey: ["service_categories"],
+    queryFn: fetchServiceCategories,
   });
   
   const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
@@ -372,6 +378,24 @@ export default function LeadsPage() {
                 onChange={(event) => setForm((current) => ({ ...current, source: event.target.value }))}
                 placeholder="Website, Referral, etc."
               />
+            </label>
+            <label>
+              <span className="label">Service / Category</span>
+              <select
+                className="select"
+                value={form.category_ids?.[0] || ""}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setForm((current) => ({ ...current, category_ids: val ? [Number(val)] : [] }));
+                }}
+              >
+                <option value="">Select a service category...</option>
+                {serviceCategories.map((cat: any) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               <span className="label">Status</span>

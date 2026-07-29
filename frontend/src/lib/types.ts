@@ -214,10 +214,24 @@ export interface Lead {
   status: string;
   assigned_to: UserSummary | null;
   custom_data: Record<string, any>;
+  categories?: ServiceCategory[];
   score?: number | null;
   score_rationale?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ServiceCategory {
+  id: number;
+  company_id: number;
+  name: string;
+  color?: string | null;
+  created_at: string;
+}
+
+export interface ServiceCategoryInput {
+  name: string;
+  color?: string | null;
 }
 
 export interface Customer {
@@ -292,6 +306,7 @@ export interface LeadInput {
   source?: string;
   status?: string;
   assigned_to_id?: number | null;
+  category_ids?: number[];
   custom_data?: Record<string, any>;
 }
 

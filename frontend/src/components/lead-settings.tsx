@@ -8,10 +8,10 @@ import {
   Layers, Tags, RefreshCw, UserCheck, Check, Settings2
 } from "lucide-react";
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
-import { updateCompany, fetchTeam } from "@/lib/api";
+import { updateCompany, fetchTeam, fetchServiceCategories, createServiceCategory, updateServiceCategory, deleteServiceCategory } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-type TabId = "general" | "sources" | "pipelines" | "agents" | "categories" | "round_robin";
+type TabId = "general" | "sources" | "pipelines" | "agents" | "categories" | "round_robin" | "service_categories";
 
 export function LeadSettingsForm() {
   const { data: company } = useCurrentCompany();
@@ -39,6 +39,47 @@ export function LeadSettingsForm() {
     queryKey: ["team"],
     queryFn: fetchTeam,
     enabled: activeTab === "agents" || activeTab === "round_robin"
+  });
+
+  const { data: serviceCategories = [], isLoading: isServiceCategoriesLoading, refetch: refetchServiceCategories } = useQuery({
+    queryKey: ["service_categories"],
+    queryFn: fetchServiceCategories,
+    enabled: activeTab === "service_categories",
+  });
+
+  const createServiceCategoryMutation = useMutation({
+    mutationFn: createServiceCategory,
+    onSuccess: () => {
+      refetchServiceCategories();
+      setIsAdding(false);
+      setNewName("");
+      setNewColor("#3B82F6");
+      setMsg({ type: "success", text: "Service Category added successfully." });
+      setTimeout(() => setMsg(null), 4000);
+    },
+    onError: () => setMsg({ type: "error", text: "Failed to add service category." }),
+  });
+
+  const updateServiceCategoryMutation = useMutation({
+    mutationFn: updateServiceCategory,
+    onSuccess: () => {
+      refetchServiceCategories();
+      setEditingId(null);
+      setEditName("");
+      setMsg({ type: "success", text: "Service Category updated successfully." });
+      setTimeout(() => setMsg(null), 4000);
+    },
+    onError: () => setMsg({ type: "error", text: "Failed to update service category." }),
+  });
+
+  const deleteServiceCategoryMutation = useMutation({
+    mutationFn: deleteServiceCategory,
+    onSuccess: () => {
+      refetchServiceCategories();
+      setMsg({ type: "success", text: "Service Category deleted." });
+      setTimeout(() => setMsg(null), 4000);
+    },
+    onError: () => setMsg({ type: "error", text: "Failed to delete service category." }),
   });
 
   const isAdmin = currentUser?.role === "owner" || currentUser?.role === "admin";
@@ -173,6 +214,7 @@ export function LeadSettingsForm() {
     { id: "pipelines", label: "Pipelines & Stages", icon: Layers },
     { id: "agents", label: "Deal Agents", icon: Users },
     { id: "categories", label: "Deal Categories", icon: Hash },
+    { id: "service_categories", label: "Service Categories", icon: Layers },
     { id: "round_robin", label: "Round Robin", icon: RefreshCw },
   ];
 
@@ -801,6 +843,179 @@ export function LeadSettingsForm() {
                                       </button>
                                       <button
                                         onClick={() => handleDeleteCategory(category.id)}
+                                        className="w-8 h-8 rounded-lg border border-transparent text-muted hover:text-rose-600 hover:bg-rose-50 grid place-items-center transition-colors"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ───────────────── SERVICE CATEGORIES ───────────────── */}
+          {activeTab === "service_categories" && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-[16px] font-semibold text-ink font-serif">Service Categories</h4>
+                  <p className="text-xs text-muted">Configure product or service categories that leads might be interested in.</p>
+                </div>
+                {isAdmin && !isAdding && (
+                  <button
+                    onClick={() => {
+                      setIsAdding(true);
+                      setNewName("");
+                      setNewColor("#3B82F6");
+                    }}
+                    className="btn bg-ink text-white hover:bg-ink-2 px-4 h-9 rounded-lg flex items-center gap-1.5 text-xs font-semibold"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add New Service
+                  </button>
+                )}
+              </div>
+
+              {isAdding && (
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newName.trim()) createServiceCategoryMutation.mutate({ name: newName.trim(), color: newColor });
+                  }} 
+                  className="bg-bone/40 p-4 border border-line rounded-xl flex gap-3 items-end max-w-lg animate-rise"
+                >
+                  <div className="flex-1 space-y-1.5">
+                    <label className="text-xs font-semibold text-ink">Service Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="e.g. SEO, Web Design"
+                      className="input w-full bg-paper h-9 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-ink">Color</label>
+                    <input
+                      type="color"
+                      value={newColor}
+                      onChange={(e) => setNewColor(e.target.value)}
+                      className="w-10 h-9 rounded cursor-pointer border border-line bg-paper"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={createServiceCategoryMutation.isPending} className="btn btn-primary h-9 px-4 text-xs font-semibold">
+                      Save
+                    </button>
+                    <button type="button" onClick={() => setIsAdding(false)} className="btn btn-secondary h-9 px-3 text-xs font-semibold">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {isServiceCategoriesLoading ? (
+                <div className="flex justify-center items-center py-12 text-muted gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Loading service categories...</span>
+                </div>
+              ) : serviceCategories.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-line rounded-xl">
+                  <p className="text-sm text-muted">No custom service categories configured.</p>
+                </div>
+              ) : (
+                <div className="border border-line rounded-xl overflow-hidden bg-paper shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-bone/40 border-b border-line text-xs font-bold text-ink uppercase tracking-wider">
+                        <th className="px-5 py-3 w-16">#</th>
+                        <th className="px-5 py-3">Category Name</th>
+                        <th className="px-5 py-3">Color</th>
+                        {isAdmin && <th className="px-5 py-3 text-right">Action</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line text-[13.5px]">
+                      {serviceCategories.map((category: any, idx: number) => {
+                        const isEditing = editingId === String(category.id);
+                        return (
+                          <tr key={category.id} className="hover:bg-bone/10 transition-colors">
+                            <td className="px-5 py-3.5 font-mono text-muted text-xs">{idx + 1}</td>
+                            <td className="px-5 py-3.5 font-medium text-ink">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  className="input h-8 max-w-xs text-sm"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.color || "#6B7280" }} />
+                                  {category.name}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5">
+                              {isEditing ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    value={editColor}
+                                    onChange={(e) => setEditColor(e.target.value)}
+                                    className="w-6 h-6 rounded cursor-pointer border border-line bg-paper"
+                                  />
+                                  <span className="text-xs font-mono uppercase text-muted">{editColor}</span>
+                                </div>
+                              ) : (
+                                <span className="font-mono text-xs uppercase text-muted">{category.color || "#6B7280"}</span>
+                              )}
+                            </td>
+                            {isAdmin && (
+                              <td className="px-5 py-3.5 text-right">
+                                <div className="flex justify-end gap-1.5">
+                                  {isEditing ? (
+                                    <>
+                                      <button
+                                        onClick={() => updateServiceCategoryMutation.mutate({ id: category.id, data: { name: editName, color: editColor } })}
+                                        className="w-8 h-8 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 grid place-items-center hover:bg-emerald-100 transition-colors"
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingId(null)}
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted grid place-items-center hover:bg-bone transition-colors"
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setEditingId(String(category.id));
+                                          setEditName(category.name);
+                                          setEditColor(category.color || "#6B7280");
+                                        }}
+                                        className="w-8 h-8 rounded-lg border border-line bg-paper text-muted hover:text-ink grid place-items-center hover:bg-bone transition-colors"
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          if (confirm("Are you sure you want to delete this category?")) {
+                                            deleteServiceCategoryMutation.mutate(category.id);
+                                          }
+                                        }}
                                         className="w-8 h-8 rounded-lg border border-transparent text-muted hover:text-rose-600 hover:bg-rose-50 grid place-items-center transition-colors"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />

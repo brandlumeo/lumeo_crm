@@ -10,6 +10,25 @@ def default_workflow_sequence_stop_statuses():
     return ["won", "lost"]
 
 
+class ServiceCategory(models.Model):
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="service_categories",
+    )
+    name = models.CharField(max_length=255)
+    color = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("name",)
+        indexes = [
+            models.Index(fields=("company", "name")),
+        ]
+
+    def __str__(self):
+        return self.name
+
 class Lead(models.Model):
     class Status(models.TextChoices):
         NEW = "new", "New"
@@ -42,6 +61,7 @@ class Lead(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     custom_data = models.JSONField(default=dict, blank=True)
+    categories = models.ManyToManyField(ServiceCategory, related_name="leads", blank=True)
     
     score = models.IntegerField(null=True, blank=True, help_text="AI generated lead score (1-100)")
     score_rationale = models.TextField(null=True, blank=True, help_text="AI rationale for the score")
