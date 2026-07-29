@@ -829,8 +829,23 @@ export function FinanceSettingsForm() {
               <h4 className="text-[16px] font-semibold text-ink">Unit Types</h4>
               {isAdmin && (
                 <button 
-                  onClick={() => {
-                    newUnitInputRef.current?.focus();
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (newUnitInputRef.current) {
+                      newUnitInputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+                      // Add a small delay to allow scroll to complete before focusing and highlighting
+                      setTimeout(() => {
+                        newUnitInputRef.current?.focus();
+                        // Optional visual cue: briefly flash the input border
+                        newUnitInputRef.current?.style.setProperty("outline", "2px solid #8B5CF6");
+                        setTimeout(() => {
+                          if (newUnitInputRef.current) {
+                            newUnitInputRef.current.style.removeProperty("outline");
+                          }
+                        }, 1000);
+                      }, 300);
+                    }
                   }}
                   className="btn btn-primary text-[13px] px-4 py-2 bg-ink hover:bg-ink/80 text-white rounded-lg flex items-center gap-2"
                 >
