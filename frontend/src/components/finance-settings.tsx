@@ -22,6 +22,7 @@ export function FinanceSettingsForm() {
   const createUnitMutation = useCreateUnit();
   const updateUnitMutation = useUpdateUnit();
   const deleteUnitMutation = useDeleteUnit();
+  const deletePaymentMethodMutation = useDeletePaymentMethod();
 
   const [activeTab, setActiveTab] = useState("general"); // general, template, prefix, units, quickbooks, payment
   
@@ -1030,7 +1031,7 @@ export function FinanceSettingsForm() {
                 </div>
             </div>
 
-            <PaymentDetailsTab isAdmin={isAdmin} paymentMethods={paymentMethods || []} isLoading={paymentMethodsLoading} />
+            <PaymentDetailsTab isAdmin={isAdmin} paymentMethods={paymentMethods || []} isLoading={paymentMethodsLoading} setDeleteConfirm={setDeleteConfirm} />
           </div>
         )}
 
@@ -1040,7 +1041,7 @@ export function FinanceSettingsForm() {
 }
 
 // Payment Details Tab Subcomponent
-function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: boolean, paymentMethods: any[], isLoading: boolean }) {
+function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading, setDeleteConfirm }: { isAdmin: boolean, paymentMethods: any[], isLoading: boolean, setDeleteConfirm: any }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMethod, setEditingMethod] = useState<any | null>(null);
     const createMutation = useCreatePaymentMethod();
@@ -1221,16 +1222,16 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading }: { isAdmin: bo
                                                     onSettled: () => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))
                                                 });
                                             } else if (deleteConfirm.type === 'payment_method') {
-                                                deleteMutation.mutate(deleteConfirm.id, {
+                                                deletePaymentMethodMutation.mutate(deleteConfirm.id, {
                                                     onSettled: () => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))
                                                 });
                                             }
                                         }
                                     }}
-                                    disabled={deleteUnitMutation.isPending || deleteMutation.isPending}
+                                    disabled={deleteUnitMutation.isPending || deletePaymentMethodMutation.isPending}
                                     className="flex-1 btn bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-2xl text-[14px] font-semibold flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50"
                                 >
-                                    {(deleteUnitMutation.isPending || deleteMutation.isPending) ? (
+                                    {(deleteUnitMutation.isPending || deletePaymentMethodMutation.isPending) ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                         <Trash2 className="w-4 h-4" />
