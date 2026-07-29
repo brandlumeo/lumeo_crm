@@ -170,7 +170,7 @@ export function FinanceSettingsForm() {
 
   if (!company || settingsLoading) return (
     <div className="flex flex-col items-center justify-center py-12 text-muted animate-pulse">
-      <Loader2 className="w-8 h-8 animate-spin mb-4 text-brand/40" />
+      <Loader2 className="w-8 h-8 animate-spin mb-4 text-ink/40" />
       <div className="text-sm font-medium tracking-wide uppercase">Loading settings...</div>
     </div>
   );
@@ -413,7 +413,7 @@ export function FinanceSettingsForm() {
             className={cn(
               "flex items-center gap-2 px-5 py-3 text-[14px] font-medium whitespace-nowrap border-b-2 transition-colors duration-200",
               activeTab === tab.id 
-                ? "border-brand text-brand bg-brand/5 rounded-t-xl" 
+                ? "border-ink text-ink bg-ink/5 rounded-t-xl" 
                 : "border-transparent text-muted hover:text-ink hover:bg-bone/50 rounded-t-xl"
             )}
           >
@@ -647,7 +647,7 @@ export function FinanceSettingsForm() {
                     "cursor-pointer rounded-2xl border-2 transition-all p-3 flex flex-col items-center gap-4 group",
                     !isAdmin && "opacity-70 cursor-not-allowed",
                     invoiceTemplate === template.id 
-                      ? "border-brand bg-brand/5 shadow-md shadow-brand/10 ring-4 ring-brand/10" 
+                      ? "border-ink bg-ink/5 shadow-md shadow-brand/10 ring-4 ring-ink/10" 
                       : "border-transparent bg-bone/30 hover:bg-bone/60"
                   )}
                 >
@@ -701,11 +701,11 @@ export function FinanceSettingsForm() {
                   <div className="flex items-center justify-between w-full px-1">
                     <span className={cn(
                         "text-[13.5px] font-semibold",
-                        invoiceTemplate === template.id ? "text-brand" : "text-ink"
+                        invoiceTemplate === template.id ? "text-ink" : "text-ink"
                     )}>
                         {template.name}
                     </span>
-                    {invoiceTemplate === template.id && <CheckCircle className="w-4 h-4 text-brand" />}
+                    {invoiceTemplate === template.id && <CheckCircle className="w-4 h-4 text-ink" />}
                   </div>
                 </div>
               ))}
@@ -900,12 +900,12 @@ export function FinanceSettingsForm() {
                                         <div className="flex items-center justify-end gap-2">
                                             {editingUnitId === unit.id ? (
                                                 <>
-                                                    <button onClick={() => handleUpdateUnit(unit.id)} className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"><Check className="w-4 h-4" /></button>
+                                                    <button onClick={() => handleUpdateUnit(unit.id)} className="p-2 text-ink hover:bg-ink/10 rounded-lg transition-colors"><Check className="w-4 h-4" /></button>
                                                     <button onClick={() => { setEditingUnitId(null); setEditingUnitName(""); }} className="p-2 text-muted hover:bg-bone/30 rounded-lg transition-colors"><XCircle className="w-4 h-4" /></button>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <button onClick={() => { setEditingUnitId(unit.id); setEditingUnitName(unit.name); }} disabled={!isAdmin} className="p-2 text-muted hover:text-brand bg-bone/30 hover:bg-brand/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
+                                                    <button onClick={() => { setEditingUnitId(unit.id); setEditingUnitName(unit.name); }} disabled={!isAdmin} className="p-2 text-muted hover:text-ink bg-bone/30 hover:bg-ink/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
                                                     <button onClick={() => handleDeleteUnit(unit.id)} disabled={!isAdmin} className="p-2 text-muted hover:text-rose-600 bg-bone/30 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                                                 </>
                                             )}
@@ -1175,7 +1175,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading, setDeleteConfir
                                     <td className="px-6 py-4 text-right w-32">
                                         {isAdmin && (
                                             <div className="flex items-center justify-end gap-2">
-                                                <button onClick={() => openModal(method)} className="p-2 text-muted hover:text-brand bg-bone/30 hover:bg-brand/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
+                                                <button onClick={() => openModal(method)} className="p-2 text-muted hover:text-ink bg-bone/30 hover:bg-ink/10 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
                                                 <button onClick={() => handleDelete(method.id)} className="p-2 text-muted hover:text-rose-600 bg-bone/30 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                                             </div>
                                         )}
@@ -1203,7 +1203,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading, setDeleteConfir
                                     value={title} 
                                     onChange={e => setTitle(e.target.value)} 
                                     placeholder="Payment Description (e.g. HDFC)"
-                                    className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line" 
+                                    className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-ink/20 border-line" 
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -1212,7 +1212,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading, setDeleteConfir
                                     value={details} 
                                     onChange={e => setDetails(e.target.value)} 
                                     placeholder="Add Payment Method Details (e.g., Bank Account, Transfer Information)"
-                                    className="input w-full p-3 min-h-[100px] bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line resize-none" 
+                                    className="input w-full p-3 min-h-[100px] bg-white focus:bg-white focus:ring-2 focus:ring-ink/20 border-line resize-none" 
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -1223,7 +1223,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading, setDeleteConfir
                                         value={qrCode} 
                                         onChange={e => setQrCode(e.target.value)} 
                                         placeholder="Enter image URL for QR code..."
-                                        className="w-full h-11 px-4 text-[13px] bg-white border border-line rounded-lg focus:outline-brand/50 z-10"
+                                        className="w-full h-11 px-4 text-[13px] bg-white border border-line rounded-lg focus:outline-ink/50 z-10"
                                     />
                                     {qrCode && (
                                         <div className="mt-4 p-2 bg-white rounded-lg border border-line shadow-sm relative">
@@ -1235,7 +1235,7 @@ function PaymentDetailsTab({ isAdmin, paymentMethods, isLoading, setDeleteConfir
                         </div>
                         <div className="flex items-center justify-end gap-3 p-5 border-t border-line bg-bone/30">
                             <button onClick={() => setIsModalOpen(false)} className="btn text-[14px] px-5 py-2 hover:bg-bone/80 text-muted font-medium transition-colors">Close</button>
-                            <button onClick={handleSave} disabled={!title.trim() || createMutation.isPending || updateMutation.isPending} className="btn bg-brand hover:bg-brand-600 text-white px-6 py-2 rounded-xl text-[14px] font-medium flex items-center gap-2 shadow-sm transition-all disabled:opacity-50">
+                            <button onClick={handleSave} disabled={!title.trim() || createMutation.isPending || updateMutation.isPending} className="btn bg-ink hover:bg-ink/80 text-white px-6 py-2 rounded-xl text-[14px] font-medium flex items-center gap-2 shadow-sm transition-all disabled:opacity-50">
                                 {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                                 Save
                             </button>
@@ -1267,15 +1267,15 @@ function PrefixRow({ title, prefix, setPrefix, separator, setSeparator, digits, 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-bone/20 p-5 rounded-2xl border border-line">
             <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-muted">{title} Prefix <span className="text-rose-500">*</span></label>
-                <input type="text" value={prefix} onChange={e => setPrefix(e.target.value)} disabled={!isAdmin} className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line" />
+                <input type="text" value={prefix} onChange={e => setPrefix(e.target.value)} disabled={!isAdmin} className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-ink/20 border-line" />
             </div>
             <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-muted">Number Separator</label>
-                <input type="text" value={separator} onChange={e => setSeparator(e.target.value)} disabled={!isAdmin} className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line" />
+                <input type="text" value={separator} onChange={e => setSeparator(e.target.value)} disabled={!isAdmin} className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-ink/20 border-line" />
             </div>
             <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-muted">Number Digits</label>
-                <input type="number" min="1" max="10" value={digits} onChange={e => setDigits(Number(e.target.value))} disabled={!isAdmin} className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-brand/20 border-line" />
+                <input type="number" min="1" max="10" value={digits} onChange={e => setDigits(Number(e.target.value))} disabled={!isAdmin} className="input w-full h-11 bg-white focus:bg-white focus:ring-2 focus:ring-ink/20 border-line" />
             </div>
             <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-muted">Number Example</label>
