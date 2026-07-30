@@ -334,11 +334,20 @@ class LeaveRequestListCreateView(APIView):
     def post(self, request):
         serializer = LeaveRequestSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(
+            leave = serializer.save(
                 user=request.user,
                 company=request.user.company,
                 status=LeaveRequest.Status.PENDING,
             )
+            
+            # Trigger celery task
+            try:
+                from notifications.tasks import notify_leave_applied
+                notify_leave_applied.delay(leave.id)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Failed to queue notify_leave_applied: {e}")
+                
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -383,6 +392,14 @@ class LeaveApprovalView(APIView):
         leave.manager_notes = manager_notes
         leave.approved_by = request.user
         leave.save()
+
+        # Trigger celery task
+        try:
+            from notifications.tasks import notify_leave_updated
+            notify_leave_updated.delay(leave.id)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to queue notify_leave_updated: {e}")
 
         serializer = LeaveRequestSerializer(leave)
         return Response(serializer.data, status=status.HTTP_200_OK)

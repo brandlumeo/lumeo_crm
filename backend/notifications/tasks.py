@@ -90,33 +90,30 @@ def notify_lead_assigned(self, lead_id: int, assigned_to_id: int):
             body=f"You've been assigned lead: {lead.name} ({lead.email}).",
         )
         
-        # Premium HTML Email
+        from accounts.emails import build_premium_email
         subject = f"New Lead Assigned: {lead.name}"
         text_content = f"Hello {user.first_name or user.username},\n\nYou have been assigned a new lead: {lead.name}.\nEmail: {lead.email}\nPhone: {lead.phone}\nCompany: {lead.company_name}\n\nPlease login to Lumeo CRM to follow up.\n\nBest,\nLumeo CRM"
-        html_content = f"""
-        <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 40px; border-radius: 16px;">
-            <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <h2 style="color: #111827; margin: 0; font-size: 24px; font-weight: 700;">New Lead Assignment</h2>
-                </div>
-                <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Hello <strong>{user.first_name or user.username}</strong>,</p>
-                <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">A new lead has been assigned to you. Here are the details:</p>
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Name:</strong> {lead.name}</p>
-                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Email:</strong> {lead.email}</p>
-                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Phone:</strong> {lead.phone or 'N/A'}</p>
-                    <p style="margin: 0; color: #1f2937;"><strong>Company:</strong> {lead.company_name or 'N/A'}</p>
-                </div>
-                <div style="text-align: center; margin-top: 32px;">
-                    <a href="{settings.FRONTEND_URL}/dashboard/leads" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">View in CRM</a>
-                </div>
-            </div>
-            <p style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px;">© {lead.company.name} powered by Lumeo CRM</p>
-        </div>
-        """
         
-        msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [user.email])
-        msg.attach_alternative(html_content, "text/html")
+        html_msg = f"""
+            <p>Hello <strong>{user.first_name or user.username}</strong>,</p>
+            <p>A new lead has been assigned to you. Here are the details:</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Name:</strong> {lead.name}</p>
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Email:</strong> {lead.email}</p>
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Phone:</strong> {lead.phone or 'N/A'}</p>
+                <p style="margin: 0; color: #1f2937;"><strong>Company:</strong> {lead.company_name or 'N/A'}</p>
+            </div>
+        """
+        msg = build_premium_email(
+            subject=subject,
+            heading="New Lead Assignment",
+            body_text=text_content,
+            body_html=html_msg,
+            pre_header="LEAD ASSIGNED",
+            action_url=f"{settings.FRONTEND_URL}/dashboard/leads",
+            action_text="View Lead in CRM",
+            to_email=user.email
+        )
         msg.send(fail_silently=True)
 
         logger.info("notify_lead_assigned: lead=%d user=%d", lead_id, assigned_to_id)
@@ -147,27 +144,14 @@ def notify_deal_won(self, deal_id: int):
         subject = f"🎉 Deal Won: {deal.title}"
         text_content = f"Great news!\n\nThe deal '{deal.title}' has been successfully closed and won by {deal.assigned_to.first_name if deal.assigned_to else 'the team'}.\nValue: ₹{deal.amount}\n\nLogin to Lumeo CRM to view details."
         
-        html_content = f"""
-        <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #fdfbf7; padding: 40px; border-radius: 16px;">
-            <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-top: 4px solid #10b981;">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🎊</div>
-                    <h2 style="color: #111827; margin: 0; font-size: 28px; font-weight: 800;">Deal Won!</h2>
-                </div>
-                <p style="color: #4b5563; font-size: 16px; line-height: 1.5; text-align: center;">Fantastic news! A deal has just been marked as <strong>WON</strong>.</p>
-                
-                <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 24px; border-radius: 12px; margin: 32px 0; text-align: center;">
-                    <h3 style="margin: 0 0 8px; color: #065f46; font-size: 20px;">{deal.title}</h3>
-                    <div style="color: #059669; font-size: 32px; font-weight: 800; margin: 16px 0;">₹{deal.amount:,.2f}</div>
-                    <p style="margin: 0; color: #065f46;">Closed by: <strong>{deal.assigned_to.first_name if deal.assigned_to else 'The Team'}</strong></p>
-                </div>
-                
-                <div style="text-align: center; margin-top: 32px;">
-                    <a href="{settings.FRONTEND_URL}/dashboard/pipeline" style="background-color: #10b981; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);">View in Pipeline</a>
-                </div>
+        from accounts.emails import build_premium_email
+        html_msg = f"""
+            <p style="text-align: center;">Fantastic news! A deal has just been marked as <strong>WON</strong>.</p>
+            <div style="background-color: #f3f4f6; padding: 24px; border-radius: 12px; margin: 32px 0; text-align: center;">
+                <h3 style="margin: 0 0 8px; color: #1A1714; font-size: 20px;">{deal.title}</h3>
+                <div style="color: #FF5B1F; font-size: 32px; font-weight: 800; margin: 16px 0;">₹{deal.amount:,.2f}</div>
+                <p style="margin: 0; color: #4A4540;">Closed by: <strong>{deal.assigned_to.first_name if deal.assigned_to else 'The Team'}</strong></p>
             </div>
-            <p style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px;">© {deal.company.name} powered by Lumeo CRM</p>
-        </div>
         """
 
         for user in users:
@@ -179,8 +163,16 @@ def notify_deal_won(self, deal_id: int):
             )
 
         if recipient_list:
-            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, bcc=recipient_list)
-            msg.attach_alternative(html_content, "text/html")
+            msg = build_premium_email(
+                subject=subject,
+                heading="Deal Won! 🎉",
+                body_text=text_content,
+                body_html=html_msg,
+                pre_header="DEAL WON",
+                action_url=f"{settings.FRONTEND_URL}/dashboard/pipeline",
+                action_text="View in Pipeline",
+                bcc_list=recipient_list
+            )
             msg.send(fail_silently=True)
 
         logger.info("notify_deal_won: deal=%d company=%s emails=%d", deal_id, deal.company.name, len(recipient_list))
@@ -196,16 +188,30 @@ def send_notification_email(self, to_email: str, title: str, body: str):
     Sends an email to the user containing the notification details.
     """
     try:
-        from django.core.mail import send_mail
+        from accounts.emails import build_premium_email
         from django.conf import settings
         
-        send_mail(
+        action_url = settings.FRONTEND_URL
+        if "OVERDUE" in title or "Task" in title:
+            action_url = f"{settings.FRONTEND_URL}/dashboard/tasks"
+            action_text = "View Tasks"
+        elif "digest" in title.lower():
+            action_url = f"{settings.FRONTEND_URL}/dashboard"
+            action_text = "Go to Dashboard"
+        else:
+            action_text = "View in CRM"
+
+        msg = build_premium_email(
             subject=title,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[to_email],
-            fail_silently=True,
+            heading=title,
+            body_text=body,
+            body_html=f"<p>{body}</p>",
+            pre_header="LUMEO NOTIFICATION",
+            action_url=action_url,
+            action_text=action_text,
+            to_email=to_email
         )
+        msg.send(fail_silently=True)
         logger.info(f"Notification email sent to {to_email}")
     except Exception as exc:
         logger.exception("send_notification_email failed: %s", exc)
@@ -395,22 +401,24 @@ def notify_ticket_reply(self, comment_id: int):
             subject = f"New Reply on Ticket #{ticket.id}: {ticket.title}"
             text_content = f"Hello {ticket.assigned_to.first_name},\n\nThere is a new reply on your ticket.\n\n{comment.author.get_full_name()} wrote:\n{comment.comment}\n\nView Ticket: {settings.FRONTEND_URL}/dashboard/tickets"
             
-            html_content = f"""
-            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 40px; border-radius: 16px;">
-                <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                    <h2 style="color: #111827; margin-top: 0;">New Reply on Ticket #{ticket.id}</h2>
-                    <p style="color: #4b5563;"><strong>{comment.author.get_full_name()}</strong> added a new comment:</p>
-                    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; font-style: italic; color: #374151;">
-                        "{comment.comment}"
-                    </div>
-                    <div style="margin-top: 24px;">
-                        <a href="{settings.FRONTEND_URL}/dashboard/tickets" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Ticket</a>
-                    </div>
+            from accounts.emails import build_premium_email
+            
+            html_msg = f"""
+                <p><strong>{comment.author.get_full_name()}</strong> added a new comment:</p>
+                <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; font-style: italic; color: #374151;">
+                    "{comment.comment}"
                 </div>
-            </div>
             """
-            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [ticket.assigned_to.email])
-            msg.attach_alternative(html_content, "text/html")
+            msg = build_premium_email(
+                subject=subject,
+                heading=f"New Reply on Ticket #{ticket.id}",
+                body_text=text_content,
+                body_html=html_msg,
+                pre_header="TICKET UPDATE",
+                action_url=f"{settings.FRONTEND_URL}/dashboard/tickets",
+                action_text="View Ticket",
+                to_email=ticket.assigned_to.email
+            )
             msg.send(fail_silently=True)
             
     except Exception as exc:
@@ -435,25 +443,26 @@ def send_invoice_email(self, invoice_id: int):
         subject = f"Invoice {invoice.invoice_number} from {invoice.company.name}"
         text_content = f"Hello {invoice.customer.name},\n\nYour invoice {invoice.invoice_number} for ₹{invoice.total} is ready.\n\nView and download your invoice here: {settings.FRONTEND_URL}/portal/invoices/{invoice.id}"
         
-        html_content = f"""
-        <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 40px; border-radius: 16px;">
-            <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-top: 4px solid #4f46e5;">
-                <h2 style="color: #111827; margin-top: 0; text-align: center;">New Invoice</h2>
-                <p style="color: #4b5563; text-align: center;">Hello {invoice.customer.name},</p>
-                <div style="background-color: #eef2ff; padding: 24px; border-radius: 12px; text-align: center; margin: 24px 0;">
-                    <p style="margin: 0; color: #4338ca; font-weight: 600;">Invoice {invoice.invoice_number}</p>
-                    <h1 style="color: #3730a3; margin: 8px 0; font-size: 36px;">₹{invoice.total:,.2f}</h1>
-                    <p style="margin: 0; color: #4338ca; font-size: 14px;">Due: {invoice.due_date}</p>
-                </div>
-                <div style="text-align: center;">
-                    <a href="{settings.FRONTEND_URL}/portal/invoices/{invoice.id}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">View Invoice PDF</a>
-                </div>
+        from accounts.emails import build_premium_email
+        html_msg = f"""
+            <p style="text-align: center;">Hello {invoice.customer.name},</p>
+            <div style="background-color: #f3f4f6; padding: 24px; border-radius: 12px; text-align: center; margin: 24px 0;">
+                <p style="margin: 0; color: #1A1714; font-weight: 600;">Invoice {invoice.invoice_number}</p>
+                <h1 style="color: #FF5B1F; margin: 8px 0; font-size: 36px;">₹{invoice.total:,.2f}</h1>
+                <p style="margin: 0; color: #4A4540; font-size: 14px;">Due: {invoice.due_date}</p>
             </div>
-            <p style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px;">Sent by {invoice.company.name}</p>
-        </div>
+            <p style="text-align: center; color: #8B8580; font-size: 14px; margin-top: 24px;">Sent by {invoice.company.name}</p>
         """
-        msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [invoice.customer.email])
-        msg.attach_alternative(html_content, "text/html")
+        msg = build_premium_email(
+            subject=subject,
+            heading="New Invoice",
+            body_text=text_content,
+            body_html=html_msg,
+            pre_header="INVOICE",
+            action_url=f"{settings.FRONTEND_URL}/portal/invoices/{invoice.id}",
+            action_text="View Invoice PDF",
+            to_email=invoice.customer.email
+        )
         msg.send(fail_silently=True)
             
     except Exception as exc:
@@ -492,22 +501,22 @@ def check_subscription_expiry(self):
             subject = "Action Required: Subscription Expiring Soon"
             text_content = f"Hello {user.first_name},\n\nYour Lumeo CRM subscription for {sub.company.name} is expiring on {target_date}.\n\nPlease update your payment method to avoid any service interruption.\n\nBest,\nLumeo CRM Team"
             
-            html_content = f"""
-            <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 40px; border-radius: 16px;">
-                <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-top: 4px solid #ef4444;">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <h2 style="color: #111827; margin: 0; font-size: 24px; font-weight: 700;">Subscription Expiring</h2>
-                    </div>
-                    <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Hello <strong>{user.first_name or user.username}</strong>,</p>
-                    <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Your Lumeo CRM subscription for <strong>{sub.company.name}</strong> is expiring in exactly <strong>3 days</strong> (on {target_date}).</p>
-                    <div style="text-align: center; margin-top: 32px;">
-                        <a href="{settings.FRONTEND_URL}/dashboard/billing" style="background-color: #ef4444; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Renew Subscription</a>
-                    </div>
-                </div>
-            </div>
+            from accounts.emails import build_premium_email
+            
+            html_msg = f"""
+                <p>Hello <strong>{user.first_name or user.username}</strong>,</p>
+                <p>Your Lumeo CRM subscription for <strong>{sub.company.name}</strong> is expiring in exactly <strong>3 days</strong> (on {target_date}).</p>
             """
-            msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [user.email])
-            msg.attach_alternative(html_content, "text/html")
+            msg = build_premium_email(
+                subject=subject,
+                heading="Subscription Expiring",
+                body_text=text_content,
+                body_html=html_msg,
+                pre_header="ACTION REQUIRED",
+                action_url=f"{settings.FRONTEND_URL}/dashboard/billing",
+                action_text="Renew Subscription",
+                to_email=user.email
+            )
             msg.send(fail_silently=True)
 
             Notification.objects.create(
@@ -560,6 +569,42 @@ def process_invoice_reminders(self):
             if settings.send_reminder_after_days and settings.send_reminder_after_days > 0:
                 target_date = due_date + timedelta(days=settings.send_reminder_after_days)
                 if target_date == today:
+
+
+@shared_task(bind=True, max_retries=3)
+def process_invoice_reminders(self):
+    try:
+        from crm.models import Invoice
+        from companies.models import Company
+        from datetime import date, timedelta
+        
+        today = date.today()
+        reminders_sent = 0
+        
+        # We need to find invoices that are in 'sent' or 'viewed' or 'partial' status (not paid, void, draft)
+        active_invoices = Invoice.objects.filter(status__in=['sent', 'viewed', 'partial']).select_related('company', 'customer')
+        
+        for invoice in active_invoices:
+            settings = getattr(invoice.company, 'invoice_settings', None)
+            if not settings:
+                continue
+                
+            due_date = invoice.due_date
+            if not due_date:
+                continue
+                
+            # Send reminder before
+            if settings.send_reminder_before_days and settings.send_reminder_before_days > 0:
+                target_date = due_date - timedelta(days=settings.send_reminder_before_days)
+                if target_date == today:
+                    # Send before reminder
+                    send_invoice_email.delay(invoice.id)
+                    reminders_sent += 1
+                    
+            # Send reminder after
+            if settings.send_reminder_after_days and settings.send_reminder_after_days > 0:
+                target_date = due_date + timedelta(days=settings.send_reminder_after_days)
+                if target_date == today:
                     # Send after reminder
                     send_invoice_email.delay(invoice.id)
                     reminders_sent += 1
@@ -567,4 +612,107 @@ def process_invoice_reminders(self):
         return {'reminders_sent': reminders_sent}
     except Exception as exc:
         logger.exception('process_invoice_reminders failed: %s', exc)
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def notify_leave_applied(self, leave_id: int):
+    try:
+        from attendance.models import LeaveRequest
+        from accounts.emails import build_premium_email
+        from django.conf import settings
+        from accounts.models import User
+        
+        leave = LeaveRequest.objects.select_related('user', 'company').get(pk=leave_id)
+        
+        subject = f"Leave application applied - {leave.company.name}"
+        text_content = f"Hello {leave.user.get_full_name()}!\n\nLeave application applied.:-\nDate: {leave.start_date}\nStatus: {leave.status}\nReason for absence: {leave.reason}\n"
+        
+        html_msg = f"""
+            <p>Hello <strong>{leave.user.get_full_name()}</strong>!</p>
+            <p>Leave application applied.:-</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Status:</strong> {leave.status}</p>
+                <p style="margin: 0; color: #1f2937;"><strong>Reason for absence:</strong> {leave.reason}</p>
+            </div>
+        """
+        msg = build_premium_email(
+            subject=subject,
+            heading="Leave Application Applied",
+            body_text=text_content,
+            body_html=html_msg,
+            pre_header="LEAVE REQUEST",
+            action_url=f"{settings.FRONTEND_URL}/dashboard/leaves",
+            action_text="View Leave",
+            to_email=leave.user.email
+        )
+        msg.send(fail_silently=True)
+        
+        # Also notify HR/Admins
+        admins = User.objects.filter(company=leave.company, role__in=[User.Role.ADMIN, User.Role.OWNER, User.Role.HR])
+        recipient_emails = [admin.email for admin in admins if admin.email]
+        if recipient_emails:
+            admin_html = f"""
+                <p>Hello Team,</p>
+                <p><strong>{leave.user.get_full_name()}</strong> has applied for leave.</p>
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
+                    <p style="margin: 0; color: #1f2937;"><strong>Reason:</strong> {leave.reason}</p>
+                </div>
+            """
+            admin_msg = build_premium_email(
+                subject=f"New Leave Request: {leave.user.get_full_name()}",
+                heading="Leave Request Submitted",
+                body_text=f"{leave.user.get_full_name()} has applied for leave.\nDate: {leave.start_date}\nReason: {leave.reason}",
+                body_html=admin_html,
+                pre_header="HR NOTIFICATION",
+                action_url=f"{settings.FRONTEND_URL}/dashboard/leaves",
+                action_text="Review Leave",
+                bcc_list=recipient_emails
+            )
+            admin_msg.send(fail_silently=True)
+                
+    except Exception as exc:
+        logger.exception('notify_leave_applied failed: %s', exc)
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def notify_leave_updated(self, leave_id: int):
+    try:
+        from attendance.models import LeaveRequest
+        from accounts.emails import build_premium_email
+        from django.conf import settings
+        
+        leave = LeaveRequest.objects.select_related('user', 'company', 'approved_by').get(pk=leave_id)
+        
+        subject = f"Leave application status updated - {leave.company.name}"
+        text_content = f"Hello {leave.user.get_full_name()}!\n\nLeave application {leave.status}.\nDate: {leave.start_date}\nStatus: {leave.status}\n"
+        
+        html_msg = f"""
+            <p>Hello <strong>{leave.user.get_full_name()}</strong>!</p>
+            <p>Leave application <strong>{leave.status}</strong>.</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
+                <p style="margin: 0; color: #1f2937;"><strong>Status:</strong> {leave.status}</p>
+        """
+        if leave.manager_notes:
+            html_msg += f"""<p style="margin: 8px 0 0; color: #1f2937;"><strong>Manager notes:</strong> {leave.manager_notes}</p>"""
+        html_msg += "</div>"
+            
+        msg = build_premium_email(
+            subject=subject,
+            heading=f"Leave {leave.status.title()}",
+            body_text=text_content,
+            body_html=html_msg,
+            pre_header="LEAVE STATUS",
+            action_url=f"{settings.FRONTEND_URL}/dashboard/leaves",
+            action_text="View Leave",
+            to_email=leave.user.email
+        )
+        msg.send(fail_silently=True)
+        
+    except Exception as exc:
+        logger.exception('notify_leave_updated failed: %s', exc)
         raise self.retry(exc=exc)

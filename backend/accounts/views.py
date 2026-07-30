@@ -141,14 +141,24 @@ class CookieTokenObtainView(APIView):
                 
                 # Try sending a real email
                 try:
-                    from django.core.mail import send_mail
-                    send_mail(
+                    from accounts.emails import build_premium_email
+                    html_msg = f"""
+                        <p>Hi <strong>{user.first_name or user.username}</strong>,</p>
+                        <p>Your security verification code is:</p>
+                        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 4px; text-align: center; color: #1A1714; margin: 24px 0;">
+                            {code}
+                        </div>
+                        <p>This code will expire in 5 minutes.</p>
+                    """
+                    msg = build_premium_email(
                         subject="Lumeo CRM - Your Security Verification Code",
-                        message=f"Hi {user.first_name or user.username},\n\nYour security verification code is: {code}\nThis code will expire in 5 minutes.",
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[user.email],
-                        fail_silently=False,
+                        heading="Verification Code",
+                        body_text=f"Hi {user.first_name or user.username},\n\nYour security verification code is: {code}\nThis code will expire in 5 minutes.",
+                        body_html=html_msg,
+                        pre_header="SECURITY",
+                        to_email=user.email
                     )
+                    msg.send(fail_silently=False)
                 except Exception as exc:
                     logger.error("Failed to send 2FA email to %s: %s", user.email, exc)
                 

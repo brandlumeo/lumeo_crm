@@ -368,29 +368,39 @@ class CustomerViewSet(CompanyScopedModelViewSet):
             customer.user = existing_user
             customer.save(update_fields=["user"])
             
-            # Send an email notifying them of the new access
             try:
-                from django.core.mail import send_mail
+                from accounts.emails import build_premium_email
                 from django.conf import settings
                 
                 portal_url = "https://lumeo.estgrp.in/login"
-                message = (
+                text_content = (
                     f"Hello {customer.name},\n\n"
                     f"Your existing portal account has been linked to a new customer profile at {customer.company.name}.\n\n"
                     f"You can log in at: {portal_url}\n"
                     f"Email: {existing_user.email}\n"
                     f"Password: (Your existing password)\n\n"
-                    f"Best regards,\n"
-                    f"{customer.company.name}"
+                    f"Best regards,\n{customer.company.name}"
                 )
                 
-                send_mail(
+                html_msg = f"""
+                    <p>Hello <strong>{customer.name}</strong>,</p>
+                    <p>Your existing portal account has been linked to a new customer profile at <strong>{customer.company.name}</strong>.</p>
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                        <p style="margin: 0 0 8px; color: #1f2937;"><strong>Email:</strong> {existing_user.email}</p>
+                        <p style="margin: 0; color: #1f2937;"><strong>Password:</strong> (Your existing password)</p>
+                    </div>
+                """
+                msg = build_premium_email(
                     subject=f"Portal Access Updated - {customer.company.name}",
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[customer.email],
-                    fail_silently=False,
+                    heading="Portal Access Updated",
+                    body_text=text_content,
+                    body_html=html_msg,
+                    pre_header="ACCOUNT UPDATE",
+                    action_url=portal_url,
+                    action_text="Log In to Portal",
+                    to_email=customer.email
                 )
+                msg.send(fail_silently=False)
             except Exception as e:
                 print(f"Failed to send portal update email: {e}")
 
@@ -421,28 +431,40 @@ class CustomerViewSet(CompanyScopedModelViewSet):
 
             # Send email to the customer with their credentials
             try:
-                from django.core.mail import send_mail
+                from accounts.emails import build_premium_email
                 from django.conf import settings
                 
                 portal_url = "https://lumeo.estgrp.in/login"
-                message = (
+                text_content = (
                     f"Hello {customer.name},\n\n"
                     f"A client portal account has been created for you at {customer.company.name}.\n\n"
                     f"You can log in at: {portal_url}\n"
                     f"Email: {user.email}\n"
                     f"Password: {password}\n\n"
                     f"Please change your password after your first login.\n\n"
-                    f"Best regards,\n"
-                    f"{customer.company.name}"
+                    f"Best regards,\n{customer.company.name}"
                 )
                 
-                send_mail(
+                html_msg = f"""
+                    <p>Hello <strong>{customer.name}</strong>,</p>
+                    <p>A client portal account has been created for you at <strong>{customer.company.name}</strong>.</p>
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                        <p style="margin: 0 0 8px; color: #1f2937;"><strong>Email:</strong> {user.email}</p>
+                        <p style="margin: 0; color: #1f2937;"><strong>Password:</strong> {password}</p>
+                    </div>
+                    <p style="color: #ef4444; font-size: 14px;">Please change your password after your first login.</p>
+                """
+                msg = build_premium_email(
                     subject=f"Your Client Portal Access - {customer.company.name}",
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[customer.email],
-                    fail_silently=False,
+                    heading="Welcome to the Portal",
+                    body_text=text_content,
+                    body_html=html_msg,
+                    pre_header="ACCOUNT CREATED",
+                    action_url=portal_url,
+                    action_text="Log In to Portal",
+                    to_email=customer.email
                 )
+                msg.send(fail_silently=False)
             except Exception as e:
                 # We don't want to fail the whole process if email sending fails
                 print(f"Failed to send portal invite email: {e}")
@@ -475,28 +497,40 @@ class CustomerViewSet(CompanyScopedModelViewSet):
         customer.user.save(update_fields=["password"])
         
         try:
-            from django.core.mail import send_mail
+            from accounts.emails import build_premium_email
             from django.conf import settings
             
             portal_url = "https://lumeo.estgrp.in/login"
-            message = (
+            text_content = (
                 f"Hello {customer.name},\n\n"
                 f"Your client portal password at {customer.company.name} has been reset.\n\n"
                 f"You can log in at: {portal_url}\n"
                 f"Email: {customer.user.email}\n"
                 f"New Password: {password}\n\n"
                 f"Please change your password after logging in.\n\n"
-                f"Best regards,\n"
-                f"{customer.company.name}"
+                f"Best regards,\n{customer.company.name}"
             )
             
-            send_mail(
+            html_msg = f"""
+                <p>Hello <strong>{customer.name}</strong>,</p>
+                <p>Your client portal password at <strong>{customer.company.name}</strong> has been reset.</p>
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Email:</strong> {customer.user.email}</p>
+                    <p style="margin: 0; color: #1f2937;"><strong>New Password:</strong> {password}</p>
+                </div>
+                <p style="color: #ef4444; font-size: 14px;">Please change your password after logging in.</p>
+            """
+            msg = build_premium_email(
                 subject=f"Portal Password Reset - {customer.company.name}",
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[customer.user.email],
-                fail_silently=False,
+                heading="Password Reset",
+                body_text=text_content,
+                body_html=html_msg,
+                pre_header="SECURITY",
+                action_url=portal_url,
+                action_text="Log In to Portal",
+                to_email=customer.user.email
             )
+            msg.send(fail_silently=False)
         except Exception as e:
             print(f"Failed to send portal reset email: {e}")
         

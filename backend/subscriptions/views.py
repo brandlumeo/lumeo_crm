@@ -340,13 +340,27 @@ class RequestSetupView(APIView):
         )
 
         try:
-            send_mail(
+            from accounts.emails import build_premium_email
+            
+            html_msg = f"""
+                <p>Hello Admin,</p>
+                <p>The company <strong>{company.name}</strong> has requested the Premium Setup & Data Migration service.</p>
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>User:</strong> {request.user.first_name} {request.user.last_name}</p>
+                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Email:</strong> {request.user.email}</p>
+                    <p style="margin: 0; color: #1f2937;"><strong>Company:</strong> {company.name}</p>
+                </div>
+                <p>Please reach out to them to begin the onboarding process.</p>
+            """
+            msg = build_premium_email(
                 subject=subject,
-                message=message,
-                from_email=from_email,
-                recipient_list=[admin_email],
-                fail_silently=True,
+                heading="Setup Request",
+                body_text=message,
+                body_html=html_msg,
+                pre_header="ADMIN NOTIFICATION",
+                to_email=admin_email
             )
+            msg.send(fail_silently=True)
         except Exception as e:
             logger.error(f"Failed to send setup request email: {e}")
             # Still return success so the user isn't blocked by mail errors in dev
