@@ -82,58 +82,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bone flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-ink" />
-      </div>
-    );
-  }
-
-  if (error || !quote) {
-    return (
-      <div className="min-h-screen bg-bone flex items-center justify-center p-4 text-center">
-        <div>
-          <h1 className="text-2xl font-bold text-ink mb-2">Quote Not Found</h1>
-          <p className="text-muted">This quote may have been deleted or the link is invalid.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleClearSignature = () => {
-    sigCanvas.current?.clear();
-  };
-
-  const handleSign = () => {
-    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
-      toast.error("Please provide a signature.");
-      return;
-    }
-    if (!signedByName.trim()) {
-      toast.error("Please print your name.");
-      return;
-    }
-
-    const signatureData = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
-    
-    signMutation.mutate({
-      token,
-      payload: {
-        signature_data: signatureData,
-        signed_by_name: signedByName,
-      }
-    });
-  };
-
-  const isSigned = !!quote.signature_data;
-
-  // Quotes might only have basic company data without full settings nested, 
-  // so we safely fallback or use standard UI if settings aren't fully populated.
-  const settings = (quote as any).settings || (quote.company as any)?.invoice_settings || {};
-  const tpl = settings.template_id || (quote.company as any)?.invoice_template || 'template1';
-  const accentColor = settings.template_accent_color || '#4F46E5';
-
-  return (
-    <>
+          <>
       <style dangerouslySetInnerHTML={{ __html: `
         :root {
           font-size: ${fontSizePx} !important;
@@ -143,16 +92,16 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         }
       `}} />
       <div
-        className="quote-container min-h-screen print:min-h-0 print:bg-white bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-100 via-white to-slate-50 py-16 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
+        className="quote-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
       >
         <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
         {/* QUOTE DOCUMENT */}
         <div 
-          className={`rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-10 md:p-14 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible relative overflow-hidden ${
-            tpl === 'template3' ? 'border-none' : 
-            tpl === 'template4' ? 'border-slate-100 flex flex-col md:flex-row p-0' : 
-            'border-slate-100/60'
+          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
+            tpl === 'template3' ? 'border-none overflow-hidden' : 
+            tpl === 'template4' ? 'border-line flex flex-col md:flex-row p-0 overflow-hidden' : 
+            'border-line'
           }`}
           style={tpl === 'template3' ? { borderTop: `8px solid ${accentColor}` } : {}}
         >
@@ -160,7 +109,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
           {tpl === 'template4' && (
             <div className="md:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between" style={{ backgroundColor: '#1e293b' }}>
               <div>
-                {settings.invoice_logo ? (
+                {settings?.invoice_logo ? (
                   <img src={settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-8 bg-white p-2 rounded" />
                 ) : (
                   <h1 className="text-3xl font-bold mb-8">{quote.company?.name || "Company"}</h1>
@@ -170,13 +119,13 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 {quote.company?.company_website && <p className="text-sm opacity-80 mt-1">{quote.company.company_website.replace(/^https?:\/\//, '')}</p>}
                 {quote.company?.company_email && <p className="text-sm opacity-80">{quote.company.company_email}</p>}
                 
-                {settings.company_tax_id && settings.show_sender_tax_number !== false && (
+                {settings?.company_tax_id && settings?.show_sender_tax_number === true && (
                   <div className="mt-8 pt-8 border-t border-white/20">
                     <p className="text-xs opacity-70 uppercase tracking-wider mb-1">Tax ID / VAT</p>
                     <p className="text-sm font-medium">{settings.company_tax_id}</p>
                   </div>
                 )}
-                {settings.company_registration_number && (
+                {settings?.company_registration_number && (
                   <div className="mt-4">
                     <p className="text-xs opacity-70 uppercase tracking-wider mb-1">Company Reg. No</p>
                     <p className="text-sm font-medium">{settings.company_registration_number}</p>
@@ -189,75 +138,118 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
           <div className={tpl === 'template4' ? "md:w-2/3 p-8 md:p-12 bg-white" : ""}>
             {/* Header Area */}
             {tpl !== 'template4' && (
-              <div className="flex flex-col md:flex-row justify-between items-start gap-8 pb-10 mb-10"
-                   style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3.5rem -3.5rem 2.5rem -3.5rem', padding: '3.5rem', color: 'white' } : {}}
+              <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8"
+                   style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
               >
                 <div>
-                  {settings.invoice_logo ? (
-                    <img src={settings.invoice_logo} alt="Company Logo" className="h-16 md:h-20 object-contain mb-6" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
+                  {settings?.invoice_logo ? (
+                    <img src={settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
                   ) : (
-                    <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight text-slate-800" style={tpl === 'template3' ? { color: 'white' } : {}}>QUOTE</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">QUOTE</h1>
                   )}
-                  <div className="flex items-center gap-3">
-                    <p className={`text-base md:text-lg tracking-wider font-semibold ${tpl === 'template3' ? 'opacity-90 text-white' : 'text-slate-500'}`}>{quote.quote_number}</p>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm"
-                         style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' } : { backgroundColor: `${accentColor}15`, color: accentColor }}
-                    >
-                      {quote.status.replace("_", " ")}
-                    </div>
-                  </div>
+                  <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>{quote.quote_number}</p>
                 </div>
-                <div className="text-left md:text-right">
-                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-800" style={tpl === 'template3' ? { color: 'white' } : {}}>{quote.company?.name || "Company"}</h2>
-                  <p className={`text-base mt-2 font-medium ${tpl === 'template3' ? 'opacity-90' : 'text-slate-500'}`}>{quote.title}</p>
+                <div className="text-right">
+                  <h2 className="text-xl md:text-2xl font-semibold">{quote.company?.name || "Company"}</h2>
+                  {quote.company?.company_website && <p className={`text-sm md:text-base mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={quote.company.company_website.startsWith('http') ? quote.company.company_website : `https://${quote.company.company_website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">{quote.company.company_website.replace(/^https?:\/\//, '')}</a></p>}
+                  {quote.company?.company_email && <p className={`text-sm md:text-base ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}><a href={`mailto:${quote.company.company_email}`} className="hover:underline">{quote.company.company_email}</a></p>}
                   
-                  {quote.company?.company_website && <p className={`text-sm mt-3 ${tpl === 'template3' ? 'opacity-80' : 'text-slate-400'}`}>{quote.company.company_website.replace(/^https?:\/\//, '')}</p>}
-                  {quote.company?.company_email && <p className={`text-sm ${tpl === 'template3' ? 'opacity-80' : 'text-slate-400'}`}>{quote.company.company_email}</p>}
+                  {settings?.company_tax_id && settings?.show_sender_tax_number === true && (
+                     <p className={`text-sm mt-2 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Tax ID: <span className="font-medium">{settings.company_tax_id}</span></p>
+                  )}
+                  {settings?.company_registration_number && (
+                     <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Reg No: <span className="font-medium">{settings.company_registration_number}</span></p>
+                  )}
+
+                  <div className="mt-4 space-y-1">
+                    <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Issue Date: <span className="font-medium">{quote.created_at.split("T")[0]}</span></p>
+                    {quote.valid_until && <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Due Date: <span className="font-medium">{quote.valid_until}</span></p>}
+                    {settings?.show_project_on_invoice && quote.deal_details && (
+                      <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Project/Deal: <span className="font-medium">{quote.deal_details.title}</span></p>
+                    )}
+                  </div>
+                  {settings?.show_status_on_invoice && (
+                    <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                         style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'transparent' } : {}}
+                    >
+                      Status: <span className="capitalize">{quote.status.replace("_", " ")}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* If template4, show quote number, dates here */}
+            {/* If template4, show invoice number, dates here */}
             {tpl === 'template4' && (
               <div className="flex justify-between items-start border-b border-line/50 pb-8 mb-8">
                 <div>
                   <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-ink">QUOTE</h1>
                   <p className="text-sm md:text-base uppercase tracking-wider font-semibold text-muted">{quote.quote_number}</p>
-                  <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-bone-2 text-ink">
-                    Status: <span className="capitalize">{quote.status.replace("_", " ")}</span>
-                  </div>
+                  {settings?.show_status_on_invoice && (
+                    <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      Status: <span className="capitalize">{quote.status.replace("_", " ")}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="space-y-1">
-                    <h2 className="text-xl font-semibold text-ink">{quote.company?.name || "Company"}</h2>
-                    <p className="text-sm text-muted">{quote.title}</p>
+                    <p className="text-sm text-muted">Issue Date: <span className="font-medium text-ink">{quote.created_at.split("T")[0]}</span></p>
+                    {quote.valid_until && <p className="text-sm text-muted">Due Date: <span className="font-medium text-ink">{quote.valid_until}</span></p>}
+                    {settings?.show_project_on_invoice && quote.deal_details && (
+                      <p className="text-sm text-muted">Project/Deal: <span className="font-medium text-ink">{quote.deal_details.title}</span></p>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
+            <div className="mb-8">
+              <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Billed To</h3>
+              {settings?.show_client_name !== false && (
+                <div className="font-medium text-lg text-ink">{quote.customer_details?.name}</div>
+              )}
+              {settings?.show_client_company_name && typeof (quote.customer_details as any)?.company_name === 'string' && (
+                <div className="text-muted">{(quote.customer_details as any).company_name}</div>
+              )}
+              {settings?.show_client_email && quote.customer_details?.email && (
+                <div className="text-muted">{quote.customer_details.email}</div>
+              )}
+              {settings?.show_client_phone && quote.customer_details?.phone && (
+                <div className="text-muted">{quote.customer_details.phone}</div>
+              )}
+              {settings?.show_client_address && quote.customer_details?.custom_data?.address && (
+                <div className="text-muted mt-1 whitespace-pre-wrap">{quote.customer_details.custom_data.address}</div>
+              )}
+            </div>
+
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 print:min-w-full border-collapse">
+              <table className="w-full text-left mb-8 print:min-w-full">
                 <thead>
-                  <tr className="border-b-2" style={tpl === 'template1' ? { borderBottomColor: accentColor } : { borderBottomColor: '#e2e8f0' }}>
-                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs">Item</th>
-                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs text-right whitespace-nowrap">Qty</th>
-                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs text-right whitespace-nowrap">Price</th>
-                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
+                  <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
+                    <th className="py-3 font-medium text-muted">Item</th>
+                    {settings?.show_hsn_sac_code && (
+                      <th className="py-3 font-medium text-muted text-right whitespace-nowrap">HSN/SAC</th>
+                    )}
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Qty</th>
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Price</th>
+                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {quote.items.map((item: any, i: number) => (
-                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="py-5 px-2">
-                        <div className="font-semibold text-slate-800 text-base">{item.name}</div>
-                        {item.description && <div className="text-sm text-slate-500 mt-1.5 leading-relaxed max-w-xl">{item.description}</div>}
+                    <tr key={i} className={tpl === 'template1' && i % 2 !== 0 ? 'bg-bone/30' : ''}>
+                      <td className="py-4 px-2">
+                        <div className="font-medium text-ink">{item.name}</div>
+                        {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
-                      <td className="py-5 px-2 text-right text-slate-700 whitespace-nowrap font-medium">
+                      {settings?.show_hsn_sac_code && (
+                        <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
+                      )}
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">
                         {item.quantity} {item.unit || ""}
                       </td>
-                      <td className="py-5 px-2 text-right text-slate-700 whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
-                      <td className="py-5 px-2 pr-4 sm:pr-6 text-right font-semibold text-slate-900 whitespace-nowrap">
+                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
+                      <td className="py-4 px-2 pr-4 sm:pr-6 text-right font-medium text-ink whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.currency || quote.company?.currency)}
                       </td>
                     </tr>
@@ -266,28 +258,83 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </table>
             </div>
 
-            <div className="flex justify-end pt-8">
-              <div className="w-full max-w-sm space-y-4 bg-slate-50 p-6 rounded-2xl print:bg-transparent print:p-0 print:rounded-none">
-                <div className="flex justify-between text-slate-500 font-medium">
+            <div className="flex flex-col md:flex-row justify-between border-t border-line pt-8 gap-8">
+              
+              {/* Terms and Info Section */}
+              <div className="flex-1 space-y-6">
+                {settings?.invoice_terms && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>
+                    <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{settings.invoice_terms}</p>
+                  </div>
+                )}
+                
+                {/* Bank Details injected here if available */}
+                {(settings?.bank_name || settings?.invoice_other_information) && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-ink mb-1">Other Information / Bank Details</h4>
+                    {settings?.invoice_other_information && (
+                      <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{settings.invoice_other_information}</p>
+                    )}
+                    {settings?.bank_name && (
+                      <div className="text-sm text-muted bg-bone/50 p-4 rounded-lg border border-line space-y-1.5">
+                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Bank Name:</span> <span className="break-words flex-1">{settings.bank_name}</span></div>
+                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account Name:</span> <span className="break-words flex-1">{settings.bank_account_name}</span></div>
+                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account No:</span> <span className="break-all flex-1">{settings.bank_account_number}</span></div>
+                        {settings.bank_routing_number && (
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Routing / SWIFT:</span> <span className="break-all flex-1">{settings.bank_routing_number}</span></div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {settings?.show_tax_calculation_message && (
+                  <div>
+                    <p className="text-xs text-muted italic">Note: Tax is calculated based on applicable local rates.</p>
+                  </div>
+                )}
+                {settings?.show_authorised_signatory && (
+                  <div className="pt-6">
+                    {settings?.authorised_signatory_signature ? (
+                      <img src={settings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
+                    ) : (
+                      <div className="h-12 border-b border-line w-32 mb-2"></div>
+                    )}
+                    <p className="text-sm font-semibold text-ink">Authorised Signatory</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-full max-w-sm space-y-3">
+                <div className="flex justify-between text-muted">
                   <span>Subtotal</span>
-                  <span className="text-slate-800">{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-slate-500 font-medium">
+                <div className="flex justify-between text-muted">
                   <span>Tax</span>
-                  <span className="text-slate-800">{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
+                  <span>{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-2xl font-bold text-slate-900 pt-4 border-t border-slate-200 mt-2"
-                     style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.75rem', marginTop: '1rem', border: 'none' } : {}}
+                <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line">
+                  <span>Total</span>
+                  <span>{formatCurrency(parseFloat(quote.total), quote.currency || quote.company?.currency)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-600 font-medium pt-1">
+                  <span>Amount Paid</span>
+                  <span>{formatCurrency(parseFloat(quote.amount_paid || "0"), quote.currency || quote.company?.currency)}</span>
+                </div>
+                <div className="flex justify-between text-xl font-bold text-red-600 pt-3 border-t border-line"
+                     style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
-                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>Total</span>
-                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.total), quote.currency || quote.company?.currency)}</span>
+                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>Amount Due</span>
+                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.amount_due || quote.total), quote.currency || quote.company?.currency)}</span>
                 </div>
               </div>
             </div>
             
-            {settings.footer_text && (
-              <div className="mt-16 pt-8 border-t border-slate-100 text-center">
-                <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-2xl mx-auto">{settings.footer_text}</p>
+            {settings?.footer_text && (
+              <div className="mt-12 pt-8 border-t border-line/50 text-center">
+                <p className="text-sm text-muted">{settings.footer_text}</p>
               </div>
             )}
             
@@ -295,98 +342,73 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         </div>
 
         {/* E-Signature Section */}
-        <div className={`bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-10 md:p-14 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
+        <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
           {isSigned ? (
             <div className="text-center py-8">
-              <div className="mx-auto w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-sm border border-emerald-100">
-                <CheckCircle2 className="w-10 h-10" />
+              <div className="mx-auto w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">Quote Accepted</h3>
-              <p className="text-slate-500 font-medium text-lg mb-10">This quote was signed and accepted on {new Date(quote.signed_at!).toLocaleString()}.</p>
+              <h3 className="text-2xl font-semibold text-ink mb-2">Quote Accepted</h3>
+              <p className="text-muted mb-8">This quote was signed and accepted on {new Date(quote.signed_at!).toLocaleString()}.</p>
               
-              <div className="mt-8 flex flex-col items-center justify-center space-y-6">
-                <div className="bg-slate-50 p-6 rounded-2xl inline-block border border-slate-100 min-w-[300px]">
-                  <img src={quote.signature_data!} alt="Signature" className="max-h-32 mx-auto mix-blend-multiply" />
-                  <div className="border-t border-slate-200 mt-4 pt-3">
-                    <p className="font-semibold text-slate-800 uppercase tracking-wider text-sm">{quote.signed_by_name}</p>
+              <div className="max-w-md mx-auto bg-bone-2 rounded-xl p-6 text-left border border-line">
+                <div className="mb-4">
+                  <span className="text-sm text-muted block mb-2">Signature:</span>
+                  <div className="bg-white border border-line rounded-lg p-4">
+                    <img src={quote.signature_data!} alt="Signature" className="max-h-24" />
                   </div>
+                </div>
+                <div>
+                  <span className="text-sm text-muted block">Signed by:</span>
+                  <span className="font-medium text-ink">{quote.signed_by_name}</span>
                 </div>
               </div>
             </div>
           ) : (
             <div>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-600">
-                  <FileText className="w-6 h-6" />
-                </div>
+              <h3 className="text-2xl font-semibold text-ink mb-6">Acknowledge & Sign Quote</h3>
+              <div className="space-y-6 max-w-2xl">
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800">Acknowledge & Sign</h3>
-                  <p className="text-slate-500 mt-1">Please review the quote details above and sign below to accept.</p>
-                </div>
-              </div>
-              
-              <div className="space-y-8 max-w-2xl">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wider">Print Name</label>
+                  <label className="block text-sm font-medium text-ink mb-2">Print Name</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-300 transition-all font-medium"
-                    placeholder="Enter your full name"
                     value={signedByName}
                     onChange={(e) => setSignedByName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 bg-bone border border-line rounded-lg text-ink outline-none focus:border-ink transition-colors"
                   />
                 </div>
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider">Signature</label>
-                    <button 
-                      type="button" 
-                      onClick={handleClearSignature}
-                      className="text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
-                    >
-                      Clear Signature
-                    </button>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-ink">Signature</label>
+                    <button onClick={handleClearSignature} className="text-sm text-muted hover:text-ink">Clear</button>
                   </div>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                    <SignatureCanvas 
+                  <div className="border-2 border-dashed border-line bg-bone rounded-lg overflow-hidden cursor-crosshair">
+                    <SignatureCanvas
                       ref={sigCanvas}
-                      canvasProps={{ className: "w-full h-48 cursor-crosshair" }}
+                      canvasProps={{
+                        className: "w-full h-48",
+                      }}
                       backgroundColor="transparent"
-                      penColor="#0f172a"
                     />
                   </div>
                 </div>
-
+                
                 <div className="pt-4 flex items-center gap-4">
                   <button
                     onClick={handleSign}
                     disabled={signMutation.isPending}
-                    className="flex-1 bg-slate-900 text-white font-medium py-4 px-6 rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-900/20"
+                    className="bg-ink text-paper px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center min-w-[160px]"
                   >
-                    {signMutation.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
-                    Accept & Sign Quote
+                    {signMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign & Acknowledge"}
                   </button>
-                  <button
-                    onClick={() => window.print()}
-                    className="hidden md:flex p-4 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all bg-white shadow-sm items-center gap-2 font-medium"
-                    title="Print Quote"
-                  >
-                    <Download className="w-5 h-5" />
-                    Save PDF
-                  </button>
+                  <p className="text-xs text-muted max-w-sm">
+                    By signing, you acknowledge and accept this quote.
+                  </p>
                 </div>
               </div>
             </div>
           )}
-        </div>
-        {/* Action Panel for Mobile */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden flex gap-3 z-50">
-          <button 
-            onClick={() => window.print()}
-            className="flex-1 btn btn-secondary h-12"
-          >
-            <Download className="w-4 h-4 mr-2" /> Download
-          </button>
         </div>
       </div>
     </div>
