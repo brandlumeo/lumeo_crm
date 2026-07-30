@@ -143,16 +143,16 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         }
       `}} />
       <div
-        className="quote-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
+        className="quote-container min-h-screen print:min-h-0 print:bg-white bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-100 via-white to-slate-50 py-16 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
       >
         <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
         
         {/* QUOTE DOCUMENT */}
         <div 
-          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
-            tpl === 'template3' ? 'border-none overflow-hidden' : 
-            tpl === 'template4' ? 'border-line flex flex-col md:flex-row p-0 overflow-hidden' : 
-            'border-line'
+          className={`rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-10 md:p-14 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible relative overflow-hidden ${
+            tpl === 'template3' ? 'border-none' : 
+            tpl === 'template4' ? 'border-slate-100 flex flex-col md:flex-row p-0' : 
+            'border-slate-100/60'
           }`}
           style={tpl === 'template3' ? { borderTop: `8px solid ${accentColor}` } : {}}
         >
@@ -189,25 +189,30 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
           <div className={tpl === 'template4' ? "md:w-2/3 p-8 md:p-12 bg-white" : ""}>
             {/* Header Area */}
             {tpl !== 'template4' && (
-              <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8"
-                   style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
+              <div className="flex flex-col md:flex-row justify-between items-start gap-8 pb-10 mb-10"
+                   style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3.5rem -3.5rem 2.5rem -3.5rem', padding: '3.5rem', color: 'white' } : {}}
               >
                 <div>
                   {settings.invoice_logo ? (
-                    <img src={settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
+                    <img src={settings.invoice_logo} alt="Company Logo" className="h-16 md:h-20 object-contain mb-6" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
                   ) : (
-                    <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">QUOTE</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight text-slate-800" style={tpl === 'template3' ? { color: 'white' } : {}}>QUOTE</h1>
                   )}
-                  <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>{quote.quote_number}</p>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-xl md:text-2xl font-semibold">{quote.company?.name || "Company"}</h2>
-                  <p className={`text-sm mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>{quote.title}</p>
-                  <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
-                       style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' } : { backgroundColor: 'var(--bone-2)', color: 'var(--ink)' }}
-                  >
-                    Status: <span className="capitalize">{quote.status.replace("_", " ")}</span>
+                  <div className="flex items-center gap-3">
+                    <p className={`text-base md:text-lg tracking-wider font-semibold ${tpl === 'template3' ? 'opacity-90 text-white' : 'text-slate-500'}`}>{quote.quote_number}</p>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm"
+                         style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' } : { backgroundColor: `${accentColor}15`, color: accentColor }}
+                    >
+                      {quote.status.replace("_", " ")}
+                    </div>
                   </div>
+                </div>
+                <div className="text-left md:text-right">
+                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-800" style={tpl === 'template3' ? { color: 'white' } : {}}>{quote.company?.name || "Company"}</h2>
+                  <p className={`text-base mt-2 font-medium ${tpl === 'template3' ? 'opacity-90' : 'text-slate-500'}`}>{quote.title}</p>
+                  
+                  {quote.company?.company_website && <p className={`text-sm mt-3 ${tpl === 'template3' ? 'opacity-80' : 'text-slate-400'}`}>{quote.company.company_website.replace(/^https?:\/\//, '')}</p>}
+                  {quote.company?.company_email && <p className={`text-sm ${tpl === 'template3' ? 'opacity-80' : 'text-slate-400'}`}>{quote.company.company_email}</p>}
                 </div>
               </div>
             )}
@@ -232,27 +237,27 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             )}
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 print:min-w-full">
+              <table className="w-full text-left mb-8 print:min-w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
-                    <th className="py-3 font-medium text-muted">Item</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Qty</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Price</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
+                  <tr className="border-b-2" style={tpl === 'template1' ? { borderBottomColor: accentColor } : { borderBottomColor: '#e2e8f0' }}>
+                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs">Item</th>
+                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs text-right whitespace-nowrap">Qty</th>
+                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs text-right whitespace-nowrap">Price</th>
+                    <th className="py-4 font-semibold text-slate-500 uppercase tracking-wider text-xs text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line">
+                <tbody className="divide-y divide-slate-100">
                   {quote.items.map((item: any, i: number) => (
-                    <tr key={i} className={tpl === 'template1' && i % 2 !== 0 ? 'bg-bone/30' : ''}>
-                      <td className="py-4 px-2">
-                        <div className="font-medium text-ink">{item.name}</div>
-                        {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
+                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="py-5 px-2">
+                        <div className="font-semibold text-slate-800 text-base">{item.name}</div>
+                        {item.description && <div className="text-sm text-slate-500 mt-1.5 leading-relaxed max-w-xl">{item.description}</div>}
                       </td>
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">
+                      <td className="py-5 px-2 text-right text-slate-700 whitespace-nowrap font-medium">
                         {item.quantity} {item.unit || ""}
                       </td>
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
-                      <td className="py-4 px-2 pr-4 sm:pr-6 text-right font-medium text-ink whitespace-nowrap">
+                      <td className="py-5 px-2 text-right text-slate-700 whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), quote.currency || quote.company?.currency)}</td>
+                      <td className="py-5 px-2 pr-4 sm:pr-6 text-right font-semibold text-slate-900 whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), quote.currency || quote.company?.currency)}
                       </td>
                     </tr>
@@ -261,18 +266,18 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </table>
             </div>
 
-            <div className="flex justify-end border-t border-line pt-8">
-              <div className="w-full max-w-sm space-y-3">
-                <div className="flex justify-between text-muted">
+            <div className="flex justify-end pt-8">
+              <div className="w-full max-w-sm space-y-4 bg-slate-50 p-6 rounded-2xl print:bg-transparent print:p-0 print:rounded-none">
+                <div className="flex justify-between text-slate-500 font-medium">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
+                  <span className="text-slate-800">{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-muted">
+                <div className="flex justify-between text-slate-500 font-medium">
                   <span>Tax</span>
-                  <span>{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
+                  <span className="text-slate-800">{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line"
-                     style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
+                <div className="flex justify-between text-2xl font-bold text-slate-900 pt-4 border-t border-slate-200 mt-2"
+                     style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.75rem', marginTop: '1rem', border: 'none' } : {}}
                 >
                   <span style={tpl === 'template3' ? { color: 'white' } : {}}>Total</span>
                   <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.total), quote.currency || quote.company?.currency)}</span>
@@ -281,8 +286,8 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             </div>
             
             {settings.footer_text && (
-              <div className="mt-12 pt-8 border-t border-line/50 text-center">
-                <p className="text-sm text-muted">{settings.footer_text}</p>
+              <div className="mt-16 pt-8 border-t border-slate-100 text-center">
+                <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-2xl mx-auto">{settings.footer_text}</p>
               </div>
             )}
             
@@ -290,69 +295,85 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         </div>
 
         {/* E-Signature Section */}
-        <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
+        <div className={`bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-10 md:p-14 ${!isSigned ? 'print:hidden' : 'print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12'}`}>
           {isSigned ? (
             <div className="text-center py-8">
-              <div className="mx-auto w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-8 h-8" />
+              <div className="mx-auto w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-sm border border-emerald-100">
+                <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h3 className="text-2xl font-semibold text-ink mb-2">Quote Accepted</h3>
-              <p className="text-muted mb-8">This quote was signed and accepted on {new Date(quote.signed_at!).toLocaleString()}.</p>
+              <h3 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">Quote Accepted</h3>
+              <p className="text-slate-500 font-medium text-lg mb-10">This quote was signed and accepted on {new Date(quote.signed_at!).toLocaleString()}.</p>
               
-              <div className="max-w-md mx-auto bg-bone-2 rounded-xl p-6 text-left border border-line">
-                <div className="mb-4">
-                  <span className="text-sm text-muted block mb-2">Signature:</span>
-                  <div className="bg-white border border-line rounded-lg p-4">
-                    <img src={quote.signature_data!} alt="Signature" className="max-h-24" />
+              <div className="mt-8 flex flex-col items-center justify-center space-y-6">
+                <div className="bg-slate-50 p-6 rounded-2xl inline-block border border-slate-100 min-w-[300px]">
+                  <img src={quote.signature_data!} alt="Signature" className="max-h-32 mx-auto mix-blend-multiply" />
+                  <div className="border-t border-slate-200 mt-4 pt-3">
+                    <p className="font-semibold text-slate-800 uppercase tracking-wider text-sm">{quote.signed_by_name}</p>
                   </div>
-                </div>
-                <div>
-                  <span className="text-sm text-muted block">Signed by:</span>
-                  <span className="font-medium text-ink">{quote.signed_by_name}</span>
                 </div>
               </div>
             </div>
           ) : (
             <div>
-              <h3 className="text-2xl font-semibold text-ink mb-6">Acknowledge & Sign Quote</h3>
-              <div className="space-y-6 max-w-2xl">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-600">
+                  <FileText className="w-6 h-6" />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Print Name</label>
+                  <h3 className="text-2xl font-bold text-slate-800">Acknowledge & Sign</h3>
+                  <p className="text-slate-500 mt-1">Please review the quote details above and sign below to accept.</p>
+                </div>
+              </div>
+              
+              <div className="space-y-8 max-w-2xl">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wider">Print Name</label>
                   <input
                     type="text"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-300 transition-all font-medium"
+                    placeholder="Enter your full name"
                     value={signedByName}
                     onChange={(e) => setSignedByName(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full px-4 py-3 bg-bone border border-line rounded-lg text-ink outline-none focus:border-ink transition-colors"
                   />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-ink">Signature</label>
-                    <button onClick={handleClearSignature} className="text-sm text-muted hover:text-ink">Clear</button>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider">Signature</label>
+                    <button 
+                      type="button" 
+                      onClick={handleClearSignature}
+                      className="text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
+                    >
+                      Clear Signature
+                    </button>
                   </div>
-                  <div className="border-2 border-dashed border-line bg-bone rounded-lg overflow-hidden cursor-crosshair">
-                    <SignatureCanvas
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                    <SignatureCanvas 
                       ref={sigCanvas}
-                      canvasProps={{
-                        className: "w-full h-48",
-                      }}
+                      canvasProps={{ className: "w-full h-48 cursor-crosshair" }}
                       backgroundColor="transparent"
+                      penColor="#0f172a"
                     />
                   </div>
                 </div>
-                
+
                 <div className="pt-4 flex items-center gap-4">
                   <button
                     onClick={handleSign}
                     disabled={signMutation.isPending}
-                    className="bg-ink text-paper px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center min-w-[160px]"
+                    className="flex-1 bg-slate-900 text-white font-medium py-4 px-6 rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-900/20"
                   >
-                    {signMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign & Accept"}
+                    {signMutation.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
+                    Accept & Sign Quote
                   </button>
-                  <p className="text-xs text-muted max-w-sm">
-                    By signing, you acknowledge and accept this quote.
-                  </p>
+                  <button
+                    onClick={() => window.print()}
+                    className="hidden md:flex p-4 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all bg-white shadow-sm items-center gap-2 font-medium"
+                    title="Print Quote"
+                  >
+                    <Download className="w-5 h-5" />
+                    Save PDF
+                  </button>
                 </div>
               </div>
             </div>
