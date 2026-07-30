@@ -82,8 +82,12 @@ function buildBoards(deals: Deal[], stages: any[]): StageBoards {
   ) as unknown as StageBoards;
   for (const deal of deals) {
     const key = deal.stage as StageKey;
-    if (key in boards) boards[key].push(deal);
-    else if (stages.length > 0) boards[stages[0].key].push(deal);
+    if (key in boards) {
+      boards[key].push(deal);
+    } else if (stages.length > 0) {
+      // Fix invalid stage so drag & drop won't crash when looking up boards[deal.stage]
+      boards[stages[0].key].push({ ...deal, stage: stages[0].key });
+    }
   }
   for (const stage of Object.keys(boards) as StageKey[]) {
     boards[stage].sort((a, b) => (a.row_order ?? 0) - (b.row_order ?? 0));
@@ -531,13 +535,13 @@ export default function DealsBoardPage() {
       if (activeStage === overStage) return prev;
 
       const next = { ...prev };
-      next[activeStage] = next[activeStage].filter(d => d.id !== activeId);
+      next[activeStage] = (next[activeStage] || []).filter(d => d.id !== activeId);
       
       const newDeal = { ...activeDeal, stage: overStage };
       
       if (isOverDeal) {
-        const overIndex = next[overStage].findIndex(d => d.id === overId);
-        const newIndex = overIndex >= 0 ? overIndex + (active.rect.current.translated?.top > over.rect.top + over.rect.height / 2 ? 1 : 0) : next[overStage].length;
+        const overIndex = next[overStage]?.findIndex(d => d.id === overId) ?? -1;
+        const newIndex = overIndex >= 0 ? overIndex + (active.rect.current.translated?.top > over.rect.top + over.rect.height / 2 ? 1 : 0) : (next[overStage]?.length ?? 0);
         next[overStage] = [
           ...next[overStage].slice(0, newIndex),
           newDeal,
@@ -565,11 +569,11 @@ export default function DealsBoardPage() {
 
     setBoards(prev => {
       const stage = activeDeal.stage as StageKey;
-      const activeIndex = prev[stage].findIndex(d => d.id === activeId);
-      const overIndex = prev[stage].findIndex(d => d.id === overId);
+      const activeIndex = prev[stage]?.findIndex(d => d.id === activeId) ?? -1;
+      const overIndex = prev[stage]?.findIndex(d => d.id === overId) ?? -1;
       
       let next = { ...prev };
-      if (activeIndex !== overIndex && overIndex !== -1 && stage === overStage) {
+      if (activeIndex !== -1 && activeIndex !== overIndex && overIndex !== -1 && stage === overStage && next[stage]) {
          next[stage] = arrayMove(next[stage], activeIndex, overIndex);
       }
 
