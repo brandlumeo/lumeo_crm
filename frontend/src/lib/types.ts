@@ -253,6 +253,7 @@ export interface Deal {
   title: string;
   amount: string;
   stage: string;
+  deal_category?: string | null;
   customer_name?: string;
   custom_data: Record<string, any>;
   expected_close_date?: string | null;
@@ -322,6 +323,7 @@ export interface DealInput {
   title: string;
   amount: string;
   stage?: string;
+  deal_category?: string | null;
   expected_close_date?: string | null;
   custom_data?: Record<string, any>;
 }

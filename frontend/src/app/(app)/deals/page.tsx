@@ -38,6 +38,7 @@ export default function DealsPage() {
     title: "",
     amount: "",
     stage: "prospect",
+    deal_category: "",
     expected_close_date: null,
     custom_data: {},
   });
@@ -60,7 +61,7 @@ export default function DealsPage() {
   const mutation = useMutation({
     mutationFn: createDeal,
     onSuccess: () => {
-      setForm({ title: "", amount: "", stage: "prospect", expected_close_date: null, custom_data: {} });
+      setForm({ title: "", amount: "", stage: "prospect", deal_category: "", expected_close_date: null, custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
       void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
@@ -142,6 +143,13 @@ export default function DealsPage() {
                       {deal.title}
                     </Link>
                   ),
+                },
+                {
+                  key: "deal_category",
+                  header: "Category",
+                  render: (deal) => deal.deal_category ? (
+                    <span className="text-muted text-[13px]">{deal.deal_category}</span>
+                  ) : <span className="text-muted/50 text-[13px]">-</span>
                 },
                 {
                   key: "stage",
@@ -237,6 +245,23 @@ export default function DealsPage() {
                 )}
               </select>
             </label>
+            {(company?.deal_categories && company.deal_categories.length > 0) ? (
+              <label>
+                <span className="label">Category</span>
+                <select
+                  className="select"
+                  value={form.deal_category || ""}
+                  onChange={(event) => setForm((current) => ({ ...current, deal_category: event.target.value }))}
+                >
+                  <option value="">None</option>
+                  {company.deal_categories.map((cat: any) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               <span className="label">Expected close date</span>
               <input

@@ -333,6 +333,7 @@ class DealSerializer(CompanyScopedSerializer):
             "expected_close_date",
             "assigned_to",
             "assigned_to_id",
+            "deal_category",
             "custom_data",
             "row_order",
             "created_at",

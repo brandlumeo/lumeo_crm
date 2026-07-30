@@ -142,6 +142,7 @@ class Deal(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     expected_close_date = models.DateField(null=True, blank=True, db_index=True)
+    deal_category = models.CharField(max_length=100, null=True, blank=True)
     custom_data = models.JSONField(default=dict, blank=True)
     row_order = models.PositiveIntegerField(default=0, db_index=True)
 

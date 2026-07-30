@@ -84,6 +84,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             
             <div className="p-5 space-y-4">
+              {deal.deal_category && (
+                <div className="flex items-center gap-3 text-[13px]">
+                  <Layers className="w-4 h-4 text-muted shrink-0" />
+                  <span className="text-ink-2 truncate">Category: {deal.deal_category}</span>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-[13px]">
                 <IndianRupee className="w-4 h-4 text-muted shrink-0" />
                 <span className="font-serif text-[18px] text-ink">{formatINR(toNumber(deal.amount))}</span>
