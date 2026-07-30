@@ -47,6 +47,17 @@ def default_lead_pipelines():
     ]
 
 
+def default_deal_pipelines():
+    return [
+        {"id": "1", "name": "Prospect", "color": "#8B8580"},
+        {"id": "2", "name": "Qualified", "color": "#3B82F6"},
+        {"id": "3", "name": "Proposal", "color": "#D97706"},
+        {"id": "4", "name": "Negotiation", "color": "#7C3AED"},
+        {"id": "5", "name": "Won", "color": "#16A34A"},
+        {"id": "6", "name": "Lost", "color": "#9CA3AF"},
+    ]
+
+
 def default_deal_categories():
     return [
         {"id": "1", "name": "New Business"},
@@ -332,6 +343,7 @@ class Company(models.Model):
     
     lead_sources = models.JSONField(default=default_lead_sources, blank=True)
     lead_pipelines = models.JSONField(default=default_lead_pipelines, blank=True)
+    deal_pipelines = models.JSONField(default=default_deal_pipelines, blank=True)
     deal_agents = models.JSONField(default=list, blank=True)
     deal_categories = models.JSONField(default=default_deal_categories, blank=True)
     lead_round_robin_agents = models.JSONField(default=list, blank=True)

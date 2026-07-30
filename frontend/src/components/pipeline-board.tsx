@@ -30,27 +30,23 @@ import { useReorderDeals } from "@/lib/queries";
 import type { Deal } from "@/lib/types";
 import { formatCompactINR, formatINR, formatShortDate, getInitials, toNumber } from "@/lib/utils";
 
-const stageOrder = [
-  "prospect",
-  "qualified",
-  "proposal",
-  "negotiation",
-  "won",
-] as const;
+import { useCurrentCompany } from "@/lib/queries";
 
-const stageMeta = {
-  prospect: { label: "Prospect", dot: "bg-muted", weight: 0.15 },
-  qualified: { label: "Qualified", dot: "bg-blue", weight: 0.35 },
-  proposal: { label: "Proposal", dot: "bg-gold", weight: 0.6 },
-  negotiation: { label: "Negotiation", dot: "bg-accent", weight: 0.82 },
-  won: { label: "Closed Won", dot: "bg-green", weight: 1 },
-} as const;
+function getStageLabel(stage: string, company: any) {
+  if (!company?.deal_pipelines) return stage;
+  const found = company.deal_pipelines.find((s: any) => s.name.toLowerCase() === stage);
+  return found ? found.name : stage;
+}
 
-function getStageLabel(stage: string) {
-  return stageMeta[stage as keyof typeof stageMeta]?.label ?? stage;
+function getStageColor(stage: string, company: any) {
+  if (!company?.deal_pipelines) return "bg-muted";
+  const found = company.deal_pipelines.find((s: any) => s.name.toLowerCase() === stage);
+  return found ? found.color : "bg-muted";
 }
 
 function DealCard({ deal, isOverlay = false }: { deal: Deal; isOverlay?: boolean }) {
+  const { data: company } = useCurrentCompany();
+  
   return (
     <div
       className={`border rounded-lg p-3 mb-2 transition-all cursor-grab active:cursor-grabbing ${
@@ -71,7 +67,7 @@ function DealCard({ deal, isOverlay = false }: { deal: Deal; isOverlay?: boolean
       <div className="flex items-center justify-between text-[11px] text-muted pointer-events-none">
         <span className="chip">{formatShortDate(deal.created_at)}</span>
         <span className="font-mono text-[10px] text-muted">
-          {getStageLabel(deal.stage)}
+          {getStageLabel(deal.stage, company)}
         </span>
       </div>
     </div>
@@ -108,6 +104,7 @@ function SortableDealCard({ deal }: { deal: Deal }) {
 }
 
 function Column({ stage, deals }: { stage: string; deals: Deal[] }) {
+  const { data: company } = useCurrentCompany();
   const { setNodeRef } = useDroppable({
     id: stage,
     data: {
@@ -117,13 +114,18 @@ function Column({ stage, deals }: { stage: string; deals: Deal[] }) {
   });
 
   const stageValue = deals.reduce((sum, deal) => sum + toNumber(deal.amount), 0);
-
+  const color = getStageColor(stage, company);
+  
   return (
     <div className="bg-paper p-3.5 min-h-[320px] min-w-[210px] flex flex-col">
       <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-dashed border-line">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] font-semibold">
-          <span className={`w-1.5 h-1.5 rounded-full ${stageMeta[stage as keyof typeof stageMeta].dot}`} />
-          {stageMeta[stage as keyof typeof stageMeta].label}
+          <span 
+            className="w-2 h-2 rounded-full" 
+            style={color.startsWith("#") ? { backgroundColor: color } : {}}
+            {...(color.startsWith("#") ? {} : { className: `w-2 h-2 rounded-full ${color}` })}
+          />
+          {getStageLabel(stage, company)}
         </div>
         <div className="font-mono text-[11px] text-muted">
           {deals.length} | {formatCompactINR(stageValue)}
@@ -142,6 +144,8 @@ function Column({ stage, deals }: { stage: string; deals: Deal[] }) {
 }
 
 export function PipelineBoard({ deals }: { deals: Deal[] }) {
+  const { data: company } = useCurrentCompany();
+  const dynamicStages = company?.deal_pipelines?.map((s: any) => s.name.toLowerCase()) || [];
   const [view, setView] = useState<"board" | "list" | "forecast">("board");
   
   const [filterSearch, setFilterSearch] = useState("");
@@ -169,7 +173,7 @@ export function PipelineBoard({ deals }: { deals: Deal[] }) {
   }, []);
 
   const activeDeals = useMemo(() => {
-    let result = localDeals.filter((deal) => stageOrder.includes(deal.stage as never));
+    let result = localDeals.filter((deal) => dynamicStages.includes(deal.stage));
     
     if (filterSearch) {
       const lowerSearch = filterSearch.toLowerCase();
@@ -188,7 +192,7 @@ export function PipelineBoard({ deals }: { deals: Deal[] }) {
     result.sort((a, b) => (a.row_order || 0) - (b.row_order || 0));
     
     return result;
-  }, [localDeals, filterSearch, filterMinAmount, filterDays]);
+  }, [localDeals, filterSearch, filterMinAmount, filterDays, dynamicStages]);
 
   const openValue = activeDeals
     .filter((deal) => deal.stage !== "won")
@@ -404,8 +408,8 @@ export function PipelineBoard({ deals }: { deals: Deal[] }) {
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
           >
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-px bg-line-2 min-w-max">
-              {stageOrder.map((stage) => {
+            <div className="flex flex-row gap-px bg-line-2 min-w-max">
+              {dynamicStages.map((stage: string) => {
                 const stageDeals = activeDeals.filter((deal) => deal.stage === stage);
                 return <Column key={stage} stage={stage} deals={stageDeals} />;
               })}
@@ -438,7 +442,7 @@ export function PipelineBoard({ deals }: { deals: Deal[] }) {
                 >
                   <td className="px-5 py-4 font-medium text-ink">{deal.title}</td>
                   <td className="px-5 py-4">
-                    <span className="chip">{getStageLabel(deal.stage)}</span>
+                    <span className="chip">{getStageLabel(deal.stage, company)}</span>
                   </td>
                   <td className="px-5 py-4 font-serif text-[18px] text-ink">
                     {formatINR(toNumber(deal.amount))}
@@ -452,19 +456,21 @@ export function PipelineBoard({ deals }: { deals: Deal[] }) {
           </table>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-px bg-line-2">
-          {stageOrder.map((stage) => {
+        <div className="flex flex-col md:flex-row gap-px bg-line-2 overflow-x-auto">
+          {dynamicStages.map((stage: string, index: number) => {
             const stageDeals = activeDeals.filter((deal) => deal.stage === stage);
             const stageValue = stageDeals.reduce(
               (sum, deal) => sum + toNumber(deal.amount),
               0,
             );
-            const weightedValue = stageValue * stageMeta[stage].weight;
+            // Compute a simple linear weight based on stage position
+            const weight = (index + 1) / dynamicStages.length;
+            const weightedValue = stageValue * weight;
 
             return (
               <div key={stage} className="bg-paper p-5">
                 <div className="text-[11px] uppercase tracking-[0.12em] text-muted mb-2">
-                  {stageMeta[stage].label}
+                  {getStageLabel(stage, company)}
                 </div>
                 <div className="font-serif text-[28px] leading-none mb-2">
                   {formatCompactINR(stageValue)}

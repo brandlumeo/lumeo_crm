@@ -150,7 +150,7 @@ export function LeadSettingsForm() {
       ...leadPipelines,
       { id: String(Date.now()), name: newName.trim(), color: newColor }
     ];
-    saveSettings({ lead_pipelines: updatedPipelines });
+    saveSettings({ lead_pipelines: updatedPipelines, deal_pipelines: updatedPipelines });
   };
 
   const handleEditPipeline = (id: string, name: string, color: string) => {
@@ -158,12 +158,12 @@ export function LeadSettingsForm() {
     const updatedPipelines = leadPipelines.map(p => 
       p.id === id ? { ...p, name: name.trim(), color } : p
     );
-    saveSettings({ lead_pipelines: updatedPipelines });
+    saveSettings({ lead_pipelines: updatedPipelines, deal_pipelines: updatedPipelines });
   };
 
   const handleDeletePipeline = (id: string) => {
     const updatedPipelines = leadPipelines.filter(p => p.id !== id);
-    saveSettings({ lead_pipelines: updatedPipelines });
+    saveSettings({ lead_pipelines: updatedPipelines, deal_pipelines: updatedPipelines });
   };
 
   // Categories Actions

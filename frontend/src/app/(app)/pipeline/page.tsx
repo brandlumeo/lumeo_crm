@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { useAllDealsBoard } from "@/lib/queries";
+import { useAllDealsBoard, useCurrentCompany } from "@/lib/queries";
 import { createDeal, reorderDeals } from "@/lib/api";
 import type { Deal, DealInput } from "@/lib/types";
 import {
@@ -45,89 +45,45 @@ import {
 
 // ── Stage definitions ──────────────────────────────────────────────────────────
 
-const STAGES = [
-  {
-    key: "prospect",
-    label: "Prospect",
+function getDynamicStages(company: any) {
+  if (!company?.deal_pipelines || company.deal_pipelines.length === 0) {
+    return [
+      { key: "prospect", label: "Prospect", icon: "○", color: "#8B8580", headerBg: "bg-bone", topBar: "bg-[#8B8580]", colBg: "bg-bone-2", cardBg: "bg-paper", cardBorder: "border-line" },
+      { key: "qualified", label: "Qualified", icon: "◈", color: "#3B82F6", headerBg: "bg-blue-50 dark:bg-blue-900/20", topBar: "bg-blue-400", colBg: "bg-blue-50/40 dark:bg-blue-900/10", cardBg: "bg-paper", cardBorder: "border-blue-100 dark:border-blue-900/30" },
+      { key: "proposal", label: "Proposal", icon: "⬡", color: "#D97706", headerBg: "bg-amber-50 dark:bg-amber-900/20", topBar: "bg-amber-400", colBg: "bg-amber-50/40 dark:bg-amber-900/10", cardBg: "bg-paper", cardBorder: "border-amber-100 dark:border-amber-900/30" },
+      { key: "negotiation", label: "Negotiation", icon: "◎", color: "#7C3AED", headerBg: "bg-violet-50 dark:bg-violet-900/20", topBar: "bg-violet-400", colBg: "bg-violet-50/40 dark:bg-violet-900/10", cardBg: "bg-paper", cardBorder: "border-violet-100 dark:border-violet-900/30" },
+      { key: "won", label: "Won", icon: "✓", color: "#16A34A", headerBg: "bg-green-50 dark:bg-green-900/20", topBar: "bg-green-400", colBg: "bg-green-50/40 dark:bg-green-900/10", cardBg: "bg-green-50 dark:bg-green-900/20", cardBorder: "border-green-200 dark:border-green-900/30" },
+      { key: "lost", label: "Lost", icon: "✕", color: "#9CA3AF", headerBg: "bg-gray-50 dark:bg-gray-800/30", topBar: "bg-gray-300 dark:bg-gray-600", colBg: "bg-gray-50/40 dark:bg-gray-800/20", cardBg: "bg-gray-50 dark:bg-gray-800/40", cardBorder: "border-gray-200 dark:border-gray-700/50" },
+    ];
+  }
+
+  return company.deal_pipelines.map((stage: any) => ({
+    key: stage.name.toLowerCase(),
+    label: stage.name,
     icon: "○",
-    color: "#8B8580",
+    color: stage.color || "#8B8580",
     headerBg: "bg-bone",
     topBar: "bg-[#8B8580]",
     colBg: "bg-bone-2",
     cardBg: "bg-paper",
     cardBorder: "border-line",
-  },
-  {
-    key: "qualified",
-    label: "Qualified",
-    icon: "◈",
-    color: "#3B82F6",
-    headerBg: "bg-blue-50 dark:bg-blue-900/20",
-    topBar: "bg-blue-400",
-    colBg: "bg-blue-50/40 dark:bg-blue-900/10",
-    cardBg: "bg-paper",
-    cardBorder: "border-blue-100 dark:border-blue-900/30",
-  },
-  {
-    key: "proposal",
-    label: "Proposal",
-    icon: "⬡",
-    color: "#D97706",
-    headerBg: "bg-amber-50 dark:bg-amber-900/20",
-    topBar: "bg-amber-400",
-    colBg: "bg-amber-50/40 dark:bg-amber-900/10",
-    cardBg: "bg-paper",
-    cardBorder: "border-amber-100 dark:border-amber-900/30",
-  },
-  {
-    key: "negotiation",
-    label: "Negotiation",
-    icon: "◎",
-    color: "#7C3AED",
-    headerBg: "bg-violet-50 dark:bg-violet-900/20",
-    topBar: "bg-violet-400",
-    colBg: "bg-violet-50/40 dark:bg-violet-900/10",
-    cardBg: "bg-paper",
-    cardBorder: "border-violet-100 dark:border-violet-900/30",
-  },
-  {
-    key: "won",
-    label: "Won",
-    icon: "✓",
-    color: "#16A34A",
-    headerBg: "bg-green-50 dark:bg-green-900/20",
-    topBar: "bg-green-400",
-    colBg: "bg-green-50/40 dark:bg-green-900/10",
-    cardBg: "bg-green-50 dark:bg-green-900/20",
-    cardBorder: "border-green-200 dark:border-green-900/30",
-  },
-  {
-    key: "lost",
-    label: "Lost",
-    icon: "✕",
-    color: "#9CA3AF",
-    headerBg: "bg-gray-50 dark:bg-gray-800/30",
-    topBar: "bg-gray-300 dark:bg-gray-600",
-    colBg: "bg-gray-50/40 dark:bg-gray-800/20",
-    cardBg: "bg-gray-50 dark:bg-gray-800/40",
-    cardBorder: "border-gray-200 dark:border-gray-700/50",
-  },
-] as const;
+  }));
+}
 
-type StageKey = (typeof STAGES)[number]["key"];
-type StageMeta = (typeof STAGES)[number];
+type StageKey = string;
+type StageMeta = any;
 type StageBoards = Record<StageKey, Deal[]>;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function buildBoards(deals: Deal[]): StageBoards {
+function buildBoards(deals: Deal[], stages: any[]): StageBoards {
   const boards = Object.fromEntries(
-    STAGES.map((s) => [s.key, [] as Deal[]])
+    stages.map((s) => [s.key, [] as Deal[]])
   ) as unknown as StageBoards;
   for (const deal of deals) {
     const key = deal.stage as StageKey;
     if (key in boards) boards[key].push(deal);
-    else boards["prospect"].push(deal);
+    else if (stages.length > 0) boards[stages[0].key].push(deal);
   }
   for (const stage of Object.keys(boards) as StageKey[]) {
     boards[stage].sort((a, b) => (a.row_order ?? 0) - (b.row_order ?? 0));
@@ -366,11 +322,13 @@ function KanbanColumn({
 // ── New Deal Modal ─────────────────────────────────────────────────────────────
 
 function NewDealModal({
+  stages,
   defaultStage,
   onClose,
   onSuccess,
 }: {
   defaultStage: StageKey;
+  stages: any[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -457,7 +415,7 @@ function NewDealModal({
               value={form.stage}
               onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value }))}
             >
-              {STAGES.map((s) => (
+              {stages.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.label}
                 </option>
@@ -492,6 +450,8 @@ function NewDealModal({
 // ── Board Page ─────────────────────────────────────────────────────────────────
 
 export default function DealsBoardPage() {
+  const { data: company } = useCurrentCompany();
+  const dynamicStages = useMemo(() => getDynamicStages(company), [company]);
   const queryClient = useQueryClient();
   const { data: allDeals, isLoading } = useAllDealsBoard();
 
@@ -504,13 +464,13 @@ export default function DealsBoardPage() {
     setIsMounted(true);
   }, []);
 
-  const [boards, setBoards] = useState<StageBoards>(() => buildBoards([]));
+  const [boards, setBoards] = useState<StageBoards>(() => buildBoards([], dynamicStages));
   const prevDealsRef = useRef<Deal[]>([]);
 
   useEffect(() => {
     if (allDeals && allDeals !== prevDealsRef.current) {
       prevDealsRef.current = allDeals;
-      setBoards(buildBoards(allDeals));
+      setBoards(buildBoards(allDeals, dynamicStages));
     }
   }, [allDeals]);
 
@@ -695,7 +655,7 @@ export default function DealsBoardPage() {
 
           {totalCount > 0 && (
             <div className="flex h-1.5 rounded-full overflow-hidden mt-4 gap-px">
-              {STAGES.map((s) => {
+              {dynamicStages.map((s: any) => {
                 const count = boards[s.key as StageKey]?.length ?? 0;
                 const pct = (count / totalCount) * 100;
                 return pct > 0 ? <div key={s.key} style={{ width: `${pct}%`, background: s.color }} title={`${s.label}: ${count}`} className="transition-all duration-500" /> : null;
@@ -721,7 +681,7 @@ export default function DealsBoardPage() {
               onDragEnd={onDragEnd}
             >
               <div className="flex gap-3 min-w-max">
-                {STAGES.map((stage) => (
+                {dynamicStages.map((stage: any) => (
                   <KanbanColumn
                     key={stage.key}
                     stage={stage}
@@ -733,7 +693,7 @@ export default function DealsBoardPage() {
 
               <DragOverlay>
                 {activeDeal ? (
-                  <DealCard deal={activeDeal} stage={STAGES.find(s => s.key === activeDeal.stage) as StageMeta} isOverlay />
+                  <DealCard deal={activeDeal} stage={dynamicStages.find((s: any) => s.key === activeDeal.stage) as StageMeta} isOverlay />
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -741,7 +701,8 @@ export default function DealsBoardPage() {
         )}
       </div>
 
-      {showAdd && <NewDealModal defaultStage={addStage} onClose={() => setShowAdd(false)} onSuccess={() => setShowAdd(false)} />}
+      {showAdd && <NewDealModal defaultStage={addStage}
+          stages={dynamicStages} onClose={() => setShowAdd(false)} onSuccess={() => setShowAdd(false)} />}
     </>
   );
 }

@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Layers, Calendar, IndianRupee } from "lucide-react";
-import { useDeal } from "@/lib/queries";
+import { useDeal, useCurrentCompany } from "@/lib/queries";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
 import { QuotesInvoices } from "@/components/quotes-invoices";
@@ -11,14 +11,17 @@ import { CustomFieldsDisplay } from "@/components/custom-fields-display";
 import { formatDateTime, formatINR, toNumber } from "@/lib/utils";
 import { Drawer } from "@/components/drawer";
 
-const stageTone: Record<string, string> = {
-  prospect: "chip chip-neutral",
-  qualified: "chip chip-positive",
-  proposal: "chip chip-warning",
-  negotiation: "chip chip-warning",
-  won: "chip chip-positive",
-  lost: "chip chip-neutral",
-};
+function getStageLabel(stage: string, company: any) {
+  if (!company?.deal_pipelines) return stage.replaceAll("_", " ");
+  const found = company.deal_pipelines.find((s: any) => s.name.toLowerCase() === stage);
+  return found ? found.name : stage.replaceAll("_", " ");
+}
+
+function getStageColor(stage: string, company: any) {
+  if (!company?.deal_pipelines) return undefined;
+  const found = company.deal_pipelines.find((s: any) => s.name.toLowerCase() === stage);
+  return found ? found.color : undefined;
+}
 
 export default function InterceptedDealPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -27,6 +30,7 @@ export default function InterceptedDealPage({ params }: { params: Promise<{ id: 
   const dealId = parseInt(id, 10);
   
   const { data: deal, isLoading, error } = useDeal(dealId);
+  const { data: company } = useCurrentCompany();
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -66,8 +70,11 @@ export default function InterceptedDealPage({ params }: { params: Promise<{ id: 
               <Layers className="w-8 h-8 text-muted" strokeWidth={1.5} />
             </div>
             <h2 className="text-[22px] font-serif text-ink tracking-tight">{deal.title}</h2>
-            <span className={`mt-2 ${stageTone[deal.stage] ?? "chip chip-neutral"}`}>
-              {deal.stage.replaceAll("_", " ")}
+            <span 
+              className="mt-2 chip"
+              style={getStageColor(deal.stage, company) ? { borderColor: getStageColor(deal.stage, company), color: getStageColor(deal.stage, company), backgroundColor: `${getStageColor(deal.stage, company)}15` } : undefined}
+            >
+              {getStageLabel(deal.stage, company)}
             </span>
           </div>
           

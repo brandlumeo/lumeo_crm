@@ -10,23 +10,27 @@ import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
 import { createDeal } from "@/lib/api";
-import { useDealPage } from "@/lib/queries";
+import { useDealPage, useCurrentCompany } from "@/lib/queries";
 import type { DealInput } from "@/lib/types";
 import { formatDateTime, formatINR, toNumber } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
-const stageTone: Record<string, string> = {
-  prospect: "chip chip-neutral",
-  qualified: "chip chip-positive",
-  proposal: "chip chip-warning",
-  negotiation: "chip chip-warning",
-  won: "chip chip-positive",
-  lost: "chip chip-neutral",
-};
+function getStageLabel(stage: string, company: any) {
+  if (!company?.deal_pipelines) return stage.replaceAll("_", " ");
+  const found = company.deal_pipelines.find((s: any) => s.name.toLowerCase() === stage);
+  return found ? found.name : stage.replaceAll("_", " ");
+}
+
+function getStageColor(stage: string, company: any) {
+  if (!company?.deal_pipelines) return undefined;
+  const found = company.deal_pipelines.find((s: any) => s.name.toLowerCase() === stage);
+  return found ? found.color : undefined;
+}
 
 export default function DealsPage() {
   const queryClient = useQueryClient();
+  const { data: company } = useCurrentCompany();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("");
@@ -41,7 +45,10 @@ export default function DealsPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if ((company?.deal_pipelines?.length ?? 0) > 0 && form.stage === "prospect") {
+      setForm(f => ({ ...f, stage: company?.deal_pipelines![0].name.toLowerCase() }));
+    }
+  }, [company]);
 
   const { data, isLoading } = useDealPage({
     page,
@@ -98,12 +105,20 @@ export default function DealsPage() {
                 className="select sm:w-[180px]"
               >
                 <option value="">All stages</option>
-                <option value="prospect">Prospect</option>
-                <option value="qualified">Qualified</option>
-                <option value="proposal">Proposal</option>
-                <option value="negotiation">Negotiation</option>
-                <option value="won">Won</option>
-                <option value="lost">Lost</option>
+                {company?.deal_pipelines?.map((stage: any) => (
+                  <option key={stage.id} value={stage.name.toLowerCase()}>
+                    {stage.name}
+                  </option>
+                )) || (
+                  <>
+                    <option value="prospect">Prospect</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="proposal">Proposal</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="won">Won</option>
+                    <option value="lost">Lost</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -131,9 +146,13 @@ export default function DealsPage() {
                 {
                   key: "stage",
                   header: "Stage",
+                  sortable: true,
                   render: (deal) => (
-                    <span className={stageTone[deal.stage] ?? "chip chip-neutral"}>
-                      {deal.stage.replaceAll("_", " ")}
+                    <span 
+                      className="chip"
+                      style={getStageColor(deal.stage, company) ? { borderColor: getStageColor(deal.stage, company), color: getStageColor(deal.stage, company), backgroundColor: `${getStageColor(deal.stage, company)}15` } : undefined}
+                    >
+                      {getStageLabel(deal.stage, company)}
                     </span>
                   ),
                 },
@@ -202,12 +221,20 @@ export default function DealsPage() {
                 value={form.stage}
                 onChange={(event) => setForm((current) => ({ ...current, stage: event.target.value }))}
               >
-                <option value="prospect">Prospect</option>
-                <option value="qualified">Qualified</option>
-                <option value="proposal">Proposal</option>
-                <option value="negotiation">Negotiation</option>
-                <option value="won">Won</option>
-                <option value="lost">Lost</option>
+                {company?.deal_pipelines?.map((stage: any) => (
+                  <option key={stage.id} value={stage.name.toLowerCase()}>
+                    {stage.name}
+                  </option>
+                )) || (
+                  <>
+                    <option value="prospect">Prospect</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="proposal">Proposal</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="won">Won</option>
+                    <option value="lost">Lost</option>
+                  </>
+                )}
               </select>
             </label>
             <label>

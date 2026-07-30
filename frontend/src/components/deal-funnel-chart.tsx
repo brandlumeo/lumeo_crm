@@ -13,18 +13,25 @@ import {
 } from "recharts";
 
 import { type Deal } from "@/lib/types";
-
-const STAGES = [
-  { key: "prospect", label: "Prospect", color: "#6B7280" },
-  { key: "qualified", label: "Qualified", color: "#3B82F6" },
-  { key: "proposal", label: "Proposal", color: "#F59E0B" },
-  { key: "negotiation", label: "Negotiation", color: "#8B5CF6" },
-  { key: "won", label: "Won", color: "#10B981" },
-];
+import { useCurrentCompany } from "@/lib/queries";
 
 export function DealFunnelChart({ deals }: { deals: Deal[] }) {
+  const { data: company } = useCurrentCompany();
+
   const data = useMemo(() => {
-    return STAGES.map((stage) => {
+    const dynamicStages = company?.deal_pipelines?.map((s: any) => ({
+      key: s.name.toLowerCase(),
+      label: s.name,
+      color: s.color,
+    })) || [
+      { key: "prospect", label: "Prospect", color: "#6B7280" },
+      { key: "qualified", label: "Qualified", color: "#3B82F6" },
+      { key: "proposal", label: "Proposal", color: "#F59E0B" },
+      { key: "negotiation", label: "Negotiation", color: "#8B5CF6" },
+      { key: "won", label: "Won", color: "#10B981" },
+    ];
+
+    return dynamicStages.map((stage: any) => {
       const count = deals.filter((d) => d.stage === stage.key).length;
       return {
         name: stage.label,
@@ -32,7 +39,7 @@ export function DealFunnelChart({ deals }: { deals: Deal[] }) {
         color: stage.color,
       };
     });
-  }, [deals]);
+  }, [deals, company]);
 
   return (
     <div className="card animate-rise overflow-hidden flex flex-col">

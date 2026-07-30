@@ -134,6 +134,7 @@ export interface CompanyDetail extends CompanySummary {
   lead_assignment_round_robin: boolean;
   lead_sources?: { id: string; name: string }[];
   lead_pipelines?: { id: string; name: string; color: string }[];
+  deal_pipelines?: { id: string; name: string; color: string }[];
   deal_agents?: string[];
   deal_categories?: { id: string; name: string }[];
   lead_round_robin_agents?: string[];

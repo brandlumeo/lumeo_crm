@@ -91,6 +91,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "lead_assignment_round_robin",
             "lead_sources",
             "lead_pipelines",
+            "deal_pipelines",
             "deal_agents",
             "deal_categories",
             "lead_round_robin_agents",
