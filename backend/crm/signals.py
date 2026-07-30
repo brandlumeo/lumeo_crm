@@ -91,7 +91,7 @@ def deal_post_save(sender, instance, created, **kwargs):
                 user=u,
                 notification_type=Notification.Type.GENERAL,
                 title="New Deal Created",
-                body=f"Deal '{instance.title}' was added to {instance.get_stage_display()}."
+                body=f"Deal '{instance.title}' was added to {instance.stage.title()}."
             )
     elif old_stage != new_stage:
         for u in users_to_notify:
@@ -100,7 +100,7 @@ def deal_post_save(sender, instance, created, **kwargs):
                     user=u,
                     notification_type=Notification.Type.GENERAL,
                     title="Deal Stage Changed",
-                    body=f"Deal '{instance.title}' moved to {instance.get_stage_display()} stage."
+                    body=f"Deal '{instance.title}' moved to {instance.stage.title()} stage."
                 )
 
     if (created and new_stage == Deal.Stage.WON) or (not created and old_stage != new_stage and new_stage == Deal.Stage.WON):
