@@ -54,9 +54,6 @@ class CompanyScopedModelViewSet(ModelViewSet):
         queryset = self.queryset
         user = self.request.user
 
-        if user.is_superuser:
-            return queryset
-
         if user.company_id is None:
             return queryset.none()
 
@@ -1333,8 +1330,6 @@ class WebhookDeliveryLogViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            return WebhookDeliveryLog.objects.all()
         if user.company_id is None:
             return WebhookDeliveryLog.objects.none()
         return WebhookDeliveryLog.objects.filter(subscription__company_id=user.company_id)
