@@ -82,7 +82,58 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
 
   if (isLoading) {
     return (
-          <>
+      <div className="min-h-screen bg-bone flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-ink" />
+      </div>
+    );
+  }
+
+  if (error || !quote) {
+    return (
+      <div className="min-h-screen bg-bone flex items-center justify-center p-4 text-center">
+        <div>
+          <h1 className="text-2xl font-bold text-ink mb-2">Quote Not Found</h1>
+          <p className="text-muted">This quote may have been deleted or the link is invalid.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleClearSignature = () => {
+    sigCanvas.current?.clear();
+  };
+
+  const handleSign = () => {
+    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
+      toast.error("Please provide a signature.");
+      return;
+    }
+    if (!signedByName.trim()) {
+      toast.error("Please print your name.");
+      return;
+    }
+
+    const signatureData = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
+    
+    signMutation.mutate({
+      token,
+      payload: {
+        signature_data: signatureData,
+        signed_by_name: signedByName,
+      }
+    });
+  };
+
+  const isSigned = !!quote.signature_data;
+
+  // Quotes might only have basic company data without full settings nested, 
+  // so we safely fallback or use standard UI if settings aren't fully populated.
+  const settings = (quote as any).settings || (quote.company as any)?.invoice_settings || {};
+  const tpl = settings.template_id || (quote.company as any)?.invoice_template || 'template1';
+  const accentColor = settings.template_accent_color || '#4F46E5';
+
+  return (
+        <>
       <style dangerouslySetInnerHTML={{ __html: `
         :root {
           font-size: ${fontSizePx} !important;
@@ -315,19 +366,11 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   <span>Tax</span>
                   <span>{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line">
-                  <span>Total</span>
-                  <span>{formatCurrency(parseFloat(quote.total), quote.currency || quote.company?.currency)}</span>
-                </div>
-                <div className="flex justify-between text-emerald-600 font-medium pt-1">
-                  <span>Amount Paid</span>
-                  <span>{formatCurrency(parseFloat(quote.amount_paid || "0"), quote.currency || quote.company?.currency)}</span>
-                </div>
-                <div className="flex justify-between text-xl font-bold text-red-600 pt-3 border-t border-line"
+                <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
-                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>Amount Due</span>
-                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.amount_due || quote.total), quote.currency || quote.company?.currency)}</span>
+                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>Total</span>
+                  <span style={tpl === 'template3' ? { color: 'white' } : {}}>{formatCurrency(parseFloat(quote.total), quote.currency || quote.company?.currency)}</span>
                 </div>
               </div>
             </div>
@@ -349,7 +392,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-semibold text-ink mb-2">Quote Accepted</h3>
-              <p className="text-muted mb-8">This quote was signed and accepted on {new Date(quote.signed_at!).toLocaleString()}.</p>
+              <p className="text-muted mb-8">This invoice was signed and acknowledged on {new Date(quote.signed_at!).toLocaleString()}.</p>
               
               <div className="max-w-md mx-auto bg-bone-2 rounded-xl p-6 text-left border border-line">
                 <div className="mb-4">

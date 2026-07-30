@@ -594,6 +594,19 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
 
 class QuoteSerializer(CompanyScopedSerializer):
     items = QuoteLineItemSerializer(many=True, required=False)
+    deal_details = DealSerializer(source='deal', read_only=True)
+    customer_details = CustomerSerializer(source='customer', read_only=True)
+    settings = serializers.SerializerMethodField()
+
+    def get_settings(self, obj):
+        if not obj.company:
+            return None
+        try:
+            settings = obj.company.invoice_settings
+            request = self.context.get('request')
+            return PublicInvoiceSettingsSerializer(settings, context={'request': request}).data
+        except Exception:
+            return None
 
     class Meta:
         model = Quote
@@ -621,6 +634,9 @@ class QuoteSerializer(CompanyScopedSerializer):
             "signed_by_ip",
             "created_at",
             "updated_at",
+            "deal_details",
+            "customer_details",
+            "settings",
         )
         read_only_fields = ("id", "quote_number", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token")
 

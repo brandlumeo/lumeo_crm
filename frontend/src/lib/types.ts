@@ -532,6 +532,23 @@ export interface Quote {
   id: number;
   company: CompanySummary;
   deal: number | null;
+  deal_details?: {
+    id: number;
+    title: string;
+  };
+  customer?: number | null;
+  customer_details?: {
+    name: string;
+    company: string | null;
+    email: string | null;
+    phone: string | null;
+    address?: string | null;
+    custom_data?: {
+      address?: string | null;
+      [key: string]: any;
+    };
+  };
+  settings?: any;
   quote_number: string;
   title: string;
   currency?: string;
