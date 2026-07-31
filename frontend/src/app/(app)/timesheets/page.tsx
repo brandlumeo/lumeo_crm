@@ -182,7 +182,6 @@ export default function TimesheetsPage() {
             icon={Clock}
             title="No Timesheets"
             description="You haven't logged any hours yet."
-            action={{ label: "Log Hours", onClick: openNewDrawer }}
           />
         ) : (
           <div className="card p-0 overflow-hidden border border-line bg-paper shadow-sm animate-fade-in">
