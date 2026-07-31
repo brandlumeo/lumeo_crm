@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FolderKanban } from "lucide-react";
 
 import Link from "next/link";
 import { DataTable } from "@/components/data-table";
