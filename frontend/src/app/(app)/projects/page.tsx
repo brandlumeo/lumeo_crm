@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
 import { createProject } from "@/lib/api";
-import { useProjectPage, useCurrentCompany } from "@/lib/queries";
+import { useProjects, useCurrentCompany } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -34,7 +34,7 @@ export default function ProjectsPage() {
     custom_data: {},
   });
 
-  const { data, isLoading } = useProjectPage({
+  const { data, isLoading } = useProjects({
     page,
     search,
     status: status || undefined,
