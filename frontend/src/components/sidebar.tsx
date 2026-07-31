@@ -199,7 +199,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       icon: Briefcase,
       subItems: [
         { label: "Deals", href: "/deals", countKey: "deals" as const },
+        { label: "Projects", href: "/projects" },
         { label: "Tasks", href: "/tasks", countKey: "tasks" as const },
+        { label: "Timesheets", href: "/timesheets" },
         { label: "Notes", href: "/notes", countKey: "notes" as const },
         { label: "Campaigns", href: "/campaigns" },
       ]

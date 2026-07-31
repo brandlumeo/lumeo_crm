@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { TaskBoard } from "@/components/task-board";
 import { createTask, fetchTeam, updateTask, deleteTask } from "@/lib/api";
 import { useCurrentUser, useTaskPage } from "@/lib/queries";
 import type { TaskInput, Task } from "@/lib/types";
@@ -152,13 +153,6 @@ export default function TasksPage() {
   };
 
   const rows = data?.results ?? [];
-
-  // Group for kanban
-  const columns = {
-    todo: rows.filter(t => t.status === "todo"),
-    in_progress: rows.filter(t => t.status === "in_progress"),
-    done: rows.filter(t => t.status === "done")
-  };
 
   return (
     <PageShell
@@ -306,51 +300,7 @@ export default function TasksPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in flex-1 items-start">
-            {/* Kanban Columns */}
-            {[
-              { id: "todo", title: "To Do", tasks: columns.todo, color: "border-amber-400" },
-              { id: "in_progress", title: "In Progress", tasks: columns.in_progress, color: "border-blue-400" },
-              { id: "done", title: "Done", tasks: columns.done, color: "border-emerald-400" }
-            ].map(col => (
-              <div key={col.id} className="bg-bone/30 rounded-xl border border-line p-3 min-h-[400px] flex flex-col gap-3">
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("w-2 h-2 rounded-full border-2", col.color)} />
-                    <h3 className="font-semibold text-ink text-[14px]">{col.title}</h3>
-                  </div>
-                  <span className="bg-paper border border-line px-2 py-0.5 rounded text-xs text-muted font-medium">
-                    {col.tasks.length}
-                  </span>
-                </div>
-                
-                <div className="flex flex-col gap-3">
-                  {col.tasks.map(task => (
-                    <div key={task.id} className="bg-paper border border-line shadow-sm rounded-lg p-3 hover:shadow-md transition-shadow group cursor-pointer" onClick={() => openEditDrawer(task)}>
-                      <h4 className="text-[13.5px] font-medium text-ink leading-snug mb-3">{task.title}</h4>
-                      
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="flex items-center gap-1.5 text-[11.5px] text-muted">
-                          {task.due_date && <><Calendar className="w-3.5 h-3.5" /> {new Date(task.due_date).toLocaleDateString()}</>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-bone-2 border border-line flex items-center justify-center" title={getDisplayName(task.assigned_to)}>
-                            <User className="w-3 h-3 text-muted" />
-                          </div>
-                        </div>
-                      </div>
-                      {task.created_at && (
-                        <div className="flex items-center gap-1 text-[10.5px] text-muted/60 mt-2 pt-2 border-t border-line/50">
-                          <Clock className="w-2.5 h-2.5" />
-                          Created {new Date(task.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <TaskBoard tasks={rows} onEditTask={openEditDrawer} />
         )}
       </div>
 

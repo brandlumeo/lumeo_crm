@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet
 
 
 User = get_user_model()
@@ -1619,3 +1619,49 @@ class NoticeSerializer(CompanyScopedSerializer):
             validated_data["author"] = request.user
         return super().create(validated_data)
 
+
+# ── Timesheets ───────────────────────────────────────────────────────────────
+
+class TimesheetSerializer(CompanyScopedSerializer):
+    user_display = UserSummarySerializer(source="user", read_only=True)
+    project_name = serializers.CharField(source="project.name", read_only=True)
+    task_name = serializers.CharField(source="task.title", read_only=True)
+    approved_by_display = UserSummarySerializer(source="approved_by", read_only=True)
+
+    project_id = serializers.PrimaryKeyRelatedField(
+        source="project", queryset=Project.objects.all(), required=False, allow_null=True, write_only=True
+    )
+    task_id = serializers.PrimaryKeyRelatedField(
+        source="task", queryset=Task.objects.all(), required=False, allow_null=True, write_only=True
+    )
+
+    class Meta:
+        model = Timesheet
+        fields = (
+            "id",
+            "company",
+            "company_id",
+            "user",
+            "user_display",
+            "project",
+            "project_id",
+            "project_name",
+            "task",
+            "task_id",
+            "task_name",
+            "date",
+            "hours",
+            "description",
+            "status",
+            "approved_by",
+            "approved_by_display",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "user", "approved_by", "created_at", "updated_at")
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            validated_data["user"] = request.user
+        return super().create(validated_data)

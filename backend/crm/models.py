@@ -1332,3 +1332,31 @@ class Notice(models.Model):
     def __str__(self):
         return self.title
 
+
+class Timesheet(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="timesheets")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="timesheets")
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="timesheets", null=True, blank=True)
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, related_name="timesheets", null=True, blank=True)
+    
+    date = models.DateField(db_index=True)
+    hours = models.DecimalField(max_digits=5, decimal_places=2)
+    description = models.TextField(blank=True, null=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="approved_timesheets")
+    
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-date", "-created_at")
+
+    def __str__(self):
+        return f"{self.user.email} - {self.date} ({self.hours}h)"

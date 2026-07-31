@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -43,6 +43,7 @@ from .serializers import (
     NoticeSerializer,
     ServiceCategorySerializer,
     ProjectSerializer,
+    TimesheetSerializer,
 )
 from .emailing import send_crm_email
 
@@ -1413,9 +1414,17 @@ class WebhookDeliveryLogViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.company_id is None:
+        if not user.is_authenticated or user.company_id is None:
             return WebhookDeliveryLog.objects.none()
         return WebhookDeliveryLog.objects.filter(subscription__company_id=user.company_id)
+
+
+class TimesheetViewSet(CompanyScopedModelViewSet):
+    queryset = Timesheet.objects.all()
+    serializer_class = TimesheetSerializer
+    filterset_fields = ["user", "project", "task", "status", "date"]
+    search_fields = ["description", "user__email", "user__first_name", "user__last_name", "project__name", "task__title"]
+    ordering_fields = ["date", "created_at", "hours"]
 
 
 class EmailSendView(APIView):

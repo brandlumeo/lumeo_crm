@@ -962,3 +962,55 @@ export interface TicketCommentInput {
   body: string;
   is_internal?: boolean;
 }
+
+export interface Project {
+  id: number;
+  company_id: number;
+  name: string;
+  description: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  customer?: Customer;
+  deal?: Deal;
+  members: UserSummary[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectInput {
+  name: string;
+  description?: string;
+  status?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  customer_id?: number | null;
+  deal_id?: number | null;
+  member_ids?: number[];
+}
+
+export interface Timesheet {
+  id: number;
+  company_id: number;
+  user_display: UserSummary;
+  project_id?: number | null;
+  project_name?: string;
+  task_id?: number | null;
+  task_name?: string;
+  date: string;
+  hours: string | number;
+  description: string | null;
+  status: "draft" | "submitted" | "approved" | "rejected";
+  approved_by_display?: UserSummary | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimesheetInput {
+  project_id?: number | null;
+  task_id?: number | null;
+  date: string;
+  hours: number | string;
+  description?: string;
+  status?: "draft" | "submitted" | "approved" | "rejected";
+}

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCustomFields } from "@/lib/api";
 
 interface CustomFieldsFormInputsProps {
-  modelName: "lead" | "customer" | "deal";
+  modelName: "lead" | "customer" | "deal" | "project";
   values: Record<string, any>;
   onChange: (values: Record<string, any>) => void;
 }

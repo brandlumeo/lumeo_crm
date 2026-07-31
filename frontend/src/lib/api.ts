@@ -112,6 +112,8 @@ const endpoints = {
   leads: "/crm/leads/",
   customers: "/crm/customers/",
   deals: "/crm/deals/",
+  projects: "/crm/projects/",
+  timesheets: "/crm/timesheets/",
   tasks: "/crm/tasks/",
   notes: "/crm/notes/",
   activities: "/crm/activities/",
@@ -545,6 +547,34 @@ export async function inviteCustomerToPortal(id: number) {
     `${endpoints.customers}${id}/invite-portal/`
   );
   return data;
+}
+
+// ------------------------------------------------------------------
+// Projects
+// ------------------------------------------------------------------
+
+export async function getProjects(params?: ListParams) {
+  const { data } = await api.get<PaginatedResponse<any>>(endpoints.projects, { params });
+  return data;
+}
+
+export async function getProject(id: string | number) {
+  const { data } = await api.get<any>(`${endpoints.projects}${id}/`);
+  return data;
+}
+
+export async function createProject(payload: any) {
+  const { data } = await api.post<any>(endpoints.projects, payload);
+  return data;
+}
+
+export async function updateProject({ id, ...payload }: any) {
+  const { data } = await api.put<any>(`${endpoints.projects}${id}/`, payload);
+  return data;
+}
+
+export async function deleteProject(id: string | number) {
+  await api.delete(`${endpoints.projects}${id}/`);
 }
 
 export async function createDeal(payload: DealInput) {
@@ -1452,7 +1482,63 @@ export const deletePaymentMethod = async (id: number) => {
   return res.data;
 };
 
-// ── Units ───────────────────────────────────────────────────────────────────
+// ── Projects ────────────────────────────────────────────────────────────────
+export async function fetchProjects(params?: Record<string, any>) {
+  const { data } = await api.get<{ count: number; next: string | null; previous: string | null; results: Project[] }>(
+    endpoints.projects,
+    { params }
+  );
+  return data;
+}
+
+export async function fetchProject(id: number) {
+  const { data } = await api.get<Project>(`${endpoints.projects}${id}/`);
+  return data;
+}
+
+export async function createProject(payload: ProjectInput) {
+  const { data } = await api.post<Project>(endpoints.projects, payload);
+  return data;
+}
+
+export async function updateProject({ id, payload }: { id: number; payload: Partial<ProjectInput> }) {
+  const { data } = await api.patch<Project>(`${endpoints.projects}${id}/`, payload);
+  return data;
+}
+
+export async function deleteProject(id: number) {
+  await api.delete(`${endpoints.projects}${id}/`);
+}
+
+// ── Timesheets ──────────────────────────────────────────────────────────────
+export async function fetchTimesheets(params?: Record<string, any>) {
+  const { data } = await api.get<{ count: number; next: string | null; previous: string | null; results: Timesheet[] }>(
+    endpoints.timesheets,
+    { params }
+  );
+  return data;
+}
+
+export async function fetchTimesheet(id: number) {
+  const { data } = await api.get<Timesheet>(`${endpoints.timesheets}${id}/`);
+  return data;
+}
+
+export async function createTimesheet(payload: TimesheetInput) {
+  const { data } = await api.post<Timesheet>(endpoints.timesheets, payload);
+  return data;
+}
+
+export async function updateTimesheet({ id, payload }: { id: number; payload: Partial<TimesheetInput> }) {
+  const { data } = await api.patch<Timesheet>(`${endpoints.timesheets}${id}/`, payload);
+  return data;
+}
+
+export async function deleteTimesheet(id: number) {
+  await api.delete(`${endpoints.timesheets}${id}/`);
+}
+
+// ── Tasks ───────────────────────────────────────────────────────────────────
 
 export const fetchUnits = async () => {
   const res = await api.get("/companies/units/");

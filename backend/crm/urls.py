@@ -45,6 +45,7 @@ from .views import (
     NoticeViewSet,
     ServiceCategoryViewSet,
     ProjectViewSet,
+    TimesheetViewSet,
 )
 
 from .ai_views import AIChatView
@@ -57,6 +58,7 @@ router.register("service-categories", ServiceCategoryViewSet, basename="service-
 router.register("leads", LeadViewSet, basename="lead")
 router.register("customers", CustomerViewSet, basename="customer")
 router.register("projects", ProjectViewSet, basename="project")
+router.register("timesheets", TimesheetViewSet, basename="timesheet")
 router.register("deals", DealViewSet, basename="deal")
 router.register("tasks", TaskViewSet, basename="task")
 router.register("notes", NoteViewSet, basename="note")

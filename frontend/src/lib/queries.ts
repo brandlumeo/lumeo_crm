@@ -23,6 +23,16 @@ import {
   getAccessToken,
   fetchActivities,
   fetchLead,
+  fetchProjects,
+  fetchProject,
+  createProject,
+  updateProject,
+  deleteProject,
+  fetchTimesheets,
+  fetchTimesheet,
+  createTimesheet,
+  updateTimesheet,
+  deleteTimesheet,
   createLead,
   updateLead,
   deleteLead,
@@ -137,6 +147,8 @@ import {
   createNotice,
   updateNotice,
   deleteNotice,
+  getProjects,
+  getProject,
 } from "@/lib/api";
 import type { ListParams, CampaignInput, TicketInput, TicketCommentInput } from "@/lib/types";
 
@@ -203,6 +215,23 @@ export function useCustomerPage(params: ListParams) {
     queryFn: () => fetchCustomerPage(params),
     enabled: authenticated(),
     placeholderData: (previous) => previous,
+  });
+}
+
+export function useProjectPage(params: ListParams) {
+  return useQuery({
+    queryKey: ["crm", "projects", params],
+    queryFn: () => getProjects(params),
+    enabled: authenticated(),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useProject(id: string | number) {
+  return useQuery({
+    queryKey: ["crm", "project", id],
+    queryFn: () => getProject(id),
+    enabled: authenticated() && !!id,
   });
 }
 
@@ -1515,4 +1544,92 @@ export function useDeleteUnit() {
     mutationFn: (id: string | number) => import('./api').then(m => m.deleteUnit(id)), 
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['units'] }); } 
   }); 
+}
+
+// ── Projects ───────────────────────────────────────────────────────────────────
+
+export function useProjects(params?: Record<string, any>) {
+  return useQuery({
+    queryKey: ["projects", params],
+    queryFn: () => fetchProjects(params),
+  });
+}
+
+export function useProject(id: number) {
+  return useQuery({
+    queryKey: ["projects", id],
+    queryFn: () => fetchProject(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createProject,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateProject,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", variables.id] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteProject,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
+// ── Timesheets ───────────────────────────────────────────────────────────────
+
+export function useTimesheets(params?: Record<string, any>) {
+  return useQuery({
+    queryKey: ["timesheets", params],
+    queryFn: () => fetchTimesheets(params),
+  });
+}
+
+export function useTimesheet(id: number) {
+  return useQuery({
+    queryKey: ["timesheets", id],
+    queryFn: () => fetchTimesheet(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateTimesheet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createTimesheet,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["timesheets"] }),
+  });
+}
+
+export function useUpdateTimesheet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateTimesheet,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["timesheets"] });
+      queryClient.invalidateQueries({ queryKey: ["timesheets", variables.id] });
+    },
+  });
+}
+
+export function useDeleteTimesheet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteTimesheet,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["timesheets"] }),
+  });
 }

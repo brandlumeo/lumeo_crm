@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCustomFields } from "@/lib/api";
 
 interface CustomFieldsDisplayProps {
-  modelName: "lead" | "customer" | "deal";
+  modelName: "lead" | "customer" | "deal" | "project";
   customData?: Record<string, any>;
 }
 
