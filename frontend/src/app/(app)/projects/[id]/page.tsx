@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, LayoutList } from "lucide-react";
+import { ArrowLeft, Calendar, LayoutList, FolderKanban } from "lucide-react";
 import { useProject } from "@/lib/queries";
 import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
