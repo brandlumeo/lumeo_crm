@@ -33,6 +33,7 @@ import {
   Inbox,
   HelpCircle,
   LogOut,
+  Zap,
 } from "lucide-react";
 
 import { useCrmCounts, useCurrentCompany, useCurrentUser } from "@/lib/queries";
@@ -222,6 +223,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { label: "Orders", href: "/orders", icon: ShoppingCart },
     { label: "Tickets", href: "/tickets", icon: Ticket },
     { label: "Events", href: "/events", icon: Calendar },
+    { label: "Automations", href: "/automations", icon: Zap },
     { label: "Notice Board", href: "/notice-board", icon: ClipboardList },
   ];
 

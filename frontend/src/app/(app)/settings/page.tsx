@@ -16,7 +16,6 @@ import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
 import { updateProfile, updateCompany, updatePassword } from "@/lib/api";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsSettings } from "@/components/custom-fields-settings";
-import { WorkflowsSettings } from "@/components/workflows-settings";
 import { EmailSettings } from "@/components/email-settings";
 import { CalendarSettings } from "@/components/calendar-settings";
 import { HRSettings } from "@/components/hr-settings";
@@ -203,7 +202,21 @@ export default function SettingsPage() {
             {activeTab === "theme" && <ThemeSettingsForm />}
             {activeTab === "module" && <ModuleSettingsForm />}
             {activeTab === "custom_fields" && <CustomFieldsSettings />}
-            {activeTab === "workflows" && <WorkflowsSettings />}
+            {activeTab === "workflows" && (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <div className="w-16 h-16 bg-bone rounded-full flex items-center justify-center mb-4">
+                  <Zap className="w-8 h-8 text-ink-3" />
+                </div>
+                <h3 className="text-lg font-semibold text-ink mb-2">Automations Moved</h3>
+                <p className="text-sm text-ink-2 mb-6 max-w-sm">
+                  Workflow rules and sequences have been moved to their own dedicated Automations module.
+                </p>
+                <Link href="/automations" className="bg-ink text-white hover:bg-ink-2 px-6 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Go to Automations
+                </Link>
+              </div>
+            )}
             {activeTab === "hr" && <HRSettings />}
             {activeTab === "email" && <EmailSettings />}
             {activeTab === "google_calendar" && <CalendarSettings />}

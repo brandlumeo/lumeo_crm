@@ -43,6 +43,8 @@ import type {
   SMTPConfigInput,
   EmailTemplate,
   EmailTemplateInput,
+  WorkflowSequence,
+  WorkflowSequenceInput,
   WebhookSubscription,
   WebhookSubscriptionInput,
   WebhookDeliveryLog,
@@ -127,6 +129,7 @@ const endpoints = {
   invoices: "/crm/invoices/",
   customFields: "/crm/custom-fields/",
   workflowRules: "/crm/workflow-rules/",
+  workflowSequences: "/crm/workflow-sequences/",
   currentSubscription: "/subscriptions/current/",
   planCatalogue: "/subscriptions/plans/",
   checkoutSubscription: "/subscriptions/checkout/",
@@ -888,6 +891,24 @@ export async function updateWorkflowRule(id: number, payload: Partial<WorkflowRu
 
 export async function deleteWorkflowRule(id: number) {
   await api.delete(`${endpoints.workflowRules}${id}/`);
+}
+
+export async function fetchWorkflowSequences(params?: ListParams) {
+  return listPage<WorkflowSequence>(endpoints.workflowSequences, params);
+}
+
+export async function createWorkflowSequence(payload: WorkflowSequenceInput) {
+  const { data } = await api.post<WorkflowSequence>(endpoints.workflowSequences, payload);
+  return data;
+}
+
+export async function updateWorkflowSequence(id: number, payload: Partial<WorkflowSequenceInput>) {
+  const { data } = await api.patch<WorkflowSequence>(`${endpoints.workflowSequences}${id}/`, payload);
+  return data;
+}
+
+export async function deleteWorkflowSequence(id: number) {
+  await api.delete(`${endpoints.workflowSequences}${id}/`);
 }
 
 export async function createSubscriptionCheckout(payload: { plan_key: string; billing_period: "monthly" | "yearly" }) {

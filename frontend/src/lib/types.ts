@@ -702,6 +702,35 @@ export interface WorkflowRuleInput {
   is_active?: boolean;
 }
 
+export interface WorkflowStep {
+  id?: number;
+  order: number;
+  delay_minutes: number;
+  action_type: "create_task" | "send_notification" | "send_email";
+  action_payload: any;
+  email_template?: number | null;
+}
+
+export interface WorkflowSequence {
+  id: number;
+  company: CompanySummary;
+  name: string;
+  trigger_event: "lead_created" | "lead_qualified";
+  stop_on_statuses: string[];
+  steps: WorkflowStep[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkflowSequenceInput {
+  name: string;
+  trigger_event: "lead_created" | "lead_qualified";
+  stop_on_statuses?: string[];
+  steps: WorkflowStep[];
+  is_active?: boolean;
+}
+
 export interface SMTPConfig {
   id: number;
   company?: CompanySummary;
