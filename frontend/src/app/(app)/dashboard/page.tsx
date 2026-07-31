@@ -12,7 +12,7 @@ import { RevenueChart } from "@/components/revenue-chart";
 import { DealFunnelChart } from "@/components/deal-funnel-chart";
 import { TasksList } from "@/components/tasks-list";
 import { useDashboardBundle } from "@/lib/queries";
-import { formatCompactINR, formatLongDate, formatINR, getDisplayName, toNumber } from "@/lib/utils";
+import { formatCompactINR, formatLongDate, getDisplayName, toNumber } from "@/lib/utils";
 
 function buildActivityBundle({
   leads,

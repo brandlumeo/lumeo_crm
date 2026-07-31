@@ -6,7 +6,7 @@ import { useTimesheets, useCreateTimesheet, useUpdateTimesheet, useDeleteTimeshe
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { Clock, Plus, Filter, Calendar, Briefcase, FileText, CheckCircle, XCircle } from "lucide-react";
+import { Clock, Filter, Calendar, Briefcase, FileText, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { Timesheet, TimesheetInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
