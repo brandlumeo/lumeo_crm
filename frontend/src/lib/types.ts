@@ -168,9 +168,11 @@ export interface CompanyDetail extends CompanySummary {
 export interface UserSummary {
   id: number;
   username: string;
+  email?: string;
   first_name: string;
   last_name: string;
   role: string;
+  avatar?: string | null;
 }
 
 export interface UserProfile extends UserSummary {
