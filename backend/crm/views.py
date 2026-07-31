@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -42,6 +42,7 @@ from .serializers import (
     EventSerializer,
     NoticeSerializer,
     ServiceCategorySerializer,
+    ProjectSerializer,
 )
 from .emailing import send_crm_email
 
@@ -266,13 +267,16 @@ class LeadViewSet(CompanyScopedModelViewSet):
             first_stage = pipelines[0].get("name", "Prospect").lower()
             
         # Create Deal
+        deal_custom_data = dict(lead.custom_data)
+        deal_custom_data["customer_id"] = customer.id
+        
         deal = Deal.objects.create(
             company=lead.company,
             title=f"{lead.name} Deal",
             amount=0.00,
             stage=first_stage,
             assigned_to=lead.assigned_to,
-            custom_data=lead.custom_data,
+            custom_data=deal_custom_data,
         )
         
         # Mark lead as won/converted
@@ -633,6 +637,43 @@ class DealViewSet(CompanyScopedModelViewSet):
         return Response({"status": "reordering applied successfully"})
 
 
+
+class ProjectViewSet(CompanyScopedModelViewSet):
+    permission_module = "Projects"
+    serializer_class = ProjectSerializer
+    queryset = Project.objects.select_related("company", "customer", "deal").prefetch_related("members")
+    search_fields = ("name", "category", "status")
+    ordering_fields = ("created_at", "updated_at", "name", "start_date", "deadline", "status", "progress")
+    ordering = ("-created_at",)
+
+    def apply_business_filters(self, queryset):
+        user = self.request.user
+        status_value = self.request.query_params.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+            
+        category_value = self.request.query_params.get("category")
+        if category_value:
+            queryset = queryset.filter(category=category_value)
+
+        # Apply basic "Owned" permissions if they only have "Owned" view access
+        if not user.has_management_access and user.role not in ["owner", "admin", "manager"]:
+            company = getattr(user, "company", None)
+            if company:
+                roles = company.roles
+                role_id = str(user.role).lower()
+                role_def = next((r for r in roles if r.get("id") == role_id), None)
+                if role_def:
+                    permissions = role_def.get("permissions", {})
+                    project_perms = permissions.get("Projects", {})
+                    view_perm = project_perms.get("View", "None")
+                    
+                    if view_perm == "Owned":
+                        queryset = queryset.filter(members=user)
+                    elif view_perm == "None":
+                        queryset = queryset.none()
+        
+        return queryset
 
 class TaskViewSet(CompanyScopedModelViewSet):
     permission_module = "Tasks"

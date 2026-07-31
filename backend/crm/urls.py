@@ -44,6 +44,7 @@ from .views import (
     EventViewSet,
     NoticeViewSet,
     ServiceCategoryViewSet,
+    ProjectViewSet,
 )
 
 from .ai_views import AIChatView
@@ -55,6 +56,7 @@ router = DefaultRouter()
 router.register("service-categories", ServiceCategoryViewSet, basename="service-category")
 router.register("leads", LeadViewSet, basename="lead")
 router.register("customers", CustomerViewSet, basename="customer")
+router.register("projects", ProjectViewSet, basename="project")
 router.register("deals", DealViewSet, basename="deal")
 router.register("tasks", TaskViewSet, basename="task")
 router.register("notes", NoteViewSet, basename="note")

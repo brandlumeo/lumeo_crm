@@ -369,8 +369,107 @@ class DealSerializer(CompanyScopedSerializer):
         if new_stage == Deal.Stage.WON and old_stage != Deal.Stage.WON:
             from notifications.tasks import notify_deal_won
             notify_deal_won.delay(updated_instance.id)
+            
+            # Spawn a project automatically
+            try:
+                from crm.models import Project, Customer
+                import datetime
+                
+                company = updated_instance.company
+                statuses = company.project_statuses
+                default_status = "not started"
+                if statuses and isinstance(statuses, list):
+                    for status_obj in statuses:
+                        if status_obj.get("isDefault"):
+                            default_status = status_obj.get("name", "not started").lower()
+                            break
+                            
+                # Try to resolve customer
+                customer_id = updated_instance.custom_data.get("customer_id")
+                customer = None
+                if customer_id:
+                    customer = Customer.objects.filter(id=customer_id).first()
+                            
+                project = Project.objects.create(
+                    company=company,
+                    name=f"Project: {updated_instance.title}",
+                    customer=customer,
+                    deal=updated_instance,
+                    status=default_status,
+                )
+                if updated_instance.assigned_to:
+                    project.members.add(updated_instance.assigned_to)
+            except Exception as e:
+                print("Failed to auto-spawn project from won deal:", str(e))
+                
         return updated_instance
 
+
+class ProjectSerializer(CompanyScopedSerializer):
+    members = UserSummarySerializer(many=True, read_only=True)
+    member_ids = serializers.PrimaryKeyRelatedField(
+        source="members",
+        queryset=User.objects.none(),
+        many=True,
+        write_only=True,
+        required=False,
+    )
+    customer_id = serializers.PrimaryKeyRelatedField(
+        source="customer",
+        queryset=Customer.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+    deal_id = serializers.PrimaryKeyRelatedField(
+        source="deal",
+        queryset=Deal.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+    
+    class Meta:
+        model = Project
+        fields = (
+            "id",
+            "company",
+            "company_id",
+            "name",
+            "description",
+            "customer",
+            "customer_id",
+            "deal",
+            "deal_id",
+            "start_date",
+            "deadline",
+            "status",
+            "category",
+            "members",
+            "member_ids",
+            "progress",
+            "calculated_progress",
+            "custom_data",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at", "calculated_progress")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        if user and user.is_authenticated:
+            if user.is_superuser:
+                self.fields["member_ids"].queryset = User.objects.all()
+                self.fields["customer_id"].queryset = Customer.objects.all()
+                self.fields["deal_id"].queryset = Deal.objects.all()
+            elif user.company_id is not None:
+                self.fields["member_ids"].queryset = User.objects.filter(company_id=user.company_id)
+                self.fields["customer_id"].queryset = Customer.objects.filter(company_id=user.company_id)
+                self.fields["deal_id"].queryset = Deal.objects.filter(company_id=user.company_id)
+
+    def validate_company_relations(self, attrs, company):
+        return attrs
 
 class TaskSerializer(CompanyScopedSerializer):
     assigned_to = UserSummarySerializer(read_only=True)
@@ -399,6 +498,12 @@ class TaskSerializer(CompanyScopedSerializer):
         required=False,
         allow_null=True,
     )
+    project_id = serializers.PrimaryKeyRelatedField(
+        source="project",
+        queryset=Project.objects.none(),
+        required=False,
+        allow_null=True,
+    )
     workflow_step_run_id = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -415,6 +520,7 @@ class TaskSerializer(CompanyScopedSerializer):
             "lead_id",
             "deal_id",
             "customer_id",
+            "project_id",
             "workflow_step_run_id",
             "created_at",
             "updated_at",
@@ -432,6 +538,7 @@ class TaskSerializer(CompanyScopedSerializer):
                 self.fields["lead_id"].queryset = Lead.objects.all()
                 self.fields["deal_id"].queryset = Deal.objects.all()
                 self.fields["customer_id"].queryset = Customer.objects.all()
+                self.fields["project_id"].queryset = Project.objects.all()
             elif user.company_id is not None:
                 self.fields["assigned_to_id"].queryset = User.objects.filter(
                     company_id=user.company_id
@@ -439,6 +546,7 @@ class TaskSerializer(CompanyScopedSerializer):
                 self.fields["lead_id"].queryset = Lead.objects.filter(company_id=user.company_id)
                 self.fields["deal_id"].queryset = Deal.objects.filter(company_id=user.company_id)
                 self.fields["customer_id"].queryset = Customer.objects.filter(company_id=user.company_id)
+                self.fields["project_id"].queryset = Project.objects.filter(company_id=user.company_id)
 
     def validate_company_relations(self, attrs, company):
         assigned_to = attrs.get("assigned_to", getattr(self.instance, "assigned_to", None))

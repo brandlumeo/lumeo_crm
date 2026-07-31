@@ -182,6 +182,65 @@ class Deal(models.Model):
 
 
 
+class Project(models.Model):
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="projects",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+    customer = models.ForeignKey(
+        "Customer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projects",
+    )
+    deal = models.ForeignKey(
+        "Deal",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projects",
+    )
+    
+    start_date = models.DateField(null=True, blank=True, db_index=True)
+    deadline = models.DateField(null=True, blank=True, db_index=True)
+    
+    status = models.CharField(max_length=50, default="not started", db_index=True)
+    category = models.CharField(max_length=100, null=True, blank=True)
+    
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="assigned_projects",
+        blank=True,
+    )
+    
+    progress = models.IntegerField(default=0, help_text="0 to 100")
+    custom_data = models.JSONField(default=dict, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("company", "status")),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def calculated_progress(self):
+        total_tasks = self.tasks.count()
+        if total_tasks == 0:
+            return self.progress
+        completed_tasks = self.tasks.filter(status="done").count()
+        return int((completed_tasks / total_tasks) * 100)
+
+
 class Task(models.Model):
     class Status(models.TextChoices):
         TODO = "todo", "To Do"
@@ -224,6 +283,13 @@ class Task(models.Model):
     )
     customer = models.ForeignKey(
         "Customer",
+        on_delete=models.SET_NULL,
+        related_name="tasks",
+        null=True,
+        blank=True,
+    )
+    project = models.ForeignKey(
+        "Project",
         on_delete=models.SET_NULL,
         related_name="tasks",
         null=True,
