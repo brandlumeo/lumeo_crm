@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FolderKanban, Plus } from "lucide-react";
 
 import Link from "next/link";
 import { DataTable } from "@/components/data-table";
@@ -27,10 +26,9 @@ export default function ProjectsPage() {
   
   const [form, setForm] = useState({
     name: "",
-    category: "",
     status: defaultStatus,
     start_date: "",
-    deadline: "",
+    end_date: "",
     custom_data: {},
   });
 
@@ -44,7 +42,7 @@ export default function ProjectsPage() {
   const mutation = useMutation({
     mutationFn: createProject,
     onSuccess: () => {
-      setForm({ name: "", category: "", status: defaultStatus, start_date: "", deadline: "", custom_data: {} });
+      setForm({ name: "", status: defaultStatus, start_date: "", end_date: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
   });
@@ -149,7 +147,7 @@ export default function ProjectsPage() {
                       <div className="w-full bg-surface-muted rounded-full h-1.5">
                         <div 
                           className="bg-accent h-1.5 rounded-full transition-all duration-500" 
-                          style={{ width: `${project.progress}%` }}
+                          style={{ width: `${project.progress ?? 0}%` }}
                         />
                       </div>
                     </div>
@@ -183,7 +181,7 @@ export default function ProjectsPage() {
               event.preventDefault();
               const payload: any = { ...form };
               if (!payload.start_date) delete payload.start_date;
-              if (!payload.deadline) delete payload.deadline;
+              if (!payload.end_date) delete payload.end_date;
               mutation.mutate(payload);
             }}
           >
@@ -198,23 +196,7 @@ export default function ProjectsPage() {
               />
             </label>
             
-            {(company?.project_categories && company.project_categories.length > 0) ? (
-              <label>
-                <span className="label">Category</span>
-                <select
-                  className="select"
-                  value={form.category || ""}
-                  onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-                >
-                  <option value="">None</option>
-                  {company.project_categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
+
 
             <label>
               <span className="label">Status</span>
@@ -253,8 +235,8 @@ export default function ProjectsPage() {
                 <input
                   type="date"
                   className="input"
-                  value={form.deadline}
-                  onChange={(event) => setForm((current) => ({ ...current, deadline: event.target.value }))}
+                  value={form.end_date}
+                  onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))}
                 />
               </label>
             </div>

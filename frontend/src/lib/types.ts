@@ -974,6 +974,8 @@ export interface Project {
   customer?: Customer;
   deal?: Deal;
   members: UserSummary[];
+  progress?: number;
+  custom_data?: any;
   created_at: string;
   updated_at: string;
 }
@@ -987,6 +989,7 @@ export interface ProjectInput {
   customer_id?: number | null;
   deal_id?: number | null;
   member_ids?: number[];
+  custom_data?: any;
 }
 
 export interface Timesheet {

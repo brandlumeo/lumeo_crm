@@ -96,12 +96,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <div className="pt-2">
                 <div className="flex justify-between text-[11px] text-muted mb-1">
                   <span>Progress</span>
-                  <span>{project.progress}%</span>
+                  <span>{project.progress ?? 0}%</span>
                 </div>
                 <div className="w-full bg-surface-muted rounded-full h-1.5">
                   <div 
                     className="bg-accent h-1.5 rounded-full transition-all duration-500" 
-                    style={{ width: `${project.progress}%` }}
+                    style={{ width: `${project.progress ?? 0}%` }}
                   />
                 </div>
               </div>
