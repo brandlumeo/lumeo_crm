@@ -148,8 +148,16 @@ export default function TimesheetsPage() {
       eyebrow="Work"
       title="Timesheets"
       description="Track and approve hours across projects and tasks."
-      actions={
-        <div className="flex items-center gap-3">
+      actions={[
+        {
+          label: "Log Hours",
+          onClick: openNewDrawer,
+          variant: "primary"
+        }
+      ]}
+    >
+      <div className="flex-1 flex flex-col pt-2">
+        <div className="mb-4 flex justify-end">
           <div className="relative">
             <select 
               className="pl-9 pr-8 py-2 bg-paper border border-line rounded-lg text-[13px] font-medium text-ink shadow-sm appearance-none min-w-[140px] focus:outline-none focus:ring-2 focus:ring-accent/20"
@@ -164,17 +172,7 @@ export default function TimesheetsPage() {
             </select>
             <Filter className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
-          <button 
-            onClick={openNewDrawer}
-            className="flex items-center gap-2 bg-ink text-paper px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-ink-2 shadow-sm transition-all hover:-translate-y-0.5"
-          >
-            <Plus className="w-4 h-4" />
-            Log Hours
-          </button>
         </div>
-      }
-    >
-      <div className="flex-1 flex flex-col pt-2">
         {isLoading ? (
           <div className="p-8 flex justify-center">
             <div className="animate-pulse text-muted text-[13px] font-medium">Loading timesheets...</div>
