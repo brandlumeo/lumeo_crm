@@ -558,6 +558,7 @@ export interface Quote {
   settings?: any;
   quote_number: string;
   title: string;
+  content: string;
   currency?: string;
   status: "draft" | "sent" | "accepted" | "declined" | "expired";
   valid_until: string | null;
@@ -577,6 +578,7 @@ export interface Quote {
 export interface QuoteInput {
   deal?: number;
   title: string;
+  content?: string;
   currency?: string;
   status?: string;
   valid_until?: string;
