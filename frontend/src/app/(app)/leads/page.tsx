@@ -371,13 +371,27 @@ export default function LeadsPage() {
             </label>
             <label>
               <span className="label">Source</span>
-              <input
-                type="text"
-                className="input"
+              <select
+                className="select"
                 value={form.source || ""}
                 onChange={(event) => setForm((current) => ({ ...current, source: event.target.value }))}
-                placeholder="Website, Referral, etc."
-              />
+              >
+                <option value="">Select a source...</option>
+                {company?.lead_sources?.map((source: any) => (
+                  <option key={source.id} value={source.name.toLowerCase()}>
+                    {source.name}
+                  </option>
+                )) || (
+                  <>
+                    <option value="email">Email</option>
+                    <option value="google">Google</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="friend">Friend</option>
+                    <option value="direct">Direct</option>
+                    <option value="tv">Tv</option>
+                  </>
+                )}
+              </select>
             </label>
             <label>
               <span className="label">Service / Category</span>

@@ -256,12 +256,27 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
             <div className="grid grid-cols-2 gap-4">
               <label className="block">
                 <span className="label">Source</span>
-                <input
-                  type="text"
-                  className="input w-full"
+                <select
+                  className="select w-full"
                   value={form.source || ""}
                   onChange={(e) => setForm(f => ({ ...f, source: e.target.value }))}
-                />
+                >
+                  <option value="">Select a source...</option>
+                  {company?.lead_sources?.map((source: any) => (
+                    <option key={source.id} value={source.name.toLowerCase()}>
+                      {source.name}
+                    </option>
+                  )) || (
+                    <>
+                      <option value="email">Email</option>
+                      <option value="google">Google</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="friend">Friend</option>
+                      <option value="direct">Direct</option>
+                      <option value="tv">Tv</option>
+                    </>
+                  )}
+                </select>
               </label>
               <label className="block">
                 <span className="label">Status</span>
