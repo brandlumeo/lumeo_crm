@@ -2,8 +2,8 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, FolderKanban, Calendar, LayoutList } from "lucide-react";
-import { useProject, useCurrentCompany } from "@/lib/queries";
+import { ArrowLeft, Calendar, LayoutList } from "lucide-react";
+import { useProject } from "@/lib/queries";
 import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
@@ -15,7 +15,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const projectId = parseInt(id, 10);
   
   const { data: project, isLoading, error } = useProject(projectId);
-  const { data: company } = useCurrentCompany();
 
   if (isLoading) {
     return (
@@ -76,12 +75,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 </div>
               )}
-              {project.category && (
-                <div className="flex items-center gap-3 text-[13px]">
-                  <FolderKanban className="w-4 h-4 text-muted shrink-0" />
-                  <span className="text-ink-2 truncate">Category: {project.category}</span>
-                </div>
-              )}
+
               <div className="flex items-center gap-3 text-[13px]">
                 <Calendar className="w-4 h-4 text-muted shrink-0" />
                 <span className="text-ink-2 truncate">Added: {formatDateTime(project.created_at)}</span>
@@ -92,10 +86,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   <span className="text-ink-2 truncate">Start: {formatDateTime(project.start_date)}</span>
                 </div>
               )}
-              {project.deadline && (
+              {project.end_date && (
                 <div className="flex items-center gap-3 text-[13px]">
                   <Calendar className="w-4 h-4 text-muted shrink-0" />
-                  <span className="text-ink-2 truncate">Deadline: {formatDateTime(project.deadline)}</span>
+                  <span className="text-ink-2 truncate">Deadline: {formatDateTime(project.end_date)}</span>
                 </div>
               )}
               
