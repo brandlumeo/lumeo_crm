@@ -65,6 +65,7 @@ import type {
   TicketCommentInput,
   Project,
   ProjectInput,
+  Timesheet,
 } from "@/lib/types";
 
 // Hybrid auth pattern:
