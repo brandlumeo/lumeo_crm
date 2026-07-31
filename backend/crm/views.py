@@ -243,6 +243,48 @@ class LeadViewSet(CompanyScopedModelViewSet):
         
         return Response(LeadSerializer(lead, context={"request": request}).data)
 
+    @action(detail=True, methods=["post"])
+    def convert(self, request, pk=None):
+        lead = self.get_object()
+        
+        # Create Customer
+        from crm.models import Customer, Deal
+        customer, created = Customer.objects.get_or_create(
+            company=lead.company,
+            email=lead.email,
+            defaults={
+                "name": lead.name,
+                "phone": lead.mobile or "",
+                "custom_data": lead.custom_data,
+            }
+        )
+        
+        # Determine first deal stage
+        first_stage = "prospect"
+        pipelines = lead.company.deal_pipelines or []
+        if pipelines and isinstance(pipelines, list) and len(pipelines) > 0:
+            first_stage = pipelines[0].get("name", "Prospect").lower()
+            
+        # Create Deal
+        deal = Deal.objects.create(
+            company=lead.company,
+            title=f"{lead.name} Deal",
+            amount=0.00,
+            stage=first_stage,
+            assigned_to=lead.assigned_to,
+            custom_data=lead.custom_data,
+        )
+        
+        # Mark lead as won/converted
+        lead.status = "won"  # Ensure it matches the Won status
+        lead.save(update_fields=["status"])
+        
+        return Response({
+            "message": "Lead converted successfully.",
+            "customer_id": customer.id,
+            "deal_id": deal.id,
+        })
+
     @action(detail=False, methods=["post"], url_path="import-csv")
     def import_csv(self, request):
         import csv

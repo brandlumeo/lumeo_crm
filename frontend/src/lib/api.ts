@@ -497,6 +497,11 @@ export async function deleteLead(id: number) {
   await api.delete(`${endpoints.leads}${id}/`);
 }
 
+export async function convertLead(id: number) {
+  const { data } = await api.post<{ message: string, customer_id: number, deal_id: number }>(`${endpoints.leads}${id}/convert/`);
+  return data;
+}
+
 export async function importLeads(file: File) {
   const formData = new FormData();
   formData.append("file", file);

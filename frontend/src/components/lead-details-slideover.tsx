@@ -5,8 +5,9 @@ import Link from "next/link";
 import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X, Layers } from "lucide-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createTask, updateLead, fetchTeam, fetchServiceCategories } from "@/lib/api";
+import { createTask, updateLead, fetchTeam, fetchServiceCategories, convertLead } from "@/lib/api";
 import { useLead, useScoreLead, useCurrentCompany } from "@/lib/queries";
 import { Lead } from "@/lib/types";
 import { PageShell } from "@/components/page-shell";
@@ -340,6 +341,41 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
 
 import { Drawer } from "@/components/drawer";
 
+function ConvertLeadButton({ lead, onConverted }: { lead: Lead, onConverted: () => void }) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  
+  const mutation = useMutation({
+    mutationFn: () => convertLead(lead.id),
+    onSuccess: (data) => {
+      toast.success("Lead converted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["crm"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
+      onConverted();
+      router.push(`/deals/${data.deal_id}`);
+    },
+    onError: () => {
+      toast.error("Failed to convert lead.");
+    },
+  });
+
+  return (
+    <button
+      onClick={() => {
+        if (confirm(`Are you sure you want to convert ${lead.name} to a Client and Deal?`)) {
+          mutation.mutate();
+        }
+      }}
+      disabled={mutation.isPending}
+      className="btn bg-indigo-600 hover:bg-indigo-700 border-transparent text-white py-1.5 px-3 flex items-center gap-2"
+    >
+      {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+      Convert Lead
+    </button>
+  );
+}
+
 export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: number | null, open: boolean, onOpenChange: (open: boolean) => void }) {
   const { data: lead, isLoading, error } = useLead(leadId ?? 0);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -365,6 +401,7 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
                 Edit
               </button>
               <ReminderButton lead={lead} />
+              {lead.status !== "won" && <ConvertLeadButton lead={lead} onConverted={() => onOpenChange(false)} />}
             </div>
           </div>
           
