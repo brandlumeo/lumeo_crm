@@ -12,6 +12,7 @@ import { useLead, useScoreLead, useCurrentCompany } from "@/lib/queries";
 import { Lead } from "@/lib/types";
 import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DocumentLibrary } from "@/components/document-library";
 import { CustomFieldsDisplay } from "@/components/custom-fields-display";
 import { LeadTasks } from "@/components/lead-tasks";
@@ -344,6 +345,7 @@ import { Drawer } from "@/components/drawer";
 function ConvertLeadButton({ lead, onConverted }: { lead: Lead, onConverted: () => void }) {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const [showConfirm, setShowConfirm] = useState(false);
   
   const mutation = useMutation({
     mutationFn: () => convertLead(lead.id),
@@ -357,22 +359,32 @@ function ConvertLeadButton({ lead, onConverted }: { lead: Lead, onConverted: () 
     },
     onError: () => {
       toast.error("Failed to convert lead.");
+      setShowConfirm(false);
     },
   });
 
   return (
-    <button
-      onClick={() => {
-        if (confirm(`Are you sure you want to convert ${lead.name} to a Client and Deal?`)) {
-          mutation.mutate();
-        }
-      }}
-      disabled={mutation.isPending}
-      className="btn bg-indigo-600 hover:bg-indigo-700 border-transparent text-white py-1.5 px-3 flex items-center gap-2"
-    >
-      {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-      Convert Lead
-    </button>
+    <>
+      <button
+        onClick={() => setShowConfirm(true)}
+        disabled={mutation.isPending}
+        className="btn bg-indigo-600 hover:bg-indigo-700 border-transparent text-white py-1.5 px-3 flex items-center gap-2"
+      >
+        {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+        Convert Lead
+      </button>
+
+      <ConfirmationModal
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={() => mutation.mutate()}
+        title="Convert Lead"
+        description={`Are you sure you want to convert ${lead.name} to a Client and Deal?`}
+        confirmText="Convert"
+        variant="success"
+        loading={mutation.isPending}
+      />
+    </>
   );
 }
 
