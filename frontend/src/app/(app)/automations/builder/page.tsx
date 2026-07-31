@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchWorkflowSequences, createWorkflowSequence, updateWorkflowSequence } from "@/lib/api";
@@ -20,7 +20,7 @@ const ACTION_TYPES = [
   { value: "send_email", label: "Send Email", icon: Mail, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
 ];
 
-export default function BuilderPage() {
+function BuilderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
@@ -338,5 +338,13 @@ export default function BuilderPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BuilderPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#FDFDFD]"><Loader2 className="w-6 h-6 animate-spin text-ink-3" /></div>}>
+      <BuilderContent />
+    </Suspense>
   );
 }
