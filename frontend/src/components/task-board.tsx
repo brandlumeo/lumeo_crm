@@ -182,14 +182,16 @@ export function TaskBoard({ tasks, onEditTask }: { tasks: Task[]; onEditTask: (t
       
       if (!activeTask || !overTask) return;
 
-      if (activeTask.status !== overTask.status) {
-        setLocalTasks(prev => {
-          const newTasks = [...prev];
-          const activeIndex = newTasks.findIndex(t => t.id.toString() === activeIdStr);
+      setLocalTasks(prev => {
+        const newTasks = [...prev];
+        const activeIndex = newTasks.findIndex(t => t.id.toString() === activeIdStr);
+        const overIndex = newTasks.findIndex(t => t.id.toString() === overIdStr);
+        
+        if (activeTask.status !== overTask.status) {
           newTasks[activeIndex] = { ...newTasks[activeIndex], status: overTask.status };
-          return newTasks;
-        });
-      }
+        }
+        return arrayMove(newTasks, activeIndex, overIndex);
+      });
     }
 
     if (isOverColumn) {
@@ -214,8 +216,23 @@ export function TaskBoard({ tasks, onEditTask }: { tasks: Task[]; onEditTask: (t
     const activeTask = localTasks.find(t => t.id.toString() === active.id.toString());
     const originalTask = tasks.find(t => t.id === activeTask?.id);
 
-    if (activeTask && originalTask && activeTask.status !== originalTask.status) {
-      updateMutation.mutate({ id: activeTask.id, payload: { status: activeTask.status } });
+    if (activeTask) {
+      const columnTasks = localTasks.filter(t => t.status === activeTask.status);
+      const relativeIndex = columnTasks.findIndex(t => t.id === activeTask.id);
+
+      // Only update if it actually moved or changed status
+      if (
+        (originalTask && activeTask.status !== originalTask.status) || 
+        (originalTask && activeTask.row_order !== relativeIndex)
+      ) {
+        updateMutation.mutate({ 
+          id: activeTask.id, 
+          payload: { 
+            status: activeTask.status,
+            row_order: relativeIndex
+          } 
+        });
+      }
     }
   };
 

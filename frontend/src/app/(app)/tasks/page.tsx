@@ -63,7 +63,7 @@ export default function TasksPage() {
     limit: 100, // Load up to 100 tasks for board view seamlessly
     search,
     status: status || undefined,
-    ordering: "-created_at",
+    ordering: viewMode === "kanban" ? "row_order,due_date" : "-created_at",
   });
 
   // Mutations

@@ -275,6 +275,7 @@ export interface Task {
   assigned_to: UserSummary | null;
   created_at: string;
   updated_at: string;
+  row_order?: number;
 }
 
 export interface Note {
@@ -337,6 +338,7 @@ export interface TaskInput {
   assigned_to_id?: number | null;
   lead_id?: number | null;
   customer_id?: number | null;
+  row_order?: number;
 }
 
 export interface NoteInput {

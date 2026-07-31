@@ -302,11 +302,12 @@ class Task(models.Model):
         null=True,
         blank=True,
     )
+    row_order = models.PositiveIntegerField(default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("due_date", "title")
+        ordering = ("row_order", "due_date", "title")
         indexes = [
             models.Index(fields=("company", "due_date")),
             models.Index(fields=("company", "status")),

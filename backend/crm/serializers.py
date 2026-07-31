@@ -522,6 +522,7 @@ class TaskSerializer(CompanyScopedSerializer):
             "customer_id",
             "project_id",
             "workflow_step_run_id",
+            "row_order",
             "created_at",
             "updated_at",
         )
