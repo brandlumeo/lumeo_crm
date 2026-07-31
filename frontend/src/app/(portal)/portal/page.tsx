@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "next/link";
 import { CreditCard, FileText, LayoutDashboard, Ticket } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 
-import { PageShell } from "@/components/page-shell";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { EmptyState } from "@/components/empty-state";
 import { fetchInvoices, fetchTickets } from "@/lib/api";
@@ -50,9 +49,9 @@ export default function PortalDashboardPage() {
               </div>
               Recent Invoices
             </div>
-            <Link href="/portal/invoices" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
+            <a href="/portal/invoices" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
               VIEW ALL
-            </Link>
+            </a>
           </div>
           <div className="p-0 overflow-hidden">
             {isLoading ? (
@@ -71,7 +70,7 @@ export default function PortalDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {invoices.map((inv) => (
+                  {invoices.map((inv: any) => (
                     <tr key={inv.id} className="hover:bg-white/5 transition-colors cursor-pointer group">
                       <td className="px-6 py-4 font-mono text-muted group-hover:text-ink transition-colors">{inv.invoice_number}</td>
                       <td className="px-6 py-4">
@@ -99,16 +98,16 @@ export default function PortalDashboardPage() {
               </div>
               Support Tickets
             </div>
-            <Link href="/portal/tickets" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
+            <a href="/portal/tickets" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
               VIEW ALL
-            </Link>
+            </a>
           </div>
           <div className="p-0 overflow-hidden">
             {isLoading ? (
-               <div className="p-6"><SkeletonTable columns={3} rows={3} /></div>
+              <div className="p-6"><SkeletonTable columns={3} rows={3} /></div>
             ) : tickets.length === 0 ? (
               <div className="py-12">
-                <EmptyState icon={LayoutDashboard} title="No open tickets" description="Need help? Open a new ticket in the Support tab." />
+                <EmptyState icon={Ticket} title="No open tickets" description="We're here if you need us." />
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -116,21 +115,21 @@ export default function PortalDashboardPage() {
                   <tr className="border-b border-white/5 text-muted text-left bg-black/20">
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Subject</th>
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Status</th>
-                    <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Priority</th>
+                    <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px] text-right">Updated</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {tickets.map((t) => (
+                  {tickets.map((t: any) => (
                     <tr key={t.id} className="hover:bg-white/5 transition-colors cursor-pointer group">
-                      <td className="px-6 py-4 max-w-[200px]">
-                        <div className="truncate font-medium group-hover:text-accent transition-colors">{t.subject}</div>
-                      </td>
+                      <td className="px-6 py-4 font-medium group-hover:text-ink transition-colors">{t.subject}</td>
                       <td className="px-6 py-4">
-                         <span className={`chip ${t.status === 'open' ? 'chip-warning' : t.status === 'in_progress' ? 'bg-blue-500/20 text-blue-300' : 'chip-positive'}`}>
+                        <span className={`chip ${t.status === 'resolved' || t.status === 'closed' ? 'chip-positive' : 'chip-gold'}`}>
                           {t.status.replace("_", " ")}
                         </span>
                       </td>
-                      <td className="px-6 py-4 capitalize text-muted group-hover:text-ink">{t.priority}</td>
+                      <td className="px-6 py-4 text-right text-muted">
+                        {new Date(t.updated_at).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -138,6 +137,27 @@ export default function PortalDashboardPage() {
             )}
           </div>
         </div>
+
+        {/* PROJECTS WIDGET */}
+        <div className="card shadow-xl border-white/5 bg-surface/40 backdrop-blur-md">
+          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-white/5">
+            <div className="card-title flex items-center gap-3 text-[16px]">
+              <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <LayoutDashboard className="w-4 h-4 text-purple-400" />
+              </div>
+              Recent Projects
+            </div>
+            <a href="/portal/projects" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
+              VIEW ALL
+            </a>
+          </div>
+          <div className="p-0 overflow-hidden">
+            <div className="py-12">
+              <EmptyState icon={LayoutDashboard} title="No active projects" description="We'll show your projects here once they start." />
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

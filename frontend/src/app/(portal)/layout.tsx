@@ -25,6 +25,9 @@ export default function PortalLayout({
           <Link href="/portal/invoices" className="text-sm font-medium text-muted hover:text-ink transition-colors">
             Invoices
           </Link>
+          <Link href="/portal/projects" className="text-sm font-medium text-muted hover:text-ink transition-colors">
+            Projects
+          </Link>
           <Link href="/portal/tickets" className="text-sm font-medium text-muted hover:text-ink transition-colors">
             Support
           </Link>

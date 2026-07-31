@@ -44,6 +44,7 @@ from .serializers import (
     ServiceCategorySerializer,
     ProjectSerializer,
     TimesheetSerializer,
+    QuoteSerializer,
 )
 from .emailing import send_crm_email
 
@@ -76,6 +77,8 @@ class CompanyScopedModelViewSet(ModelViewSet):
             elif model_name == "TicketComment":
                 return queryset.filter(ticket__customer=customer)
             elif model_name == "Attachment":
+                return queryset.filter(customer=customer)
+            elif model_name == "Project":
                 return queryset.filter(customer=customer)
             else:
                 return queryset.none()
@@ -636,7 +639,6 @@ class DealViewSet(CompanyScopedModelViewSet):
                 deal.save(update_fields=["stage", "row_order"])
 
         return Response({"status": "reordering applied successfully"})
-
 
 
 class ProjectViewSet(CompanyScopedModelViewSet):

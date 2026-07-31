@@ -28,7 +28,7 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isAppRoute = APP_ROUTES.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
+  ) || pathname === "/portal" || pathname.startsWith("/portal/");
 
   // lumeo_session is a plain (non-HttpOnly) cookie set by the backend on login.
   // It is just a session indicator (value "1") — not a token.

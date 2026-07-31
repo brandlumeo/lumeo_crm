@@ -541,6 +541,7 @@ class Quote(models.Model):
         default=Status.DRAFT,
     )
     valid_until = models.DateField(null=True, blank=True)
+    content = models.TextField(blank=True, help_text="HTML content of the contract/proposal")
     currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)

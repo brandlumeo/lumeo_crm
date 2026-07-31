@@ -273,6 +273,13 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               )}
             </div>
 
+            {quote.content && (
+              <div 
+                className="mb-8 prose prose-sm max-w-none text-ink prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:text-blue-500"
+                dangerouslySetInnerHTML={{ __html: quote.content }} 
+              />
+            )}
+
             <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-left mb-8 print:min-w-full">
                 <thead>

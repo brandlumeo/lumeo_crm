@@ -7,6 +7,7 @@ import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, T
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 export default function QuotesPage() {
   const { data: company } = useCurrentCompany();
@@ -19,9 +20,10 @@ export default function QuotesPage() {
   const updateMutation = useUpdateQuote();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
+  const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, content: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
     currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     title: "",
+    content: "",
     customer_id: null, 
     deal_id: null, 
     valid_until: "",
@@ -45,6 +47,7 @@ export default function QuotesPage() {
 
     const payload: any = { 
       title: newQuote.title,
+      content: newQuote.content,
       customer: newQuote.customer_id, 
       items: validItems,
       currency: newQuote.currency || "INR"
@@ -55,7 +58,7 @@ export default function QuotesPage() {
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+        setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
       }
     });
   };
@@ -214,6 +217,15 @@ export default function QuotesPage() {
                   onChange={(e) => setNewQuote({ ...newQuote, title: e.target.value })}
                   placeholder="e.g. Website Redesign"
                   className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1.5">Proposal / Contract Content</label>
+                <RichTextEditor
+                  value={newQuote.content}
+                  onChange={(val) => setNewQuote({ ...newQuote, content: val })}
+                  placeholder="Draft your proposal, terms, and contract body here..."
                 />
               </div>
 

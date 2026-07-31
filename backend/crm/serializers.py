@@ -571,7 +571,6 @@ class TaskSerializer(CompanyScopedSerializer):
                 )
         return attrs
 
-
 class NoteSerializer(CompanyScopedSerializer):
     class Meta:
         model = Note
@@ -732,6 +731,7 @@ class QuoteSerializer(CompanyScopedSerializer):
             "title",
             "status",
             "valid_until",
+            "content",
             "currency",
             "subtotal",
             "tax_amount",
