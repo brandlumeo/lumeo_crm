@@ -49,9 +49,9 @@ export default function PortalDashboardPage() {
               </div>
               Recent Invoices
             </div>
-            <a href="/portal/invoices" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
+            <Link href="/portal/invoices" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
               VIEW ALL
-            </a>
+            </Link>
           </div>
           <div className="p-0 overflow-hidden">
             {isLoading ? (
@@ -98,9 +98,9 @@ export default function PortalDashboardPage() {
               </div>
               Support Tickets
             </div>
-            <a href="/portal/tickets" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
+            <Link href="/portal/tickets" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
               VIEW ALL
-            </a>
+            </Link>
           </div>
           <div className="p-0 overflow-hidden">
             {isLoading ? (
@@ -147,9 +147,9 @@ export default function PortalDashboardPage() {
               </div>
               Recent Projects
             </div>
-            <a href="/portal/projects" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
+            <Link href="/portal/projects" className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors tracking-wide">
               VIEW ALL
-            </a>
+            </Link>
           </div>
           <div className="p-0 overflow-hidden">
             <div className="py-12">
