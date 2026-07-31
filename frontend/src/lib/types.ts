@@ -1014,34 +1014,3 @@ export interface TimesheetInput {
   description?: string;
   status?: "draft" | "submitted" | "approved" | "rejected";
 }
-e x p o r t   i n t e r f a c e   P r o j e c t   { 
-     i d :   n u m b e r ; 
-     c o m p a n y :   n u m b e r ; 
-     n a m e :   s t r i n g ; 
-     d e s c r i p t i o n :   s t r i n g ; 
-     s t a t u s :   " p l a n n i n g "   |   " i n _ p r o g r e s s "   |   " o n _ h o l d "   |   " c o m p l e t e d "   |   " c a n c e l l e d " ; 
-     c l i e n t :   a n y ; 
-     d e a l :   n u m b e r   |   n u l l ; 
-     s t a r t _ d a t e :   s t r i n g   |   n u l l ; 
-     t a r g e t _ e n d _ d a t e :   s t r i n g   |   n u l l ; 
-     a c t u a l _ e n d _ d a t e :   s t r i n g   |   n u l l ; 
-     b u d g e t :   s t r i n g   |   n u l l ; 
-     c o s t :   s t r i n g   |   n u l l ; 
-     p r o g r e s s :   n u m b e r ; 
-     m e m b e r s :   a n y [ ] ; 
-     c r e a t e d _ a t :   s t r i n g ; 
-     u p d a t e d _ a t :   s t r i n g ; 
- } 
- 
- e x p o r t   i n t e r f a c e   P r o j e c t I n p u t   { 
-     n a m e :   s t r i n g ; 
-     d e s c r i p t i o n ? :   s t r i n g ; 
-     s t a t u s ? :   " p l a n n i n g "   |   " i n _ p r o g r e s s "   |   " o n _ h o l d "   |   " c o m p l e t e d "   |   " c a n c e l l e d " ; 
-     c l i e n t ? :   n u m b e r ; 
-     d e a l ? :   n u m b e r ; 
-     s t a r t _ d a t e ? :   s t r i n g ; 
-     t a r g e t _ e n d _ d a t e ? :   s t r i n g ; 
-     b u d g e t ? :   s t r i n g ; 
-     m e m b e r s ? :   n u m b e r [ ] ; 
- }  
- 
