@@ -1546,49 +1546,7 @@ export function useDeleteUnit() {
   }); 
 }
 
-// ── Projects ───────────────────────────────────────────────────────────────────
 
-export function useProjects(params?: Record<string, any>) {
-  return useQuery({
-    queryKey: ["projects", params],
-    queryFn: () => fetchProjects(params),
-  });
-}
-
-export function useProject(id: number) {
-  return useQuery({
-    queryKey: ["projects", id],
-    queryFn: () => fetchProject(id),
-    enabled: !!id,
-  });
-}
-
-export function useCreateProject() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: createProject,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
-  });
-}
-
-export function useUpdateProject() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updateProject,
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["projects", variables.id] });
-    },
-  });
-}
-
-export function useDeleteProject() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteProject,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
-  });
-}
 
 // ── Timesheets ───────────────────────────────────────────────────────────────
 

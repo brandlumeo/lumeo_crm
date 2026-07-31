@@ -1482,33 +1482,7 @@ export const deletePaymentMethod = async (id: number) => {
   return res.data;
 };
 
-// ── Projects ────────────────────────────────────────────────────────────────
-export async function fetchProjects(params?: Record<string, any>) {
-  const { data } = await api.get<{ count: number; next: string | null; previous: string | null; results: Project[] }>(
-    endpoints.projects,
-    { params }
-  );
-  return data;
-}
 
-export async function fetchProject(id: number) {
-  const { data } = await api.get<Project>(`${endpoints.projects}${id}/`);
-  return data;
-}
-
-export async function createProject(payload: ProjectInput) {
-  const { data } = await api.post<Project>(endpoints.projects, payload);
-  return data;
-}
-
-export async function updateProject({ id, payload }: { id: number; payload: Partial<ProjectInput> }) {
-  const { data } = await api.patch<Project>(`${endpoints.projects}${id}/`, payload);
-  return data;
-}
-
-export async function deleteProject(id: number) {
-  await api.delete(`${endpoints.projects}${id}/`);
-}
 
 // ── Timesheets ──────────────────────────────────────────────────────────────
 export async function fetchTimesheets(params?: Record<string, any>) {
