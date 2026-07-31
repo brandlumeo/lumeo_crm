@@ -391,10 +391,13 @@ export default function TimesheetsPage() {
 
       {deletingId && (
         <ConfirmationModal
+          open={!!deletingId}
+          onClose={() => setDeletingId(null)}
           title="Delete Timesheet"
           description="Are you sure you want to delete this timesheet entry? This action cannot be undone."
-          confirmLabel="Delete Entry"
-          isDestructive={true}
+          confirmText="Delete Entry"
+          variant="danger"
+          loading={deleteTimesheet.isPending}
           onConfirm={() => {
             deleteTimesheet.mutate(deletingId, {
               onSuccess: () => {
@@ -404,8 +407,6 @@ export default function TimesheetsPage() {
               onError: () => toast.error("Failed to delete timesheet")
             });
           }}
-          onCancel={() => setDeletingId(null)}
-          isLoading={deleteTimesheet.isPending}
         />
       )}
     </PageShell>
