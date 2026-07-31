@@ -168,7 +168,7 @@ class CompanyScopedSerializer(serializers.ModelSerializer):
                 val = custom_data.get(cf.name)
                 if cf.required and (val is None or val == ""):
                     raise serializers.ValidationError(
-                        {"custom_data": f"Custom field '{cf.label}' is required."}
+                        {cf.label: "This field is required."}
                     )
                 if val is not None and val != "":
                     if cf.field_type == CustomFieldDefinition.FieldType.NUMBER:
@@ -176,12 +176,12 @@ class CompanyScopedSerializer(serializers.ModelSerializer):
                             float(val)
                         except ValueError:
                             raise serializers.ValidationError(
-                                {"custom_data": f"Custom field '{cf.label}' must be a number."}
+                                {cf.label: "Must be a valid number."}
                             )
                     elif cf.field_type == CustomFieldDefinition.FieldType.BOOLEAN:
                         if not isinstance(val, bool) and str(val).lower() not in ("true", "false", "1", "0"):
                             raise serializers.ValidationError(
-                                {"custom_data": f"Custom field '{cf.label}' must be a boolean."}
+                                {cf.label: "Must be a boolean value (Yes/No)."}
                             )
             
             attrs["custom_data"] = custom_data

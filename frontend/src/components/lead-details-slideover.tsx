@@ -337,6 +337,26 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
               </select>
             </label>
           </form>
+          
+          {mutation.isError && (
+            <div className="chip chip-warning mt-4 flex-col items-start p-3 w-full">
+              <span className="font-semibold mb-1">Could not update lead:</span>
+              <ul className="list-disc pl-5 text-left w-full space-y-1">
+                {Object.entries((mutation.error as any)?.response?.data || {}).map(([key, value]) => {
+                  const errorMsg = Array.isArray(value) ? value.join(" ") : String(value);
+                  if (key === "detail") return <li key={key}>{errorMsg}</li>;
+                  return (
+                    <li key={key}>
+                      <span className="capitalize font-medium">{key.replace('_', ' ')}:</span> {errorMsg}
+                    </li>
+                  );
+                })}
+                {Object.keys((mutation.error as any)?.response?.data || {}).length === 0 && (
+                  <li>Check the data and try again.</li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
         
         <div className="p-4 border-t border-line-2 bg-bone/30 flex justify-end gap-3 shrink-0">

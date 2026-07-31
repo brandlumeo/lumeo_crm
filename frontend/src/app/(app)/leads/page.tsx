@@ -438,11 +438,25 @@ export default function LeadsPage() {
               onChange={(custom_data) => setForm((current) => ({ ...current, custom_data }))}
             />
 
-            {mutation.isError ? (
-              <div className="chip chip-warning justify-center">
-                Could not create lead. Check the data and try again.
+            {mutation.isError && (
+              <div className="chip chip-warning justify-center flex-col items-start p-3 w-full">
+                <span className="font-semibold mb-1">Could not create lead:</span>
+                <ul className="list-disc pl-5 text-left w-full space-y-1">
+                  {Object.entries((mutation.error as any)?.response?.data || {}).map(([key, value]) => {
+                    const errorMsg = Array.isArray(value) ? value.join(" ") : String(value);
+                    if (key === "detail") return <li key={key}>{errorMsg}</li>;
+                    return (
+                      <li key={key}>
+                        <span className="capitalize font-medium">{key.replace('_', ' ')}:</span> {errorMsg}
+                      </li>
+                    );
+                  })}
+                  {Object.keys((mutation.error as any)?.response?.data || {}).length === 0 && (
+                    <li>Check the data and try again.</li>
+                  )}
+                </ul>
               </div>
-            ) : null}
+            )}
 
             <button type="submit" disabled={mutation.isPending} className="btn btn-primary w-full justify-center">
               {mutation.isPending ? "Creating..." : "Create lead"}
