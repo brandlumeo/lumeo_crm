@@ -553,27 +553,30 @@ export async function inviteCustomerToPortal(id: number) {
 // Projects
 // ------------------------------------------------------------------
 
-export async function getProjects(params?: ListParams) {
-  const { data } = await api.get<PaginatedResponse<any>>(endpoints.projects, { params });
+export async function fetchProjects(params?: Record<string, any>) {
+  const { data } = await api.get<{ count: number; next: string | null; previous: string | null; results: Project[] }>(
+    endpoints.projects,
+    { params }
+  );
   return data;
 }
 
-export async function getProject(id: string | number) {
-  const { data } = await api.get<any>(`${endpoints.projects}${id}/`);
+export async function fetchProject(id: number) {
+  const { data } = await api.get<Project>(`${endpoints.projects}${id}/`);
   return data;
 }
 
-export async function createProject(payload: any) {
-  const { data } = await api.post<any>(endpoints.projects, payload);
+export async function createProject(payload: ProjectInput) {
+  const { data } = await api.post<Project>(endpoints.projects, payload);
   return data;
 }
 
-export async function updateProject({ id, ...payload }: any) {
-  const { data } = await api.put<any>(`${endpoints.projects}${id}/`, payload);
+export async function updateProject({ id, payload }: { id: number; payload: Partial<ProjectInput> }) {
+  const { data } = await api.patch<Project>(`${endpoints.projects}${id}/`, payload);
   return data;
 }
 
-export async function deleteProject(id: string | number) {
+export async function deleteProject(id: number) {
   await api.delete(`${endpoints.projects}${id}/`);
 }
 

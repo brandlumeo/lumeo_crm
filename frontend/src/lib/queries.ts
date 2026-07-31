@@ -147,8 +147,7 @@ import {
   createNotice,
   updateNotice,
   deleteNotice,
-  getProjects,
-  getProject,
+
 } from "@/lib/api";
 import type { ListParams, CampaignInput, TicketInput, TicketCommentInput } from "@/lib/types";
 
@@ -218,20 +217,47 @@ export function useCustomerPage(params: ListParams) {
   });
 }
 
-export function useProjectPage(params: ListParams) {
+export function useProjects(params?: Record<string, any>) {
   return useQuery({
     queryKey: ["crm", "projects", params],
-    queryFn: () => getProjects(params),
+    queryFn: () => fetchProjects(params),
     enabled: authenticated(),
     placeholderData: (previous) => previous,
   });
 }
 
-export function useProject(id: string | number) {
+export function useProject(id: number) {
   return useQuery({
     queryKey: ["crm", "project", id],
-    queryFn: () => getProject(id),
+    queryFn: () => fetchProject(id),
     enabled: authenticated() && !!id,
+  });
+}
+
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createProject,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["crm", "projects"] }),
+  });
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateProject,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["crm", "projects"] });
+      queryClient.invalidateQueries({ queryKey: ["crm", "project", variables.id] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteProject,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["crm", "projects"] }),
   });
 }
 

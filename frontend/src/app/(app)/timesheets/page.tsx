@@ -9,7 +9,21 @@ import { ConfirmationModal } from "@/components/confirmation-modal";
 import { Clock, Plus, Filter, Calendar, Briefcase, FileText, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { Timesheet, TimesheetInput } from "@/lib/types";
-import { cn, getAvatarTint } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
+function getLocalAvatarTint(seed: string) {
+  const colors = [
+    "bg-blue-100 text-blue-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-amber-100 text-amber-700",
+    "bg-purple-100 text-purple-700",
+    "bg-pink-100 text-pink-700",
+    "bg-rose-100 text-rose-700",
+    "bg-cyan-100 text-cyan-700",
+  ];
+  const index = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[index % colors.length];
+}
 
 export default function TimesheetsPage() {
   const { data: user } = useCurrentUser();
@@ -192,7 +206,7 @@ export default function TimesheetsPage() {
                     <tr key={row.id} className="hover:bg-[#FAF9F7] transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm", getAvatarTint(row.user_display?.email || "?"))}>
+                          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm", getLocalAvatarTint(row.user_display?.email || "?"))}>
                             {(row.user_display?.first_name?.[0] || row.user_display?.email?.[0] || "?").toUpperCase()}
                           </div>
                           <div>

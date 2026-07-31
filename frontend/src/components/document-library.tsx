@@ -22,7 +22,7 @@ export function DocumentLibrary({
   entityType,
 }: {
   entityId: number;
-  entityType: "lead" | "deal" | "customer";
+  entityType: "lead" | "deal" | "customer" | "project";
 }) {
   const queryClient = useQueryClient();
   const [isDragging, setIsDragging] = useState(false);
