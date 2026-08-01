@@ -74,6 +74,7 @@ export default function TasksPage() {
       setForm({ title: "", due_date: "", status: "todo", assigned_to_id: null });
       setIsDrawerOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
     },
     onError: (err: any) => {
       const detail = err.response?.data?.detail
@@ -92,6 +93,7 @@ export default function TasksPage() {
       setIsDrawerOpen(false);
       setEditingTask(null);
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
     },
     onError: (err: any) => {
       const detail = err.response?.data?.detail
@@ -113,6 +115,7 @@ export default function TasksPage() {
         setEditingTask(null);
       }
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
     },
     onError: () => {
       toast.error("Failed to delete task");

@@ -190,6 +190,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     onSuccess: () => {
       toast.success("Customer deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["crm", "customers"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
       router.push("/customers");
     },
     onError: (err: any) => {

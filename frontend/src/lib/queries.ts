@@ -649,7 +649,7 @@ export function useDeleteLead() {
     mutationFn: deleteLead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
-      queryClient.invalidateQueries({ queryKey: ["crm", "counts"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
     },
   });
 }
@@ -670,7 +670,8 @@ export function useImportLeads() {
   return useMutation({
     mutationFn: importLeads,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["leads"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
     },
   });
 }
@@ -1515,7 +1516,10 @@ export function useDeleteProduct() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => import("./api").then(m => m.deleteProduct(id)),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["crm", "products"] }); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ["crm", "products"] }); 
+      queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
+    },
   });
 }
 
