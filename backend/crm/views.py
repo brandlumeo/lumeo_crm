@@ -619,16 +619,19 @@ class DealViewSet(CompanyScopedModelViewSet):
         company_deals = Deal.objects.filter(id__in=deal_ids, company=request.user.company)
         deal_map = {deal.id: deal for deal in company_deals}
 
+        allowed_stages = list(Deal.Stage.values)
+        if hasattr(request.user.company, 'deal_pipelines') and request.user.company.deal_pipelines:
+            allowed_stages.extend([p.get('name', '').lower() for p in request.user.company.deal_pipelines if isinstance(p, dict)])
+
         with transaction.atomic():
             for item in deals_data:
                 deal_id = item.get("id")
                 new_stage = item.get("stage")
                 new_order = item.get("row_order")
 
-                # H6 fix: validate stage value against allowed choices before saving
                 if deal_id not in deal_map:
                     continue
-                if new_stage not in Deal.Stage.values:
+                if new_stage not in allowed_stages:
                     continue
                 if not isinstance(new_order, int):
                     continue
