@@ -201,7 +201,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
           <div className={tpl === 'template4' ? "md:w-2/3 print:w-2/3 p-8 md:p-12 bg-white" : ""}>
             {/* Header Area */}
             {tpl !== 'template4' && (
-              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8"
+              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8 print:pb-4 print:mb-4"
                    style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
               >
                 <div>
@@ -244,7 +244,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
 
             {/* If template4, show invoice number, dates here */}
             {tpl === 'template4' && (
-              <div className="flex justify-between items-start border-b border-line/50 pb-8 mb-8">
+              <div className="flex justify-between items-start border-b border-line/50 pb-8 mb-8 print:pb-4 print:mb-4">
                 <div>
                   <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-ink">QUOTE</h1>
                   <p className="text-sm md:text-base uppercase tracking-wider font-semibold text-muted">{quote.quote_number}</p>
@@ -266,7 +266,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </div>
             )}
 
-            <div className="mb-8">
+            <div className="mb-8 print:mb-4">
               <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Billed To</h3>
               {settings?.show_client_name !== false && (
                 <div className="font-medium text-lg text-ink">{quote.customer_details?.name}</div>
@@ -287,13 +287,13 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
 
             {quote.content && (
               <div 
-                className="mb-8 prose prose-sm max-w-none text-ink prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:text-blue-500"
+                className="mb-8 print:mb-4 prose prose-sm max-w-none text-ink prose-p:leading-relaxed prose-a:text-blue-600 hover:prose-a:text-blue-500"
                 dangerouslySetInnerHTML={{ __html: quote.content }} 
               />
             )}
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 print:min-w-full">
+              <table className="w-full text-left mb-8 print:mb-4 print:min-w-full">
                 <thead>
                   <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 font-medium text-muted">Item</th>
@@ -328,10 +328,10 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </table>
             </div>
 
-              <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8">
+            <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8 print:pt-4">
               
               {/* Terms and Info Section */}
-              <div className="flex-1 space-y-6">
+              <div className="flex-1 space-y-6 print:space-y-4">
                 {settings?.invoice_terms && (
                   <div className="print:break-inside-avoid">
                     <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>

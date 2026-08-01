@@ -268,7 +268,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
           <div className={tpl === 'template4' ? "md:w-2/3 print:w-2/3 p-8 md:p-12 bg-white" : ""}>
             {/* Header Area */}
             {tpl !== 'template4' && (
-              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8"
+              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8 print:pb-4 print:mb-4"
                    style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
               >
                 <div>
@@ -311,7 +311,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
             {/* If template4, show invoice number, dates here */}
             {tpl === 'template4' && (
-              <div className="flex justify-between items-start border-b border-line/50 pb-8 mb-8">
+              <div className="flex justify-between items-start border-b border-line/50 pb-8 mb-8 print:pb-4 print:mb-4">
                 <div>
                   <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-ink">INVOICE</h1>
                   <p className="text-sm md:text-base uppercase tracking-wider font-semibold text-muted">{invoice.invoice_number}</p>
@@ -333,7 +333,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </div>
             )}
 
-            <div className="mb-8">
+            <div className="mb-8 print:mb-4">
               <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Billed To</h3>
               {invoice.settings?.show_client_name !== false && (
                 <div className="font-medium text-lg text-ink">{invoice.customer_details?.name}</div>
@@ -353,7 +353,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 print:min-w-full">
+              <table className="w-full text-left mb-8 print:mb-4 print:min-w-full">
                 <thead>
                   <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 font-medium text-muted">Item</th>
@@ -388,10 +388,10 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </table>
             </div>
 
-              <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8">
+              <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8 print:pt-4">
               
               {/* Terms and Info Section */}
-              <div className="flex-1 space-y-6">
+              <div className="flex-1 space-y-6 print:space-y-4">
                 {invoice.settings?.invoice_terms && (
                   <div className="print:break-inside-avoid">
                     <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>
