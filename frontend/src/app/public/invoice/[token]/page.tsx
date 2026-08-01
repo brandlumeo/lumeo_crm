@@ -212,17 +212,18 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
           @page {
             margin: 0;
           }
-          body {
+          body, html {
+            background-color: white !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
           .invoice-container {
-            padding: 15mm !important;
+            padding: 10mm !important;
           }
         }
       `}} />
       <div
-        className="invoice-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
+        className="invoice-container min-h-screen print:!min-h-0 print:!bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
       >
         <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0 print:max-w-none print:w-full">
         
@@ -298,6 +299,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                       <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Project/Deal: <span className="font-medium">{invoice.deal_details.title}</span></p>
                     )}
                   </div>
+                  {tpl !== 'template3' && (
+                    <div className="h-0.5 w-12 ml-auto mt-6 rounded-full" style={{ backgroundColor: accentColor }}></div>
+                  )}
                   {invoice.settings?.show_status_on_invoice && (
                     <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                          style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'transparent' } : {}}
@@ -376,7 +380,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                         <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
                       )}
                       <td className="py-4 px-4 text-right text-ink whitespace-nowrap">
-                        {item.quantity} {item.unit && <span className="text-muted text-[10px] uppercase ml-1">{item.unit}</span>}
+                        {item.quantity} {item.unit && <span className="text-muted text-xs ml-1">{item.unit}</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}</td>
                       <td className="py-4 px-4 pr-4 sm:pr-6 text-right font-semibold text-ink whitespace-nowrap">
@@ -393,8 +397,8 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               {/* Terms and Info Section */}
               <div className="flex-1 print:float-left print:w-[60%] space-y-6 print:space-y-4">
                 {invoice.settings?.invoice_terms && (
-                  <div className="print:break-inside-avoid">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2 border-b border-line pb-1">Terms & Conditions</h4>
+                  <div className="print:break-inside-avoid mb-6">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2 border-b-2 pb-1" style={{ borderColor: accentColor }}>Terms & Conditions</h4>
                     <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.settings.invoice_terms}</p>
                   </div>
                 )}
@@ -402,7 +406,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {/* Bank Details & QR Codes */}
                 {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information || (invoice.payment_methods && invoice.payment_methods.length > 0)) && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-sm font-bold text-ink mb-3 border-b border-line pb-1" style={{ color: accentColor }}>Payment & Bank Details</h4>
+                    <h4 className="text-sm font-bold text-ink mb-3 border-b-2 pb-1" style={{ color: accentColor, borderColor: accentColor }}>Payment & Bank Details</h4>
                     
                     {invoice.settings?.invoice_other_information && (
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{invoice.settings.invoice_other_information}</p>
@@ -410,12 +414,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                     
                     <div className="flex flex-col sm:flex-row gap-4 items-start">
                       {invoice.settings?.bank_name && (
-                        <div className="text-sm text-muted bg-bone/30 p-4 rounded-lg border border-line space-y-1.5 flex-1 w-full sm:w-auto">
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Bank Name:</span> <span className="break-words flex-1">{invoice.settings.bank_name}</span></div>
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Account Name:</span> <span className="break-words flex-1">{invoice.settings.bank_account_name}</span></div>
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Account No:</span> <span className="break-all flex-1">{invoice.settings.bank_account_number}</span></div>
+                        <div className="text-xs text-muted bg-bone/30 p-4 rounded-lg border border-line space-y-1.5 flex-1 w-full sm:w-auto">
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Bank Name:</span> <span className="break-words flex-1">{invoice.settings.bank_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Account Name:</span> <span className="break-words flex-1">{invoice.settings.bank_account_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Account No:</span> <span className="break-all flex-1">{invoice.settings.bank_account_number}</span></div>
                           {invoice.settings.bank_routing_number && (
-                            <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Routing/SWIFT:</span> <span className="break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
+                            <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Routing/SWIFT:</span> <span className="break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
                           )}
                         </div>
                       )}
@@ -478,7 +482,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </div>
             </div>
             
-            <div className="mt-12 pt-8 print:mt-8 print:pt-8 border-t-2 border-line text-center print:break-inside-avoid flex flex-col items-center clear-both w-full">
+            <div className="mt-12 pt-8 print:mt-4 print:pt-4 border-t-2 border-line text-center print:break-inside-avoid flex flex-col items-center clear-both w-full">
               {invoice.settings?.footer_text && (
                 <p className="text-sm font-medium text-muted italic mb-4">{invoice.settings.footer_text}</p>
               )}
