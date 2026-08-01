@@ -246,12 +246,12 @@ class LeadSerializer(CompanyScopedSerializer):
         if user and user.is_authenticated:
             if user.is_superuser:
                 self.fields["assigned_to_id"].queryset = User.objects.all()
-                self.fields["category_ids"].queryset = ServiceCategory.objects.all()
+                self.fields["category_ids"].child_relation.queryset = ServiceCategory.objects.all()
             elif user.company_id is not None:
                 self.fields["assigned_to_id"].queryset = User.objects.filter(
                     company_id=user.company_id
                 )
-                self.fields["category_ids"].queryset = ServiceCategory.objects.filter(
+                self.fields["category_ids"].child_relation.queryset = ServiceCategory.objects.filter(
                     company_id=user.company_id
                 )
 
