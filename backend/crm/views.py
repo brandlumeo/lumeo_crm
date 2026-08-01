@@ -1226,6 +1226,13 @@ class QuoteViewSet(CompanyScopedModelViewSet):
         quote = self.get_object()
         return generate_pdf_response(quote, doc_type="Quote")
 
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        quote = self.get_object()
+        quote.is_locked = True
+        quote.status = Quote.Status.SENT
+        quote.save(update_fields=['is_locked', 'status', 'updated_at'])
+        return Response({'status': 'Quote approved and locked as Read-Only'})
 
 class InvoiceViewSet(CompanyScopedModelViewSet):
     serializer_class = InvoiceSerializer

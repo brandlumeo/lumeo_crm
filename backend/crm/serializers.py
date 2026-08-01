@@ -732,6 +732,7 @@ class QuoteSerializer(CompanyScopedSerializer):
             "status",
             "valid_until",
             "content",
+            "is_locked",
             "currency",
             "subtotal",
             "tax_amount",
@@ -787,6 +788,17 @@ class QuoteSerializer(CompanyScopedSerializer):
         return quote
 
     def update(self, instance, validated_data):
+        # Prevent edits if quote is locked, unless unlocking or changing status
+        if instance.is_locked:
+            changing_lock = "is_locked" in validated_data
+            changing_status = "status" in validated_data
+            other_changes = set(validated_data.keys()) - {"is_locked", "status"}
+            
+            # If it's locked and they are trying to change core content
+            if not changing_lock and other_changes:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({"detail": "This Quote is approved and locked. You must unlock it before editing."})
+                
         items_data = validated_data.pop("items", None)
         quote = super().update(instance, validated_data)
         
