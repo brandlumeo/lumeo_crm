@@ -202,7 +202,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
           <div className={tpl === 'template4' ? "md:w-2/3 print:w-2/3 p-8 md:p-12 bg-white" : ""}>
             {/* Header Area */}
             {tpl !== 'template4' && (
-              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8 print:pb-4 print:mb-4"
+              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8 print:pb-2 print:mb-2"
                    style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
               >
                 <div>
@@ -267,8 +267,8 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </div>
             )}
 
-            <div className="mb-8 print:mb-4">
-              <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Billed To</h3>
+            <div className="mb-8 print:mb-2">
+              <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Quote For</h3>
               {settings?.show_client_name !== false && (
                 <div className="font-medium text-lg text-ink">{quote.customer_details?.name}</div>
               )}
@@ -294,7 +294,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             )}
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 print:mb-4 print:min-w-full">
+              <table className="w-full text-left mb-8 print:mb-2 print:min-w-full">
                 <thead>
                   <tr className="border-b border-line bg-bone/30" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted" style={{ color: accentColor }}>Item</th>
@@ -329,7 +329,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </table>
             </div>
 
-            <div className="flex flex-col md:flex-row print:flex print:flex-row justify-between border-t border-line pt-8 gap-8 print:gap-4 print:pt-4">
+            <div className="flex flex-col md:flex-row print:flex print:flex-row justify-between border-t border-line pt-8 gap-8 print:gap-4 print:pt-2">
               
               {/* Terms and Info Section */}
               <div className="flex-1 print:w-[60%] space-y-6 print:space-y-4">
@@ -394,11 +394,11 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </div>
             </div>
             
-            <div className="mt-12 pt-8 print:mt-4 print:pt-4 border-t-2 border-line text-center flex flex-col items-center clear-both w-full" style={{ pageBreakBefore: 'auto' }}>
+            <div className="mt-12 pt-8 print:mt-2 print:pt-2 border-t-2 border-line text-center flex flex-col items-center clear-both w-full" style={{ pageBreakBefore: 'auto' }}>
               {settings?.footer_text && (
-                <p className="text-sm font-medium text-muted italic mb-4">{settings.footer_text}</p>
+                <p className="text-sm font-medium text-muted italic mb-4 print:mb-2">{settings.footer_text}</p>
               )}
-              <div className="h-1 w-12 mt-4 rounded-full" style={{ backgroundColor: accentColor }}></div>
+              <div className="h-1 w-12 mt-4 print:mt-2 rounded-full" style={{ backgroundColor: accentColor }}></div>
             </div>
             
           </div>
