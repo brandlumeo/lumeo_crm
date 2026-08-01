@@ -206,7 +206,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               >
                 <div>
                   {settings?.invoice_logo ? (
-                    <img src={settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
+                    <img src={settings.invoice_logo} alt="Company Logo" className="h-16 sm:h-20 print:h-24 object-contain mb-4 print:max-w-[250px]" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
                   ) : (
                     <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">QUOTE</h1>
                   )}
@@ -328,12 +328,12 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </table>
             </div>
 
-            <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8">
+              <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8">
               
               {/* Terms and Info Section */}
               <div className="flex-1 space-y-6">
                 {settings?.invoice_terms && (
-                  <div>
+                  <div className="print:break-inside-avoid">
                     <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>
                     <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{settings.invoice_terms}</p>
                   </div>
@@ -341,7 +341,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 
                 {/* Bank Details injected here if available */}
                 {(settings?.bank_name || settings?.invoice_other_information) && (
-                  <div>
+                  <div className="print:break-inside-avoid">
                     <h4 className="text-sm font-semibold text-ink mb-1">Other Information / Bank Details</h4>
                     {settings?.invoice_other_information && (
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{settings.invoice_other_information}</p>
@@ -360,12 +360,12 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 )}
 
                 {settings?.show_tax_calculation_message && (
-                  <div>
+                  <div className="print:break-inside-avoid">
                     <p className="text-xs text-muted italic">Note: Tax is calculated based on applicable local rates.</p>
                   </div>
                 )}
                 {settings?.show_authorised_signatory && (
-                  <div className="pt-6">
+                  <div className="pt-6 print:break-inside-avoid">
                     {settings?.authorised_signatory_signature ? (
                       <img src={settings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
                     ) : (
@@ -376,7 +376,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 )}
               </div>
 
-              <div className="w-full max-w-sm space-y-3">
+              <div className="w-full max-w-sm print:max-w-[280px] shrink-0 space-y-3 print:break-inside-avoid">
                 <div className="flex justify-between text-muted">
                   <span>Subtotal</span>
                   <span>{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
