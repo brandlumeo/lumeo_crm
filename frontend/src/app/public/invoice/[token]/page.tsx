@@ -476,7 +476,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </div>
             </div>
             
-            <div className="mt-12 pt-8 print:mt-4 print:pt-4 border-t-2 border-line text-center print:break-inside-avoid flex flex-col items-center clear-both w-full">
+            <div className="mt-12 pt-8 print:mt-4 print:pt-4 border-t-2 border-line text-center flex flex-col items-center clear-both w-full" style={{ pageBreakBefore: 'auto' }}>
               {invoice.settings?.footer_text && (
                 <p className="text-sm font-medium text-muted italic mb-4">{invoice.settings.footer_text}</p>
               )}
