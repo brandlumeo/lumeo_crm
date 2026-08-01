@@ -356,13 +356,13 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               <table className="w-full text-left mb-8 print:mb-4 print:min-w-full">
                 <thead>
                   <tr className="border-b border-line bg-bone/30" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted">Item</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted" style={{ color: accentColor }}>Item</th>
                     {invoice.settings?.show_hsn_sac_code && (
-                      <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap">HSN/SAC</th>
+                      <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>HSN/SAC</th>
                     )}
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap">Qty</th>
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap">Price</th>
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>Qty</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>Price</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap pr-4 sm:pr-6" style={{ color: accentColor }}>Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -376,7 +376,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                         <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
                       )}
                       <td className="py-4 px-4 text-right text-ink whitespace-nowrap">
-                        {item.quantity} {item.unit || ""}
+                        {item.quantity} {item.unit && <span className="text-muted text-[10px] uppercase ml-1">{item.unit}</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}</td>
                       <td className="py-4 px-4 pr-4 sm:pr-6 text-right font-semibold text-ink whitespace-nowrap">
@@ -394,7 +394,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               <div className="flex-1 print:float-left print:w-[60%] space-y-6 print:space-y-4">
                 {invoice.settings?.invoice_terms && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Terms & Conditions</h4>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2 border-b border-line pb-1">Terms & Conditions</h4>
                     <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.settings.invoice_terms}</p>
                   </div>
                 )}
@@ -402,7 +402,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {/* Bank Details & QR Codes */}
                 {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information || (invoice.payment_methods && invoice.payment_methods.length > 0)) && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Payment & Bank Details</h4>
+                    <h4 className="text-sm font-bold text-ink mb-3 border-b border-line pb-1" style={{ color: accentColor }}>Payment & Bank Details</h4>
                     
                     {invoice.settings?.invoice_other_information && (
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{invoice.settings.invoice_other_information}</p>
@@ -426,7 +426,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                           {invoice.payment_methods.filter((m: any) => m.qr_code).map((method: any) => (
                             <div key={method.id} className="flex flex-col items-center bg-bone/30 p-3 rounded-lg border border-line shadow-sm">
                               <span className="text-[10px] font-bold text-ink uppercase tracking-wider mb-2">{method.title}</span>
-                              <img src={method.qr_code} alt={method.title} className="w-20 h-20 object-contain bg-white rounded border border-line p-1" />
+                              <img src={method.qr_code} alt={method.title} loading="eager" decoding="sync" className="w-20 h-20 min-w-[5rem] min-h-[5rem] object-contain bg-white block rounded border border-line p-1" />
                             </div>
                           ))}
                         </div>
@@ -478,12 +478,13 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </div>
             </div>
             
-            {invoice.settings?.footer_text && (
-              <div className="mt-12 pt-8 print:mt-6 print:pt-6 border-t-2 border-line text-center print:break-inside-avoid flex flex-col items-center">
-                <p className="text-sm font-medium text-muted italic">{invoice.settings.footer_text}</p>
-                <div className="h-1 w-12 bg-line mt-4 rounded-full"></div>
-              </div>
-            )}
+            <div className="mt-12 pt-8 print:mt-8 print:pt-8 border-t-2 border-line text-center print:break-inside-avoid flex flex-col items-center clear-both w-full">
+              {invoice.settings?.footer_text && (
+                <p className="text-sm font-medium text-muted italic mb-4">{invoice.settings.footer_text}</p>
+              )}
+              <div className="text-[10px] text-muted/60 uppercase tracking-widest">{invoice.company?.name || 'Invoice'}</div>
+              <div className="h-1 w-12 mt-4 rounded-full" style={{ backgroundColor: accentColor }}></div>
+            </div>
             
           </div>
         </div>
