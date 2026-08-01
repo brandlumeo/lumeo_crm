@@ -295,14 +295,11 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   <div className="mt-4 space-y-1">
                     <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Issue Date: <span className="font-medium">{invoice.issue_date}</span></p>
                     {invoice.due_date && <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Due Date: <span className="font-medium">{invoice.due_date}</span></p>}
-                    {invoice.settings?.show_project_on_invoice && invoice.deal_details && (
-                      <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Project/Deal: <span className="font-medium">{invoice.deal_details.title}</span></p>
-                    )}
                   </div>
                   {tpl !== 'template3' && (
                     <div className="h-0.5 w-12 ml-auto mt-6 rounded-full" style={{ backgroundColor: accentColor }}></div>
                   )}
-                  {invoice.settings?.show_status_on_invoice && (
+                  {invoice.settings?.show_status_on_invoice && invoice.status !== 'draft' && (
                     <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                          style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'transparent' } : {}}
                     >
@@ -439,11 +436,6 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   </div>
                 )}
 
-                {invoice.settings?.show_tax_calculation_message && (
-                  <div className="print:break-inside-avoid">
-                    <p className="text-xs text-muted italic">Note: Tax is calculated based on applicable local rates.</p>
-                  </div>
-                )}
                 {invoice.settings?.show_authorised_signatory && (
                   <div className="pt-6 print:break-inside-avoid">
                     {invoice.settings?.authorised_signatory_signature ? (
@@ -469,10 +461,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   <span>Total</span>
                   <span>{formatCurrency(parseFloat(invoice.total), invoice.currency || invoice.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-600 font-medium pt-1">
-                  <span>Amount Paid</span>
-                  <span>{formatCurrency(parseFloat(invoice.amount_paid || "0"), invoice.currency || invoice.company?.currency)}</span>
-                </div>
+                {parseFloat(invoice.amount_paid || "0") > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-medium pt-1">
+                    <span>Amount Paid</span>
+                    <span>{formatCurrency(parseFloat(invoice.amount_paid || "0"), invoice.currency || invoice.company?.currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xl font-bold text-ink pt-4 border-t-2 border-line"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
@@ -486,7 +480,6 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               {invoice.settings?.footer_text && (
                 <p className="text-sm font-medium text-muted italic mb-4">{invoice.settings.footer_text}</p>
               )}
-              <div className="text-[10px] text-muted/60 uppercase tracking-widest">{invoice.company?.name || 'Invoice'}</div>
               <div className="h-1 w-12 mt-4 rounded-full" style={{ backgroundColor: accentColor }}></div>
             </div>
             

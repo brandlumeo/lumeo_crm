@@ -228,14 +228,11 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   <div className="mt-4 space-y-1">
                     <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Issue Date: <span className="font-medium">{quote.created_at.split("T")[0]}</span></p>
                     {quote.valid_until && <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Due Date: <span className="font-medium">{quote.valid_until}</span></p>}
-                    {settings?.show_project_on_invoice && quote.deal_details && (
-                      <p className={`text-sm ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>Project/Deal: <span className="font-medium">{quote.deal_details.title}</span></p>
-                    )}
                   </div>
                   {tpl !== 'template3' && (
                     <div className="h-0.5 w-12 ml-auto mt-6 rounded-full" style={{ backgroundColor: accentColor }}></div>
                   )}
-                  {settings?.show_status_on_invoice && (
+                  {settings?.show_status_on_invoice && quote.status !== 'draft' && (
                     <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                          style={tpl === 'template3' ? { backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'transparent' } : {}}
                     >
@@ -367,11 +364,6 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   </div>
                 )}
 
-                {settings?.show_tax_calculation_message && (
-                  <div className="print:break-inside-avoid">
-                    <p className="text-xs text-muted italic">Note: Tax is calculated based on applicable local rates.</p>
-                  </div>
-                )}
                 {settings?.show_authorised_signatory && (
                   <div className="pt-6 print:break-inside-avoid">
                     {settings?.authorised_signatory_signature ? (
@@ -406,7 +398,6 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               {settings?.footer_text && (
                 <p className="text-sm font-medium text-muted italic mb-4">{settings.footer_text}</p>
               )}
-              <div className="text-[10px] text-muted/60 uppercase tracking-widest">{quote.company?.name || 'Quote'}</div>
               <div className="h-1 w-12 mt-4 rounded-full" style={{ backgroundColor: accentColor }}></div>
             </div>
             
