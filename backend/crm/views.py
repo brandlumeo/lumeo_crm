@@ -353,14 +353,22 @@ class LeadViewSet(CompanyScopedModelViewSet):
         writer = csv.writer(response)
         writer.writerow(["ID", "Name", "Email", "Status", "Score", "Created At"])
         
+        from django.utils import timezone
         for lead in queryset:
+            # Format as DD-MMM-YYYY to prevent Excel from masking as ######## on narrow columns
+            if lead.created_at:
+                local_dt = timezone.localtime(lead.created_at)
+                created_str = local_dt.strftime("%d-%b-%Y %I:%M %p")
+            else:
+                created_str = ""
+                
             writer.writerow([
                 lead.id,
                 lead.name,
                 lead.email,
                 lead.status,
                 lead.score,
-                lead.created_at.strftime("%Y-%m-%d %H:%M:%S") if lead.created_at else ""
+                created_str
             ])
             
         return response
@@ -1292,6 +1300,20 @@ class InvoiceViewSet(CompanyScopedModelViewSet):
         
         from .serializers import InvoiceSerializer
         return Response(InvoiceSerializer(invoice).data)
+
+    @action(detail=True, methods=['get'])
+    def receipt_pdf(self, request, pk=None):
+        payment_id = request.query_params.get('payment_id')
+        if not payment_id:
+            return Response({"error": "payment_id is required"}, status=400)
+            
+        invoice = self.get_object()
+        from .models import InvoicePayment
+        from django.shortcuts import get_object_or_404
+        payment = get_object_or_404(InvoicePayment, id=payment_id, invoice=invoice)
+        
+        from .utils_pdf import generate_receipt_pdf_response
+        return generate_receipt_pdf_response(payment)
 
 
 class CustomFieldDefinitionViewSet(CompanyScopedModelViewSet):
