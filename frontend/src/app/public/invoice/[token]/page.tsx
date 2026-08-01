@@ -463,7 +463,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </div>
             
             {invoice.settings?.footer_text && (
-              <div className="mt-12 pt-8 border-t border-line/50 text-center">
+              <div className="mt-12 pt-8 print:mt-4 print:pt-4 border-t border-line/50 text-center print:break-inside-avoid">
                 <p className="text-sm text-muted">{invoice.settings.footer_text}</p>
               </div>
             )}
