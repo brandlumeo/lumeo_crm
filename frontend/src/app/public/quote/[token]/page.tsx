@@ -141,24 +141,36 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
         .quote-container, .quote-container * {
           font-family: ${resolvedFontStack} !important;
         }
+        @media print {
+          @page {
+            margin: 0;
+          }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .quote-container {
+            padding: 15mm !important;
+          }
+        }
       `}} />
       <div
         className="quote-container min-h-screen print:min-h-0 print:bg-white bg-bone py-12 print:py-0 px-4 sm:px-6 lg:px-8 print:px-0"
       >
-        <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0">
+        <div className="w-full max-w-5xl xl:max-w-6xl mx-auto space-y-8 transition-all duration-300 print:space-y-0 print:max-w-none print:w-full">
         
         {/* QUOTE DOCUMENT */}
         <div 
           className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
             tpl === 'template3' ? 'border-none overflow-hidden' : 
-            tpl === 'template4' ? 'border-line flex flex-col md:flex-row p-0 overflow-hidden' : 
+            tpl === 'template4' ? 'border-line flex flex-col md:flex-row print:flex-row p-0 overflow-hidden' : 
             'border-line'
           }`}
           style={tpl === 'template3' ? { borderTop: `8px solid ${accentColor}` } : {}}
         >
           
           {tpl === 'template4' && (
-            <div className="md:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between" style={{ backgroundColor: '#1e293b' }}>
+            <div className="md:w-1/3 print:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between" style={{ backgroundColor: '#1e293b' }}>
               <div>
                 {settings?.invoice_logo ? (
                   <img src={settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-8 bg-white p-2 rounded" />
@@ -186,10 +198,10 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
             </div>
           )}
 
-          <div className={tpl === 'template4' ? "md:w-2/3 p-8 md:p-12 bg-white" : ""}>
+          <div className={tpl === 'template4' ? "md:w-2/3 print:w-2/3 p-8 md:p-12 bg-white" : ""}>
             {/* Header Area */}
             {tpl !== 'template4' && (
-              <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8"
+              <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8"
                    style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
               >
                 <div>
@@ -316,7 +328,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </table>
             </div>
 
-            <div className="flex flex-col md:flex-row justify-between border-t border-line pt-8 gap-8">
+            <div className="flex flex-col md:flex-row print:flex-row justify-between border-t border-line pt-8 gap-8">
               
               {/* Terms and Info Section */}
               <div className="flex-1 space-y-6">
