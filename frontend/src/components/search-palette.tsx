@@ -15,6 +15,11 @@ const quickLinks = [
   { label: "Customers", path: "/customers", icon: UserCircle2 },
   { label: "Deals", path: "/deals", icon: Layers },
   { label: "Tasks", path: "/tasks", icon: CheckSquare },
+  { label: "Invoices", path: "/invoices", icon: FileText },
+  { label: "Quotes", path: "/quotes", icon: FileText },
+  { label: "Tickets", path: "/tickets", icon: TicketIcon },
+  { label: "Products", path: "/products", icon: Package },
+  { label: "Orders", path: "/orders", icon: ShoppingCart },
   { label: "Billing", path: "/billing", icon: CreditCard },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
