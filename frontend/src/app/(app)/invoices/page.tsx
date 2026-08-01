@@ -19,12 +19,12 @@ export default function InvoicesPage() {
   const addPaymentMutation = useAddInvoicePayment();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
+  const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
     currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     customer_id: null, 
     deal_id: null, 
     due_date: "",
-    items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
+    items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
   });
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export default function InvoicesPage() {
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+        setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
       }
     });
   };
@@ -286,7 +286,7 @@ export default function InvoicesPage() {
                   <h3 className="text-sm font-medium text-ink">Line Items</h3>
                   <button
                     type="button"
-                    onClick={() => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] })}
+                    onClick={() => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] })}
                     className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
@@ -300,11 +300,22 @@ export default function InvoicesPage() {
                         <input
                           required
                           type="text"
-                          placeholder="Item description"
+                          placeholder="Item name"
                           value={item.name}
                           onChange={(e) => {
                             const newItems = [...newInvoice.items];
                             newItems[index].name = e.target.value;
+                            setNewInvoice({ ...newInvoice, items: newItems });
+                          }}
+                          className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Item description (optional)"
+                          value={item.description || ""}
+                          onChange={(e) => {
+                            const newItems = [...newInvoice.items];
+                            newItems[index].description = e.target.value;
                             setNewInvoice({ ...newInvoice, items: newItems });
                           }}
                           className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
