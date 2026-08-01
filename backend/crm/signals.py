@@ -135,6 +135,35 @@ def lead_pre_save(sender, instance, **kwargs):
             instance._old_status = None
     else:
         instance._old_status = None
+        
+        # Auto-numbering for ENQ Number (Leskor Workflow)
+        from .models import CustomFieldDefinition
+        if not instance.custom_data:
+            instance.custom_data = {}
+            
+        enq_field = CustomFieldDefinition.objects.filter(
+            company=instance.company, 
+            model_name='lead', 
+            name__icontains='ENQ'
+        ).first()
+        
+        if enq_field and not instance.custom_data.get(enq_field.name):
+            field_name = enq_field.name
+            # Try to get the latest lead that has this custom field
+            last_enq_lead = sender.objects.filter(
+                company=instance.company, 
+                custom_data__has_key=field_name
+            ).order_by('-id').first()
+            
+            next_num = 1
+            if last_enq_lead and last_enq_lead.custom_data.get(field_name):
+                val = last_enq_lead.custom_data.get(field_name)
+                import re
+                match = re.search(r'\d+', str(val))
+                if match:
+                    next_num = int(match.group()) + 1
+            
+            instance.custom_data[field_name] = f"ENQ-{next_num:04d}"
 
 @receiver(post_save, sender=Lead)
 def lead_post_save(sender, instance, created, **kwargs):
