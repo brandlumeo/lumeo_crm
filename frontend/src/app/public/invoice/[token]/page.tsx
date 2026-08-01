@@ -399,23 +399,39 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   </div>
                 )}
                 
-                {/* Bank Details injected here if available */}
-                {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information) && (
+                {/* Bank Details & QR Codes */}
+                {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information || (invoice.payment_methods && invoice.payment_methods.length > 0)) && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Other Information / Bank Details</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Payment & Bank Details</h4>
+                    
                     {invoice.settings?.invoice_other_information && (
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{invoice.settings.invoice_other_information}</p>
                     )}
-                    {invoice.settings?.bank_name && (
-                      <div className="text-sm text-muted bg-bone/50 p-4 rounded-lg border border-line space-y-1.5">
-                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Bank Name:</span> <span className="break-words flex-1">{invoice.settings.bank_name}</span></div>
-                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account Name:</span> <span className="break-words flex-1">{invoice.settings.bank_account_name}</span></div>
-                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account No:</span> <span className="break-all flex-1">{invoice.settings.bank_account_number}</span></div>
-                        {invoice.settings.bank_routing_number && (
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Routing / SWIFT:</span> <span className="break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
-                        )}
-                      </div>
-                    )}
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {invoice.settings?.bank_name && (
+                        <div className="text-sm text-muted bg-bone/30 p-4 rounded-lg border border-line space-y-1.5 flex-1 w-full sm:w-auto">
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Bank Name:</span> <span className="break-words flex-1">{invoice.settings.bank_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Account Name:</span> <span className="break-words flex-1">{invoice.settings.bank_account_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Account No:</span> <span className="break-all flex-1">{invoice.settings.bank_account_number}</span></div>
+                          {invoice.settings.bank_routing_number && (
+                            <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Routing/SWIFT:</span> <span className="break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Display QR codes from custom payment methods compactly */}
+                      {invoice.payment_methods && invoice.payment_methods.length > 0 && invoice.payment_methods.some((m: any) => m.qr_code) && (
+                        <div className="flex gap-3 flex-wrap">
+                          {invoice.payment_methods.filter((m: any) => m.qr_code).map((method: any) => (
+                            <div key={method.id} className="flex flex-col items-center bg-bone/30 p-3 rounded-lg border border-line shadow-sm">
+                              <span className="text-[10px] font-bold text-ink uppercase tracking-wider mb-2">{method.title}</span>
+                              <img src={method.qr_code} alt={method.title} className="w-20 h-20 object-contain bg-white rounded border border-line p-1" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -544,7 +560,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
 
         {/* Payment Section */}
         {(parseFloat(invoice.amount_due || "0") > 0) && (
-          <div className={`bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 print:shadow-none print:border-none print:bg-transparent print:p-0 print:mt-12 ${(!invoice.payment_methods || invoice.payment_methods.length === 0) ? 'print:hidden' : ''}`}>
+          <div className="bg-paper rounded-2xl shadow-sm border border-line p-8 md:p-12 print:hidden mt-8">
             <style>{`
               :root { --accent-color: ${accentColor}; }
             `}</style>

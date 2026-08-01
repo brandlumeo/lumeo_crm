@@ -339,23 +339,27 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   </div>
                 )}
                 
-                {/* Bank Details injected here if available */}
+                {/* Bank Details & QR Codes */}
                 {(settings?.bank_name || settings?.invoice_other_information) && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Other Information / Bank Details</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Payment & Bank Details</h4>
+                    
                     {settings?.invoice_other_information && (
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{settings.invoice_other_information}</p>
                     )}
-                    {settings?.bank_name && (
-                      <div className="text-sm text-muted bg-bone/50 p-4 rounded-lg border border-line space-y-1.5">
-                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Bank Name:</span> <span className="break-words flex-1">{settings.bank_name}</span></div>
-                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account Name:</span> <span className="break-words flex-1">{settings.bank_account_name}</span></div>
-                        <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Account No:</span> <span className="break-all flex-1">{settings.bank_account_number}</span></div>
-                        {settings.bank_routing_number && (
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 sm:w-36 shrink-0">Routing / SWIFT:</span> <span className="break-all flex-1">{settings.bank_routing_number}</span></div>
-                        )}
-                      </div>
-                    )}
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {settings?.bank_name && (
+                        <div className="text-sm text-muted bg-bone/30 p-4 rounded-lg border border-line space-y-1.5 flex-1 w-full sm:w-auto">
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Bank Name:</span> <span className="break-words flex-1">{settings.bank_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Account Name:</span> <span className="break-words flex-1">{settings.bank_account_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Account No:</span> <span className="break-all flex-1">{settings.bank_account_number}</span></div>
+                          {settings.bank_routing_number && (
+                            <div className="flex gap-2 sm:gap-4"><span className="font-medium w-24 shrink-0">Routing/SWIFT:</span> <span className="break-all flex-1">{settings.bank_routing_number}</span></div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
