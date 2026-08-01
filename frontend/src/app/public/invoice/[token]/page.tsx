@@ -355,31 +355,31 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-left mb-8 print:mb-4 print:min-w-full">
                 <thead>
-                  <tr className="border-b border-line" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
-                    <th className="py-3 font-medium text-muted">Item</th>
+                  <tr className="border-b border-line bg-bone/30" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted">Item</th>
                     {invoice.settings?.show_hsn_sac_code && (
-                      <th className="py-3 font-medium text-muted text-right whitespace-nowrap">HSN/SAC</th>
+                      <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap">HSN/SAC</th>
                     )}
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Qty</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap">Price</th>
-                    <th className="py-3 font-medium text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap">Qty</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap">Price</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {invoice.items.map((item: InvoiceLineItem, i: number) => (
-                    <tr key={i} className={tpl === 'template1' && i % 2 !== 0 ? 'bg-bone/30' : ''}>
-                      <td className="py-4 px-2">
-                        <div className="font-medium text-ink">{item.name}</div>
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-bone/20'}>
+                      <td className="py-4 px-4">
+                        <div className="font-semibold text-ink">{item.name}</div>
                         {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
                       {invoice.settings?.show_hsn_sac_code && (
-                        <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
+                        <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
                       )}
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-ink whitespace-nowrap">
                         {item.quantity} {item.unit || ""}
                       </td>
-                      <td className="py-4 px-2 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}</td>
-                      <td className="py-4 px-2 pr-4 sm:pr-6 text-right font-medium text-ink whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{formatCurrency(parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}</td>
+                      <td className="py-4 px-4 pr-4 sm:pr-6 text-right font-semibold text-ink whitespace-nowrap">
                         {formatCurrency(item.quantity * parseFloat(item.unit_price), invoice.currency || invoice.company?.currency)}
                       </td>
                     </tr>
@@ -394,7 +394,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               <div className="flex-1 space-y-6 print:space-y-4">
                 {invoice.settings?.invoice_terms && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-sm font-semibold text-ink mb-1">Terms & Conditions</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Terms & Conditions</h4>
                     <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.settings.invoice_terms}</p>
                   </div>
                 )}
@@ -402,7 +402,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {/* Bank Details injected here if available */}
                 {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information) && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-sm font-semibold text-ink mb-1">Other Information / Bank Details</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted mb-3 border-b border-line pb-1">Other Information / Bank Details</h4>
                     {invoice.settings?.invoice_other_information && (
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{invoice.settings.invoice_other_information}</p>
                     )}
@@ -453,7 +453,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   <span>Amount Paid</span>
                   <span>{formatCurrency(parseFloat(invoice.amount_paid || "0"), invoice.currency || invoice.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-xl font-bold text-red-600 pt-3 border-t border-line"
+                <div className="flex justify-between text-xl font-bold text-ink pt-4 border-t-2 border-line"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
                   <span style={tpl === 'template3' ? { color: 'white' } : {}}>Amount Due</span>
@@ -463,8 +463,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </div>
             
             {invoice.settings?.footer_text && (
-              <div className="mt-12 pt-8 print:mt-4 print:pt-4 border-t border-line/50 text-center print:break-inside-avoid">
-                <p className="text-sm text-muted">{invoice.settings.footer_text}</p>
+              <div className="mt-12 pt-8 print:mt-6 print:pt-6 border-t-2 border-line text-center print:break-inside-avoid flex flex-col items-center">
+                <p className="text-sm font-medium text-muted italic">{invoice.settings.footer_text}</p>
+                <div className="h-1 w-12 bg-line mt-4 rounded-full"></div>
               </div>
             )}
             
@@ -571,12 +572,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 <div className="space-y-4">
                   <h4 className="font-medium text-ink mb-3 border-b border-line pb-2">Other Payment Options</h4>
                   {invoice.payment_methods.map((method: any) => (
-                    <div key={method.id} className="p-4 bg-bone/50 border border-line rounded-lg">
+                    <div key={method.id} className="p-5 bg-white shadow-sm border border-line rounded-xl">
                       <h5 className="font-semibold text-ink mb-2">{method.title}</h5>
                       <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{method.details}</p>
                       {method.qr_code && (
-                        <div className="mt-4">
-                          <img src={method.qr_code} alt="QR Code" className="w-32 h-32 object-contain rounded-md bg-white p-2 border border-line" />
+                        <div className="mt-4 inline-block border border-line p-2 rounded-lg bg-white shadow-sm">
+                          <img src={method.qr_code} alt="QR Code" className="w-28 h-28 object-contain" />
                         </div>
                       )}
                     </div>
