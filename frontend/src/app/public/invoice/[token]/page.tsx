@@ -389,10 +389,10 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </table>
             </div>
 
-              <div className="flex flex-col md:flex-row print:block justify-between border-t border-line pt-8 gap-8 print:gap-0 print:pt-4 after:content-[''] after:table after:clear-both">
+              <div className="flex flex-col md:flex-row print:flex print:flex-row justify-between border-t border-line pt-8 gap-8 print:gap-4 print:pt-4">
               
               {/* Terms and Info Section */}
-              <div className="flex-1 print:float-left print:w-[60%] space-y-6 print:space-y-4">
+              <div className="flex-1 print:w-[60%] space-y-6 print:space-y-4">
                 {invoice.settings?.invoice_terms && (
                   <div className="print:break-inside-avoid mb-6">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2 border-b-2 pb-1" style={{ borderColor: accentColor }}>Terms & Conditions</h4>
@@ -448,7 +448,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 )}
               </div>
 
-              <div className="w-full max-w-sm print:float-right print:max-w-none print:w-[35%] shrink-0 space-y-3 print:break-inside-avoid print:mt-0">
+              <div className="w-full max-w-sm print:max-w-none print:w-[35%] shrink-0 space-y-3 print:break-inside-avoid print:mt-0">
                 <div className="flex justify-between text-muted">
                   <span>Subtotal</span>
                   <span>{formatCurrency(parseFloat(invoice.subtotal), invoice.currency || invoice.company?.currency)}</span>
