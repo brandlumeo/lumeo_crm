@@ -505,8 +505,17 @@ export default function InvoicesPage() {
                           <div className="text-sm font-medium text-ink">{payment.payment_method}</div>
                           <div className="text-xs text-muted mt-0.5">{payment.payment_date} • {payment.receipt_number}</div>
                         </div>
-                        <div className="font-semibold text-emerald-600">
-                          {formatCurrency(parseFloat(payment.amount), selectedInvoice.currency || company?.currency)}
+                        <div className="flex items-center gap-3">
+                          <div className="font-semibold text-emerald-600">
+                            {formatCurrency(parseFloat(payment.amount), selectedInvoice.currency || company?.currency)}
+                          </div>
+                          <button
+                            onClick={() => window.open(`/api/v1/crm/invoices/${selectedInvoice.id}/receipt_pdf/?payment_id=${payment.id}`, '_blank')}
+                            className="p-1.5 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line bg-paper"
+                            title="Download Receipt"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     ))}

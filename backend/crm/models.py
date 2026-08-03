@@ -58,6 +58,14 @@ class Lead(models.Model):
         null=True,
         blank=True,
     )
+    deal = models.ForeignKey(
+        "Deal",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leads",
+        help_text="The deal this lead was converted into or is linked to.",
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     custom_data = models.JSONField(default=dict, blank=True)

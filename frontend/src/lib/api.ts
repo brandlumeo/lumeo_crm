@@ -695,9 +695,9 @@ export async function deleteProduct(id: number) {
 
 export async function fetchCrmCounts() {
   const [leads, customers, deals, tasks, notes, products] = await Promise.all([
-    fetchLeadPage(),
+    api.get(endpoints.leads, { params: { status: "new" } }).then(res => res.data),
     fetchCustomerPage(),
-    fetchDealPage(),
+    api.get(endpoints.deals, { params: { stage: "prospect" } }).then(res => res.data),
     fetchTaskPage(),
     fetchNotePage(),
     fetchProducts(),

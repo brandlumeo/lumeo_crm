@@ -195,7 +195,13 @@ class LeadViewSet(CompanyScopedModelViewSet):
             queryset = queryset.filter(status=status_value)
 
         return self._filter_by_assignee(queryset)
-        
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # Sync the deal stage if a deal is linked
+        if instance.deal and instance.deal.stage != instance.status:
+            instance.deal.stage = instance.status
+            instance.deal.save(update_fields=["stage"])
     @action(detail=True, methods=["post"])
     def predictive_score(self, request, pk=None):
         lead = self.get_object()
@@ -283,9 +289,10 @@ class LeadViewSet(CompanyScopedModelViewSet):
             custom_data=deal_custom_data,
         )
         
-        # Mark lead as won/converted
+        # Mark lead as won/converted and link deal
         lead.status = "won"  # Ensure it matches the Won status
-        lead.save(update_fields=["status"])
+        lead.deal = deal
+        lead.save(update_fields=["status", "deal"])
         
         return Response({
             "message": "Lead converted successfully.",
@@ -614,6 +621,14 @@ class DealViewSet(CompanyScopedModelViewSet):
 
         return self._filter_by_decimal_range(queryset, "amount")
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # Sync the lead status for any linked leads
+        for lead in instance.leads.all():
+            if lead.status != instance.stage:
+                lead.status = instance.stage
+                lead.save(update_fields=["status"])
+
     @action(detail=False, methods=["post"], url_path="reorder")
     def reorder(self, request):
         from django.db import transaction
@@ -645,9 +660,16 @@ class DealViewSet(CompanyScopedModelViewSet):
                     continue
 
                 deal = deal_map[deal_id]
+                old_stage = deal.stage
                 deal.stage = new_stage
                 deal.row_order = new_order
                 deal.save(update_fields=["stage", "row_order"])
+
+                if old_stage != new_stage:
+                    for lead in deal.leads.all():
+                        if lead.status != new_stage:
+                            lead.status = new_stage
+                            lead.save(update_fields=["status"])
 
         return Response({"status": "reordering applied successfully"})
 
