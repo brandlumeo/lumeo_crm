@@ -9,6 +9,7 @@ import {
   Trash2,
   CheckCircle,
   Download,
+  Edit2,
 } from "lucide-react";
 import {
   usePayrolls, useCurrentCompany,
@@ -38,6 +39,7 @@ export default function PayrollPage() {
   const [basic, setBasic] = useState("");
   const [allowances, setAllowances] = useState("");
   const [deductions, setDeductions] = useState("");
+  const [editPayrollId, setEditPayrollId] = useState<string | null>(null);
 
   const { data: company } = useCurrentCompany();
 
@@ -45,29 +47,68 @@ export default function PayrollPage() {
     e.preventDefault();
     if (!employeeId || !basic) return;
 
-    createPayrollMutation.mutate(
-      {
-        user: employeeId,
-        month,
-        year,
-        basic_salary: parseFloat(basic),
-        allowances: parseFloat(allowances) || 0,
-        deductions: parseFloat(deductions) || 0,
-        status: "published", // direct publish for now
-      },
-      {
-        onSuccess: () => {
-          toast.success("Salary slip generated!");
-          setEmployeeId("");
-          setBasic("");
-          setAllowances("");
-          setDeductions("");
+    if (editPayrollId) {
+      updatePayrollMutation.mutate(
+        {
+          id: editPayrollId,
+          payload: {
+            user: employeeId,
+            month,
+            year,
+            basic_salary: parseFloat(basic),
+            allowances: parseFloat(allowances) || 0,
+            deductions: parseFloat(deductions) || 0,
+          }
         },
-        onError: (err: any) => {
-          toast.error(err.response?.data?.detail || "Failed to generate salary slip. Please check inputs.");
+        {
+          onSuccess: () => {
+            toast.success("Salary slip updated!");
+            setEditPayrollId(null);
+            setEmployeeId("");
+            setBasic("");
+            setAllowances("");
+            setDeductions("");
+          },
+          onError: (err: any) => {
+            toast.error(err.response?.data?.detail || "Failed to update salary slip.");
+          }
         }
-      }
-    );
+      );
+    } else {
+      createPayrollMutation.mutate(
+        {
+          user: employeeId,
+          month,
+          year,
+          basic_salary: parseFloat(basic),
+          allowances: parseFloat(allowances) || 0,
+          deductions: parseFloat(deductions) || 0,
+          status: "published", // direct publish for now
+        },
+        {
+          onSuccess: () => {
+            toast.success("Salary slip generated!");
+            setEmployeeId("");
+            setBasic("");
+            setAllowances("");
+            setDeductions("");
+          },
+          onError: (err: any) => {
+            toast.error(err.response?.data?.detail || "Failed to generate salary slip. Please check inputs.");
+          }
+        }
+      );
+    }
+  };
+
+  const handleEditClick = (slip: any) => {
+    setEditPayrollId(slip.id);
+    setEmployeeId(slip.user);
+    setMonth(slip.month);
+    setYear(slip.year);
+    setBasic(slip.basic_salary.toString());
+    setAllowances(slip.allowances.toString());
+    setDeductions(slip.deductions.toString());
   };
 
   const markAsPaid = (id: string) => {
@@ -273,6 +314,16 @@ export default function PayrollPage() {
                             <Download className="w-4 h-4" />
                           </button>
                           
+                          {isManager && (
+                            <button
+                              onClick={() => handleEditClick(slip)}
+                              className="bg-bone hover:bg-bone-2 text-ink p-1.5 rounded transition-all"
+                              title="Edit Slip"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          
                           {isManager && slip.status !== "paid" && (
                             <button
                               onClick={() => markAsPaid(slip.id)}
@@ -307,7 +358,7 @@ export default function PayrollPage() {
         {/* Secondary Admin Controls: Generate Slip */}
         {isManager && (
           <div className="card p-6 border border-line bg-bone flex flex-col gap-4 h-fit">
-            <h2 className="font-serif text-[18px]">Generate Salary Slip</h2>
+            <h2 className="font-serif text-[18px]">{editPayrollId ? "Update Salary Slip" : "Generate Salary Slip"}</h2>
             <form onSubmit={handleCreate} className="flex flex-col gap-3.5">
               
               <div className="flex flex-col gap-1.5">
@@ -387,14 +438,31 @@ export default function PayrollPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={createPayrollMutation.isPending}
-                className="bg-ink hover:opacity-90 text-paper py-2.5 rounded-lg text-xs font-semibold transition-all mt-2 flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                {createPayrollMutation.isPending ? "GENERATING..." : "GENERATE SLIP"}
-              </button>
+              <div className="flex gap-2 mt-2">
+                {editPayrollId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditPayrollId(null);
+                      setEmployeeId("");
+                      setBasic("");
+                      setAllowances("");
+                      setDeductions("");
+                    }}
+                    className="flex-1 bg-bone-2 hover:bg-line text-ink py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center"
+                  >
+                    CANCEL
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={createPayrollMutation.isPending || updatePayrollMutation.isPending}
+                  className="flex-[2] bg-ink hover:opacity-90 text-paper py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+                >
+                  {editPayrollId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {createPayrollMutation.isPending || updatePayrollMutation.isPending ? (editPayrollId ? "UPDATING..." : "GENERATING...") : (editPayrollId ? "UPDATE SLIP" : "GENERATE SLIP")}
+                </button>
+              </div>
             </form>
           </div>
         )}
