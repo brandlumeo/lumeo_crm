@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, useCustomerPage, useDealPage, useCurrentCompany, useUnits } from "@/lib/queries";
 import { downloadQuotePdf } from "@/lib/api";
-import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2 } from "lucide-react";
+import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, Edit2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
@@ -20,6 +20,7 @@ export default function QuotesPage() {
   const updateMutation = useUpdateQuote();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editQuoteId, setEditQuoteId] = useState<number | null>(null);
   const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, content: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
     currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     title: "",
@@ -55,12 +56,36 @@ export default function QuotesPage() {
     if (newQuote.deal_id) payload.deal = newQuote.deal_id;
     if (newQuote.valid_until) payload.valid_until = newQuote.valid_until;
     
-    createMutation.mutate(payload, {
-      onSuccess: () => {
-        setIsModalOpen(false);
-        setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
-      }
+    if (editQuoteId) {
+      updateMutation.mutate({ id: editQuoteId, payload }, {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setEditQuoteId(null);
+          setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+        }
+      });
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+        }
+      });
+    }
+  };
+
+  const handleEditClick = (quote: any) => {
+    setEditQuoteId(quote.id);
+    setNewQuote({
+      currency: quote.currency || "INR",
+      title: quote.title,
+      content: quote.content || "",
+      customer_id: quote.customer?.id || null,
+      deal_id: quote.deal || null,
+      valid_until: quote.valid_until || "",
+      items: quote.items?.length > 0 ? quote.items : [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
     });
+    setIsModalOpen(true);
   };
 
   const handleStatusChange = (id: number, status: string) => {
@@ -82,9 +107,13 @@ export default function QuotesPage() {
           <h1 className="text-2xl font-semibold text-ink">Quotes</h1>
           <p className="text-muted text-sm mt-1">Create quotes and share them securely with clients for e-signatures.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+        <button 
+          onClick={() => {
+            setEditQuoteId(null);
+            setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+            setIsModalOpen(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-ink text-bone font-medium rounded-lg hover:bg-ink/90 transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
           New Quote
@@ -156,7 +185,14 @@ export default function QuotesPage() {
                       {new Date(quote.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleEditClick(quote)}
+                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                          title="Edit Quote"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => setDeleteQuoteId(quote.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-line"
@@ -203,8 +239,8 @@ export default function QuotesPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-5 border-b border-line flex justify-between items-center bg-bone">
-              <h2 className="text-lg font-semibold text-ink">New Quote</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-ink text-xl font-light">&times;</button>
+              <h2 className="text-lg font-semibold text-ink">{editQuoteId ? "Edit Quote" : "New Quote"}</h2>
+              <button onClick={() => { setIsModalOpen(false); setEditQuoteId(null); }} className="text-muted hover:text-ink text-xl font-light">&times;</button>
             </div>
             <form onSubmit={handleCreate} id="create-quote-form" className="p-5 overflow-y-auto space-y-6">
               
@@ -414,20 +450,20 @@ export default function QuotesPage() {
                 Total: {formatCurrency(newQuote.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), company?.currency)}
               </div>
               <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-md transition-colors"
+                <button 
+                  type="button" 
+                  onClick={() => { setIsModalOpen(false); setEditQuoteId(null); }} 
+                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
+                <button 
                   form="create-quote-form"
-                  type="submit"
-                  disabled={createMutation.isPending || !newQuote.customer_id || !newQuote.title.trim()}
-                  className="bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                  type="submit" 
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-ink text-bone text-sm font-medium rounded-lg hover:bg-ink/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Quote"}
+                  {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editQuoteId ? "Update Quote" : "Create Quote"}
                 </button>
               </div>
             </div>

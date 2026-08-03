@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment, useUnits } from "@/lib/queries";
 import { downloadInvoicePdf } from "@/lib/api";
-import { CreditCard, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Receipt, Edit } from "lucide-react";
+import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Edit2 } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ export default function InvoicesPage() {
   const addPaymentMutation = useAddInvoicePayment();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editInvoiceId, setEditInvoiceId] = useState<number | null>(null);
   const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
     currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
     customer_id: null, 
@@ -40,6 +41,25 @@ export default function InvoicesPage() {
   const { data: unitsData } = useUnits();
   const units = Array.isArray(unitsData) ? unitsData : (unitsData as any)?.results || [];
 
+  const handleEditClick = (invoice: any) => {
+    setEditInvoiceId(invoice.id);
+    setNewInvoice({
+      currency: invoice.currency,
+      customer_id: invoice.customer?.id,
+      deal_id: invoice.deal?.id,
+      due_date: invoice.due_date || "",
+      items: invoice.items.map((item: any) => ({
+        name: item.name,
+        description: item.description,
+        quantity: parseFloat(item.quantity),
+        unit_price: parseFloat(item.unit_price),
+        tax_rate: parseFloat(item.tax_rate),
+        unit: item.unit
+      }))
+    });
+    setIsModalOpen(true);
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newInvoice.customer_id) return;
@@ -51,12 +71,22 @@ export default function InvoicesPage() {
     if (newInvoice.deal_id) payload.deal = newInvoice.deal_id;
     if (newInvoice.due_date) payload.due_date = newInvoice.due_date;
     
-    createMutation.mutate(payload, {
-      onSuccess: () => {
-        setIsModalOpen(false);
-        setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
-      }
-    });
+    if (editInvoiceId) {
+      updateMutation.mutate({ id: editInvoiceId, payload }, {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setEditInvoiceId(null);
+          setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+        }
+      });
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+        }
+      });
+    }
   };
 
   const handleStatusChange = (id: number, status: string) => {
@@ -92,7 +122,11 @@ export default function InvoicesPage() {
           <p className="text-muted text-sm mt-1">Bill your clients and collect e-signatures or payments securely.</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditInvoiceId(null);
+            setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+            setIsModalOpen(true);
+          }}
           className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -119,7 +153,7 @@ export default function InvoicesPage() {
         ) : invoices.length === 0 ? (
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-line shadow-sm">
-              <CreditCard className="w-8 h-8 text-muted" />
+              <FileText className="w-8 h-8 text-muted" />
             </div>
             <h3 className="text-lg font-medium text-ink">No invoices found</h3>
             <p className="text-muted text-sm mt-1 mb-6 max-w-sm">Create your first invoice to get paid by your customers.</p>
@@ -169,6 +203,13 @@ export default function InvoicesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditClick(invoice)}
+                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                          title="Edit Invoice"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => setDeleteInvoiceId(invoice.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-line"
@@ -226,8 +267,8 @@ export default function InvoicesPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-5 border-b border-line flex justify-between items-center bg-bone">
-              <h2 className="text-lg font-semibold text-ink">New Invoice</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-ink text-xl font-light">&times;</button>
+              <h2 className="text-lg font-semibold text-ink">{editInvoiceId ? "Edit Invoice" : "New Invoice"}</h2>
+              <button onClick={() => { setIsModalOpen(false); setEditInvoiceId(null); }} className="text-muted hover:text-ink text-xl font-light">&times;</button>
             </div>
             <form onSubmit={handleCreate} id="create-invoice-form" className="p-5 overflow-y-auto space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -408,18 +449,18 @@ export default function InvoicesPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-md transition-colors"
+                  onClick={() => { setIsModalOpen(false); setEditInvoiceId(null); }}
+                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   form="create-invoice-form"
                   type="submit"
-                  disabled={createMutation.isPending || !newInvoice.customer_id}
-                  className="bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                  disabled={createMutation.isPending || updateMutation.isPending || !newInvoice.customer_id}
+                  className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-ink text-bone text-sm font-medium rounded-lg hover:bg-ink/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Invoice"}
+                  {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editInvoiceId ? "Update Invoice" : "Create Invoice"}
                 </button>
               </div>
             </div>
