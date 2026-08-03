@@ -427,6 +427,50 @@ def notify_ticket_reply(self, comment_id: int):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_quote_email(self, quote_id: int):
+    """
+    Sends the quote URL to the customer.
+    """
+    try:
+        from crm.models import Quote
+        from django.core.mail import EmailMultiAlternatives
+        from django.conf import settings
+
+        quote = Quote.objects.select_related("customer", "company").get(pk=quote_id)
+        if not quote.customer.email:
+            return
+            
+        subject = f"Quote {quote.quote_number} from {quote.company.name}"
+        text_content = f"Hello {quote.customer.name},\n\nYour quote {quote.quote_number} for ₹{quote.total} is ready.\n\nView and download your quote here: {settings.FRONTEND_URL}/public/quote/{quote.public_token}"
+        
+        from accounts.emails import build_premium_email
+        html_msg = f"""
+            <p style="text-align: center;">Hello {quote.customer.name},</p>
+            <div style="background-color: #f3f4f6; padding: 24px; border-radius: 12px; text-align: center; margin: 24px 0;">
+                <p style="margin: 0; color: #1A1714; font-weight: 600;">Quote {quote.quote_number}</p>
+                <h1 style="color: #FF5B1F; margin: 8px 0; font-size: 36px;">₹{quote.total:,.2f}</h1>
+                <p style="margin: 0; color: #4A4540; font-size: 14px;">Valid Until: {quote.valid_until or 'N/A'}</p>
+            </div>
+            <p style="text-align: center; color: #8B8580; font-size: 14px; margin-top: 24px;">Sent by {quote.company.name}</p>
+        """
+        msg = build_premium_email(
+            subject=subject,
+            heading="New Quote",
+            body_text=text_content,
+            body_html=html_msg,
+            pre_header="QUOTE",
+            action_url=f"{settings.FRONTEND_URL}/public/quote/{quote.public_token}",
+            action_text="View Quote",
+            to_email=quote.customer.email
+        )
+        msg.send(fail_silently=True)
+            
+    except Exception as exc:
+        logger.exception("send_quote_email failed: %s", exc)
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
 def send_invoice_email(self, invoice_id: int):
     """
     Sends the invoice URL to the customer.

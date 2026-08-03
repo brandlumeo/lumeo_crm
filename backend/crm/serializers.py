@@ -785,6 +785,11 @@ class QuoteSerializer(CompanyScopedSerializer):
             QuoteLineItem.objects.create(quote=quote, **item_data)
             
         quote.calculate_totals()
+        
+        if quote.status == Quote.Status.SENT:
+            from notifications.tasks import send_quote_email
+            send_quote_email.delay(quote.id)
+            
         return quote
 
     def update(self, instance, validated_data):
@@ -800,6 +805,7 @@ class QuoteSerializer(CompanyScopedSerializer):
                 raise ValidationError({"detail": "This Quote is approved and locked. You must unlock it before editing."})
                 
         items_data = validated_data.pop("items", None)
+        instance._old_status = instance.status
         quote = super().update(instance, validated_data)
         
         if items_data is not None:
@@ -809,6 +815,11 @@ class QuoteSerializer(CompanyScopedSerializer):
                 QuoteLineItem.objects.create(quote=instance, **item_data)
                 
         quote.calculate_totals()
+        
+        if quote.status == Quote.Status.SENT and getattr(instance, '_old_status', None) != Quote.Status.SENT:
+            from notifications.tasks import send_quote_email
+            send_quote_email.delay(quote.id)
+            
         return quote
 
 
