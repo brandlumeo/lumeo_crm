@@ -121,8 +121,13 @@ class CompanyScopedModelViewSet(ModelViewSet):
             model_name = self.queryset.model.__name__
             if model_name in ["Ticket", "Attachment"]:
                 save_kwargs["customer"] = customer
-                
-        serializer.save(**save_kwargs)
+            save_kwargs["company"] = user.company
+        else:
+            save_kwargs['company'] = user.company
+            
+        instance = serializer.save(**save_kwargs)
+        if hasattr(self, '_convert_lead_to_deal') and getattr(instance, 'status', None) == "won" and not getattr(instance, 'deal', None):
+            self._convert_lead_to_deal(instance)
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
@@ -202,6 +207,48 @@ class LeadViewSet(CompanyScopedModelViewSet):
         if instance.deal and instance.deal.stage != instance.status:
             instance.deal.stage = instance.status
             instance.deal.save(update_fields=["stage"])
+        # Auto convert to deal if status changed to won and no deal exists
+        elif instance.status == "won" and not instance.deal:
+            self._convert_lead_to_deal(instance)
+            
+    def _convert_lead_to_deal(self, lead):
+        # Create Customer
+        from crm.models import Customer, Deal
+        customer, created = Customer.objects.get_or_create(
+            company=lead.company,
+            email=lead.email,
+            defaults={
+                "name": lead.name,
+                "phone": lead.mobile or "",
+                "custom_data": lead.custom_data,
+            }
+        )
+        
+        # Determine first deal stage
+        first_stage = "prospect"
+        pipelines = lead.company.deal_pipelines or []
+        if pipelines and isinstance(pipelines, list) and len(pipelines) > 0:
+            first_stage = pipelines[0].get("name", "Prospect").lower()
+            
+        # Create Deal
+        deal_custom_data = dict(lead.custom_data)
+        deal_custom_data["customer_id"] = customer.id
+        
+        deal = Deal.objects.create(
+            company=lead.company,
+            title=f"{lead.name} Deal",
+            amount=0.00,
+            stage=first_stage,
+            assigned_to=lead.assigned_to,
+            custom_data=deal_custom_data,
+        )
+        
+        # Mark lead as won/converted and link deal
+        lead.status = "won"  # Ensure it matches the Won status
+        lead.deal = deal
+        lead.save(update_fields=["status", "deal"])
+        return customer, deal
+
     @action(detail=True, methods=["post"])
     def predictive_score(self, request, pk=None):
         lead = self.get_object()
@@ -258,41 +305,10 @@ class LeadViewSet(CompanyScopedModelViewSet):
     def convert(self, request, pk=None):
         lead = self.get_object()
         
-        # Create Customer
-        from crm.models import Customer, Deal
-        customer, created = Customer.objects.get_or_create(
-            company=lead.company,
-            email=lead.email,
-            defaults={
-                "name": lead.name,
-                "phone": lead.mobile or "",
-                "custom_data": lead.custom_data,
-            }
-        )
-        
-        # Determine first deal stage
-        first_stage = "prospect"
-        pipelines = lead.company.deal_pipelines or []
-        if pipelines and isinstance(pipelines, list) and len(pipelines) > 0:
-            first_stage = pipelines[0].get("name", "Prospect").lower()
+        if lead.deal:
+            return Response({"error": "Lead is already converted to a deal.", "deal_id": lead.deal.id}, status=400)
             
-        # Create Deal
-        deal_custom_data = dict(lead.custom_data)
-        deal_custom_data["customer_id"] = customer.id
-        
-        deal = Deal.objects.create(
-            company=lead.company,
-            title=f"{lead.name} Deal",
-            amount=0.00,
-            stage=first_stage,
-            assigned_to=lead.assigned_to,
-            custom_data=deal_custom_data,
-        )
-        
-        # Mark lead as won/converted and link deal
-        lead.status = "won"  # Ensure it matches the Won status
-        lead.deal = deal
-        lead.save(update_fields=["status", "deal"])
+        customer, deal = self._convert_lead_to_deal(lead)
         
         return Response({
             "message": "Lead converted successfully.",
