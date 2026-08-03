@@ -342,8 +342,8 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
 
       {/* Modal/Overlay Document Builder */}
       {isBuilderOpen && createPortal(
-        <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-bone w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl border border-line flex flex-col animate-rise">
+        <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 pointer-events-auto">
+          <div className="bg-bone w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl border border-line flex flex-col animate-rise pointer-events-auto">
             <div className="p-6 border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-accent" />
