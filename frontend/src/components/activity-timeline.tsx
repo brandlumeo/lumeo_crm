@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Activity, Phone, Users, Mail, FileText, CheckCircle2, ArrowRight, Eye, Code, Sparkles, ChevronDown, ChevronUp, Trash2, Search, Filter, X, Pin } from "lucide-react";
+import { toast } from "sonner";
 import DOMPurify from "dompurify";
 
 import { createActivity, deleteActivity, updateActivity, fetchLead, fetchDeal, fetchCustomer, aiAssistantAction } from "@/lib/api";
@@ -117,8 +118,13 @@ export function ActivityTimeline({
   const deleteMutation = useMutation({
     mutationFn: deleteActivity,
     onSuccess: () => {
+      toast.success("Activity deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["crm", "activities"] });
+      setActivityToDelete(null);
     },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.detail || "Failed to delete activity");
+    }
   });
 
   const pinMutation = useMutation({
@@ -787,7 +793,6 @@ export function ActivityTimeline({
                 type="button"
                 onClick={() => {
                   deleteMutation.mutate(activityToDelete);
-                  setActivityToDelete(null);
                 }}
                 disabled={deleteMutation.isPending}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-[13px] font-semibold rounded-lg shadow-sm shadow-rose-600/20 transition-all flex items-center gap-2"
