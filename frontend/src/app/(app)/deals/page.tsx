@@ -61,7 +61,8 @@ export default function DealsPage() {
   const mutation = useMutation({
     mutationFn: createDeal,
     onSuccess: () => {
-      setForm({ title: "", amount: "", stage: "prospect", deal_category: "", expected_close_date: null, custom_data: {} });
+      const defaultStage = company?.deal_pipelines?.[0]?.name.toLowerCase() || "prospect";
+      setForm({ title: "", amount: "", stage: defaultStage, deal_category: "", expected_close_date: null, custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
       void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
