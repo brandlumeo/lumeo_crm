@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, Plus, Download, X, Receipt } from "lucide-react";
 import {
@@ -340,7 +341,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
       </div>
 
       {/* Modal/Overlay Document Builder */}
-      {isBuilderOpen && (
+      {isBuilderOpen && createPortal(
         <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-bone w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl border border-line flex flex-col animate-rise">
             <div className="p-6 border-b border-line flex items-center justify-between">
@@ -581,7 +582,8 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
