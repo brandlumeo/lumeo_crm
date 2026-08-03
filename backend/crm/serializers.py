@@ -770,14 +770,19 @@ class QuoteSerializer(CompanyScopedSerializer):
                 
         from .models import Quote
         company = user.company if hasattr(user, "company") else None
-        count = Quote.objects.filter(company=company).count() if company else 0
-        next_number = str(count + 1).zfill(digits)
+        base_count = Quote.objects.filter(company=company).count() if company else 0
         
         # Prevent double separators if prefix already includes it
         if separator and prefix.endswith(separator):
             prefix = prefix[:-len(separator)]
             
-        validated_data["quote_number"] = f"{prefix}{separator}{next_number}"
+        while True:
+            next_number = str(base_count + 1).zfill(digits)
+            test_number = f"{prefix}{separator}{next_number}"
+            if not Quote.objects.filter(quote_number=test_number).exists():
+                validated_data["quote_number"] = test_number
+                break
+            base_count += 1
         
         quote = super().create(validated_data)
         
@@ -962,14 +967,19 @@ class InvoiceSerializer(CompanyScopedSerializer):
             except Exception:
                 pass
 
-        count = Invoice.objects.filter(company=company).count() if company else 0
-        next_number = str(count + 1).zfill(digits)
+        base_count = Invoice.objects.filter(company=company).count() if company else 0
         
         # Prevent double separators if prefix already includes it
         if separator and prefix.endswith(separator):
             prefix = prefix[:-len(separator)]
             
-        validated_data["invoice_number"] = f"{prefix}{separator}{next_number}"
+        while True:
+            next_number = str(base_count + 1).zfill(digits)
+            test_number = f"{prefix}{separator}{next_number}"
+            if not Invoice.objects.filter(invoice_number=test_number).exists():
+                validated_data["invoice_number"] = test_number
+                break
+            base_count += 1
         
         invoice = super().create(validated_data)
         
