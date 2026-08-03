@@ -78,10 +78,18 @@ class CompanyRBACPermission(BasePermission):
             # Legacy fallback for viewsets without permission_module
             if request.method in SAFE_METHODS:
                 return True
-            if request.method == "DELETE":
-                return False
+            
+            # Allow modification/deletion if the user owns the object
             if hasattr(obj, "assigned_to_id") and obj.assigned_to_id is not None:
-                return obj.assigned_to_id == request.user.id
+                if obj.assigned_to_id == request.user.id:
+                    return True
+            if hasattr(obj, "created_by_id") and obj.created_by_id is not None:
+                if obj.created_by_id == request.user.id:
+                    return True
+            if hasattr(obj, "user_id") and obj.user_id is not None:
+                if obj.user_id == request.user.id:
+                    return True
+                    
             return False
 
         action = self._get_action_for_method(request.method)
