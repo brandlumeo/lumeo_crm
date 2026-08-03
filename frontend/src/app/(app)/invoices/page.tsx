@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment, useUnits } from "@/lib/queries";
 import { downloadInvoicePdf } from "@/lib/api";
-import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Edit2 } from "lucide-react";
+import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Edit2, Receipt } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 
