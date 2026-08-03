@@ -54,8 +54,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     mutationFn: (payload: any) => patchDeal(dealId, payload),
     onSuccess: () => {
       setIsEditing(false);
-      void queryClient.invalidateQueries({ queryKey: ["crm", dealId] });
-      void queryClient.invalidateQueries({ queryKey: ["crm"] });
+      void queryClient.invalidateQueries({ queryKey: ["crm"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["deals-board"], refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: ["crm-counts"], refetchType: "all" });
     },
   });
 
