@@ -561,7 +561,7 @@ export function ActivityTimeline({
                 placeholder={`Log a ${activeTab}...`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                required={activeTab !== "call" || callOutcome === "connected"}
+                required={activeTab !== "call"}
               />
               <div className="flex justify-start">
                 <button
