@@ -34,7 +34,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     member_ids: [] as number[],
     progress: 0,
     start_date: "",
-    end_date: "",
+    deadline: "",
     custom_data: {} as any,
   });
 
@@ -50,7 +50,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         member_ids: project.members?.map((m: any) => m.id) || [],
         progress: project.progress || 0,
         start_date: project.start_date || "",
-        end_date: project.end_date || "",
+        deadline: project.deadline || "",
         custom_data: project.custom_data || {},
       });
     }
@@ -60,7 +60,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     e.preventDefault();
     const payload: any = { ...form };
     if (!payload.start_date) delete payload.start_date;
-    if (!payload.end_date) delete payload.end_date;
+    if (!payload.deadline) delete payload.deadline;
     if (!payload.customer_id) delete payload.customer_id;
     if (!payload.deal_id) delete payload.deal_id;
     if (!payload.category) delete payload.category;
@@ -153,10 +153,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   <span className="text-ink-2 truncate">Start: {formatDateTime(project.start_date)}</span>
                 </div>
               )}
-              {project.end_date && (
+              {project.deadline && (
                 <div className="flex items-center gap-3 text-[13px]">
                   <Calendar className="w-4 h-4 text-muted shrink-0" />
-                  <span className="text-ink-2 truncate">Deadline: {formatDateTime(project.end_date)}</span>
+                  <span className="text-ink-2 truncate">Deadline: {formatDateTime(project.deadline)}</span>
                 </div>
               )}
               
@@ -351,8 +351,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Deadline</label>
                     <input
                       type="date"
-                      value={form.end_date}
-                      onChange={(e) => setForm(f => ({ ...f, end_date: e.target.value }))}
+                      value={form.deadline}
+                      onChange={(e) => setForm(f => ({ ...f, deadline: e.target.value }))}
                       className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
                     />
                   </div>

@@ -34,7 +34,7 @@ export default function ProjectsPage() {
     deal_id: "",
     member_ids: [] as number[],
     start_date: "",
-    end_date: "",
+    deadline: "",
     custom_data: {},
   });
 
@@ -52,7 +52,7 @@ export default function ProjectsPage() {
   const mutation = useMutation({
     mutationFn: createProject,
     onSuccess: () => {
-      setForm({ name: "", description: "", status: defaultStatus, category: "", customer_id: "", deal_id: "", member_ids: [], start_date: "", end_date: "", custom_data: {} });
+      setForm({ name: "", description: "", status: defaultStatus, category: "", customer_id: "", deal_id: "", member_ids: [], start_date: "", deadline: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
   });
@@ -231,7 +231,7 @@ export default function ProjectsPage() {
               event.preventDefault();
               const payload: any = { ...form };
               if (!payload.start_date) delete payload.start_date;
-              if (!payload.end_date) delete payload.end_date;
+              if (!payload.deadline) delete payload.deadline;
               if (!payload.customer_id) delete payload.customer_id;
               if (!payload.deal_id) delete payload.deal_id;
               if (!payload.category) delete payload.category;
@@ -371,8 +371,8 @@ export default function ProjectsPage() {
                 <input
                   type="date"
                   className="input"
-                  value={form.end_date}
-                  onChange={(event) => setForm((current) => ({ ...current, end_date: event.target.value }))}
+                  value={form.deadline}
+                  onChange={(event) => setForm((current) => ({ ...current, deadline: event.target.value }))}
                 />
               </label>
             </div>

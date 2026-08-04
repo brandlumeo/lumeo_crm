@@ -406,6 +406,8 @@ class DealSerializer(CompanyScopedSerializer):
 
 
 class ProjectSerializer(CompanyScopedSerializer):
+    customer = CustomerSerializer(read_only=True)
+    deal = DealSerializer(read_only=True)
     members = UserSummarySerializer(many=True, read_only=True)
     member_ids = serializers.PrimaryKeyRelatedField(
         source="members",

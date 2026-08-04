@@ -1006,7 +1006,7 @@ export interface Project {
   status: string;
   category?: string;
   start_date: string | null;
-  end_date: string | null;
+  deadline: string | null;
   customer?: Customer;
   deal?: Deal;
   members: UserSummary[];
@@ -1022,7 +1022,7 @@ export interface ProjectInput {
   status?: string;
   category?: string;
   start_date?: string | null;
-  end_date?: string | null;
+  deadline?: string | null;
   customer_id?: number | null;
   deal_id?: number | null;
   member_ids?: number[];
