@@ -137,6 +137,22 @@ export default function ProjectsPage() {
                   ) : <span className="text-muted/50">-</span>
                 },
                 {
+                  key: "deal",
+                  header: "Deal",
+                  render: (project) => project.deal ? (
+                    <Link href={`/deals/${project.deal.id}`} className="text-sm hover:underline">
+                      {project.deal.title}
+                    </Link>
+                  ) : <span className="text-muted/50">-</span>
+                },
+                {
+                  key: "category",
+                  header: "Category",
+                  render: (project) => project.category ? (
+                    <span className="text-sm">{project.category}</span>
+                  ) : <span className="text-muted/50">-</span>
+                },
+                {
                   key: "status",
                   header: "Status",
                   sortable: true,
@@ -144,6 +160,30 @@ export default function ProjectsPage() {
                     <span className="chip">
                       {project.status?.replaceAll("_", " ")}
                     </span>
+                  ),
+                },
+                {
+                  key: "deadline",
+                  header: "Deadline",
+                  render: (project) => project.deadline ? (
+                    <span className="text-sm">{project.deadline}</span>
+                  ) : <span className="text-muted/50">-</span>
+                },
+                {
+                  key: "members",
+                  header: "Members",
+                  render: (project) => (
+                    <div className="flex -space-x-2">
+                      {project.members?.map((m: any) => (
+                        <div 
+                          key={m.id} 
+                          title={`${m.first_name} ${m.last_name}`}
+                          className="w-6 h-6 rounded-full bg-surface-muted border border-surface flex items-center justify-center text-[10px] text-muted overflow-hidden"
+                        >
+                          {m.avatar ? <img src={m.avatar} alt={m.first_name} className="w-full h-full object-cover" /> : m.first_name?.charAt(0) || "U"}
+                        </div>
+                      ))}
+                    </div>
                   ),
                 },
                 {
