@@ -38,10 +38,13 @@ def send_daily_digest(self):
                 status__in=["todo", "in_progress"],
             ).count()
 
-            new_leads = Lead.objects.filter(
-                company=user.company,
-                status="new",
-            ).count()
+            if user.department and "sales" in user.department.lower():
+                new_leads = Lead.objects.filter(
+                    company=user.company,
+                    status="new",
+                ).count()
+            else:
+                new_leads = 0
 
             if open_tasks == 0 and new_leads == 0:
                 continue
