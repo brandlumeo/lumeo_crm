@@ -1699,3 +1699,18 @@ class TimesheetSerializer(CompanyScopedSerializer):
         if request and hasattr(request, "user"):
             validated_data["user"] = request.user
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        status = validated_data.get("status")
+        
+        # If status is being changed to approved or rejected, set the approver
+        if status in [Timesheet.Status.APPROVED, Timesheet.Status.REJECTED]:
+            if instance.status != status and request and hasattr(request, "user"):
+                validated_data["approved_by"] = request.user
+        # If reverted to draft or submitted, clear approver
+        elif status in [Timesheet.Status.DRAFT, Timesheet.Status.SUBMITTED]:
+            if instance.status != status:
+                validated_data["approved_by"] = None
+
+        return super().update(instance, validated_data)
