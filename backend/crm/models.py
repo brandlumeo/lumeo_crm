@@ -1075,6 +1075,8 @@ class EmailMessage(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="email_messages")
     lead = models.ForeignKey('Lead', on_delete=models.SET_NULL, null=True, blank=True, related_name="emails")
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True, related_name="emails")
+    deal = models.ForeignKey('Deal', on_delete=models.SET_NULL, null=True, blank=True, related_name="emails")
+    project = models.ForeignKey('Project', on_delete=models.SET_NULL, null=True, blank=True, related_name="emails")
     
     message_id = models.CharField(max_length=255, unique=True, db_index=True)
     thread_id = models.CharField(max_length=255, blank=True, db_index=True)

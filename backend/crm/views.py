@@ -1644,11 +1644,17 @@ class EmailMessageViewSet(CompanyScopedModelViewSet):
     def apply_business_filters(self, queryset):
         lead_id = self.request.query_params.get("lead")
         customer_id = self.request.query_params.get("customer")
+        deal_id = self.request.query_params.get("deal")
+        project_id = self.request.query_params.get("project")
         
         if lead_id:
             queryset = queryset.filter(lead_id=lead_id)
         if customer_id:
             queryset = queryset.filter(customer_id=customer_id)
+        if deal_id:
+            queryset = queryset.filter(deal_id=deal_id)
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
             
         return queryset
 
