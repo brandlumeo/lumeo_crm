@@ -1511,6 +1511,7 @@ class EmailSendView(APIView):
         lead_id = request.data.get("lead_id")
         customer_id = request.data.get("customer_id")
         deal_id = request.data.get("deal_id")
+        project_id = request.data.get("project_id")
         to_email = request.data.get("to_email", "").strip()
 
         if not subject:
@@ -1521,12 +1522,15 @@ class EmailSendView(APIView):
         lead = None
         customer = None
         deal = None
+        project = None
         if lead_id:
             lead = Lead.objects.filter(company=request.user.company, id=lead_id).first()
         elif customer_id:
             customer = Customer.objects.filter(company=request.user.company, id=customer_id).first()
         elif deal_id:
             deal = Deal.objects.filter(company=request.user.company, id=deal_id).first()
+        elif project_id:
+            project = Project.objects.filter(company=request.user.company, id=project_id).first()
 
         try:
             send_crm_email(
@@ -1536,6 +1540,7 @@ class EmailSendView(APIView):
                 lead=lead,
                 customer=customer,
                 deal=deal,
+                project=project,
                 to_email=to_email,
                 actor_user=request.user,
             )

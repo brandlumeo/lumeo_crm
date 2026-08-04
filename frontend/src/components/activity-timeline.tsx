@@ -226,6 +226,7 @@ export function ActivityTimeline({
       if (entityType === "lead") payload.lead_id = entityId;
       else if (entityType === "customer") payload.customer_id = entityId;
       else if (entityType === "deal") payload.deal_id = entityId;
+      else if (entityType === "project") payload.project_id = entityId;
 
       try {
         await sendEmailMutation.mutateAsync(payload);

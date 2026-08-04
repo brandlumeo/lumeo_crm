@@ -86,6 +86,7 @@ def send_crm_email(
     lead=None,
     customer=None,
     deal=None,
+    project=None,
     to_email="",
     actor_user=None,
 ):
@@ -138,6 +139,8 @@ def send_crm_email(
             account=account,
             lead=lead,
             customer=customer,
+            deal=deal,
+            project=project,
             message_id=str(uuid.uuid4()),
             thread_id=str(uuid.uuid4()),
             direction=EmailMessage.Direction.OUTBOUND,
