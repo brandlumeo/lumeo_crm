@@ -34,6 +34,8 @@ export function ProjectSettingsForm() {
   const [defaultView, setDefaultView] = useState("list");
   const [requireApproval, setRequireApproval] = useState(false);
   const [sendReminder, setSendReminder] = useState(false);
+  const [requireTimeLogApproval, setRequireTimeLogApproval] = useState(false);
+  const [defaultBillableRate, setDefaultBillableRate] = useState("0.00");
 
   // Statuses State
   const statuses: ProjectStatus[] = company?.project_statuses ?? [];
@@ -55,6 +57,8 @@ export function ProjectSettingsForm() {
       setDefaultView(company.default_project_view ?? "list");
       setRequireApproval(company.require_project_approval ?? false);
       setSendReminder(company.project_send_reminder ?? false);
+      setRequireTimeLogApproval(company.require_time_log_approval ?? false);
+      setDefaultBillableRate(company.default_billable_rate?.toString() ?? "0.00");
     }
   }, [company]);
 
@@ -319,6 +323,45 @@ export function ProjectSettingsForm() {
                     <span className="text-[13px] text-muted">New projects will remain "Draft" until approved.</span>
                   </div>
                 </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
+                    Require Timesheet Approval
+                  </label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={requireTimeLogApproval}
+                        disabled={!isAdmin}
+                        onChange={(e) => setRequireTimeLogApproval(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-bone-2 border border-line peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 peer-checked:border-emerald-500 shadow-inner"></div>
+                    </label>
+                    <span className="text-[13px] text-muted">Timesheets must be approved by a manager before they count towards payroll/billing.</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
+                    Default Hourly Rate
+                  </label>
+                  <div className="flex items-center mt-2 relative">
+                    <span className="absolute left-3 text-muted">₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={defaultBillableRate}
+                      disabled={!isAdmin}
+                      onChange={(e) => setDefaultBillableRate(e.target.value)}
+                      className="w-full bg-paper border border-line rounded-lg h-10 px-3 pl-7 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
+                      placeholder="e.g. 1500"
+                    />
+                  </div>
+                  <p className="text-xs text-muted/80 mt-1">Default billing rate for timesheets logged under a project</p>
+                </div>
               </div>
 
               {isAdmin && (
@@ -328,7 +371,10 @@ export function ProjectSettingsForm() {
                       project_prefix: projectPrefix,
                       default_project_view: defaultView,
                       require_project_approval: requireApproval,
-                      project_send_reminder: sendReminder
+                      project_send_reminder: sendReminder,
+                      require_time_log_approval: requireTimeLogApproval,
+                      default_billable_rate: defaultBillableRate
+
                     })}
                     disabled={mutation.isPending}
                     className="btn btn-primary shadow-sm transition-all h-9 px-5 rounded font-medium flex items-center gap-2"
