@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Calendar, LayoutList, FolderKanban, XCircle } from "lucide-react";
-import { useProject, useUpdateProject, useCurrentCompany } from "@/lib/queries";
+import { useProject, useUpdateProject, useCurrentCompany, useCustomerPage, useDealPage, useTeam } from "@/lib/queries";
 import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentLibrary } from "@/components/document-library";
@@ -19,11 +19,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { data: project, isLoading, error } = useProject(projectId);
   const updateProject = useUpdateProject();
   const { data: company } = useCurrentCompany();
+  const { data: customersData } = useCustomerPage({ limit: 100 });
+  const { data: dealsData } = useDealPage({ limit: 100 });
+  const { data: teamData } = useTeam();
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
+    description: "",
     status: "",
+    category: "",
+    customer_id: "",
+    deal_id: "",
+    member_ids: [] as number[],
     progress: 0,
     start_date: "",
     end_date: "",
@@ -34,7 +42,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     if (project) {
       setForm({
         name: project.name || "",
+        description: project.description || "",
         status: project.status || "",
+        category: project.category || "",
+        customer_id: project.customer?.id?.toString() || "",
+        deal_id: project.deal?.id?.toString() || "",
+        member_ids: project.members?.map((m: any) => m.id) || [],
         progress: project.progress || 0,
         start_date: project.start_date || "",
         end_date: project.end_date || "",
@@ -48,6 +61,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const payload: any = { ...form };
     if (!payload.start_date) delete payload.start_date;
     if (!payload.end_date) delete payload.end_date;
+    if (!payload.customer_id) delete payload.customer_id;
+    if (!payload.deal_id) delete payload.deal_id;
+    if (!payload.category) delete payload.category;
 
     updateProject.mutate(
       { id: projectId, payload },
@@ -203,26 +219,110 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Status</label>
-                  <select 
-                    value={form.status} 
-                    onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Description</label>
+                  <textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                     className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
+                    placeholder="Project scope and details..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Category</label>
+                    <select 
+                      value={form.category} 
+                      onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
+                      className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
+                    >
+                      <option value="">Select Category</option>
+                      {company?.project_categories?.map((cat: any) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Status</label>
+                    <select 
+                      value={form.status} 
+                      onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
+                      className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
+                    >
+                      <option value="">Select Status</option>
+                      {company?.project_statuses?.map((stat: any) => (
+                        <option key={stat.id} value={stat.name.toLowerCase()}>
+                          {stat.name}
+                        </option>
+                      )) || (
+                        <>
+                          <option value="not started">Not Started</option>
+                          <option value="in progress">In Progress</option>
+                          <option value="on hold">On Hold</option>
+                          <option value="completed">Completed</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Linked Customer</label>
+                    <select 
+                      value={form.customer_id} 
+                      onChange={(e) => setForm(f => ({ ...f, customer_id: e.target.value }))}
+                      className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
+                    >
+                      <option value="">None</option>
+                      {customersData?.results?.map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Linked Deal</label>
+                    <select 
+                      value={form.deal_id} 
+                      onChange={(e) => setForm(f => ({ ...f, deal_id: e.target.value }))}
+                      className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
+                    >
+                      <option value="">None</option>
+                      {dealsData?.results?.map((d: any) => (
+                        <option key={d.id} value={d.id}>
+                          {d.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Assigned Members</label>
+                  <select 
+                    multiple
+                    value={form.member_ids.map(String)} 
+                    onChange={(e) => {
+                      const options = Array.from(e.target.selectedOptions);
+                      const selectedIds = options.map((option) => parseInt(option.value, 10));
+                      setForm(f => ({ ...f, member_ids: selectedIds }));
+                    }}
+                    className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow h-24"
                   >
-                    <option value="">Select Status</option>
-                    {company?.project_statuses?.map((stat: any) => (
-                      <option key={stat.id} value={stat.name.toLowerCase()}>
-                        {stat.name}
+                    {teamData?.map((user: any) => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name} {user.last_name} ({user.email})
                       </option>
-                    )) || (
-                      <>
-                        <option value="not started">Not Started</option>
-                        <option value="in progress">In Progress</option>
-                        <option value="on hold">On Hold</option>
-                        <option value="completed">Completed</option>
-                      </>
-                    )}
+                    ))}
                   </select>
+                  <p className="text-xs text-muted">Hold Ctrl/Cmd to select multiple members</p>
                 </div>
 
                 <div className="flex flex-col gap-2">

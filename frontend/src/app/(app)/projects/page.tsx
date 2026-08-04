@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
 import { createProject } from "@/lib/api";
-import { useProjects, useCurrentCompany } from "@/lib/queries";
+import { useProjects, useCurrentCompany, useCustomerPage, useDealPage, useTeam } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -27,11 +27,20 @@ export default function ProjectsPage() {
   
   const [form, setForm] = useState({
     name: "",
+    description: "",
     status: defaultStatus,
+    category: "",
+    customer_id: "",
+    deal_id: "",
+    member_ids: [] as number[],
     start_date: "",
     end_date: "",
     custom_data: {},
   });
+
+  const { data: customersData } = useCustomerPage({ limit: 100 });
+  const { data: dealsData } = useDealPage({ limit: 100 });
+  const { data: teamData } = useTeam();
 
   const { data, isLoading } = useProjects({
     page,
@@ -43,7 +52,7 @@ export default function ProjectsPage() {
   const mutation = useMutation({
     mutationFn: createProject,
     onSuccess: () => {
-      setForm({ name: "", status: defaultStatus, start_date: "", end_date: "", custom_data: {} });
+      setForm({ name: "", description: "", status: defaultStatus, category: "", customer_id: "", deal_id: "", member_ids: [], start_date: "", end_date: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
   });
@@ -183,6 +192,10 @@ export default function ProjectsPage() {
               const payload: any = { ...form };
               if (!payload.start_date) delete payload.start_date;
               if (!payload.end_date) delete payload.end_date;
+              if (!payload.customer_id) delete payload.customer_id;
+              if (!payload.deal_id) delete payload.deal_id;
+              if (!payload.category) delete payload.category;
+              if (payload.member_ids.length === 0) delete payload.member_ids;
               mutation.mutate(payload);
             }}
           >
@@ -197,28 +210,110 @@ export default function ProjectsPage() {
               />
             </label>
             
-
-
             <label>
-              <span className="label">Status</span>
+              <span className="label">Description</span>
+              <textarea
+                className="input"
+                rows={3}
+                value={form.description}
+                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                placeholder="Project scope and details..."
+              />
+            </label>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label>
+                <span className="label">Category</span>
+                <select
+                  className="select"
+                  value={form.category}
+                  onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+                >
+                  <option value="">Select Category</option>
+                  {company?.project_categories?.map((cat: any) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span className="label">Status</span>
+                <select
+                  className="select"
+                  value={form.status}
+                  onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
+                >
+                  {company?.project_statuses?.map((stat: any) => (
+                    <option key={stat.id} value={stat.name.toLowerCase()}>
+                      {stat.name}
+                    </option>
+                  )) || (
+                    <>
+                      <option value="not started">Not Started</option>
+                      <option value="in progress">In Progress</option>
+                      <option value="on hold">On Hold</option>
+                      <option value="completed">Completed</option>
+                    </>
+                  )}
+                </select>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label>
+                <span className="label">Linked Customer</span>
+                <select
+                  className="select"
+                  value={form.customer_id}
+                  onChange={(event) => setForm((current) => ({ ...current, customer_id: event.target.value }))}
+                >
+                  <option value="">None</option>
+                  {customersData?.results?.map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              
+              <label>
+                <span className="label">Linked Deal</span>
+                <select
+                  className="select"
+                  value={form.deal_id}
+                  onChange={(event) => setForm((current) => ({ ...current, deal_id: event.target.value }))}
+                >
+                  <option value="">None</option>
+                  {dealsData?.results?.map((d: any) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            
+            <label>
+              <span className="label">Assigned Members</span>
               <select
-                className="select"
-                value={form.status}
-                onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
+                multiple
+                className="select h-24"
+                value={form.member_ids.map(String)}
+                onChange={(event) => {
+                  const options = Array.from(event.target.selectedOptions);
+                  const selectedIds = options.map((option) => parseInt(option.value, 10));
+                  setForm((current) => ({ ...current, member_ids: selectedIds }));
+                }}
               >
-                {company?.project_statuses?.map((stat: any) => (
-                  <option key={stat.id} value={stat.name.toLowerCase()}>
-                    {stat.name}
+                {teamData?.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name} ({user.email})
                   </option>
-                )) || (
-                  <>
-                    <option value="not started">Not Started</option>
-                    <option value="in progress">In Progress</option>
-                    <option value="on hold">On Hold</option>
-                    <option value="completed">Completed</option>
-                  </>
-                )}
+                ))}
               </select>
+              <p className="text-xs text-muted mt-1">Hold Ctrl/Cmd to select multiple members</p>
             </label>
             
             <div className="grid grid-cols-2 gap-4">
