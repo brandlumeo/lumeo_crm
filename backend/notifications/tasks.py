@@ -28,7 +28,7 @@ def send_daily_digest(self):
         users = User.objects.filter(
             is_active=True,
             company__isnull=False,
-        ).select_related("company")
+        ).exclude(role="customer").select_related("company")
 
         count = 0
         for user in users:
@@ -137,7 +137,7 @@ def notify_deal_won(self, deal_id: int):
         from django.conf import settings
 
         deal = Deal.objects.select_related("company", "assigned_to").get(pk=deal_id)
-        users = User.objects.filter(company=deal.company)
+        users = User.objects.filter(company=deal.company).exclude(role="customer")
         
         recipient_list = [u.email for u in users if u.email]
         
