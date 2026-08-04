@@ -1004,6 +1004,7 @@ export interface Project {
   name: string;
   description: string;
   status: string;
+  category?: string;
   start_date: string | null;
   end_date: string | null;
   customer?: Customer;
@@ -1019,6 +1020,7 @@ export interface ProjectInput {
   name: string;
   description?: string;
   status?: string;
+  category?: string;
   start_date?: string | null;
   end_date?: string | null;
   customer_id?: number | null;
