@@ -75,7 +75,7 @@ def send_subscription_upgraded_notification(self, company_id: str, new_plan: str
         from accounts.models import User
 
         company = Company.objects.get(pk=company_id)
-        users = User.objects.filter(company=company)
+        users = User.objects.filter(company=company).exclude(role="customer")
 
         for user in users:
             Notification.objects.create(
