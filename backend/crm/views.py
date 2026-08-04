@@ -868,6 +868,7 @@ class ActivityViewSet(CompanyScopedModelViewSet):
         lead_id = self.request.query_params.get("lead")
         deal_id = self.request.query_params.get("deal")
         customer_id = self.request.query_params.get("customer")
+        project_id = self.request.query_params.get("project")
         
         if lead_id:
             queryset = queryset.filter(lead_id=lead_id)
@@ -875,6 +876,8 @@ class ActivityViewSet(CompanyScopedModelViewSet):
             queryset = queryset.filter(deal_id=deal_id)
         if customer_id:
             queryset = queryset.filter(customer_id=customer_id)
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
             
         return queryset
 

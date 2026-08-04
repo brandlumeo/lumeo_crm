@@ -596,6 +596,7 @@ class ActivitySerializer(CompanyScopedSerializer):
             "lead",
             "deal",
             "customer",
+            "project",
             "activity_type",
             "description",
             "call_outcome",

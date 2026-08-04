@@ -401,6 +401,7 @@ class Activity(models.Model):
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="activities", null=True, blank=True)
     deal = models.ForeignKey(Deal, on_delete=models.CASCADE, related_name="activities", null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="activities", null=True, blank=True)
+    project = models.ForeignKey("Project", on_delete=models.CASCADE, related_name="activities", null=True, blank=True)
     
     activity_type = models.CharField(
         max_length=50,
