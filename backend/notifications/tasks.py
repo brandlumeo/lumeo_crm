@@ -485,7 +485,7 @@ def send_invoice_email(self, invoice_id: int):
             return
             
         subject = f"Invoice {invoice.invoice_number} from {invoice.company.name}"
-        text_content = f"Hello {invoice.customer.name},\n\nYour invoice {invoice.invoice_number} for ₹{invoice.total} is ready.\n\nView and download your invoice here: {settings.FRONTEND_URL}/portal/invoices/{invoice.id}"
+        text_content = f"Hello {invoice.customer.name},\n\nYour invoice {invoice.invoice_number} for ₹{invoice.total} is ready.\n\nView and download your invoice here: {settings.FRONTEND_URL}/public/invoice/{invoice.public_token}"
         
         from accounts.emails import build_premium_email
         html_msg = f"""
@@ -503,7 +503,7 @@ def send_invoice_email(self, invoice_id: int):
             body_text=text_content,
             body_html=html_msg,
             pre_header="INVOICE",
-            action_url=f"{settings.FRONTEND_URL}/portal/invoices/{invoice.id}",
+            action_url=f"{settings.FRONTEND_URL}/public/invoice/{invoice.public_token}",
             action_text="View Invoice PDF",
             to_email=invoice.customer.email
         )
