@@ -161,7 +161,13 @@ export default function VendorsPage() {
                 setSortColumn(col);
                 setSortDirection(dir);
               }}
-              onDelete={(ids) => deleteMutation.mutate(ids)}
+              bulkActions={[
+                {
+                  label: "Delete",
+                  variant: "danger",
+                  onClick: (ids) => deleteMutation.mutate(ids)
+                }
+              ]}
               onRowClick={(vendor) => {
                 setEditingId(vendor.id);
                 setForm({
