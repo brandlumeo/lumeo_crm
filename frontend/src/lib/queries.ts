@@ -1622,7 +1622,7 @@ export function useDeleteTimesheet() {
   });
 }
 
-import { fetchVendors, fetchPurchaseOrders, getBills, createBill, updateBill, deleteBill } from "@/lib/api";
+import { fetchVendors, fetchPurchaseOrders, convertPurchaseOrderToBill, getBills, createBill, updateBill, deleteBill } from "@/lib/api";
 
 export function useVendorPage(params: ListParams) {
   return useQuery({
@@ -1637,6 +1637,17 @@ export function usePurchaseOrderPage(params: ListParams) {
     queryKey: ["crm", "purchase-orders", params],
     queryFn: () => fetchPurchaseOrders(params),
     staleTime: 1000 * 60,
+  });
+}
+
+export function useConvertPurchaseOrderToBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => convertPurchaseOrderToBill(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["crm", "purchase-orders"] });
+      void queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
   });
 }
 

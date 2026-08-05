@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { FileText, Plus, Search, Check, ExternalLink, Download, Trash2, Loader2, Edit2, ShoppingBag } from "lucide-react";
+import { FileText, Plus, Search, Check, ExternalLink, Download, Trash2, Loader2, Edit2, ShoppingBag, Receipt } from "lucide-react";
 
-import { usePurchaseOrderPage, useVendorPage } from "@/lib/queries";
+import { usePurchaseOrderPage, useVendorPage, useConvertPurchaseOrderToBill } from "@/lib/queries";
 import { createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus, downloadPurchaseOrderPdf } from "@/lib/api";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
@@ -16,6 +16,7 @@ export default function PurchaseOrdersPage() {
   const queryClient = useQueryClient();
   const { data, isLoading } = usePurchaseOrderPage({});
   const { data: vendorData } = useVendorPage({ limit: 100 });
+  const convertMutation = useConvertPurchaseOrderToBill();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editPoId, setEditPoId] = useState<number | null>(null);
@@ -83,6 +84,17 @@ export default function PurchaseOrdersPage() {
       status: "draft",
       notes: "",
       items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
+    });
+  };
+
+  const handleConvertToBill = (po: any) => {
+    convertMutation.mutate(po.id, {
+      onSuccess: (data) => {
+        toast.success(`Bill created: ${data.bill_number}`);
+      },
+      onError: (err: any) => {
+        toast.error(err.response?.data?.error || "Failed to convert to bill");
+      }
     });
   };
 
@@ -220,6 +232,16 @@ export default function PurchaseOrdersPage() {
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
+                      {(po.status === 'approved' || po.status === 'sent') && (
+                        <button 
+                          onClick={() => handleConvertToBill(po)}
+                          className="btn btn-secondary px-2 py-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          title="Convert to Bill"
+                          disabled={convertMutation.isPending}
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button 
                         onClick={() => {
                           if(confirm("Are you sure?")) deleteMutation.mutate(po.id);

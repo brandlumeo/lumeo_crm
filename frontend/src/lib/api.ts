@@ -1628,6 +1628,11 @@ export async function updatePurchaseOrderStatus(id: number, status: string) {
   return data;
 }
 
+export async function convertPurchaseOrderToBill(id: number) {
+  const { data } = await api.post<any>(`/crm/purchase-orders/${id}/convert_to_bill/`);
+  return data;
+}
+
 export async function downloadPurchaseOrderPdf(id: number, poNumber: string) {
   const timestamp = new Date().getTime();
   const response = await api.get(`/crm/purchase-orders/${id}/pdf/?t=${timestamp}`, {

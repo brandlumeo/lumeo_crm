@@ -2180,6 +2180,52 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
         serializer = self.get_serializer(po)
         return Response(serializer.data)
 
+    @action(detail=True, methods=["post"])
+    def convert_to_bill(self, request, pk=None):
+        from .models import Bill, BillItem
+        from django.utils.crypto import get_random_string
+        from django.utils import timezone
+        
+        po = self.get_object()
+        
+        if po.bills.exists():
+            return Response({"error": "A bill already exists for this purchase order."}, status=400)
+            
+        if po.status not in [PurchaseOrder.Status.APPROVED, PurchaseOrder.Status.SENT]:
+            return Response({"error": "Only approved or sent purchase orders can be converted to bills."}, status=400)
+            
+        bill_number = f"BILL-{po.po_number.split('-')[-1] if '-' in po.po_number else po.po_number}-{get_random_string(4).upper()}"
+        
+        bill = Bill.objects.create(
+            company=po.company,
+            vendor=po.vendor,
+            purchase_order=po,
+            bill_number=bill_number,
+            bill_date=timezone.now().date(),
+            due_date=po.expected_delivery_date,
+            status=Bill.Status.DRAFT,
+            subtotal=po.subtotal,
+            tax_amount=po.tax_amount,
+            total_amount=po.total_amount,
+            amount_due=po.total_amount,
+            notes=f"Converted from Purchase Order {po.po_number}"
+        )
+        
+        for item in po.items.all():
+            BillItem.objects.create(
+                bill=bill,
+                description=item.description,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                tax_rate=item.tax_rate,
+                total=item.total
+            )
+            
+        po.status = PurchaseOrder.Status.BILLED
+        po.save()
+        
+        return Response({"status": "success", "bill_id": bill.id, "bill_number": bill.bill_number})
+
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
         po = self.get_object()
