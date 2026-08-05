@@ -332,7 +332,6 @@ export default function LeadsPage() {
           <div className="card-head">
             <div className="card-title">
               New lead
-              <span className="card-title-meta">Assigns to you by default</span>
             </div>
           </div>
           <form
@@ -341,7 +340,7 @@ export default function LeadsPage() {
               event.preventDefault();
               const payload: any = {
                 ...form,
-                assigned_to_id: me?.id,
+                assigned_to_id: form.assigned_to_id !== undefined ? form.assigned_to_id : me?.id,
               };
               if (!payload.created_at) delete payload.created_at;
               mutation.mutate(payload);
@@ -438,6 +437,22 @@ export default function LeadsPage() {
                     <option value="qualified">Qualified</option>
                   </>
                 )}
+              </select>
+            </label>
+
+            <label>
+              <span className="label">Assigned To</span>
+              <select
+                className="select"
+                value={form.assigned_to_id !== undefined ? (form.assigned_to_id || "") : (me?.id || "")}
+                onChange={(event) => setForm((current) => ({ ...current, assigned_to_id: event.target.value ? Number(event.target.value) : null }))}
+              >
+                <option value="">Unassigned</option>
+                {teamData?.users?.map((u: any) => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name || u.email}
+                  </option>
+                ))}
               </select>
             </label>
 
