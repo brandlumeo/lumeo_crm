@@ -135,34 +135,34 @@ export default function VendorsPage() {
                   key: "phone",
                   header: "Phone",
                   sortable: true,
-                  render: (vendor) => vendor.phone || "-",
+                  render: (vendor: any) => vendor.phone || "-",
                 },
                 {
                   key: "tax_id",
                   header: "Tax ID",
                   sortable: true,
-                  render: (vendor) => vendor.tax_id || "-",
+                  render: (vendor: any) => vendor.tax_id || "-",
                 },
                 {
                   key: "created_at",
                   header: "Added",
                   sortable: true,
-                  render: (vendor) => formatDateTime(vendor.created_at),
+                  render: (vendor: any) => formatDateTime(vendor.created_at),
                 },
               ]}
-              data={rows}
-              totalCount={data?.count ?? 0}
+              rows={rows}
+              count={data?.count ?? 0}
               page={page}
               pageSize={PAGE_SIZE}
               onPageChange={setPage}
               sortColumn={sortColumn}
               sortDirection={sortDirection}
-              onSort={(col, dir) => {
+              onSortChange={(col, dir) => {
                 setSortColumn(col);
                 setSortDirection(dir);
               }}
               onDelete={(ids) => deleteMutation.mutate(ids)}
-              rowAction={(vendor) => {
+              onRowClick={(vendor) => {
                 setEditingId(vendor.id);
                 setForm({
                   name: vendor.name || "",
