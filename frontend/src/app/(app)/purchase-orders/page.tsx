@@ -6,7 +6,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { FileText, Plus, Search, Check, ExternalLink, Download, Trash2, Loader2, Edit2, ShoppingBag } from "lucide-react";
 
 import { usePurchaseOrderPage, useVendorPage } from "@/lib/queries";
-import { createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus } from "@/lib/api";
+import { createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus, downloadPurchaseOrderPdf } from "@/lib/api";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -212,6 +212,13 @@ export default function PurchaseOrdersPage() {
                         title="Edit PO"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => downloadPurchaseOrderPdf(po.id, po.po_number)}
+                        className="btn btn-secondary px-2 py-1"
+                        title="Download PDF"
+                      >
+                        <Download className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={() => {

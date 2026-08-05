@@ -1030,7 +1030,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     bold_style = ParagraphStyle('BoldText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14)
     
     # Header Section
-    doc_number = getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))
+    doc_number = getattr(instance, 'po_number', getattr(instance, 'quote_number', getattr(instance, 'invoice_number', '')))
     
     left_p = None
     logo_url = get_setting("invoice_logo")
@@ -1064,6 +1064,11 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         due_date = getattr(instance, 'due_date', None)
         if issue_date: meta_info += f"<font size=9 color='#6B7280'>Issue Date:</font> <font size=9 color='#111827'>{issue_date}</font><br/>"
         if due_date: meta_info += f"<font size=9 color='#6B7280'>Due Date:</font> <font size=9 color='#111827'>{due_date}</font><br/>"
+    elif doc_type == "Purchase Order":
+        issue_date = getattr(instance, 'issue_date', None)
+        expected_delivery = getattr(instance, 'expected_delivery_date', None)
+        if issue_date: meta_info += f"<font size=9 color='#6B7280'>Issue Date:</font> <font size=9 color='#111827'>{issue_date}</font><br/>"
+        if expected_delivery: meta_info += f"<font size=9 color='#6B7280'>Expected Delivery:</font> <font size=9 color='#111827'>{expected_delivery}</font><br/>"
     else:
         created_at = getattr(instance, 'created_at', None)
         valid_until = getattr(instance, 'valid_until', None)
@@ -1093,14 +1098,24 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if not customer_obj and getattr(instance, 'deal', None):
         customer_obj = getattr(instance.deal, 'customer', getattr(instance.deal, 'lead', None))
     
-    if customer_obj:
-        if get_setting("show_client_name", default=True): cust_name = f"<b>{getattr(customer_obj, 'name', '')}</b><br/>"
-        if get_setting("show_client_company_name", default=True) and hasattr(customer_obj, 'company'): cust_company = f"{customer_obj.company.name}<br/>"
-        if get_setting("show_client_email", default=True): cust_email = f"{getattr(customer_obj, 'email', '')}<br/>"
-        if get_setting("show_client_phone", default=True) and hasattr(customer_obj, 'phone'): cust_phone = f"{customer_obj.phone}<br/>"
-        if get_setting("show_client_address", default=True) and getattr(customer_obj, 'custom_data', {}).get('address'): cust_address = f"{customer_obj.custom_data.get('address')}<br/>"
+    if doc_type == "Purchase Order":
+        vendor_obj = getattr(instance, 'vendor', None)
+        if vendor_obj:
+            cust_name = f"<b>{getattr(vendor_obj, 'name', '')}</b><br/>"
+            if getattr(vendor_obj, 'email', None): cust_email = f"{vendor_obj.email}<br/>"
+            if getattr(vendor_obj, 'phone', None): cust_phone = f"{vendor_obj.phone}<br/>"
+            if getattr(vendor_obj, 'address', None): cust_address = f"{vendor_obj.address}<br/>"
+        else:
+            cust_name = "<b>Vendor Record</b>"
     else:
-        cust_name = "<b>Customer Record</b>"
+        if customer_obj:
+            if get_setting("show_client_name", default=True): cust_name = f"<b>{getattr(customer_obj, 'name', '')}</b><br/>"
+            if get_setting("show_client_company_name", default=True) and hasattr(customer_obj, 'company'): cust_company = f"{customer_obj.company.name}<br/>"
+            if get_setting("show_client_email", default=True): cust_email = f"{getattr(customer_obj, 'email', '')}<br/>"
+            if get_setting("show_client_phone", default=True) and hasattr(customer_obj, 'phone'): cust_phone = f"{customer_obj.phone}<br/>"
+            if get_setting("show_client_address", default=True) and getattr(customer_obj, 'custom_data', {}).get('address'): cust_address = f"{customer_obj.custom_data.get('address')}<br/>"
+        else:
+            cust_name = "<b>Customer Record</b>"
         
     recipient_text = f"{cust_name}{cust_company}{cust_email}{cust_phone}{cust_address}"
         
@@ -1151,7 +1166,15 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     for item in instance.items.all():
         hsn = getattr(item, "hsn_sac_code", "") or "-"
-        row = [Paragraph(f"{item.name}<br/><font color='#666666'>{item.description}</font>", styles['Normal'])]
+        item_name = getattr(item, 'name', None)
+        item_desc = item.description or ""
+        
+        if item_name:
+            item_html = f"{item_name}<br/><font color='#666666'>{item_desc}</font>"
+        else:
+            item_html = item_desc
+            
+        row = [Paragraph(item_html, styles['Normal'])]
         if show_hsn:
             row.append(Paragraph(hsn, left_normal))
         row.extend([
@@ -1183,7 +1206,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     totals_data = [
         [Paragraph("Subtotal:", right_normal), Paragraph(f"{curr}{instance.subtotal:,.2f}", right_normal)],
         [Paragraph("Tax:", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)],
-        [Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{instance.total:,.2f}</b>", right_total)]
+        [Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{getattr(instance, 'total_amount', getattr(instance, 'total', 0)):,.2f}</b>", right_total)]
     ]
     
     if doc_type in ["Invoice", "Receipt"] and hasattr(instance, "amount_paid"):
@@ -1192,7 +1215,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         
         totals_data.extend([
             [Paragraph("Amount Paid:", right_normal), Paragraph(f"{curr}{instance.amount_paid or 0:,.2f}", paid_style)],
-            [Paragraph("<b>Balance Due:</b>", right_total), Paragraph(f"<b>{curr}{instance.amount_due or instance.total:,.2f}</b>", due_style)]
+            [Paragraph("<b>Balance Due:</b>", right_total), Paragraph(f"<b>{curr}{instance.amount_due or getattr(instance, 'total_amount', getattr(instance, 'total', 0)):,.2f}</b>", due_style)]
         ])
     totals_table = Table(totals_data, colWidths=[380, 120])
     totals_table.setStyle(TableStyle([
@@ -1205,17 +1228,25 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     
     # Terms & Signature
     terms_p = []
-    terms_text = get_setting("invoice_terms", default="Thank you for your business.")
     
+    if doc_type == "Purchase Order":
+        terms_text = get_setting("purchase_order_terms", default="Standard purchase order terms apply.")
+        terms_label = "Purchase Order Terms"
+    elif doc_type == "Invoice":
+        terms_text = get_setting("invoice_terms", default="Thank you for your business.")
+        terms_label = "Terms & Conditions"
+    else:
+        terms_text = get_setting("invoice_terms", default="Thank you for your business.")
+        terms_label = "Quote Terms & Conditions"
+        
     notes_style = ParagraphStyle('Notes', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#6B7280"), fontName='Helvetica-Oblique')
     info_val_style = ParagraphStyle('InfoVal', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#4B5563"), leading=13)
     
     if terms_text:
         clean_terms = terms_text.strip().lower()
-        if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!", "thank you for your business"]:
+        if clean_terms in ["thank you for your business.", "thank you for your business", "thanks for your business!", "standard purchase order terms apply.", "standard purchase order terms apply"]:
             terms_p.append(Paragraph(terms_text, notes_style))
         else:
-            terms_label = "Terms & Conditions" if doc_type == "Invoice" else "Quote Terms & Conditions"
             terms_p.append(Paragraph(f"<font color='#111827'><b>{terms_label}</b></font>", bold_style))
             terms_p.append(Spacer(1, 6))
             terms_p.append(Paragraph(terms_text.replace('\n', '<br/>'), info_val_style))
@@ -2120,3 +2151,8 @@ class PurchaseOrderViewSet(BaseCRMViewSet):
         
         serializer = self.get_serializer(po)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        po = self.get_object()
+        return generate_pdf_response(po, doc_type="Purchase Order")
