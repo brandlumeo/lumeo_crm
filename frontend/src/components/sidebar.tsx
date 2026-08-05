@@ -213,6 +213,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       subItems: [
         { label: "Invoices", href: "/invoices" },
         { label: "Quotes", href: "/quotes" },
+        { label: "Vendors", href: "/vendors" },
+        { label: "Purchase Orders", href: "/purchase-orders" },
         { label: "Expenses", href: "/expenses" },
         { label: "Payroll", href: "/payroll" },
         { label: "Assets", href: "/assets" },

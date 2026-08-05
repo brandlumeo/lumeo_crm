@@ -1621,3 +1621,21 @@ export function useDeleteTimesheet() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["timesheets"] }),
   });
 }
+
+import { fetchVendors, fetchPurchaseOrders } from "@/lib/api";
+
+export function useVendorPage(params: ListParams) {
+  return useQuery({
+    queryKey: ["crm", "vendors", params],
+    queryFn: () => fetchVendors(params),
+    staleTime: 1000 * 60,
+  });
+}
+
+export function usePurchaseOrderPage(params: ListParams) {
+  return useQuery({
+    queryKey: ["crm", "purchase-orders", params],
+    queryFn: () => fetchPurchaseOrders(params),
+    staleTime: 1000 * 60,
+  });
+}
