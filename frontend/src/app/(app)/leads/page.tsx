@@ -264,6 +264,12 @@ export default function LeadsPage() {
                   },
                 },
                 {
+                  key: "created_at",
+                  header: "Added",
+                  sortable: true,
+                  render: (lead) => formatDateTime(lead.created_at),
+                },
+                {
                   key: "updated_at",
                   header: "Updated",
                   sortable: true,
