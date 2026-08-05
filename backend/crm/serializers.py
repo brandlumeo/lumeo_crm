@@ -236,7 +236,7 @@ class LeadSerializer(CompanyScopedSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at", "score", "score_rationale")
+        read_only_fields = ("id", "updated_at", "score", "score_rationale")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

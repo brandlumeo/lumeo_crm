@@ -183,6 +183,7 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
     status: lead.status || "new",
     assigned_to_id: lead.assigned_to?.id || null,
     category_ids: lead.categories?.map(c => c.id) || [],
+    created_at: lead.created_at ? lead.created_at.slice(0, 16) : "",
   });
 
   const { data: serviceCategories = [] } = useQuery({
@@ -321,21 +322,33 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
               </select>
             </label>
             
-            <label className="block">
-              <span className="label">Assigned To</span>
-              <select
-                className="select w-full"
-                value={form.assigned_to_id || ""}
-                onChange={(e) => setForm(f => ({ ...f, assigned_to_id: e.target.value ? Number(e.target.value) : null }))}
-              >
-                <option value="">Unassigned</option>
-                {teamData?.users?.map((member: any) => (
-                  <option key={member.id} value={member.id}>
-                    {getDisplayName(member)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block">
+                <span className="label">Assigned To</span>
+                <select
+                  className="select w-full"
+                  value={form.assigned_to_id || ""}
+                  onChange={(e) => setForm(f => ({ ...f, assigned_to_id: e.target.value ? Number(e.target.value) : null }))}
+                >
+                  <option value="">Unassigned</option>
+                  {teamData?.users?.map((member: any) => (
+                    <option key={member.id} value={member.id}>
+                      {getDisplayName(member)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Added Date</span>
+                <input
+                  type="datetime-local"
+                  className="input w-full"
+                  value={form.created_at}
+                  onChange={(e) => setForm(f => ({ ...f, created_at: e.target.value }))}
+                />
+              </label>
+            </div>
           </form>
           
           {mutation.isError && (

@@ -46,6 +46,7 @@ export default function LeadsPage() {
     status: company?.default_lead_status || "new",
     custom_data: {},
     category_ids: [],
+    created_at: "",
   });
 
   const { data: serviceCategories = [] } = useQuery({
@@ -121,7 +122,7 @@ export default function LeadsPage() {
   const mutation = useMutation({
     mutationFn: createLead,
     onSuccess: () => {
-      setForm({ name: "", email: "", status: "new", custom_data: {} });
+      setForm({ name: "", email: "", status: "new", custom_data: {}, category_ids: [], created_at: "" });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
       void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
@@ -332,10 +333,12 @@ export default function LeadsPage() {
             className="p-5 space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
-              mutation.mutate({
+              const payload: any = {
                 ...form,
                 assigned_to_id: me?.id,
-              });
+              };
+              if (!payload.created_at) delete payload.created_at;
+              mutation.mutate(payload);
             }}
           >
             <label>
@@ -430,6 +433,16 @@ export default function LeadsPage() {
                   </>
                 )}
               </select>
+            </label>
+
+            <label>
+              <span className="label">Added Date (Optional)</span>
+              <input
+                type="datetime-local"
+                className="input"
+                value={form.created_at || ""}
+                onChange={(event) => setForm((current) => ({ ...current, created_at: event.target.value }))}
+              />
             </label>
 
             <CustomFieldsFormInputs

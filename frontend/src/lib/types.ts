@@ -312,6 +312,7 @@ export interface LeadInput {
   status?: string;
   assigned_to_id?: number | null;
   category_ids?: number[];
+  created_at?: string;
   custom_data?: Record<string, any>;
 }
 

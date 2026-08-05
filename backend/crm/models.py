@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 import uuid
 from django.db import models
+from django.utils import timezone
 
 from companies.models import Company
 
@@ -66,7 +67,7 @@ class Lead(models.Model):
         related_name="leads",
         help_text="The deal this lead was converted into or is linked to.",
     )
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     custom_data = models.JSONField(default=dict, blank=True)
     categories = models.ManyToManyField(ServiceCategory, related_name="leads", blank=True)
