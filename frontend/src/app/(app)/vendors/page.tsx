@@ -265,7 +265,7 @@ export default function VendorsPage() {
 
               <CustomFieldsFormInputs
                 modelName="vendor"
-                value={form.custom_data || {}}
+                values={form.custom_data || {}}
                 onChange={(custom_data) => setForm({ ...form, custom_data })}
               />
 

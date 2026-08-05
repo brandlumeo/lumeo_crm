@@ -1622,7 +1622,7 @@ export function useDeleteTimesheet() {
   });
 }
 
-import { fetchVendors, fetchPurchaseOrders } from "@/lib/api";
+import { fetchVendors, fetchPurchaseOrders, getBills, createBill, updateBill, deleteBill } from "@/lib/api";
 
 export function useVendorPage(params: ListParams) {
   return useQuery({
@@ -1644,14 +1644,14 @@ export function usePurchaseOrderPage(params: ListParams) {
 export function useBillPage(params: ListParams) {
   return useQuery({
     queryKey: ["bills", params],
-    queryFn: () => api.getBills(params),
+    queryFn: () => getBills(params),
   });
 }
 
 export function useCreateBill() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => api.createBill(data),
+    mutationFn: (data: any) => createBill(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
     },
@@ -1661,7 +1661,7 @@ export function useCreateBill() {
 export function useUpdateBill() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.updateBill(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => updateBill(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
       queryClient.invalidateQueries({ queryKey: ["bill", id] });
@@ -1672,7 +1672,7 @@ export function useUpdateBill() {
 export function useDeleteBill() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.deleteBill(id),
+    mutationFn: (id: number) => deleteBill(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
     },
