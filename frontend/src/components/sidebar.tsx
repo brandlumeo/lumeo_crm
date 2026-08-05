@@ -215,6 +215,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         { label: "Quotes", href: "/quotes" },
         { label: "Vendors", href: "/vendors" },
         { label: "Purchase Orders", href: "/purchase-orders" },
+        { label: "Bills", href: "/bills" },
         { label: "Expenses", href: "/expenses" },
         { label: "Payroll", href: "/payroll" },
         { label: "Assets", href: "/assets" },

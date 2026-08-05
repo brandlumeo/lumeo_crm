@@ -124,7 +124,7 @@ export default function VendorsPage() {
                   key: "name",
                   header: "Vendor",
                   sortable: true,
-                  render: (vendor) => (
+                  render: (vendor: any) => (
                     <div>
                       <div className="font-medium text-ink">{vendor.name}</div>
                       <div className="text-[12px] text-muted mt-0.5">{vendor.email || "No email"}</div>

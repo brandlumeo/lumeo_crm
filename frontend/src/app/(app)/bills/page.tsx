@@ -5,96 +5,96 @@ import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { FileText, Plus, Search, Check, ExternalLink, Download, Trash2, Loader2, Edit2, ShoppingBag } from "lucide-react";
 
-import { usePurchaseOrderPage, useVendorPage } from "@/lib/queries";
-import { createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus, downloadPurchaseOrderPdf } from "@/lib/api";
+import { useBillPage, useVendorPage } from "@/lib/queries";
+import { createBill, updateBill, deleteBill, updateBillStatus } from "@/lib/api";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 
-export default function PurchaseOrdersPage() {
+export default function BillsPage() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = usePurchaseOrderPage({});
+  const { data, isLoading } = useBillPage({});
   const { data: vendorData } = useVendorPage({ limit: 100 });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editPoId, setEditPoId] = useState<number | null>(null);
+  const [editBillId, setEditBillId] = useState<number | null>(null);
   
-  const [newPo, setNewPo] = useState<{ vendor: number | null, issue_date: string, expected_delivery_date: string, status: string, notes: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const [newBill, setNewBill] = useState<{ vendor: number | null, bill_date: string, due_date: string, status: string, notes: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
     vendor: null, 
-    issue_date: new Date().toISOString().split('T')[0],
-    expected_delivery_date: "",
+    bill_date: new Date().toISOString().split('T')[0],
+    due_date: "",
     status: "draft",
     notes: "",
     items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
   });
 
-  const poList = data?.results || [];
+  const billList = data?.results || [];
   const vendors = vendorData?.results || [];
 
   const createMutation = useMutation({
-    mutationFn: createPurchaseOrder,
+    mutationFn: createBill,
     onSuccess: () => {
       setIsModalOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["crm", "purchase-orders"] });
-      toast.success("Purchase Order created successfully");
+      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      toast.success("Bill created successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to create PO");
+      toast.error(err.response?.data?.error || "Failed to create Bill");
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number, payload: any }) => updatePurchaseOrder(id, payload),
+    mutationFn: ({ id, payload }: { id: number, payload: any }) => updateBill(id, payload),
     onSuccess: () => {
       setIsModalOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["crm", "purchase-orders"] });
-      toast.success("Purchase Order updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      toast.success("Bill updated successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to update PO");
+      toast.error(err.response?.data?.error || "Failed to update Bill");
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deletePurchaseOrder,
+    mutationFn: deleteBill,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["crm", "purchase-orders"] });
-      toast.success("Purchase Order deleted");
+      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      toast.success("Bill deleted");
     }
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number, status: string }) => updatePurchaseOrderStatus(id, status),
+    mutationFn: ({ id, status }: { id: number, status: string }) => updateBillStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["crm", "purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
       toast.success("Status updated");
     }
   });
 
   const resetForm = () => {
-    setEditPoId(null);
-    setNewPo({ 
+    setEditBillId(null);
+    setNewBill({ 
       vendor: null, 
-      issue_date: new Date().toISOString().split('T')[0],
-      expected_delivery_date: "",
+      bill_date: new Date().toISOString().split('T')[0],
+      due_date: "",
       status: "draft",
       notes: "",
       items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
     });
   };
 
-  const handleEditClick = (po: any) => {
-    setEditPoId(po.id);
-    setNewPo({
-      vendor: po.vendor,
-      issue_date: po.issue_date,
-      expected_delivery_date: po.expected_delivery_date || "",
-      status: po.status,
-      notes: po.notes || "",
-      items: po.items.map((item: any) => ({
+  const handleEditClick = (bill: any) => {
+    setEditBillId(bill.id);
+    setNewBill({
+      vendor: bill.vendor,
+      bill_date: bill.bill_date,
+      due_date: bill.due_date || "",
+      status: bill.status,
+      notes: bill.notes || "",
+      items: bill.items.map((item: any) => ({
         description: item.description,
         quantity: parseFloat(item.quantity),
         unit_price: parseFloat(item.unit_price),
@@ -105,11 +105,11 @@ export default function PurchaseOrdersPage() {
   };
 
   const calculateSubtotal = () => {
-    return newPo.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    return newBill.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
   };
 
   const calculateTax = () => {
-    return newPo.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (item.tax_rate / 100)), 0);
+    return newBill.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (item.tax_rate / 100)), 0);
   };
 
   const calculateTotal = () => {
@@ -118,20 +118,20 @@ export default function PurchaseOrdersPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPo.vendor) return;
+    if (!newBill.vendor) return;
     
-    const validItems = newPo.items.filter(item => item.description.trim() !== "");
+    const validItems = newBill.items.filter(item => item.description.trim() !== "");
     
     const payload = {
-      ...newPo,
+      ...newBill,
       items: validItems,
       subtotal: calculateSubtotal(),
       tax_amount: calculateTax(),
       total_amount: calculateTotal(),
     };
     
-    if (editPoId) {
-      updateMutation.mutate({ id: editPoId, payload });
+    if (editBillId) {
+      updateMutation.mutate({ id: editBillId, payload });
     } else {
       createMutation.mutate(payload);
     }
@@ -140,35 +140,35 @@ export default function PurchaseOrdersPage() {
   return (
     <PageShell
       eyebrow="Finance"
-      title="Purchase Orders"
-      description="Manage your purchase orders and send them to vendors."
+      title="Bills"
+      description="Manage your bills and track vendor payments."
     >
       <div className="card animate-rise">
         <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="card-title">All Purchase Orders</div>
+          <div className="card-title">All Bills</div>
           <button 
             className="btn btn-primary"
             onClick={() => { resetForm(); setIsModalOpen(true); }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Purchase Order
+            New Bill
           </button>
         </div>
 
         {isLoading ? (
           <SkeletonTable columns={6} rows={5} />
-        ) : poList.length === 0 ? (
+        ) : billList.length === 0 ? (
           <EmptyState
             icon={ShoppingBag}
-            title="No purchase orders"
-            description="Create your first PO to start ordering from vendors."
+            title="No bills"
+            description="Create your first Bill to start tracking vendor payments."
           />
         ) : (
           <div className="table-responsive">
             <table className="table">
               <thead>
                 <tr>
-                  <th>PO Number</th>
+                  <th>Bill Number</th>
                   <th>Vendor</th>
                   <th>Date</th>
                   <th>Total</th>
@@ -177,23 +177,23 @@ export default function PurchaseOrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {poList.map((po: any) => (
-                  <tr key={po.id}>
-                    <td className="font-medium text-ink">{po.po_number}</td>
-                    <td>{po.vendor_details?.name || "Unknown"}</td>
-                    <td>{po.issue_date}</td>
-                    <td className="font-mono text-sm">{formatCurrency(parseFloat(po.total_amount), "USD")}</td>
+                {billList.map((bill: any) => (
+                  <tr key={bill.id}>
+                    <td className="font-medium text-ink">{bill.bill_number}</td>
+                    <td>{bill.vendor_details?.name || "Unknown"}</td>
+                    <td>{bill.bill_date}</td>
+                    <td className="font-mono text-sm">{formatCurrency(parseFloat(bill.total_amount), "USD")}</td>
                     <td>
                       <select 
-                        value={po.status}
-                        onChange={(e) => statusMutation.mutate({ id: po.id, status: e.target.value })}
+                        value={bill.status}
+                        onChange={(e) => statusMutation.mutate({ id: bill.id, status: e.target.value })}
                         disabled={statusMutation.isPending}
                         className={`text-xs px-2 py-1 rounded-full border-0 font-medium ${
-                          po.status === 'draft' ? 'bg-bone text-muted' :
-                          po.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
-                          po.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                          po.status === 'sent' ? 'bg-indigo-100 text-indigo-800' :
-                          po.status === 'billed' ? 'bg-emerald-100 text-emerald-800' :
+                          bill.status === 'draft' ? 'bg-bone text-muted' :
+                          bill.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
+                          bill.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          bill.status === 'sent' ? 'bg-indigo-100 text-indigo-800' :
+                          bill.status === 'billed' ? 'bg-emerald-100 text-emerald-800' :
                           'bg-rose-100 text-rose-800'
                         }`}
                       >
@@ -207,25 +207,18 @@ export default function PurchaseOrdersPage() {
                     </td>
                     <td className="text-right space-x-2">
                       <button 
-                        onClick={() => handleEditClick(po)}
+                        onClick={() => handleEditClick(bill)}
                         className="btn btn-secondary px-2 py-1"
-                        title="Edit PO"
+                        title="Edit Bill"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button 
-                        onClick={() => downloadPurchaseOrderPdf(po.id, po.po_number)}
-                        className="btn btn-secondary px-2 py-1"
-                        title="Download PDF"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
                         onClick={() => {
-                          if(confirm("Are you sure?")) deleteMutation.mutate(po.id);
+                          if(confirm("Are you sure?")) deleteMutation.mutate(bill.id);
                         }}
                         className="btn btn-secondary px-2 py-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                        title="Delete PO"
+                        title="Delete Bill"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -242,7 +235,7 @@ export default function PurchaseOrdersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-paper border border-line rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-rise">
             <div className="sticky top-0 bg-paper/90 backdrop-blur-md border-b border-line px-5 py-4 flex items-center justify-between z-10">
-              <h2 className="text-lg font-semibold">{editPoId ? "Edit Purchase Order" : "New Purchase Order"}</h2>
+              <h2 className="text-lg font-semibold">{editBillId ? "Edit Bill" : "New Bill"}</h2>
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="text-muted hover:text-ink transition-colors"
@@ -258,8 +251,8 @@ export default function PurchaseOrdersPage() {
                   <select 
                     required
                     className="input"
-                    value={newPo.vendor || ""}
-                    onChange={(e) => setNewPo({...newPo, vendor: parseInt(e.target.value)})}
+                    value={newBill.vendor || ""}
+                    onChange={(e) => setNewBill({...newBill, vendor: parseInt(e.target.value)})}
                   >
                     <option value="">Select a vendor...</option>
                     {vendors.map((v: any) => (
@@ -272,8 +265,8 @@ export default function PurchaseOrdersPage() {
                   <span className="label">Status</span>
                   <select 
                     className="input"
-                    value={newPo.status}
-                    onChange={(e) => setNewPo({...newPo, status: e.target.value})}
+                    value={newBill.status}
+                    onChange={(e) => setNewBill({...newBill, status: e.target.value})}
                   >
                     <option value="draft">Draft</option>
                     <option value="pending_approval">Pending Approval</option>
@@ -292,8 +285,8 @@ export default function PurchaseOrdersPage() {
                     type="date"
                     required
                     className="input"
-                    value={newPo.issue_date}
-                    onChange={(e) => setNewPo({...newPo, issue_date: e.target.value})}
+                    value={newBill.bill_date}
+                    onChange={(e) => setNewBill({...newBill, bill_date: e.target.value})}
                   />
                 </label>
                 <label className="space-y-1.5">
@@ -301,8 +294,8 @@ export default function PurchaseOrdersPage() {
                   <input 
                     type="date"
                     className="input"
-                    value={newPo.expected_delivery_date}
-                    onChange={(e) => setNewPo({...newPo, expected_delivery_date: e.target.value})}
+                    value={newBill.due_date}
+                    onChange={(e) => setNewBill({...newBill, due_date: e.target.value})}
                   />
                 </label>
               </div>
@@ -312,7 +305,7 @@ export default function PurchaseOrdersPage() {
                   <h3 className="font-medium text-ink">Line Items</h3>
                   <button 
                     type="button"
-                    onClick={() => setNewPo({...newPo, items: [...newPo.items, { description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]})}
+                    onClick={() => setNewBill({...newBill, items: [...newBill.items, { description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]})}
                     className="btn btn-secondary text-xs py-1"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Add Item
@@ -320,7 +313,7 @@ export default function PurchaseOrdersPage() {
                 </div>
                 
                 <div className="space-y-3">
-                  {newPo.items.map((item, index) => (
+                  {newBill.items.map((item, index) => (
                     <div key={index} className="flex flex-wrap md:flex-nowrap gap-3 items-start p-3 bg-bone/30 rounded-lg border border-line">
                       <div className="flex-1 min-w-[200px]">
                         <input 
@@ -329,9 +322,9 @@ export default function PurchaseOrdersPage() {
                           className="input"
                           value={item.description}
                           onChange={(e) => {
-                            const newItems = [...newPo.items];
+                            const newItems = [...newBill.items];
                             newItems[index].description = e.target.value;
-                            setNewPo({...newPo, items: newItems});
+                            setNewBill({...newBill, items: newItems});
                           }}
                         />
                       </div>
@@ -344,9 +337,9 @@ export default function PurchaseOrdersPage() {
                           className="input font-mono"
                           value={item.quantity}
                           onChange={(e) => {
-                            const newItems = [...newPo.items];
+                            const newItems = [...newBill.items];
                             newItems[index].quantity = parseFloat(e.target.value) || 0;
-                            setNewPo({...newPo, items: newItems});
+                            setNewBill({...newBill, items: newItems});
                           }}
                         />
                       </div>
@@ -359,9 +352,9 @@ export default function PurchaseOrdersPage() {
                           className="input font-mono"
                           value={item.unit_price}
                           onChange={(e) => {
-                            const newItems = [...newPo.items];
+                            const newItems = [...newBill.items];
                             newItems[index].unit_price = parseFloat(e.target.value) || 0;
-                            setNewPo({...newPo, items: newItems});
+                            setNewBill({...newBill, items: newItems});
                           }}
                         />
                       </div>
@@ -373,18 +366,18 @@ export default function PurchaseOrdersPage() {
                           className="input font-mono"
                           value={item.tax_rate}
                           onChange={(e) => {
-                            const newItems = [...newPo.items];
+                            const newItems = [...newBill.items];
                             newItems[index].tax_rate = parseFloat(e.target.value) || 0;
-                            setNewPo({...newPo, items: newItems});
+                            setNewBill({...newBill, items: newItems});
                           }}
                         />
                       </div>
-                      {newPo.items.length > 1 && (
+                      {newBill.items.length > 1 && (
                         <button 
                           type="button"
                           onClick={() => {
-                            const newItems = newPo.items.filter((_, i) => i !== index);
-                            setNewPo({...newPo, items: newItems});
+                            const newItems = newBill.items.filter((_, i) => i !== index);
+                            setNewBill({...newBill, items: newItems});
                           }}
                           className="p-2 text-muted hover:text-rose-600 transition-colors mt-0.5"
                         >
@@ -415,8 +408,8 @@ export default function PurchaseOrdersPage() {
                 <span className="label">Notes</span>
                 <textarea 
                   className="input min-h-[80px]"
-                  value={newPo.notes}
-                  onChange={(e) => setNewPo({...newPo, notes: e.target.value})}
+                  value={newBill.notes}
+                  onChange={(e) => setNewBill({...newBill, notes: e.target.value})}
                   placeholder="Additional instructions for vendor..."
                 />
               </label>
@@ -435,7 +428,7 @@ export default function PurchaseOrdersPage() {
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
                   {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                  {editPoId ? "Save Changes" : "Create PO"}
+                  {editBillId ? "Save Changes" : "Create Bill"}
                 </button>
               </div>
             </form>

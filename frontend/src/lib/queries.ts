@@ -1639,3 +1639,42 @@ export function usePurchaseOrderPage(params: ListParams) {
     staleTime: 1000 * 60,
   });
 }
+
+// Bills
+export function useBillPage(params: ListParams) {
+  return useQuery({
+    queryKey: ["bills", params],
+    queryFn: () => api.getBills(params),
+  });
+}
+
+export function useCreateBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.createBill(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}
+
+export function useUpdateBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.updateBill(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["bill", id] });
+    },
+  });
+}
+
+export function useDeleteBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.deleteBill(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}

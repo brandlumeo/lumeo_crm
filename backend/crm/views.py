@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -47,6 +47,7 @@ from .serializers import (
     QuoteSerializer,
     VendorSerializer,
     PurchaseOrderSerializer,
+    BillSerializer,
 )
 from .emailing import send_crm_email
 
@@ -395,8 +396,35 @@ class LeadViewSet(CompanyScopedModelViewSet):
                 lead.score,
                 created_str
             ])
+            return response
+
+class BillViewSet(CompanyScopedModelViewSet):
+    serializer_class = BillSerializer
+    queryset = Bill.objects.select_related("vendor", "purchase_order").prefetch_related("items")
+    search_fields = ("bill_number", "vendor__name")
+    ordering_fields = ("created_at", "bill_date", "bill_number", "total_amount")
+    ordering = ("-created_at",)
+    
+    def apply_business_filters(self, queryset):
+        status = self.request.query_params.get("status")
+        vendor_id = self.request.query_params.get("vendor_id")
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        if vendor_id:
+            queryset = queryset.filter(vendor_id=vendor_id)
             
-        return response
+        return queryset
+
+    @action(detail=True, methods=["post"])
+    def change_status(self, request, pk=None):
+        bill = self.get_object()
+        new_status = request.data.get("status")
+        if new_status in dict(Bill.Status.choices):
+            bill.status = new_status
+            bill.save()
+            return Response({"status": "success", "new_status": new_status})
+        return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
 class UnitViewSet(CompanyScopedModelViewSet):
     queryset = Unit.objects.all()
@@ -2112,7 +2140,7 @@ class NoticeViewSet(CompanyScopedModelViewSet):
         return queryset
 
 
-class VendorViewSet(BaseCRMViewSet):
+class VendorViewSet(CompanyScopedModelViewSet):
     serializer_class = VendorSerializer
     queryset = Vendor.objects.all()
     search_fields = ("name", "email", "phone", "tax_id")
@@ -2120,7 +2148,7 @@ class VendorViewSet(BaseCRMViewSet):
     ordering = ("name",)
 
 
-class PurchaseOrderViewSet(BaseCRMViewSet):
+class PurchaseOrderViewSet(CompanyScopedModelViewSet):
     serializer_class = PurchaseOrderSerializer
     queryset = PurchaseOrder.objects.select_related("vendor", "assigned_to").prefetch_related("items")
     search_fields = ("po_number", "vendor__name")

@@ -1098,6 +1098,50 @@ export interface PurchaseOrder {
   updated_at: string;
 }
 
+export interface BillItem {
+  id: number;
+  description: string;
+  quantity: string;
+  unit_price: string;
+  tax_rate: string;
+  total: string;
+}
+
+export interface Bill {
+  id: number;
+  bill_number: string;
+  vendor: number;
+  vendor_details?: Vendor;
+  purchase_order: number | null;
+  purchase_order_details?: PurchaseOrder | null;
+  bill_date: string;
+  due_date: string | null;
+  status: "draft" | "open" | "partial" | "paid" | "cancelled";
+  subtotal: string;
+  tax_amount: string;
+  total_amount: string;
+  amount_paid: string;
+  amount_due: string;
+  notes: string | null;
+  items: BillItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillInput {
+  vendor: number;
+  purchase_order?: number | null;
+  bill_date: string;
+  due_date?: string | null;
+  status: string;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  amount_paid?: number;
+  notes?: string | null;
+  items: Omit<BillItem, "id">[];
+}
+
 export interface PurchaseOrderInput {
   vendor: number;
   assigned_to?: number | null;

@@ -519,6 +519,10 @@ class InvoiceSettings(models.Model):
     purchase_order_terms = models.TextField(default="Please supply the items listed above.", blank=True)
     purchase_order_delivery_address = models.TextField(blank=True, null=True, help_text="Default delivery address for POs")
 
+    bill_prefix = models.CharField(max_length=20, default="BILL")
+    bill_separator = models.CharField(max_length=5, default="-")
+    bill_digits = models.PositiveIntegerField(default=5)
+
     # Templates
     template_id = models.CharField(max_length=50, default="template_1")
 

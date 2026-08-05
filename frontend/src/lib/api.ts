@@ -1643,3 +1643,27 @@ export async function downloadPurchaseOrderPdf(id: number, poNumber: string) {
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
 }
+
+// Bills
+export async function getBills(params?: any) {
+  return listPage<any>("/crm/bills/", params);
+}
+export async function createBill(payload: any) {
+  const { data } = await api.post<any>("/crm/bills/", payload);
+  return data;
+}
+export async function updateBill(id: number, payload: any) {
+  const { data } = await api.patch<any>(`/crm/bills/${id}/`, payload);
+  return data;
+}
+export async function deleteBill(id: number) {
+  await api.delete(`/crm/bills/${id}/`);
+}
+export async function getBill(id: number) {
+  const { data } = await api.get<any>(`/crm/bills/${id}/`);
+  return data;
+}
+export async function updateBillStatus(id: number, status: string) {
+  const { data } = await api.post<any>(`/crm/bills/${id}/change_status/`, { status });
+  return data;
+}

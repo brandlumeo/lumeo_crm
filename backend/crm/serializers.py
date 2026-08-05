@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem
-from .tasks import run_workflow_sequence
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem
+
 
 
 User = get_user_model()
@@ -1736,7 +1736,7 @@ class PurchaseOrderItemSerializer(serializers.ModelSerializer):
 class PurchaseOrderSerializer(serializers.ModelSerializer):
     items = PurchaseOrderItemSerializer(many=True, required=False)
     vendor_details = VendorSerializer(source="vendor", read_only=True)
-    assigned_to_details = UserSerializer(source="assigned_to", read_only=True)
+    assigned_to_details = UserSummarySerializer(source="assigned_to", read_only=True)
 
     class Meta:
         model = PurchaseOrder
@@ -1790,11 +1790,6 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         items_data = validated_data.pop("items", None)
         
-        # Update PO fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
         # Update items if provided
         if items_data is not None:
             # Simple approach: delete existing and recreate
@@ -1803,3 +1798,39 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
                 PurchaseOrderItem.objects.create(purchase_order=instance, **item_data)
                 
         return instance
+
+
+class BillItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BillItem
+        fields = ("id", "description", "quantity", "unit_price", "tax_rate", "total")
+
+
+class BillSerializer(serializers.ModelSerializer):
+    items = BillItemSerializer(many=True, required=False)
+    vendor_details = VendorSerializer(source="vendor", read_only=True)
+    purchase_order_details = PurchaseOrderSerializer(source="purchase_order", read_only=True)
+
+    class Meta:
+        model = Bill
+        fields = "__all__"
+        read_only_fields = ("company", "created_at", "updated_at", "bill_number")
+        
+    def create(self, validated_data):
+        import uuid
+        items_data = validated_data.pop("items", [])
+        validated_data["bill_number"] = f"BILL-{uuid.uuid4().hex[:8].upper()}"
+        bill = super().create(validated_data)
+        for item_data in items_data:
+            BillItem.objects.create(bill=bill, **item_data)
+        return bill
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items", None)
+        bill = super().update(instance, validated_data)
+        if items_data is not None:
+            instance.items.all().delete()
+            for item_data in items_data:
+                BillItem.objects.create(bill=instance, **item_data)
+        return bill
+

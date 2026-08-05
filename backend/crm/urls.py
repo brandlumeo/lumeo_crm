@@ -48,6 +48,7 @@ from .views import (
     TimesheetViewSet,
     VendorViewSet,
     PurchaseOrderViewSet,
+    BillViewSet,
 )
 
 from .ai_views import AIChatView
@@ -90,6 +91,7 @@ router.register("events", EventViewSet, basename="event")
 router.register("notices", NoticeViewSet, basename="notice")
 router.register("vendors", VendorViewSet, basename="vendor")
 router.register("purchase-orders", PurchaseOrderViewSet, basename="purchase-order")
+router.register("bills", BillViewSet, basename="bill")
 
 tickets_router = routers.NestedDefaultRouter(router, "tickets", lookup="ticket")
 tickets_router.register("comments", TicketCommentViewSet, basename="ticket-comments")
