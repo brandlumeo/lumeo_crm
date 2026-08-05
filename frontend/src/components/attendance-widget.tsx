@@ -71,7 +71,7 @@ export function AttendanceWidget() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full mt-3 right-0 w-[320px] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/5 z-50 p-5 animate-in slide-in-from-top-3 zoom-in-95 duration-200">
+          <div className="absolute top-full mt-3 -right-20 sm:right-0 w-[320px] max-w-[calc(100vw-2rem)] bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/5 z-50 p-5 animate-in slide-in-from-top-3 zoom-in-95 duration-200">
             {!status.is_clocked_in ? (
               // Clock In Panel
               <div className="flex flex-col gap-5">
