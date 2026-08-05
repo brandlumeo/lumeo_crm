@@ -1583,3 +1583,47 @@ export const deleteServiceCategory = async (id: number | string) => {
   const res = await api.delete(`/crm/service-categories/${id}/`);
   return res.data;
 };
+
+// --- Vendors ---
+export async function fetchVendors(params?: ListParams) {
+  return listPage<any>("/crm/vendors/", params);
+}
+export async function createVendor(payload: any) {
+  const { data } = await api.post<any>("/crm/vendors/", payload);
+  return data;
+}
+export async function updateVendor(id: number, payload: any) {
+  const { data } = await api.patch<any>(`/crm/vendors/${id}/`, payload);
+  return data;
+}
+export async function deleteVendor(id: number) {
+  await api.delete(`/crm/vendors/${id}/`);
+}
+export async function getVendor(id: number) {
+  const { data } = await api.get<any>(`/crm/vendors/${id}/`);
+  return data;
+}
+
+// --- Purchase Orders ---
+export async function fetchPurchaseOrders(params?: ListParams) {
+  return listPage<any>("/crm/purchase-orders/", params);
+}
+export async function createPurchaseOrder(payload: any) {
+  const { data } = await api.post<any>("/crm/purchase-orders/", payload);
+  return data;
+}
+export async function updatePurchaseOrder(id: number, payload: any) {
+  const { data } = await api.patch<any>(`/crm/purchase-orders/${id}/`, payload);
+  return data;
+}
+export async function deletePurchaseOrder(id: number) {
+  await api.delete(`/crm/purchase-orders/${id}/`);
+}
+export async function getPurchaseOrder(id: number) {
+  const { data } = await api.get<any>(`/crm/purchase-orders/${id}/`);
+  return data;
+}
+export async function updatePurchaseOrderStatus(id: number, status: string) {
+  const { data } = await api.post<any>(`/crm/purchase-orders/${id}/change_status/`, { status });
+  return data;
+}

@@ -1055,3 +1055,60 @@ export interface TimesheetInput {
   description?: string;
   status?: "draft" | "submitted" | "approved" | "rejected";
 }
+
+export interface Vendor {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  tax_id: string | null;
+  custom_data: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseOrderItem {
+  id?: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  total: number;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  po_number: string;
+  vendor: number;
+  vendor_details?: Vendor;
+  assigned_to: number | null;
+  assigned_to_details?: UserSummary | null;
+  issue_date: string;
+  expected_delivery_date: string | null;
+  status: "draft" | "pending_approval" | "approved" | "sent" | "billed" | "cancelled";
+  subtotal: string;
+  tax_amount: string;
+  total_amount: string;
+  notes: string | null;
+  terms_conditions: string | null;
+  delivery_address: string | null;
+  items: PurchaseOrderItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseOrderInput {
+  vendor: number;
+  assigned_to?: number | null;
+  issue_date: string;
+  expected_delivery_date?: string | null;
+  status?: string;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  notes?: string;
+  terms_conditions?: string;
+  delivery_address?: string;
+  items: PurchaseOrderItem[];
+}

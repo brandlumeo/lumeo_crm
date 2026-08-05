@@ -513,6 +513,12 @@ class InvoiceSettings(models.Model):
     proposal_separator = models.CharField(max_length=5, default="-")
     proposal_digits = models.PositiveIntegerField(default=5)
 
+    purchase_order_prefix = models.CharField(max_length=20, default="PO")
+    purchase_order_separator = models.CharField(max_length=5, default="-")
+    purchase_order_digits = models.PositiveIntegerField(default=5)
+    purchase_order_terms = models.TextField(default="Please supply the items listed above.", blank=True)
+    purchase_order_delivery_address = models.TextField(blank=True, null=True, help_text="Default delivery address for POs")
+
     # Templates
     template_id = models.CharField(max_length=50, default="template_1")
 

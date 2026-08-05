@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -45,6 +45,8 @@ from .serializers import (
     ProjectSerializer,
     TimesheetSerializer,
     QuoteSerializer,
+    VendorSerializer,
+    PurchaseOrderSerializer,
 )
 from .emailing import send_crm_email
 
@@ -2077,3 +2079,44 @@ class NoticeViewSet(CompanyScopedModelViewSet):
         if pinned is not None:
             queryset = queryset.filter(is_pinned=pinned.lower() in ("true", "1"))
         return queryset
+
+
+class VendorViewSet(BaseCRMViewSet):
+    serializer_class = VendorSerializer
+    queryset = Vendor.objects.all()
+    search_fields = ("name", "email", "phone", "tax_id")
+    ordering_fields = ("name", "created_at")
+    ordering = ("name",)
+
+
+class PurchaseOrderViewSet(BaseCRMViewSet):
+    serializer_class = PurchaseOrderSerializer
+    queryset = PurchaseOrder.objects.select_related("vendor", "assigned_to").prefetch_related("items")
+    search_fields = ("po_number", "vendor__name")
+    ordering_fields = ("created_at", "issue_date", "po_number", "total_amount")
+    ordering = ("-created_at",)
+    
+    def apply_business_filters(self, queryset):
+        status = self.request.query_params.get("status")
+        vendor_id = self.request.query_params.get("vendor_id")
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        if vendor_id:
+            queryset = queryset.filter(vendor_id=vendor_id)
+            
+        return queryset
+
+    @action(detail=True, methods=["post"])
+    def change_status(self, request, pk=None):
+        po = self.get_object()
+        new_status = request.data.get("status")
+        
+        if new_status not in dict(PurchaseOrder.Status.choices):
+            return Response({"error": "Invalid status."}, status=400)
+            
+        po.status = new_status
+        po.save()
+        
+        serializer = self.get_serializer(po)
+        return Response(serializer.data)

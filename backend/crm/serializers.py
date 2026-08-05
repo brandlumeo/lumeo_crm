@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem
+from .tasks import run_workflow_sequence
 
 
 User = get_user_model()
@@ -1717,3 +1718,88 @@ class TimesheetSerializer(CompanyScopedSerializer):
                 validated_data["approved_by"] = None
 
         return super().update(instance, validated_data)
+
+
+class VendorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vendor
+        fields = "__all__"
+        read_only_fields = ("company", "created_at", "updated_at")
+
+
+class PurchaseOrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PurchaseOrderItem
+        fields = ("id", "description", "quantity", "unit_price", "tax_rate", "total")
+
+
+class PurchaseOrderSerializer(serializers.ModelSerializer):
+    items = PurchaseOrderItemSerializer(many=True, required=False)
+    vendor_details = VendorSerializer(source="vendor", read_only=True)
+    assigned_to_details = UserSerializer(source="assigned_to", read_only=True)
+
+    class Meta:
+        model = PurchaseOrder
+        fields = "__all__"
+        read_only_fields = ("company", "created_at", "updated_at", "po_number")
+        
+    def create(self, validated_data):
+        items_data = validated_data.pop("items", [])
+        request = self.context.get("request")
+        user = request.user if request else None
+        company = user.company if hasattr(user, "company") else None
+        
+        # Auto generate PO number
+        prefix = "PO"
+        separator = "-"
+        digits = 5
+        if user and hasattr(user, "company"):
+            try:
+                settings = user.company.invoice_settings
+                prefix = settings.purchase_order_prefix or "PO"
+                separator = settings.purchase_order_separator or "-"
+                digits = settings.purchase_order_digits or 5
+                
+                if 'terms_conditions' not in validated_data:
+                    validated_data['terms_conditions'] = settings.purchase_order_terms
+                if 'delivery_address' not in validated_data:
+                    validated_data['delivery_address'] = settings.purchase_order_delivery_address
+            except Exception:
+                pass
+                
+        base_count = PurchaseOrder.objects.filter(company=company).count() if company else 0
+        
+        if separator and prefix.endswith(separator):
+            prefix = prefix[:-len(separator)]
+            
+        while True:
+            next_number = str(base_count + 1).zfill(digits)
+            test_number = f"{prefix}{separator}{next_number}"
+            if not PurchaseOrder.objects.filter(company=company, po_number=test_number).exists():
+                validated_data["po_number"] = test_number
+                break
+            base_count += 1
+            
+        purchase_order = PurchaseOrder.objects.create(**validated_data)
+        
+        for item_data in items_data:
+            PurchaseOrderItem.objects.create(purchase_order=purchase_order, **item_data)
+            
+        return purchase_order
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items", None)
+        
+        # Update PO fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update items if provided
+        if items_data is not None:
+            # Simple approach: delete existing and recreate
+            instance.items.all().delete()
+            for item_data in items_data:
+                PurchaseOrderItem.objects.create(purchase_order=instance, **item_data)
+                
+        return instance
