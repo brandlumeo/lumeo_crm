@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
-import { createVendor, deleteVendor } from "@/lib/api";
+import { createVendor, updateVendor, deleteVendor } from "@/lib/api";
 import { useVendorPage } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
 
@@ -29,6 +29,7 @@ export default function VendorsPage() {
     tax_id: "",
     custom_data: {},
   });
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -51,6 +52,19 @@ export default function VendorsPage() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to create vendor");
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: any) => updateVendor(editingId!, data),
+    onSuccess: () => {
+      toast.success("Vendor updated successfully.");
+      setForm({ name: "", email: "", phone: "", address: "", tax_id: "", custom_data: {} });
+      setEditingId(null);
+      void queryClient.invalidateQueries({ queryKey: ["crm"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || "Failed to update vendor");
     }
   });
 
@@ -148,6 +162,17 @@ export default function VendorsPage() {
                 setSortDirection(dir);
               }}
               onDelete={(ids) => deleteMutation.mutate(ids)}
+              rowAction={(vendor) => {
+                setEditingId(vendor.id);
+                setForm({
+                  name: vendor.name || "",
+                  email: vendor.email || "",
+                  phone: vendor.phone || "",
+                  address: vendor.address || "",
+                  tax_id: vendor.tax_id || "",
+                  custom_data: vendor.custom_data || {},
+                });
+              }}
             />
           )}
         </div>
@@ -155,13 +180,28 @@ export default function VendorsPage() {
         <div className="xl:col-start-2 xl:row-start-1">
           <div className="card animate-rise sticky top-6">
             <div className="card-head">
-              <div className="card-title">New vendor</div>
+              <div className="card-title">{editingId ? "Edit vendor" : "New vendor"}</div>
+              {editingId && (
+                <button
+                  className="text-xs text-muted hover:text-ink underline"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm({ name: "", email: "", phone: "", address: "", tax_id: "", custom_data: {} });
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
             </div>
             <form
               className="p-5 space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
-                mutation.mutate(form);
+                if (editingId) {
+                  updateMutation.mutate(form);
+                } else {
+                  mutation.mutate(form);
+                }
               }}
             >
               <label>
@@ -223,8 +263,8 @@ export default function VendorsPage() {
                 onChange={(custom_data) => setForm({ ...form, custom_data })}
               />
 
-              <button disabled={mutation.isPending} className="btn btn-primary w-full">
-                {mutation.isPending ? "Saving..." : "Add vendor"}
+              <button disabled={mutation.isPending || updateMutation.isPending} className="btn btn-primary w-full">
+                {mutation.isPending || updateMutation.isPending ? "Saving..." : editingId ? "Update vendor" : "Add vendor"}
               </button>
             </form>
           </div>

@@ -74,6 +74,12 @@ export function FinanceSettingsForm() {
   const [orderSeparator, setOrderSeparator] = useState("-");
   const [orderDigits, setOrderDigits] = useState(5);
 
+  const [poPrefix, setPoPrefix] = useState("PO");
+  const [poSeparator, setPoSeparator] = useState("-");
+  const [poDigits, setPoDigits] = useState(5);
+  const [poTerms, setPoTerms] = useState("Standard purchase order terms apply.");
+  const [poDeliveryAddress, setPoDeliveryAddress] = useState("");
+
   // Template Settings
   const [invoiceTemplate, setInvoiceTemplate] = useState("template1");
   const [templateAccentColor, setTemplateAccentColor] = useState("#4F46E5");
@@ -145,6 +151,12 @@ export function FinanceSettingsForm() {
       setOrderPrefix(invoiceSettings.order_prefix ?? "ORD");
       setOrderSeparator(invoiceSettings.order_separator ?? "-");
       setOrderDigits(invoiceSettings.order_digits ?? 5);
+
+      setPoPrefix(invoiceSettings.purchase_order_prefix ?? "PO");
+      setPoSeparator(invoiceSettings.purchase_order_separator ?? "-");
+      setPoDigits(invoiceSettings.purchase_order_digits ?? 5);
+      setPoTerms(invoiceSettings.purchase_order_terms ?? "Standard purchase order terms apply.");
+      setPoDeliveryAddress(invoiceSettings.purchase_order_default_delivery_address ?? "");
       
       setTemplateAccentColor(invoiceSettings.template_accent_color ?? "#4F46E5");
       setTemplateFontFamily(invoiceSettings.template_font_family ?? "Inter");
@@ -230,6 +242,11 @@ export function FinanceSettingsForm() {
         order_prefix: orderPrefix,
         order_separator: orderSeparator,
         order_digits: orderDigits,
+        purchase_order_prefix: poPrefix,
+        purchase_order_separator: poSeparator,
+        purchase_order_digits: poDigits,
+        purchase_order_terms: poTerms,
+        purchase_order_default_delivery_address: poDeliveryAddress,
       }
     }, {
       onSuccess: () => {
@@ -819,6 +836,14 @@ export function FinanceSettingsForm() {
                     prefix={orderPrefix} setPrefix={setOrderPrefix}
                     separator={orderSeparator} setSeparator={setOrderSeparator}
                     digits={orderDigits} setDigits={setOrderDigits}
+                    isAdmin={isAdmin}
+                    generatePreview={generatePreview}
+                />
+                <PrefixRow 
+                    title="Purchase Order"
+                    prefix={poPrefix} setPrefix={setPoPrefix}
+                    separator={poSeparator} setSeparator={setPoSeparator}
+                    digits={poDigits} setDigits={setPoDigits}
                     isAdmin={isAdmin}
                     generatePreview={generatePreview}
                 />
