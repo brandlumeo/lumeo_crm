@@ -113,7 +113,7 @@ def notify_lead_assigned(self, lead_id: int, assigned_to_id: int):
             body_text=text_content,
             body_html=html_msg,
             pre_header="LEAD ASSIGNED",
-            action_url=f"{settings.FRONTEND_URL}/dashboard/leads",
+            action_url=f"{settings.FRONTEND_URL}/leads",
             action_text="View Lead in CRM",
             to_email=user.email
         )
@@ -172,7 +172,7 @@ def notify_deal_won(self, deal_id: int):
                 body_text=text_content,
                 body_html=html_msg,
                 pre_header="DEAL WON",
-                action_url=f"{settings.FRONTEND_URL}/dashboard/pipeline",
+                action_url=f"{settings.FRONTEND_URL}/pipeline",
                 action_text="View in Pipeline",
                 bcc_list=recipient_list
             )
@@ -196,10 +196,10 @@ def send_notification_email(self, to_email: str, title: str, body: str):
         
         action_url = settings.FRONTEND_URL
         if "OVERDUE" in title or "Task" in title:
-            action_url = f"{settings.FRONTEND_URL}/dashboard/tasks"
+            action_url = f"{settings.FRONTEND_URL}/tasks"
             action_text = "View Tasks"
         elif "digest" in title.lower():
-            action_url = f"{settings.FRONTEND_URL}/dashboard"
+            action_url = f"{settings.FRONTEND_URL}/"
             action_text = "Go to Dashboard"
         else:
             action_text = "View in CRM"
@@ -402,7 +402,7 @@ def notify_ticket_reply(self, comment_id: int):
         # If the person who commented is NOT the assigned agent, notify the agent
         if ticket.assigned_to and comment.author != ticket.assigned_to:
             subject = f"New Reply on Ticket #{ticket.id}: {ticket.title}"
-            text_content = f"Hello {ticket.assigned_to.first_name},\n\nThere is a new reply on your ticket.\n\n{comment.author.get_full_name()} wrote:\n{comment.comment}\n\nView Ticket: {settings.FRONTEND_URL}/dashboard/tickets"
+            text_content = f"Hello {ticket.assigned_to.first_name},\n\nThere is a new reply on your ticket.\n\n{comment.author.get_full_name()} wrote:\n{comment.comment}\n\nView Ticket: {settings.FRONTEND_URL}/tickets"
             
             from accounts.emails import build_premium_email
             
@@ -418,7 +418,7 @@ def notify_ticket_reply(self, comment_id: int):
                 body_text=text_content,
                 body_html=html_msg,
                 pre_header="TICKET UPDATE",
-                action_url=f"{settings.FRONTEND_URL}/dashboard/tickets",
+                action_url=f"{settings.FRONTEND_URL}/tickets",
                 action_text="View Ticket",
                 to_email=ticket.assigned_to.email
             )
@@ -560,7 +560,7 @@ def check_subscription_expiry(self):
                 body_text=text_content,
                 body_html=html_msg,
                 pre_header="ACTION REQUIRED",
-                action_url=f"{settings.FRONTEND_URL}/dashboard/billing",
+                action_url=f"{settings.FRONTEND_URL}/billing",
                 action_text="Renew Subscription",
                 to_email=user.email
             )
@@ -648,7 +648,7 @@ def notify_leave_applied(self, leave_id: int):
             body_text=text_content,
             body_html=html_msg,
             pre_header="LEAVE REQUEST",
-            action_url=f"{settings.FRONTEND_URL}/dashboard/leaves",
+            action_url=f"{settings.FRONTEND_URL}/team-attendance",
             action_text="View Leave",
             to_email=leave.user.email
         )
@@ -672,7 +672,7 @@ def notify_leave_applied(self, leave_id: int):
                 body_text=f"{leave.user.get_full_name()} has applied for leave.\nDate: {leave.start_date}\nReason: {leave.reason}",
                 body_html=admin_html,
                 pre_header="HR NOTIFICATION",
-                action_url=f"{settings.FRONTEND_URL}/dashboard/leaves",
+                action_url=f"{settings.FRONTEND_URL}/team-attendance",
                 action_text="Review Leave",
                 bcc_list=recipient_emails
             )
@@ -712,7 +712,7 @@ def notify_leave_updated(self, leave_id: int):
             body_text=text_content,
             body_html=html_msg,
             pre_header="LEAVE STATUS",
-            action_url=f"{settings.FRONTEND_URL}/dashboard/leaves",
+            action_url=f"{settings.FRONTEND_URL}/attendance",
             action_text="View Leave",
             to_email=leave.user.email
         )
