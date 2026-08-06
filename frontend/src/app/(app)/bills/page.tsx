@@ -40,7 +40,7 @@ export default function BillsPage() {
     onSuccess: () => {
       setIsModalOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
       toast.success("Bill created successfully");
     },
     onError: (err: any) => {
@@ -53,7 +53,7 @@ export default function BillsPage() {
     onSuccess: () => {
       setIsModalOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
       toast.success("Bill updated successfully");
     },
     onError: (err: any) => {
@@ -64,7 +64,7 @@ export default function BillsPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteBill,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
       toast.success("Bill deleted");
     }
   });
@@ -72,7 +72,7 @@ export default function BillsPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number, status: string }) => updateBillStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["crm", "bills"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
       toast.success("Status updated");
     }
   });
