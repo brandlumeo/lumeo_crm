@@ -1490,7 +1490,8 @@ class Bill(models.Model):
         return f"{self.bill_number} - {self.vendor.name}"
 
     def save(self, *args, **kwargs):
-        self.amount_due = self.total_amount - self.amount_paid
+        from decimal import Decimal
+        self.amount_due = Decimal(str(self.total_amount or 0)) - Decimal(str(self.amount_paid or 0))
         super().save(*args, **kwargs)
 
 
