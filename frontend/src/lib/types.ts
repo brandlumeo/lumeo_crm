@@ -352,6 +352,7 @@ export interface ListParams {
   ordering?: string;
   status?: string;
   stage?: string;
+  vendor?: number;
   email?: string;
   assigned_to?: number;
   due_date_from?: string;

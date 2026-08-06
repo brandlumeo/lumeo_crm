@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { PageShell } from "@/components/page-shell";
 import { CustomFieldsFormInputs } from "@/components/custom-fields-form-inputs";
+import { VendorDetailsSlideover } from "@/components/vendor-details-slideover";
 import { createVendor, updateVendor, deleteVendor } from "@/lib/api";
 import { useVendorPage } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
@@ -23,13 +24,18 @@ export default function VendorsPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [form, setForm] = useState<any>({
     name: "",
+    contact_name: "",
     email: "",
     phone: "",
+    website: "",
     address: "",
     tax_id: "",
+    payment_terms: "",
+    bank_details: "",
     custom_data: {},
   });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [viewingVendor, setViewingVendor] = useState<any>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -47,7 +53,7 @@ export default function VendorsPage() {
     mutationFn: createVendor,
     onSuccess: () => {
       toast.success("Vendor created successfully.");
-      setForm({ name: "", email: "", phone: "", address: "", tax_id: "", custom_data: {} });
+      setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
     onError: (err: any) => {
@@ -59,7 +65,7 @@ export default function VendorsPage() {
     mutationFn: (data: any) => updateVendor(editingId!, data),
     onSuccess: () => {
       toast.success("Vendor updated successfully.");
-      setForm({ name: "", email: "", phone: "", address: "", tax_id: "", custom_data: {} });
+      setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
       setEditingId(null);
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
@@ -127,6 +133,7 @@ export default function VendorsPage() {
                   render: (vendor: any) => (
                     <div>
                       <div className="font-medium text-ink">{vendor.name}</div>
+                      {vendor.contact_name && <div className="text-[12px] text-muted mt-0.5">Contact: {vendor.contact_name}</div>}
                       <div className="text-[12px] text-muted mt-0.5">{vendor.email || "No email"}</div>
                     </div>
                   ),
@@ -169,15 +176,7 @@ export default function VendorsPage() {
                 }
               ]}
               onRowClick={(vendor) => {
-                setEditingId(vendor.id);
-                setForm({
-                  name: vendor.name || "",
-                  email: vendor.email || "",
-                  phone: vendor.phone || "",
-                  address: vendor.address || "",
-                  tax_id: vendor.tax_id || "",
-                  custom_data: vendor.custom_data || {},
-                });
+                setViewingVendor(vendor);
               }}
             />
           )}
@@ -192,7 +191,7 @@ export default function VendorsPage() {
                   className="text-xs text-muted hover:text-ink underline"
                   onClick={() => {
                     setEditingId(null);
-                    setForm({ name: "", email: "", phone: "", address: "", tax_id: "", custom_data: {} });
+                    setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
                   }}
                 >
                   Cancel
@@ -244,6 +243,16 @@ export default function VendorsPage() {
               </div>
 
               <label>
+                <span className="label">Contact Name</span>
+                <input
+                  className="input"
+                  value={form.contact_name}
+                  onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
+                  placeholder="John Doe"
+                />
+              </label>
+
+              <label>
                 <span className="label">Tax / GST / VAT ID</span>
                 <input
                   className="input"
@@ -252,6 +261,27 @@ export default function VendorsPage() {
                   placeholder="AB12345678"
                 />
               </label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label>
+                  <span className="label">Website</span>
+                  <input
+                    className="input"
+                    value={form.website}
+                    onChange={(event) => setForm({ ...form, website: event.target.value })}
+                    placeholder="https://apex.com"
+                  />
+                </label>
+                <label>
+                  <span className="label">Payment Terms</span>
+                  <input
+                    className="input"
+                    value={form.payment_terms}
+                    onChange={(event) => setForm({ ...form, payment_terms: event.target.value })}
+                    placeholder="Net 30"
+                  />
+                </label>
+              </div>
               
               <label>
                 <span className="label">Address</span>
@@ -260,6 +290,16 @@ export default function VendorsPage() {
                   value={form.address}
                   onChange={(event) => setForm({ ...form, address: event.target.value })}
                   placeholder="123 Main St..."
+                />
+              </label>
+              
+              <label>
+                <span className="label">Bank Details</span>
+                <textarea
+                  className="input min-h-[80px]"
+                  value={form.bank_details}
+                  onChange={(event) => setForm({ ...form, bank_details: event.target.value })}
+                  placeholder="Account Number, Routing, Wire Instructions..."
                 />
               </label>
 
@@ -276,6 +316,30 @@ export default function VendorsPage() {
           </div>
         </div>
       </div>
+
+      <VendorDetailsSlideover 
+        vendor={viewingVendor} 
+        open={!!viewingVendor} 
+        onOpenChange={(open) => {
+          if (!open) setViewingVendor(null);
+        }} 
+        onEdit={(vendor) => {
+          setViewingVendor(null);
+          setEditingId(vendor.id);
+          setForm({
+            name: vendor.name || "",
+            contact_name: vendor.contact_name || "",
+            email: vendor.email || "",
+            phone: vendor.phone || "",
+            website: vendor.website || "",
+            address: vendor.address || "",
+            tax_id: vendor.tax_id || "",
+            payment_terms: vendor.payment_terms || "",
+            bank_details: vendor.bank_details || "",
+            custom_data: vendor.custom_data || {},
+          });
+        }}
+      />
     </PageShell>
   );
 }

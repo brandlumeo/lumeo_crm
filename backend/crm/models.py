@@ -1381,8 +1381,12 @@ class Vendor(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(blank=True, null=True, db_index=True)
     phone = models.CharField(max_length=50, blank=True, null=True)
+    contact_name = models.CharField(max_length=255, blank=True, null=True)
+    website = models.URLField(max_length=200, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     tax_id = models.CharField(max_length=100, blank=True, null=True)
+    payment_terms = models.CharField(max_length=100, blank=True, null=True)
+    bank_details = models.TextField(blank=True, null=True)
     custom_data = models.JSONField(default=dict, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
