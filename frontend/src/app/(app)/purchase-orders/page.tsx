@@ -262,13 +262,13 @@ export default function PurchaseOrdersPage() {
         )}
       </div>
 
-      {isModalOpen && (
+      {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-paper border border-line rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-rise">
             <div className="sticky top-0 bg-paper/90 backdrop-blur-md border-b border-line px-5 py-4 flex items-center justify-between z-10">
               <h2 className="text-lg font-semibold">{editPoId ? "Edit Purchase Order" : "New Purchase Order"}</h2>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsCreateOpen(false)}
                 className="text-muted hover:text-ink transition-colors"
               >
                 Cancel
@@ -448,7 +448,7 @@ export default function PurchaseOrdersPage() {
               <div className="pt-4 border-t border-line flex justify-end gap-3 sticky bottom-0 bg-paper py-3">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => setIsCreateOpen(false)}
                   className="btn btn-secondary"
                 >
                   Cancel
