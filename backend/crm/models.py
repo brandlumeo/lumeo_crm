@@ -1449,6 +1449,12 @@ class PurchaseOrderItem(models.Model):
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
+    def save(self, *args, **kwargs):
+        if self.quantity is not None and self.unit_price is not None:
+            self.total = self.quantity * self.unit_price
+        super().save(*args, **kwargs)
+
+
     class Meta:
         ordering = ("id",)
 
@@ -1502,6 +1508,12 @@ class BillItem(models.Model):
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if self.quantity is not None and self.unit_price is not None:
+            self.total = self.quantity * self.unit_price
+        super().save(*args, **kwargs)
+
 
     class Meta:
         ordering = ("id",)
