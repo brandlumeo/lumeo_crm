@@ -1789,6 +1789,7 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop("items", None)
+        purchase_order = super().update(instance, validated_data)
         
         # Update items if provided
         if items_data is not None:
@@ -1797,7 +1798,7 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
             for item_data in items_data:
                 PurchaseOrderItem.objects.create(purchase_order=instance, **item_data)
                 
-        return instance
+        return purchase_order
 
 
 class BillItemSerializer(serializers.ModelSerializer):
