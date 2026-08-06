@@ -191,18 +191,16 @@ export default function BillsPage() {
                         disabled={statusMutation.isPending}
                         className={`text-xs px-2 py-1 rounded-full border-0 font-medium ${
                           bill.status === 'draft' ? 'bg-bone text-muted' :
-                          bill.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
-                          bill.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                          bill.status === 'sent' ? 'bg-indigo-100 text-indigo-800' :
-                          bill.status === 'billed' ? 'bg-emerald-100 text-emerald-800' :
+                          bill.status === 'open' ? 'bg-blue-100 text-blue-800' :
+                          bill.status === 'partial' ? 'bg-amber-100 text-amber-800' :
+                          bill.status === 'paid' ? 'bg-emerald-100 text-emerald-800' :
                           'bg-rose-100 text-rose-800'
                         }`}
                       >
                         <option value="draft">Draft</option>
-                        <option value="pending_approval">Pending Approval</option>
-                        <option value="approved">Approved</option>
-                        <option value="sent">Sent</option>
-                        <option value="billed">Billed</option>
+                        <option value="open">Open</option>
+                        <option value="partial">Partially Paid</option>
+                        <option value="paid">Paid</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </td>
@@ -270,10 +268,9 @@ export default function BillsPage() {
                     onChange={(e) => setNewBill({...newBill, status: e.target.value})}
                   >
                     <option value="draft">Draft</option>
-                    <option value="pending_approval">Pending Approval</option>
-                    <option value="approved">Approved</option>
-                    <option value="sent">Sent</option>
-                    <option value="billed">Billed</option>
+                    <option value="open">Open</option>
+                    <option value="partial">Partially Paid</option>
+                    <option value="paid">Paid</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </label>
@@ -291,7 +288,7 @@ export default function BillsPage() {
                   />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="label">Expected Delivery Date</span>
+                  <span className="label">Due Date</span>
                   <input 
                     type="date"
                     className="input"
