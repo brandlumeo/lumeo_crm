@@ -5,6 +5,8 @@ import { Drawer } from "@/components/drawer";
 import { Globe, Building2, MapPin, Receipt, FileText, Landmark, Edit2 } from "lucide-react";
 import { fetchPurchaseOrders, getBills } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import { useCurrentCompany } from "@/lib/queries";
 
 interface VendorDetailsSlideoverProps {
   vendor: any;
@@ -27,6 +29,8 @@ export function VendorDetailsSlideover({ vendor, open, onOpenChange, onEdit }: V
     queryFn: () => getBills({ vendor: vendor?.id, limit: 50 }),
     enabled: !!vendor?.id && open,
   });
+
+  const { data: company } = useCurrentCompany();
 
   if (!vendor) return null;
 
@@ -121,7 +125,7 @@ export function VendorDetailsSlideover({ vendor, open, onOpenChange, onEdit }: V
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="chip chip-neutral capitalize">{po.status?.replace("_", " ")}</span>
-                    <div className="text-sm font-medium">${parseFloat(po.total_amount).toFixed(2)}</div>
+                    <div className="text-sm font-medium">{formatCurrency(parseFloat(po.total_amount), company?.currency)}</div>
                   </div>
                 </div>
               ))}
@@ -150,7 +154,7 @@ export function VendorDetailsSlideover({ vendor, open, onOpenChange, onEdit }: V
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="chip chip-neutral capitalize">{bill.status?.replace("_", " ")}</span>
-                    <div className="text-sm font-medium">${parseFloat(bill.total_amount).toFixed(2)}</div>
+                    <div className="text-sm font-medium">{formatCurrency(parseFloat(bill.total_amount), company?.currency)}</div>
                   </div>
                 </div>
               ))}

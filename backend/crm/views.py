@@ -402,12 +402,12 @@ class BillViewSet(CompanyScopedModelViewSet):
     serializer_class = BillSerializer
     queryset = Bill.objects.select_related("vendor", "purchase_order").prefetch_related("items")
     search_fields = ("bill_number", "vendor__name")
-    ordering_fields = ("created_at", "bill_date", "bill_number", "total_amount")
-    ordering = ("-created_at",)
+    ordering_fields = ("bill_date", "bill_number", "total_amount")
+    ordering = ("-bill_date",)
     
     def apply_business_filters(self, queryset):
         status = self.request.query_params.get("status")
-        vendor_id = self.request.query_params.get("vendor_id")
+        vendor_id = self.request.query_params.get("vendor") or self.request.query_params.get("vendor_id")
         
         if status:
             queryset = queryset.filter(status=status)
@@ -2157,7 +2157,7 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
     
     def apply_business_filters(self, queryset):
         status = self.request.query_params.get("status")
-        vendor_id = self.request.query_params.get("vendor_id")
+        vendor_id = self.request.query_params.get("vendor") or self.request.query_params.get("vendor_id")
         
         if status:
             queryset = queryset.filter(status=status)
