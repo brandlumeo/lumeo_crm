@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { FileText, Plus, Search, Check, ExternalLink, Download, Trash2, Loader2, Edit2, ShoppingBag, Receipt } from "lucide-react";
 
-import { usePurchaseOrderPage, useVendorPage, useConvertPurchaseOrderToBill } from "@/lib/queries";
+import { usePurchaseOrderPage, useVendorPage, useConvertPurchaseOrderToBill, useCurrentCompany } from "@/lib/queries";
 import { createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus, downloadPurchaseOrderPdf } from "@/lib/api";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
@@ -17,6 +17,7 @@ export default function PurchaseOrdersPage() {
   const { data, isLoading } = usePurchaseOrderPage({});
   const { data: vendorData } = useVendorPage({ limit: 100 });
   const convertMutation = useConvertPurchaseOrderToBill();
+  const { data: company } = useCurrentCompany();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editPoId, setEditPoId] = useState<number | null>(null);
@@ -194,7 +195,7 @@ export default function PurchaseOrdersPage() {
                     <td className="font-medium text-ink">{po.po_number}</td>
                     <td>{po.vendor_details?.name || "Unknown"}</td>
                     <td>{po.issue_date}</td>
-                    <td className="font-mono text-sm">{formatCurrency(parseFloat(po.total_amount), "USD")}</td>
+                    <td className="font-mono text-sm">{formatCurrency(parseFloat(po.total_amount), company?.currency || "USD")}</td>
                     <td>
                       <select 
                         value={po.status}
@@ -420,15 +421,15 @@ export default function PurchaseOrdersPage() {
                 <div className="mt-4 flex flex-col items-end gap-1 text-sm">
                   <div className="w-full max-w-[240px] flex justify-between text-muted">
                     <span>Subtotal:</span>
-                    <span className="font-mono">{formatCurrency(calculateSubtotal(), "USD")}</span>
+                    <span className="font-mono">{formatCurrency(calculateSubtotal(), company?.currency || "USD")}</span>
                   </div>
                   <div className="w-full max-w-[240px] flex justify-between text-muted">
                     <span>Tax:</span>
-                    <span className="font-mono">{formatCurrency(calculateTax(), "USD")}</span>
+                    <span className="font-mono">{formatCurrency(calculateTax(), company?.currency || "USD")}</span>
                   </div>
                   <div className="w-full max-w-[240px] flex justify-between font-medium text-ink pt-2 border-t border-line mt-1">
                     <span>Total:</span>
-                    <span className="font-mono">{formatCurrency(calculateTotal(), "USD")}</span>
+                    <span className="font-mono">{formatCurrency(calculateTotal(), company?.currency || "USD")}</span>
                   </div>
                 </div>
               </div>
