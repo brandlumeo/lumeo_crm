@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { FileText, Plus, Search, Check, ExternalLink, Download, Trash2, Loader2, Edit2, ShoppingBag } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
 
 import { useBillPage, useVendorPage, useCurrentCompany } from "@/lib/queries";
 import { createBill, updateBill, deleteBill, updateBillStatus } from "@/lib/api";
@@ -20,6 +21,7 @@ export default function BillsPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editBillId, setEditBillId] = useState<number | null>(null);
+  const [deleteBillId, setDeleteBillId] = useState<number | null>(null);
   
   const [newBill, setNewBill] = useState<{ vendor: number | null, bill_date: string, due_date: string, status: string, notes: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
     vendor: null, 
@@ -212,11 +214,9 @@ export default function BillsPage() {
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      <button 
-                        onClick={() => {
-                          if(confirm("Are you sure?")) deleteMutation.mutate(bill.id);
-                        }}
-                        className="btn btn-secondary px-2 py-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                      <button
+                        onClick={() => setDeleteBillId(bill.id)}
+                        className="btn btn-secondary text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1"
                         title="Delete Bill"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -433,6 +433,39 @@ export default function BillsPage() {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <Dialog.Root open={deleteBillId !== null} onOpenChange={(open) => !open && setDeleteBillId(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-paper shadow-2xl rounded-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <Dialog.Title className="text-xl font-serif text-ink mb-2">Delete Bill</Dialog.Title>
+              <Dialog.Description className="text-muted text-[15px] mb-6">
+                Are you sure you want to delete this bill? This action cannot be undone and will permanently remove this record from your finance history.
+              </Dialog.Description>
+              <div className="flex items-center justify-end gap-3">
+                <Dialog.Close asChild>
+                  <button className="btn btn-secondary">Cancel</button>
+                </Dialog.Close>
+                <button 
+                  className="btn btn-primary bg-rose-600 hover:bg-rose-700 text-white border-transparent"
+                  onClick={() => {
+                    if (deleteBillId) deleteMutation.mutate(deleteBillId);
+                    setDeleteBillId(null);
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete Bill"}
+                </button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
     </PageShell>
   );
 }
