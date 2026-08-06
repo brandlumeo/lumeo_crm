@@ -45,7 +45,9 @@ export default function PurchaseOrdersPage() {
       toast.success("Purchase Order created successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to create PO");
+        const data = err.response?.data;
+        const errorMsg = data?.error || (data && typeof data === 'object' ? Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(', ') : "Failed to create PO");
+        toast.error(errorMsg);
     }
   });
 
@@ -58,7 +60,9 @@ export default function PurchaseOrdersPage() {
       toast.success("Purchase Order updated successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to update PO");
+        const data = err.response?.data;
+        const errorMsg = data?.error || (data && typeof data === 'object' ? Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(', ') : "Failed to update PO");
+        toast.error(errorMsg);
     }
   });
 
@@ -140,6 +144,7 @@ export default function PurchaseOrdersPage() {
     
     const payload = {
       ...newPo,
+      expected_delivery_date: newPo.expected_delivery_date || null,
       items: validItems,
       subtotal: calculateSubtotal(),
       tax_amount: calculateTax(),

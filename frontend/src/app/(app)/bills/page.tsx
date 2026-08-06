@@ -44,7 +44,9 @@ export default function BillsPage() {
       toast.success("Bill created successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to create Bill");
+        const data = err.response?.data;
+        const errorMsg = data?.error || (data && typeof data === 'object' ? Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(', ') : "Failed to create Bill");
+        toast.error(errorMsg);
     }
   });
 
@@ -57,7 +59,9 @@ export default function BillsPage() {
       toast.success("Bill updated successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to update Bill");
+        const data = err.response?.data;
+        const errorMsg = data?.error || (data && typeof data === 'object' ? Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(', ') : "Failed to update Bill");
+        toast.error(errorMsg);
     }
   });
 
@@ -127,6 +131,7 @@ export default function BillsPage() {
     
     const payload = {
       ...newBill,
+      due_date: newBill.due_date || null,
       items: validItems,
       subtotal: calculateSubtotal(),
       tax_amount: calculateTax(),
