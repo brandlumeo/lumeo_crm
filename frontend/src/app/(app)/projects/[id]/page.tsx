@@ -280,7 +280,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
                     >
                       <option value="">None</option>
-                      {customersData?.results?.map((c: any) => (
+                      {Array.isArray(customersData?.results) && customersData.results.map((c: any) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
                         </option>
@@ -296,7 +296,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
                     >
                       <option value="">None</option>
-                      {dealsData?.results?.map((d: any) => (
+                      {Array.isArray(dealsData?.results) && dealsData.results.map((d: any) => (
                         <option key={d.id} value={d.id}>
                           {d.title}
                         </option>
@@ -309,7 +309,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Assigned Members</label>
                   <select 
                     multiple
-                    value={form.member_ids.map(String)} 
+                    value={Array.isArray(form.member_ids) ? form.member_ids.map(String) : []} 
                     onChange={(e) => {
                       const options = Array.from(e.target.selectedOptions);
                       const selectedIds = options.map((option) => parseInt(option.value, 10));
@@ -317,7 +317,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     }}
                     className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow h-24"
                   >
-                    {teamData?.map((user: any) => (
+                    {Array.isArray(teamData) && teamData.map((user: any) => (
                       <option key={user.id} value={user.id}>
                         {user.first_name} {user.last_name} ({user.email})
                       </option>

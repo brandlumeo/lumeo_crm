@@ -57,7 +57,7 @@ export function DataTable<T>({
 
   const hasSelection = bulkActions && bulkActions.length > 0;
   
-  const allRowIds = rows.map(idAccessor);
+  const allRowIds = Array.isArray(rows) ? rows.map(idAccessor) : [];
   const isAllSelected = allRowIds.length > 0 && allRowIds.every(id => selectedIds.has(id));
   const isSomeSelected = allRowIds.some(id => selectedIds.has(id)) && !isAllSelected;
 
@@ -113,7 +113,7 @@ export function DataTable<T>({
                   />
                 </th>
               )}
-              {columns.map((column) => (
+              {Array.isArray(columns) && columns.map((column) => (
                 <th
                   key={column.key}
                   className={`px-5 py-2.5 text-[11px] uppercase tracking-[0.12em] text-muted font-medium select-none ${
@@ -141,7 +141,7 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => {
+            {Array.isArray(rows) && rows.map((row, index) => {
               const id = idAccessor(row);
               const isSelected = selectedIds.has(id);
               
@@ -165,7 +165,7 @@ export function DataTable<T>({
                       />
                     </td>
                   )}
-                  {columns.map((column) => (
+                  {Array.isArray(columns) && columns.map((column) => (
                     <td
                       key={column.key}
                       className={`px-5 py-3 align-top text-[13px] text-ink-2 ${column.className ?? ""}`}
@@ -221,7 +221,7 @@ export function DataTable<T>({
             <div className="w-px h-5 bg-paper/20" />
             
             <div className="flex items-center gap-1.5 pr-1">
-              {bulkActions.map((action, i) => (
+              {Array.isArray(bulkActions) && bulkActions.map((action, i) => (
                 <button
                   key={i}
                   onClick={() => {

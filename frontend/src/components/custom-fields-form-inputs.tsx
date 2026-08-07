@@ -32,7 +32,7 @@ export function CustomFieldsFormInputs({ modelName, values, onChange }: CustomFi
       <span className="text-[11px] font-semibold text-muted uppercase tracking-wider block">
         Additional Information
       </span>
-      {fields.map((cf) => {
+      {Array.isArray(fields) && fields.map((cf) => {
         const value = values[cf.name] ?? "";
 
         return (

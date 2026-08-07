@@ -172,7 +172,7 @@ export default function ProjectsPage() {
                   header: "Members",
                   render: (project) => (
                     <div className="flex -space-x-2">
-                      {project.members?.map((m: any) => (
+                      {Array.isArray(project.members) && project.members.map((m: any) => (
                         <div 
                           key={m.id} 
                           title={`${m.first_name} ${m.last_name}`}
@@ -306,7 +306,7 @@ export default function ProjectsPage() {
                   onChange={(event) => setForm((current) => ({ ...current, customer_id: event.target.value }))}
                 >
                   <option value="">None</option>
-                  {customersData?.results?.map((c: any) => (
+                  {Array.isArray(customersData?.results) && customersData.results.map((c: any) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -322,7 +322,7 @@ export default function ProjectsPage() {
                   onChange={(event) => setForm((current) => ({ ...current, deal_id: event.target.value }))}
                 >
                   <option value="">None</option>
-                  {dealsData?.results?.map((d: any) => (
+                  {Array.isArray(dealsData?.results) && dealsData.results.map((d: any) => (
                     <option key={d.id} value={d.id}>
                       {d.title}
                     </option>
@@ -336,14 +336,14 @@ export default function ProjectsPage() {
               <select
                 multiple
                 className="select h-24"
-                value={form.member_ids.map(String)}
+                value={Array.isArray(form.member_ids) ? form.member_ids.map(String) : []}
                 onChange={(event) => {
                   const options = Array.from(event.target.selectedOptions);
                   const selectedIds = options.map((option) => parseInt(option.value, 10));
                   setForm((current) => ({ ...current, member_ids: selectedIds }));
                 }}
               >
-                {teamData?.map((user: any) => (
+                {Array.isArray(teamData) && teamData.map((user: any) => (
                   <option key={user.id} value={user.id}>
                     {user.first_name} {user.last_name} ({user.email})
                   </option>
