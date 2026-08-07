@@ -91,18 +91,16 @@ export default function ProjectsPage() {
                 className="select sm:w-[180px]"
               >
                 <option value="">All statuses</option>
-                {company?.project_statuses?.map((stat: any) => (
+                {company?.project_statuses?.length ? company.project_statuses.map((stat: any) => (
                   <option key={stat.id} value={stat.name.toLowerCase()}>
                     {stat.name}
                   </option>
-                )) || (
-                  <>
-                    <option value="not started">Not Started</option>
-                    <option value="in progress">In Progress</option>
-                    <option value="on hold">On Hold</option>
-                    <option value="completed">Completed</option>
-                  </>
-                )}
+                )) : [
+                  <option key="not-started" value="not started">Not Started</option>,
+                  <option key="in-progress" value="in progress">In Progress</option>,
+                  <option key="on-hold" value="on hold">On Hold</option>,
+                  <option key="completed" value="completed">Completed</option>
+                ]}
               </select>
             </div>
           </div>
@@ -285,18 +283,16 @@ export default function ProjectsPage() {
                   value={form.status}
                   onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
                 >
-                  {company?.project_statuses?.map((stat: any) => (
+                  {company?.project_statuses?.length ? company.project_statuses.map((stat: any) => (
                     <option key={stat.id} value={stat.name.toLowerCase()}>
                       {stat.name}
                     </option>
-                  )) || (
-                    <>
-                      <option value="not started">Not Started</option>
-                      <option value="in progress">In Progress</option>
-                      <option value="on hold">On Hold</option>
-                      <option value="completed">Completed</option>
-                    </>
-                  )}
+                  )) : [
+                    <option key="not-started" value="not started">Not Started</option>,
+                    <option key="in-progress" value="in progress">In Progress</option>,
+                    <option key="on-hold" value="on hold">On Hold</option>,
+                    <option key="completed" value="completed">Completed</option>
+                  ]}
                 </select>
               </label>
             </div>
