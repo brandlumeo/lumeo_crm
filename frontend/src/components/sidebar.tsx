@@ -183,8 +183,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const mainNav = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "My Calendar", href: "/calendar", icon: CalendarDays },
-    { label: "Leads", href: "/leads", icon: Contact2, countKey: "leads" as const },
-    { label: "Clients", href: "/customers", icon: Building2, countKey: "customers" as const },
+    { label: "Leads", href: "/leads", icon: Contact2 },
+    { label: "Clients", href: "/customers", icon: Building2 },
     { 
       label: "HR", 
       icon: Users2,
@@ -199,11 +199,11 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       label: "Work", 
       icon: Briefcase,
       subItems: [
-        { label: "Deals", href: "/deals", countKey: "deals" as const },
+        { label: "Deals", href: "/deals" },
         { label: "Projects", href: "/projects" },
-        { label: "Tasks", href: "/tasks", countKey: "tasks" as const },
+        { label: "Tasks", href: "/tasks" },
         { label: "Timesheets", href: "/timesheets" },
-        { label: "Notes", href: "/notes", countKey: "notes" as const },
+        { label: "Notes", href: "/notes" },
         { label: "Campaigns", href: "/campaigns" },
       ]
     },
@@ -222,7 +222,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         ...(mounted && isOwnerOrAdmin ? [{ label: "Billing", href: "/billing" }] : []),
       ]
     },
-    { label: "Products", href: "/products", icon: Package, countKey: "products" as const },
+    { label: "Products", href: "/products", icon: Package },
     { label: "Orders", href: "/orders", icon: ShoppingCart },
     { label: "Tickets", href: "/tickets", icon: Ticket },
     { label: "Events", href: "/events", icon: Calendar },
