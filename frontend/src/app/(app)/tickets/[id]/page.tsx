@@ -134,7 +134,7 @@ export default function CRMTicketDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Conversation Area */}
-          <div className="lg:col-span-2 flex flex-col max-h-[70vh]">
+          <div className="lg:col-span-2 flex flex-col h-[calc(100vh-220px)] min-h-[500px]">
             <div className="card flex flex-col flex-1 overflow-hidden shadow-sm border border-line/60 bg-white p-0">
               
               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 bg-gradient-to-b from-bone/10 to-bone/30">
