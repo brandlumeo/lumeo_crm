@@ -79,8 +79,8 @@ function buildWeeklySeries(values: number[]) {
 function DashboardHeader() {
   const { data: me, isPending: mePending } = useCurrentUser();
   const { data: company, isPending: companyPending } = useCurrentCompany();
-  const { data: leadsRes, isPending: leadsPending } = useLeadPage({ limit: 100 });
-  const { data: customersRes, isPending: customersPending } = useCustomerPage({ limit: 100 });
+  const { data: leadsRes, isPending: leadsPending } = useLeadPage({ limit: 10 });
+  const { data: customersRes, isPending: customersPending } = useCustomerPage({ limit: 10 });
   const { data: dealsRes, isPending: dealsPending } = useDealPage({ limit: 100 });
 
   if (mePending || companyPending || leadsPending || customersPending || dealsPending) {
@@ -101,8 +101,8 @@ function DashboardHeader() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const companyName = company ? company.name : "Your company";
-  const leadsCount = leadsRes?.results?.length ?? 0;
-  const customersCount = customersRes?.results?.length ?? 0;
+  const leadsCount = leadsRes?.count ?? leadsRes?.results?.length ?? 0;
+  const customersCount = customersRes?.count ?? customersRes?.results?.length ?? 0;
   const activeDeals = dealsRes?.results?.filter((d: any) => d.stage !== "won" && d.stage !== "lost").length ?? 0;
 
   return (
@@ -137,8 +137,8 @@ function DashboardHeader() {
 
 function DashboardKPIs() {
   const { data: dealsRes, isPending: dealsPending } = useDealPage({ limit: 100 });
-  const { data: tasksRes, isPending: tasksPending } = useTaskPage({ limit: 100 });
-  const { data: leadsRes, isPending: leadsPending } = useLeadPage({ limit: 100 });
+  const { data: tasksRes, isPending: tasksPending } = useTaskPage({ limit: 10 });
+  const { data: leadsRes, isPending: leadsPending } = useLeadPage({ limit: 10 });
 
   if (dealsPending || tasksPending || leadsPending) {
     return <div className="h-[120px] bg-card/30 rounded-xl mb-6 animate-pulse border border-border/50" />;
@@ -147,19 +147,22 @@ function DashboardKPIs() {
   const deals = dealsRes?.results || [];
   const tasks = tasksRes?.results || [];
   const leads = leadsRes?.results || [];
+  
+  const leadsCount = leadsRes?.count ?? leads.length;
+  const tasksCount = tasksRes?.count ?? tasks.length;
 
   const wonDeals = deals.filter((deal: any) => deal.stage === "won");
   const openDeals = deals.filter((deal: any) => deal.stage !== "won" && deal.stage !== "lost");
   const revenueValue = wonDeals.reduce((sum: number, deal: any) => sum + toNumber(deal.amount), 0);
   const pipelineValue = openDeals.reduce((sum: number, deal: any) => sum + toNumber(deal.amount), 0);
   const activeDeals = openDeals.length;
-  const conversionValue = leads.length ? (wonDeals.length / leads.length) * 100 : 0;
+  const conversionValue = leadsCount ? (wonDeals.length / leadsCount) * 100 : 0;
 
   const revenueSeries = buildWeeklySeries(wonDeals.map((deal: any) => toNumber(deal.amount)));
   const pipelineSeries = buildWeeklySeries(openDeals.map((deal: any) => toNumber(deal.amount)));
   const activeSeries = buildWeeklySeries(openDeals.map((_: any, index: number) => index + 1));
   const conversionSeries = buildWeeklySeries(
-    leads.map((_: any, index: number) => (leads.length === 0 ? 0 : ((index + 1) / leads.length) * 100))
+    leads.map((_: any, index: number) => (leadsCount === 0 ? 0 : ((index + 1) / leadsCount) * 100))
   );
 
   const kpis: KpiItem[] = [
@@ -183,7 +186,7 @@ function DashboardKPIs() {
     {
       label: "Active deals",
       value: String(activeDeals),
-      meta: `${tasks.length} tasks`,
+      meta: `${tasksCount} tasks`,
       tone: activeDeals > 0 ? "positive" : "neutral",
       points: activeSeries,
       lineColor: "#B8862C",
@@ -191,7 +194,7 @@ function DashboardKPIs() {
     {
       label: "Conversion",
       value: `${conversionValue.toFixed(1)}%`,
-      meta: `${leads.length} leads`,
+      meta: `${leadsCount} leads`,
       tone: conversionValue >= 20 ? "positive" : "warning",
       points: conversionSeries,
       lineColor: "#FF5B1F",
@@ -256,8 +259,8 @@ function DashboardCharts() {
 }
 
 function DashboardTasksNotes() {
-  const { data: tasksRes, isPending: tasksPending } = useTaskPage({ limit: 100 });
-  const { data: notesRes, isPending: notesPending } = useNotePage({ limit: 100 });
+  const { data: tasksRes, isPending: tasksPending } = useTaskPage({ limit: 10 });
+  const { data: notesRes, isPending: notesPending } = useNotePage({ limit: 10 });
 
   if (tasksPending || notesPending) {
     return (
@@ -291,10 +294,10 @@ function DashboardTasksNotes() {
 }
 
 function DashboardActivity() {
-  const { data: leadsRes, isPending: leadsPending } = useLeadPage({ limit: 100 });
+  const { data: leadsRes, isPending: leadsPending } = useLeadPage({ limit: 10 });
   const { data: dealsRes, isPending: dealsPending } = useDealPage({ limit: 100 });
-  const { data: tasksRes, isPending: tasksPending } = useTaskPage({ limit: 100 });
-  const { data: notesRes, isPending: notesPending } = useNotePage({ limit: 100 });
+  const { data: tasksRes, isPending: tasksPending } = useTaskPage({ limit: 10 });
+  const { data: notesRes, isPending: notesPending } = useNotePage({ limit: 10 });
 
   if (leadsPending || dealsPending || tasksPending || notesPending) {
     return (
