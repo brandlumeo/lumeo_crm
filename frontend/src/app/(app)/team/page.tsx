@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users2, Mail, Plus, X, Loader2, Check, Key, Copy } from "lucide-react";
+import { Users2, Mail, Plus, X, Loader2, Check, Key, Copy, AlertTriangle } from "lucide-react";
 
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
 import { fetchTeam, inviteTeamMember, removeTeamMember, resetTeamMemberPassword, api } from "@/lib/api";
@@ -68,6 +68,22 @@ export default function TeamPage() {
   });
 
   const [resetPasswordResult, setResetPasswordResult] = useState<{name: string, tempPassword: string} | null>(null);
+  
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    actionLabel: string;
+    isDestructive?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    actionLabel: "",
+    isDestructive: false,
+    onConfirm: () => {},
+  });
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id: number) => resetTeamMemberPassword(id),
@@ -238,9 +254,14 @@ export default function TeamPage() {
                           <button
                             disabled={resetPasswordMutation.isPending && resetPasswordMutation.variables === user.id}
                             onClick={() => {
-                              if (confirm(`Are you sure you want to reset the password for ${user.first_name || user.email}?`)) {
-                                resetPasswordMutation.mutate(user.id);
-                              }
+                              setConfirmDialog({
+                                isOpen: true,
+                                title: "Reset Password",
+                                message: `Are you sure you want to reset the password for ${user.first_name || user.email}? This will instantly overwrite their current password.`,
+                                actionLabel: "Yes, Reset Password",
+                                isDestructive: false,
+                                onConfirm: () => resetPasswordMutation.mutate(user.id),
+                              });
                             }}
                             className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-amber-500 transition-colors"
                             title="Reset password"
@@ -258,9 +279,14 @@ export default function TeamPage() {
                           <button
                             disabled={removeMutation.isPending && removeMutation.variables === user.id}
                             onClick={() => {
-                              if (confirm(`Are you sure you want to remove ${user.first_name || user.email} from the team?`)) {
-                                removeMutation.mutate(user.id);
-                              }
+                              setConfirmDialog({
+                                isOpen: true,
+                                title: "Remove Team Member",
+                                message: `Are you sure you want to remove ${user.first_name || user.email} from the team? They will immediately lose access to all workspace data.`,
+                                actionLabel: "Yes, Remove Member",
+                                isDestructive: true,
+                                onConfirm: () => removeMutation.mutate(user.id),
+                              });
                             }}
                             className="ml-2 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-slate-500 transition-colors"
                             title="Remove member"
@@ -556,6 +582,49 @@ export default function TeamPage() {
                   Done
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Confirmation Dialog */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-paper border border-line rounded-[20px] shadow-2xl w-full max-w-[400px] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex gap-4">
+                <div className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${confirmDialog.isDestructive ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="pt-1">
+                  <h3 className="text-[16px] font-bold text-ink tracking-tight mb-1">{confirmDialog.title}</h3>
+                  <p className="text-[13px] text-muted leading-relaxed">
+                    {confirmDialog.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-bone-1/50 border-t border-line flex items-center justify-end gap-3">
+              <button
+                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2 bg-transparent text-muted hover:text-ink text-[13px] font-medium rounded-full transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                }}
+                className={`px-5 py-2 text-white text-[13px] font-medium rounded-full shadow-sm hover:opacity-90 transition-opacity ${
+                  confirmDialog.isDestructive 
+                    ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' 
+                    : 'bg-ink hover:bg-ink/90'
+                }`}
+              >
+                {confirmDialog.actionLabel}
+              </button>
             </div>
           </div>
         </div>
