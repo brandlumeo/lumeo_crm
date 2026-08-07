@@ -238,11 +238,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
                     >
                       <option value="">Select Category</option>
-                      {company?.project_categories?.map((cat: any) => (
+                      {Array.isArray(company?.project_categories) ? company.project_categories.map((cat: any) => (
                         <option key={cat.id} value={cat.name}>
                           {cat.name}
                         </option>
-                      ))}
+                      )) : null}
                     </select>
                   </div>
                   
@@ -254,16 +254,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       className="w-full px-3 py-2.5 bg-paper border border-line rounded-lg text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow"
                     >
                       <option value="">Select Status</option>
-                      {company?.project_statuses?.map((stat: any) => (
+                      {Array.isArray(company?.project_statuses) && company.project_statuses.length > 0 ? company.project_statuses.map((stat: any) => (
                         <option key={stat.id} value={stat.name.toLowerCase()}>
                           {stat.name}
                         </option>
-                      )) || (
+                      )) : (
                         <>
                           <option value="not started">Not Started</option>
                           <option value="in progress">In Progress</option>
                           <option value="on hold">On Hold</option>
                           <option value="completed">Completed</option>
+                          <option value="canceled">Canceled</option>
                         </>
                       )}
                     </select>

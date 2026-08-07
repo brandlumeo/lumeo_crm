@@ -23,7 +23,7 @@ export default function ProjectsPage() {
   const [status, setStatus] = useState("");
   
   // Fetch default status
-  const defaultStatus = company?.project_statuses?.find((s: any) => s.isDefault)?.name?.toLowerCase() || "not started";
+  const defaultStatus = Array.isArray(company?.project_statuses) ? company.project_statuses.find((s: any) => s.isDefault)?.name?.toLowerCase() : "not started";
   
   const [form, setForm] = useState({
     name: "",
@@ -91,7 +91,7 @@ export default function ProjectsPage() {
                 className="select sm:w-[180px]"
               >
                 <option value="">All statuses</option>
-                {company?.project_statuses?.length ? company.project_statuses.map((stat: any) => (
+                {Array.isArray(company?.project_statuses) && company.project_statuses.length > 0 ? company.project_statuses.map((stat: any) => (
                   <option key={stat.id} value={stat.name.toLowerCase()}>
                     {stat.name}
                   </option>
@@ -268,11 +268,11 @@ export default function ProjectsPage() {
                   onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
                 >
                   <option value="">Select Category</option>
-                  {company?.project_categories?.map((cat: any) => (
+                  {Array.isArray(company?.project_categories) ? company.project_categories.map((cat: any) => (
                     <option key={cat.id} value={cat.name}>
                       {cat.name}
                     </option>
-                  ))}
+                  )) : null}
                 </select>
               </label>
 
@@ -283,7 +283,7 @@ export default function ProjectsPage() {
                   value={form.status}
                   onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
                 >
-                  {company?.project_statuses?.length ? company.project_statuses.map((stat: any) => (
+                  {Array.isArray(company?.project_statuses) && company.project_statuses.length > 0 ? company.project_statuses.map((stat: any) => (
                     <option key={stat.id} value={stat.name.toLowerCase()}>
                       {stat.name}
                     </option>
