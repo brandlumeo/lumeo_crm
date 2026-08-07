@@ -4,10 +4,10 @@ import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users2, Mail, Plus, X, Loader2, Check } from "lucide-react";
+import { Users2, Mail, Plus, X, Loader2, Check, Key, Copy } from "lucide-react";
 
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
-import { fetchTeam, inviteTeamMember, removeTeamMember, api } from "@/lib/api";
+import { fetchTeam, inviteTeamMember, removeTeamMember, resetTeamMemberPassword, api } from "@/lib/api";
 import { SkeletonTable } from "@/components/skeleton-table";
 
 const getAvatarTint = (name: string) => {
@@ -64,6 +64,23 @@ export default function TeamPage() {
     },
     onError: () => {
       toast.error("Failed to remove team member");
+    }
+  });
+
+  const [resetPasswordResult, setResetPasswordResult] = useState<{name: string, tempPassword: string} | null>(null);
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (id: number) => resetTeamMemberPassword(id),
+    onSuccess: (res, id) => {
+      const user = data?.users?.find(u => u.id === id);
+      setResetPasswordResult({
+        name: user?.first_name || user?.username || 'User',
+        tempPassword: res.temporary_password
+      });
+      toast.success("Password reset successfully");
+    },
+    onError: () => {
+      toast.error("Failed to reset password");
     }
   });
 
@@ -216,6 +233,26 @@ export default function TeamPage() {
                           getRoleBadge(company?.roles?.find((r: any) => r.id === user.role)?.name || user.role)
                         )}
                         
+                        {/* Reset Password Button */}
+                        {isOwnerOrAdmin && !isOwner && (
+                          <button
+                            disabled={resetPasswordMutation.isPending && resetPasswordMutation.variables === user.id}
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to reset the password for ${user.first_name || user.email}?`)) {
+                                resetPasswordMutation.mutate(user.id);
+                              }
+                            }}
+                            className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-amber-500 transition-colors"
+                            title="Reset password"
+                          >
+                            {resetPasswordMutation.isPending && resetPasswordMutation.variables === user.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Key className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+
                         {/* Remove Member Button */}
                         {isOwnerOrAdmin && !isCurrentUser && !isOwner && (
                           <button
@@ -476,6 +513,50 @@ export default function TeamPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* New Password Modal */}
+      {resetPasswordResult && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-paper border border-line rounded-[16px] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-5 py-4 border-b border-line flex items-center justify-between bg-paper">
+              <h3 className="text-[14px] font-bold text-ink">Password Reset Successful</h3>
+              <button onClick={() => setResetPasswordResult(null)} className="text-muted hover:text-ink transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5">
+              <div className="text-[13px] text-muted mb-4 leading-relaxed">
+                The password for <strong className="text-ink font-medium">{resetPasswordResult.name}</strong> has been reset. Please copy this temporary password and send it to them securely.
+              </div>
+              
+              <div className="bg-bone-1 border border-line rounded-[8px] p-3 flex items-center justify-between mb-2">
+                <code className="text-[14px] font-mono text-ink tracking-wide select-all">{resetPasswordResult.tempPassword}</code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(resetPasswordResult.tempPassword);
+                    toast.success("Password copied to clipboard");
+                  }}
+                  className="text-muted hover:text-ink transition-colors p-1"
+                  title="Copy password"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="text-[11px] text-amber-600/80 italic">
+                They should change their password after logging in.
+              </div>
+              
+              <div className="mt-5 pt-4 border-t border-line flex justify-end">
+                <button
+                  onClick={() => setResetPasswordResult(null)}
+                  className="px-4 py-2 bg-ink text-paper text-[13px] font-medium rounded-full hover:opacity-90 transition-opacity"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -517,6 +517,32 @@ class TeamMemberUpdateView(APIView):
         return Response({"detail": "Team member removed."}, status=status.HTTP_204_NO_CONTENT)
 
 
+class TeamMemberResetPasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.has_management_access:
+            return Response({"detail": "Only admins and managers can manage team passwords."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            member = User.objects.get(pk=pk, company=request.user.company)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if member.role == User.Role.OWNER and request.user.role != User.Role.OWNER:
+            return Response({"detail": "You cannot reset the owner's password."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Generate a standard temporary password
+        new_password = f"LumeoCRM@{member.id}2026"
+        member.set_password(new_password)
+        member.save()
+
+        return Response({
+            "detail": "Password has been successfully reset.",
+            "temporary_password": new_password
+        })
+
+
 class InviteMemberView(APIView):
     permission_classes = [IsAuthenticated]
 

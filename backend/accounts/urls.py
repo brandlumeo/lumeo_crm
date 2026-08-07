@@ -17,6 +17,7 @@ urlpatterns = [
     path("password/", views.PasswordUpdateView.as_view(), name="password_update"),
     path("team/", views.TeamListView.as_view(), name="team_list"),
     path("team/<int:pk>/", views.TeamMemberUpdateView.as_view(), name="team_member_update"),
+    path("team/<int:pk>/reset-password/", views.TeamMemberResetPasswordView.as_view(), name="team_member_reset_password"),
     path("invites/", views.InviteMemberView.as_view(), name="invite_member"),
     path("invites/accept/", views.AcceptInviteView.as_view(), name="accept_invite"),
 

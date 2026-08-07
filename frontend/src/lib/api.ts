@@ -769,6 +769,11 @@ export async function removeTeamMember(id: number): Promise<void> {
   await api.delete(`${endpoints.team}${id}/`);
 }
 
+export async function resetTeamMemberPassword(id: number): Promise<{ detail: string; temporary_password: string }> {
+  const { data } = await api.post<{ detail: string; temporary_password: string }>(`${endpoints.team}${id}/reset-password/`);
+  return data;
+}
+
 export async function fetchInviteDetails(token: string): Promise<any> {
   const { data } = await axios.get(apiBaseUrl + endpoints.acceptInvite, { params: { token } });
   return data;
