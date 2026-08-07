@@ -463,11 +463,11 @@ class ProjectSerializer(CompanyScopedSerializer):
 
         if user and user.is_authenticated:
             if user.is_superuser:
-                self.fields["member_ids"].queryset = User.objects.all()
+                self.fields["member_ids"].child_relation.queryset = User.objects.all()
                 self.fields["customer_id"].queryset = Customer.objects.all()
                 self.fields["deal_id"].queryset = Deal.objects.all()
             elif user.company_id is not None:
-                self.fields["member_ids"].queryset = User.objects.filter(company_id=user.company_id)
+                self.fields["member_ids"].child_relation.queryset = User.objects.filter(company_id=user.company_id)
                 self.fields["customer_id"].queryset = Customer.objects.filter(company_id=user.company_id)
                 self.fields["deal_id"].queryset = Deal.objects.filter(company_id=user.company_id)
 
