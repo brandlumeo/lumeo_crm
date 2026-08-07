@@ -325,7 +325,8 @@ CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', True)
 
 
 # ─── django-axes: brute-force protection ────────────────────────────────────────────────────────────
-AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_LOCKOUT_PARAMETERS = [["username"]]
+AXES_ONLY_USER_FAILURES = True
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = True

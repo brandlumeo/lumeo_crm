@@ -109,8 +109,11 @@ class CookieTokenObtainView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        from axes.helpers import get_credentials
         from axes.handlers.proxy import AxesProxyHandler
-        if AxesProxyHandler.is_locked(request, credentials={"username": username}):
+        
+        credentials = get_credentials(username=username, request=request)
+        if AxesProxyHandler.is_locked(request, credentials=credentials):
             return Response(
                 {"detail": "This account is temporarily locked due to multiple failed login attempts. Please try again later."},
                 status=status.HTTP_403_FORBIDDEN,
