@@ -121,9 +121,22 @@ class CookieTokenObtainView(APIView):
 
         user = authenticate(request, username=username, password=password)
         if user is None:
-            # django-axes records this failure automatically via its middleware
+            # DEBUGGING: Let's find out exactly why it failed
+            from django.contrib.auth import get_user_model
+            from django.db.models import Q
+            UserModel = get_user_model()
+            debug_user = UserModel.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).first()
+            if not debug_user:
+                debug_msg = f"User '{username}' does not exist in the database."
+            elif not debug_user.is_active:
+                debug_msg = "User exists but is deactivated (is_active=False)."
+            elif not debug_user.check_password(password):
+                debug_msg = "User exists and is active, but the password provided is incorrect."
+            else:
+                debug_msg = "User exists, active, password correct, but authenticate() failed for an unknown reason."
+                
             return Response(
-                {"detail": "No active account found with the given credentials."},
+                {"detail": f"No active account found with the given credentials. DEBUG: {debug_msg}"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
