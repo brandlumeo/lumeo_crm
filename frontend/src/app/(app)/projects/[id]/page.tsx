@@ -59,11 +59,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const payload: any = { ...form };
-    if (!payload.start_date) delete payload.start_date;
-    if (!payload.deadline) delete payload.deadline;
-    if (!payload.customer_id) delete payload.customer_id;
-    if (!payload.deal_id) delete payload.deal_id;
-    if (!payload.category) delete payload.category;
+    if (!payload.start_date) payload.start_date = null;
+    if (!payload.deadline) payload.deadline = null;
+    if (!payload.customer_id) payload.customer_id = null;
+    if (!payload.deal_id) payload.deal_id = null;
+    if (!payload.category) payload.category = null;
 
     updateProject.mutate(
       { id: projectId, payload },
