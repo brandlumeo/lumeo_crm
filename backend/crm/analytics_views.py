@@ -4,6 +4,26 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import models
 from django.db.models import Sum, Count, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncMonth
+from crm.models import Deal, Lead, Customer, Task, Note, Product
+
+class CrmCountsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not user.is_authenticated or user.company_id is None:
+            return Response({"error": "Authenticated user is not assigned to a company."}, status=400)
+        
+        company = user.company
+        
+        return Response({
+            "leads": Lead.objects.filter(company=company, status="new").count(),
+            "customers": Customer.objects.filter(company=company).count(),
+            "deals": Deal.objects.filter(company=company, stage="prospect").count(),
+            "tasks": Task.objects.filter(company=company).count(),
+            "notes": Note.objects.filter(company=company).count(),
+            "products": Product.objects.filter(company=company).count(),
+        })
 from crm.models import Deal, Lead
 
 class PremiumAnalyticsView(APIView):

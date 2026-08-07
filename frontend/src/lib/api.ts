@@ -138,6 +138,7 @@ const endpoints = {
   notifications: "/notifications/",
   notificationsUnreadCount: "/notifications/unread-count/",
   notificationsMarkRead: "/notifications/mark-read/",
+  counts: "/crm/counts/",
   team: "/accounts/team/",
   invites: "/accounts/invites/",
   acceptInvite: "/accounts/invites/accept/",
@@ -694,23 +695,19 @@ export async function deleteProduct(id: number) {
 
 
 export async function fetchCrmCounts() {
-  const [leads, customers, deals, tasks, notes, products] = await Promise.all([
-    api.get(endpoints.leads, { params: { status: "new", limit: 1 } }).then(res => res.data),
-    fetchCustomerPage({ limit: 1 }),
-    api.get(endpoints.deals, { params: { stage: "prospect", limit: 1 } }).then(res => res.data),
-    fetchTaskPage({ limit: 1 }),
-    fetchNotePage({ limit: 1 }),
-    fetchProducts({ limit: 1 }),
-  ]);
-
-  return {
-    leads: leads.count,
-    customers: customers.count,
-    deals: deals.count,
-    tasks: tasks.count,
-    notes: notes.count,
-    products: products.count,
-  };
+  try {
+    const { data } = await api.get<{
+      leads: number;
+      customers: number;
+      deals: number;
+      tasks: number;
+      notes: number;
+      products: number;
+    }>(endpoints.counts);
+    return data;
+  } catch {
+    return { leads: 0, customers: 0, deals: 0, tasks: 0, notes: 0, products: 0 };
+  }
 }
 
 export async function fetchCurrentSubscription() {

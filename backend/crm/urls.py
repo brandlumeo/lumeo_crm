@@ -96,11 +96,12 @@ router.register("bills", BillViewSet, basename="bill")
 tickets_router = routers.NestedDefaultRouter(router, "tickets", lookup="ticket")
 tickets_router.register("comments", TicketCommentViewSet, basename="ticket-comments")
 
-from .analytics_views import PremiumAnalyticsView
+from .analytics_views import PremiumAnalyticsView, CrmCountsView
 from .webhooks import WhatsAppWebhookView
 
 urlpatterns = [
     path('search/', GlobalSearchView.as_view(), name='global_search'),
+    path('counts/', CrmCountsView.as_view(), name='crm_counts'),
     path('analytics/', PremiumAnalyticsView.as_view(), name='premium_analytics'),
     path('emails/send/', EmailSendView.as_view(), name='email_send'),
     path('ai/assistant/', AIAssistantView.as_view(), name='ai_assistant'),
