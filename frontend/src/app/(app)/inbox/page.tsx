@@ -85,7 +85,7 @@ export default function InboxPage() {
 
   return (
     <PageShell title="Inbox" description="Internal team messages & communications">
-      <div className="flex h-[calc(100vh-200px)] min-h-[500px] bg-paper border border-line rounded-xl shadow-sm overflow-hidden">
+      <div className="flex h-[calc(100vh-280px)] min-h-[350px] bg-paper border border-line rounded-xl shadow-sm overflow-hidden">
         
         {/* Left: Sidebar */}
         <div className="w-full md:w-80 border-r border-line flex flex-col bg-bone/30 shrink-0">
