@@ -721,3 +721,22 @@ def notify_leave_updated(self, leave_id: int):
     except Exception as exc:
         logger.exception('notify_leave_updated failed: %s', exc)
         raise self.retry(exc=exc)
+
+
+@shared_task(name='notifications.tasks.automated_database_backup')
+def automated_database_backup():
+    import logging
+    from django.core.management import call_command
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info('Starting automated database backup...')
+        # Run dbbackup command with --clean to delete old backups according to DBBACKUP_CLEANUP_KEEP
+        call_command('dbbackup', clean=True)
+        logger.info('Database backup completed successfully.')
+        
+        logger.info('Starting automated media backup...')
+        call_command('mediabackup', clean=True)
+        logger.info('Media backup completed successfully.')
+    except Exception as e:
+        logger.error(f'Automated backup failed: {str(e)}')

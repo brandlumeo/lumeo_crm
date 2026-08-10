@@ -61,6 +61,11 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.process_invoice_reminders",
         "schedule": crontab(hour=8, minute=30),
     },
+    # Automated daily database backup using django-dbbackup at 01:00 UTC
+    "automated-database-backup": {
+        "task": "notifications.tasks.automated_database_backup",
+        "schedule": crontab(hour=1, minute=0),
+    },
 }
 
 app.conf.timezone = "UTC"
