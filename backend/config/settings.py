@@ -453,20 +453,26 @@ GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', '')
 # ------------------------------------------------------------------------------
 # https://django-dbbackup.readthedocs.io/en/master/
 
-# If S3 credentials are provided, store backups in S3. Otherwise store locally.
+# In Django 4.2+, django-dbbackup requires configuration inside the STORAGES dict.
 if AWS_ACCESS_KEY_ID:
-    DBBACKUP_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    DBBACKUP_STORAGE_OPTIONS = {
-        'access_key': AWS_ACCESS_KEY_ID,
-        'secret_key': AWS_SECRET_ACCESS_KEY,
-        'bucket_name': AWS_STORAGE_BUCKET_NAME,
-        'endpoint_url': AWS_S3_ENDPOINT_URL,
-        'region_name': AWS_S3_REGION_NAME,
-        'location': 'database_backups/'
+    STORAGES['dbbackup'] = {
+        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+        'OPTIONS': {
+            'access_key': AWS_ACCESS_KEY_ID,
+            'secret_key': AWS_SECRET_ACCESS_KEY,
+            'bucket_name': AWS_STORAGE_BUCKET_NAME,
+            'endpoint_url': AWS_S3_ENDPOINT_URL,
+            'region_name': AWS_S3_REGION_NAME,
+            'location': 'database_backups/'
+        }
     }
 else:
-    DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups'}
+    STORAGES['dbbackup'] = {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'OPTIONS': {
+            'location': BASE_DIR / 'backups'
+        }
+    }
 
 # Keep a rolling window of backups to prevent storage bloat
 DBBACKUP_CLEANUP_KEEP = env_int('DBBACKUP_CLEANUP_KEEP', 14)  # Keep 14 backups
