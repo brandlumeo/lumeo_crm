@@ -4,13 +4,18 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Layers, Plus, Loader2 } from "lucide-react";
 
-import { ActivityFeed, type ActivityItem } from "@/components/activity-feed";
-import { KpiStrip, type KpiItem } from "@/components/kpi-strip";
+import dynamic from "next/dynamic";
+import { type ActivityItem } from "@/components/activity-feed";
+import { type KpiItem } from "@/components/kpi-strip";
 import { NotesList } from "@/components/notes-list";
-import { PipelineBoard } from "@/components/pipeline-board";
-import { RevenueChart } from "@/components/revenue-chart";
-import { DealFunnelChart } from "@/components/deal-funnel-chart";
 import { TasksList } from "@/components/tasks-list";
+
+// Dynamically import heavy components to significantly reduce main bundle size
+const ActivityFeed = dynamic(() => import("@/components/activity-feed").then(mod => mod.ActivityFeed), { ssr: false });
+const KpiStrip = dynamic(() => import("@/components/kpi-strip").then(mod => mod.KpiStrip), { ssr: false });
+const PipelineBoard = dynamic(() => import("@/components/pipeline-board").then(mod => mod.PipelineBoard), { ssr: false });
+const RevenueChart = dynamic(() => import("@/components/revenue-chart").then(mod => mod.RevenueChart), { ssr: false });
+const DealFunnelChart = dynamic(() => import("@/components/deal-funnel-chart").then(mod => mod.DealFunnelChart), { ssr: false });
 import { 
   useCurrentUser, 
   useCurrentCompany, 

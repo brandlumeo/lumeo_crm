@@ -16,14 +16,25 @@ class CrmCountsView(APIView):
         
         company = user.company
         
-        return Response({
+        cache_key = f"crm_counts_{company.id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        
+        response_data = {
             "leads": Lead.objects.filter(company=company, status="new").count(),
             "customers": Customer.objects.filter(company=company).count(),
             "deals": Deal.objects.filter(company=company, stage="prospect").count(),
             "tasks": Task.objects.filter(company=company).count(),
             "notes": Note.objects.filter(company=company).count(),
             "products": Product.objects.filter(company=company).count(),
-        })
+        }
+        
+        # Cache for 5 minutes
+        cache.set(cache_key, response_data, 300)
+        
+        return Response(response_data)
+from django.core.cache import cache
 from crm.models import Deal, Lead
 
 class PremiumAnalyticsView(APIView):
@@ -35,6 +46,13 @@ class PremiumAnalyticsView(APIView):
             return Response({"error": "Authenticated user is not assigned to a company."}, status=400)
 
         company = user.company
+        
+        # Check cache first (cache per company for 15 minutes)
+        cache_key = f"premium_analytics_{company.id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
         deals = Deal.objects.filter(company=company)
 
         # Stage distribution & expected value
@@ -145,7 +163,7 @@ class PremiumAnalyticsView(APIView):
             
         revenue_forecast = sorted(list(forecast_dict.values()), key=lambda x: x["month"])
 
-        return Response({
+        response_data = {
             "expected_pipeline_value": expected_value,
             "funnel": funnel_data,
             "leaderboard": list(rep_leaderboard),
@@ -158,4 +176,9 @@ class PremiumAnalyticsView(APIView):
             "revenue_by_month": revenue_by_month,
             "lead_conversion": lead_conversion,
             "revenue_forecast": revenue_forecast
-        })
+        }
+        
+        # Save to cache for 15 minutes (900 seconds)
+        cache.set(cache_key, response_data, 900)
+
+        return Response(response_data)
