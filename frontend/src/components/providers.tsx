@@ -13,6 +13,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           queries: {
             retry: 1,
             refetchOnWindowFocus: false,
+            // Keep data fresh for 2 minutes to prevent massive waterfall loaders on page navigation
+            staleTime: 2 * 60 * 1000, 
           },
         },
       }),
