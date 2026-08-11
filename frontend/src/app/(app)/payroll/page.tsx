@@ -26,9 +26,12 @@ import { toast } from "sonner";
 export default function PayrollPage() {
   const { data: user } = useCurrentUser();
   const isManager = user?.role === "owner" || user?.role === "admin";
-  const { data: payrolls = [], isLoading } = usePayrolls(isManager);
-  const { data: team = [] } = useTeam();
+  const { data: rawPayrolls = [], isLoading } = usePayrolls(isManager);
+  const { data: rawTeam = [] } = useTeam();
   const { data: company } = useCurrentCompany();
+
+  const payrolls = Array.isArray(rawPayrolls) ? rawPayrolls : (rawPayrolls?.results || []);
+  const team = Array.isArray(rawTeam) ? rawTeam : (rawTeam?.users || rawTeam?.results || []);
 
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollMutation = useUpdatePayroll();
