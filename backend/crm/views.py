@@ -1349,7 +1349,7 @@ class QuoteViewSet(CompanyScopedModelViewSet):
 
 class InvoiceViewSet(CompanyScopedModelViewSet):
     serializer_class = InvoiceSerializer
-    queryset = Invoice.objects.select_related("company", "deal", "customer").prefetch_related("items")
+    queryset = Invoice.objects.select_related("company", "deal", "customer", "company__invoice_settings").prefetch_related("items", "payments", "company__payment_methods")
     search_fields = ("invoice_number",)
     ordering_fields = ("created_at", "updated_at", "status", "issue_date", "due_date", "total")
     ordering = ("-created_at",)
