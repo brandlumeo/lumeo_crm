@@ -430,7 +430,7 @@ export default function PayrollPage() {
 
                  <div className="flex justify-between items-center mt-6 pt-6 border-t border-line font-semibold">
                    <span>Gross Earnings</span>
-                   <span>&#8377; {formatINR(calcGross())}</span>
+                   <span>{formatINR(calcGross())}</span>
                  </div>
                </div>
 
@@ -455,7 +455,7 @@ export default function PayrollPage() {
 
                  <div className="flex justify-between items-center mt-6 pt-6 border-t border-line font-semibold">
                    <span>Total Deductions</span>
-                   <span>&#8377; {formatINR(calcDeductions())}</span>
+                   <span>{formatINR(calcDeductions())}</span>
                  </div>
                </div>
              </div>
@@ -467,7 +467,7 @@ export default function PayrollPage() {
                  <div className="text-xs text-muted">Gross Earnings - Total Deductions</div>
               </div>
               <div className="font-serif text-[32px] font-bold tracking-tight text-[#1a1714]">
-                 &#8377;&nbsp;{formatINR(calcNet())}
+                 {formatINR(calcNet())}
               </div>
            </div>
 
@@ -543,7 +543,7 @@ export default function PayrollPage() {
                 <div className="grid grid-cols-2 gap-3 mb-5 border-t border-b border-line/50 py-3 mt-1">
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Net Pay</div>
-                    <div className="font-semibold text-[15px] mt-0.5">&#8377; {formatINR(slip.net_salary)}</div>
+                    <div className="font-semibold text-[15px] mt-0.5">{formatINR(slip.net_salary)}</div>
                   </div>
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Generated</div>
