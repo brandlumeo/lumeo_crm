@@ -253,10 +253,24 @@ class Payroll(models.Model):
     )
     month = models.IntegerField()  # 1-12
     year = models.IntegerField()
+    
+    # Summary Fields
+    paid_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    loss_of_pay_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    pay_date = models.DateField(null=True, blank=True)
+    
+    # Financials
     basic_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    allowances = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    deductions = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Dynamic Breakdowns (JSON array of {name, amount})
+    earnings_breakdown = models.JSONField(default=list, blank=True)
+    deductions_breakdown = models.JSONField(default=list, blank=True)
+    
+    # Totals (Calculated automatically)
+    total_earnings = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_deductions = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     net_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -275,7 +289,22 @@ class Payroll(models.Model):
         return f"Payroll for {user_id} ({self.month}/{self.year})"
 
     def save(self, *args, **kwargs):
-        self.net_salary = self.basic_salary + self.allowances - self.deductions
+        # Calculate totals from JSON breakdowns
+        import decimal
+        
+        earnings = decimal.Decimal(self.basic_salary or 0)
+        if isinstance(self.earnings_breakdown, list):
+            for e in self.earnings_breakdown:
+                earnings += decimal.Decimal(e.get("amount", 0))
+        self.total_earnings = earnings
+        
+        deductions = decimal.Decimal(0)
+        if isinstance(self.deductions_breakdown, list):
+            for d in self.deductions_breakdown:
+                deductions += decimal.Decimal(d.get("amount", 0))
+        self.total_deductions = deductions
+        
+        self.net_salary = self.total_earnings - self.total_deductions
         super().save(*args, **kwargs)
 
 

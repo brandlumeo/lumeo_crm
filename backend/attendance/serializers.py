@@ -151,15 +151,20 @@ class PayrollSerializer(serializers.ModelSerializer):
             "company",
             "month",
             "year",
+            "paid_days",
+            "loss_of_pay_days",
+            "pay_date",
             "basic_salary",
-            "allowances",
-            "deductions",
+            "earnings_breakdown",
+            "deductions_breakdown",
+            "total_earnings",
+            "total_deductions",
             "net_salary",
             "status",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "company", "net_salary", "created_at", "updated_at")
+        read_only_fields = ("id", "company", "total_earnings", "total_deductions", "net_salary", "created_at", "updated_at")
 
     def validate(self, attrs):
         month = attrs.get("month", self.instance.month if self.instance else None)

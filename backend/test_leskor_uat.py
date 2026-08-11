@@ -41,7 +41,7 @@ quote = Quote.objects.create(
     company=company,
     deal=deal,
     title="Initial Estimate",
-    quote_number="QT-LES-001",
+    quote_number="QT-LES-1786086791",
     subtotal=Decimal("150000.00")
 )
 print(f"Deal moved to {deal.stage}. Quote '{quote.title}' drafted.")
