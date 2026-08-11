@@ -1294,6 +1294,17 @@ export function useAIAssistant() {
 // ----------------------------------------------------------------------
 // Payroll API Hooks
 // ----------------------------------------------------------------------
+export function usePayroll(id: string) {
+  return useQuery<any>({
+    queryKey: ["payrolls", id],
+    queryFn: async () => {
+      const res = await api.get(`/attendance/payrolls/${id}/`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+}
+
 export function usePayrolls(all: boolean = false) {
   return useQuery<any[]>({
     queryKey: ["payrolls", all],
