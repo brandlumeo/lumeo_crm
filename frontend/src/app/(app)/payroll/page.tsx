@@ -173,8 +173,18 @@ export default function PayrollPage() {
       </tr>
     `;
     
-    if (slip.earnings_breakdown) {
-      slip.earnings_breakdown.forEach((e: any) => {
+    let parsedEarnings = slip.earnings_breakdown || [];
+    if (typeof parsedEarnings === "string") {
+      try { parsedEarnings = JSON.parse(parsedEarnings); } catch (e) { parsedEarnings = []; }
+    }
+    
+    let parsedDeductions = slip.deductions_breakdown || [];
+    if (typeof parsedDeductions === "string") {
+      try { parsedDeductions = JSON.parse(parsedDeductions); } catch (e) { parsedDeductions = []; }
+    }
+
+    if (parsedEarnings.length > 0) {
+      parsedEarnings.forEach((e: any) => {
         earningsHtml += `
           <tr>
             <td>${e.name}</td>
@@ -185,8 +195,8 @@ export default function PayrollPage() {
     }
     
     let deductionsHtml = '';
-    if (slip.deductions_breakdown) {
-      slip.deductions_breakdown.forEach((d: any) => {
+    if (parsedDeductions.length > 0) {
+      parsedDeductions.forEach((d: any) => {
         deductionsHtml += `
           <tr>
             <td>${d.name}</td>
@@ -207,6 +217,7 @@ export default function PayrollPage() {
     body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1714; background: #fff; padding: 40px; font-size: 14px; }
     .slip { max-width: 720px; margin: 0 auto; border: 1px solid #ddd4c0; border-radius: 12px; overflow: hidden; }
     .header { padding: 32px 36px; border-bottom: 1px solid #ddd4c0; display: flex; justify-content: space-between; align-items: flex-start; background: #faf6ee; }
+    .company-logo { width: 50px; height: 50px; border-radius: 8px; background: #e5e9f0; color: #2a4e8c; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-bottom: 12px; }
     .company-name { font-family: Georgia, serif; font-size: 26px; font-weight: bold; color: #1a1714; margin-bottom: 4px; }
     .company-sub { font-size: 12px; color: #7a6f5f; }
     .slip-title { text-align: right; }
@@ -243,6 +254,7 @@ export default function PayrollPage() {
   <div class="slip">
     <div class="header">
       <div>
+        <div class="company-logo">${companyName.charAt(0).toUpperCase()}</div>
         <div class="company-name">${companyName}</div>
         <div class="company-sub">Salary Slip Document</div>
       </div>
@@ -255,7 +267,7 @@ export default function PayrollPage() {
     <div class="employee-section">
       <div>
         <div class="label">Employee Name</div>
-        <div class="value">${slip.user_full_name || 'N/A'}</div>
+        <div class="value" style="text-transform: capitalize;">${slip.user_full_name || 'N/A'}</div>
         <div class="sub-value">${slip.user_email || ''}</div>
       </div>
       <div style="text-align: right">
