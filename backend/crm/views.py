@@ -192,7 +192,7 @@ class ServiceCategoryViewSet(CompanyScopedModelViewSet):
 class LeadViewSet(CompanyScopedModelViewSet):
     permission_module = "Leads"
     serializer_class = LeadSerializer
-    queryset = Lead.objects.select_related("company", "assigned_to")
+    queryset = Lead.objects.select_related("company", "assigned_to").prefetch_related("categories")
     search_fields = ("name", "email", "assigned_to__username")
     ordering_fields = ("created_at", "updated_at", "name", "status")
     ordering = ("-created_at",)
