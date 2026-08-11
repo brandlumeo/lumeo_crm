@@ -129,11 +129,24 @@ export default function PayrollPage() {
     setLossOfPayDays(slip.loss_of_pay_days?.toString() || "0");
     setPayDate(slip.pay_date || "");
     
-    if (slip.earnings_breakdown && slip.earnings_breakdown.length > 0) {
-      setEarningsList(slip.earnings_breakdown.map((e: any) => ({ name: e.name, amount: e.amount.toString() })));
+    let parsedEarnings = slip.earnings_breakdown || [];
+    if (typeof parsedEarnings === "string") {
+      try { parsedEarnings = JSON.parse(parsedEarnings); } catch (e) { parsedEarnings = []; }
     }
-    if (slip.deductions_breakdown && slip.deductions_breakdown.length > 0) {
-      setDeductionsList(slip.deductions_breakdown.map((d: any) => ({ name: d.name, amount: d.amount.toString() })));
+    if (parsedEarnings.length > 0) {
+      setEarningsList(parsedEarnings.map((e: any) => ({ name: e.name, amount: e.amount.toString() })));
+    } else {
+      setEarningsList([{ name: "House Rent Allowance", amount: "" }]);
+    }
+    
+    let parsedDeductions = slip.deductions_breakdown || [];
+    if (typeof parsedDeductions === "string") {
+      try { parsedDeductions = JSON.parse(parsedDeductions); } catch (e) { parsedDeductions = []; }
+    }
+    if (parsedDeductions.length > 0) {
+      setDeductionsList(parsedDeductions.map((d: any) => ({ name: d.name, amount: d.amount.toString() })));
+    } else {
+      setDeductionsList([{ name: "Income Tax", amount: "" }, { name: "Provident Fund", amount: "" }]);
     }
     
     setIsGenerating(true);
