@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   FileText,
-  DollarSign,
+  Receipt,
   User,
   Plus,
   Trash2,
@@ -518,11 +518,11 @@ export default function PayrollPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#f4efe6] flex items-center justify-center shrink-0">
-                      <DollarSign className="w-5 h-5 text-ink" />
+                      <Receipt className="w-5 h-5 text-ink" />
                     </div>
                     <div>
                       <div className="font-semibold text-sm">{new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long' })} {slip.year}</div>
-                      <div className="text-xs text-muted flex items-center gap-1 mt-0.5">
+                      <div className="text-xs text-muted flex items-center gap-1 mt-0.5 capitalize">
                         <User className="w-3 h-3" /> {slip.user_full_name}
                       </div>
                     </div>
@@ -538,12 +538,12 @@ export default function PayrollPage() {
                 <div className="grid grid-cols-2 gap-3 mb-5 border-t border-b border-line/50 py-3 mt-1">
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Net Pay</div>
-                    <div className="font-semibold text-[15px] mt-0.5">&#8377; {formatCompactINR(slip.net_salary)}</div>
+                    <div className="font-semibold text-[15px] mt-0.5">&#8377; {formatINR(slip.net_salary)}</div>
                   </div>
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Generated</div>
                     <div className="font-semibold text-sm mt-0.5">
-                      {new Date(slip.created_at).toLocaleDateString()}
+                      {new Date(slip.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                   </div>
                 </div>
@@ -551,7 +551,7 @@ export default function PayrollPage() {
                 <div className="mt-auto flex items-center justify-between gap-2">
                   <button
                     onClick={() => printSlip(slip.id)}
-                    className="flex-1 btn text-xs bg-paper border border-line justify-center hover:bg-bone-1"
+                    className="flex-1 h-8 flex items-center justify-center text-xs bg-paper border border-line hover:bg-bone-1 rounded-lg gap-1.5 transition-colors font-medium"
                   >
                     <Download className="w-3.5 h-3.5" /> Download / Print
                   </button>
