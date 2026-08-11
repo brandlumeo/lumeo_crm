@@ -30,8 +30,8 @@ export default function PayrollPage() {
   const { data: rawTeam = [] } = useTeam();
   const { data: company } = useCurrentCompany();
 
-  const payrolls = Array.isArray(rawPayrolls) ? rawPayrolls : (rawPayrolls?.results || []);
-  const team = Array.isArray(rawTeam) ? rawTeam : (rawTeam?.users || rawTeam?.results || []);
+  const payrolls = Array.isArray(rawPayrolls) ? rawPayrolls : ((rawPayrolls as any)?.results || []);
+  const team = Array.isArray(rawTeam) ? rawTeam : ((rawTeam as any)?.users || (rawTeam as any)?.results || []);
 
   const createPayrollMutation = useCreatePayroll();
   const updatePayrollMutation = useUpdatePayroll();
