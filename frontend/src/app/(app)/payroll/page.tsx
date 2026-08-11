@@ -341,11 +341,11 @@ export default function PayrollPage() {
                     required
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
-                    className="input-field bg-paper"
+                    className="input-field bg-paper capitalize"
                   >
                     <option value="">Select Employee...</option>
                     {team.map((m: any) => (
-                      <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                      <option key={m.id} value={m.id} className="capitalize">{m.first_name} {m.last_name}</option>
                     ))}
                   </select>
                 </div>
@@ -389,7 +389,12 @@ export default function PayrollPage() {
                     <FileText className="w-8 h-8" />
                  </div>
                  <div className="font-serif text-xl font-bold">{company?.name || "Your Company"}</div>
-                 <div className="text-sm text-muted">Payslip For The Month</div>
+                 {employeeId && (
+                   <div className="text-sm font-medium capitalize mt-1 border-t border-line/50 pt-2 w-full">
+                     Employee: {team.find((m: any) => m.id === employeeId)?.first_name} {team.find((m: any) => m.id === employeeId)?.last_name}
+                   </div>
+                 )}
+                 <div className="text-sm text-muted mt-2">Payslip For The Month</div>
                  <div className="font-semibold text-lg">{new Date(year, month - 1).toLocaleString('default', { month: 'long' })} {year}</div>
                </div>
              </div>
@@ -413,7 +418,7 @@ export default function PayrollPage() {
                  
                  {earningsList.map((e, idx) => (
                    <div key={idx} className="flex items-center gap-2 group">
-                     <button type="button" onClick={() => setEarningsList(earningsList.filter((_, i) => i !== idx))} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                     <button type="button" onClick={() => setEarningsList(earningsList.filter((_, i) => i !== idx))} className="text-muted opacity-40 hover:opacity-100 hover:text-red-500 transition-opacity p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                      <input value={e.name} onChange={(ev) => setEarningsList(earningsList.map((el, i) => i === idx ? {...el, name: ev.target.value} : el))} className="bg-transparent text-sm w-full outline-none py-2" placeholder="Earning Name" />
                      <input type="number" value={e.amount} onChange={(ev) => setEarningsList(earningsList.map((el, i) => i === idx ? {...el, amount: ev.target.value} : el))} className="input-field w-32 bg-paper text-right ml-2" placeholder="0" />
                    </div>
@@ -438,7 +443,7 @@ export default function PayrollPage() {
                  
                  {deductionsList.map((d, idx) => (
                    <div key={idx} className="flex items-center gap-2 group">
-                     <button type="button" onClick={() => setDeductionsList(deductionsList.filter((_, i) => i !== idx))} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                     <button type="button" onClick={() => setDeductionsList(deductionsList.filter((_, i) => i !== idx))} className="text-muted opacity-40 hover:opacity-100 hover:text-red-500 transition-opacity p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                      <input value={d.name} onChange={(ev) => setDeductionsList(deductionsList.map((el, i) => i === idx ? {...el, name: ev.target.value} : el))} className="bg-transparent text-sm w-full outline-none py-2" placeholder="Deduction Name" />
                      <input type="number" value={d.amount} onChange={(ev) => setDeductionsList(deductionsList.map((el, i) => i === idx ? {...el, amount: ev.target.value} : el))} className="input-field w-32 bg-paper text-right ml-2" placeholder="0" />
                    </div>
@@ -462,7 +467,7 @@ export default function PayrollPage() {
                  <div className="text-xs text-muted">Gross Earnings - Total Deductions</div>
               </div>
               <div className="font-serif text-[32px] font-bold tracking-tight text-[#1a1714]">
-                 &#8377; {formatINR(calcNet())}
+                 &#8377;&nbsp;{formatINR(calcNet())}
               </div>
            </div>
 
