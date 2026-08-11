@@ -50,7 +50,7 @@ code = code.replace("typeof (slip as any)?.company_name === 'string'", 'false')
 
 
 # Simple line-by-line filtering for problematic lines
-lines = code.split('\\n')
+lines = code.split('\n')
 new_lines = []
 skip = False
 for line in lines:
@@ -73,7 +73,7 @@ for line in lines:
     if 'INVOICE' in line:
         line = line.replace('INVOICE', 'SALARY SLIP')
     new_lines.append(line)
-code = '\\n'.join(new_lines)
+code = '\n'.join(new_lines)
 
 
 table_regex = re.compile(r'<div className="overflow-x-auto print:overflow-visible">.*?</table>\s*</div>', re.DOTALL)
