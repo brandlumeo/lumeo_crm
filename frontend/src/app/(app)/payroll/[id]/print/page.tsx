@@ -16,7 +16,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     // Only print when everything is loaded
     if (slip && company && invoiceSettings && !isLoading) {
-      document.title = `Salary Slip - ${slip.employee_name}`;
+      document.title = `Salary Slip - ${slip.user_full_name}`;
       setTimeout(() => {
         window.print();
       }, 500);
@@ -113,7 +113,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
 
               <div className={`text-left md:text-right print:text-right ${tpl === 'template2' ? 'md:text-left print:text-left' : ''}`}>
                 <h1 className={`text-4xl md:text-5xl font-bold mb-2 tracking-tight ${tpl === 'template3' ? 'text-white' : 'text-ink'}`} style={tpl === 'template1' ? { color: accentColor } : {}}>SALARY SLIP</h1>
-                <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'text-white/80' : 'text-muted'}`}>{`Salary Slip - ${slip.employee_name}`}</p>
+                <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'text-white/80' : 'text-muted'}`}>{`Salary Slip - ${slip.user_full_name}`}</p>
                 <div className={`mt-4 ${tpl === 'template3' ? 'text-white/90' : 'text-muted'}`}>
                   <p className="font-medium">Period:</p>
                   <p>{slip.month} / {slip.year}</p>
@@ -123,8 +123,8 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
 
             <div className="mb-8 print:mb-2">
               <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Employee Details</h3>
-              <div className="font-medium text-lg text-ink">{slip.employee_name}</div>
-              <div className="text-muted">{slip.employee_email}</div>
+              <div className="font-medium text-lg text-ink">{slip.user_full_name}</div>
+              <div className="text-muted">{slip.user_email}</div>
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
