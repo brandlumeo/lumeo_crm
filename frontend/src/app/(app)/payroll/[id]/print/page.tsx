@@ -87,7 +87,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             <div className={`flex flex-col-reverse md:flex-row print:flex-row justify-between items-start gap-8 mb-12 print:mb-8 ${tpl === 'template2' ? 'md:flex-row-reverse print:flex-row-reverse' : ''} ${tpl === 'template3' ? 'bg-ink text-white p-8 rounded-xl print:rounded-none' : ''}`} style={tpl === 'template3' ? { backgroundColor: accentColor } : {}}>
               <div className="flex-1">
                 {invoiceSettings?.invoice_logo ? (
-                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className={`max-h-16 object-contain mb-6 ${tpl === 'template3' ? 'brightness-0 invert' : ''}`} crossOrigin="anonymous" />
+                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className={`max-h-16 object-contain mb-6 ${tpl === 'template3' ? 'brightness-0 invert' : ''}`}  />
                 ) : (
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl font-bold mb-6 ${tpl === 'template3' ? 'bg-white/20 text-white' : 'bg-bone text-ink'}`}>
                     {(company?.name || 'C').charAt(0).toUpperCase()}
@@ -178,7 +178,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
                 {invoiceSettings?.show_authorised_signatory && (
                   <div className="pt-6 print:break-inside-avoid">
                     {invoiceSettings?.authorised_signatory_signature ? (
-                      <img src={invoiceSettings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" crossOrigin="anonymous" />
+                      <img src={invoiceSettings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
                     ) : (
                       <div className="h-12 border-b border-line w-32 mb-2"></div>
                     )}
