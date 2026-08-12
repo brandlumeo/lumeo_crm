@@ -116,7 +116,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
                 <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'text-white/80' : 'text-muted'}`}>{`Salary Slip - ${slip.user_full_name}`}</p>
                 <div className={`mt-4 ${tpl === 'template3' ? 'text-white/90' : 'text-muted'}`}>
                   <p className="font-medium">Period:</p>
-                  <p>{slip.month} / {slip.year}</p>
+                  <p>{new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long' })} {slip.year}</p>
                 </div>
               </div>
             </div>
