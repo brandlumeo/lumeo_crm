@@ -626,6 +626,23 @@ class PayrollListCreateView(APIView):
 class PayrollDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get(self, request, pk):
+        from accounts.models import User
+        try:
+            payroll = Payroll.objects.get(pk=pk, company=request.user.company)
+        except Payroll.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+            
+        if not request.user.has_management_access:
+            if payroll.user != request.user:
+                return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+            if payroll.status not in [Payroll.Status.PUBLISHED, Payroll.Status.PAID]:
+                return Response({"detail": "Payroll not available."}, status=status.HTTP_403_FORBIDDEN)
+                
+        from .serializers import PayrollSerializer
+        serializer = PayrollSerializer(payroll)
+        return Response(serializer.data)
+
     def put(self, request, pk):
         from accounts.models import User
         if not request.user.has_management_access:
