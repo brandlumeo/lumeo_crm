@@ -39,6 +39,7 @@ class User(AbstractUser):
     )
     designation = models.CharField(max_length=100, blank=True, null=True, help_text="User's job title or designation.")
     department = models.CharField(max_length=100, blank=True, null=True, help_text="Department the user belongs to.")
+    employee_id = models.CharField(max_length=100, blank=True, null=True, help_text="Employee ID or code.")
     prefix = models.CharField(max_length=10, blank=True, null=True)
     mobile = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
@@ -137,6 +138,7 @@ class TeamInvitation(models.Model):
     last_name = models.CharField(max_length=150, blank=True, null=True)
     designation = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
+    employee_id = models.CharField(max_length=100, blank=True, null=True)
     personal_message = models.TextField(blank=True, null=True)
     role = models.CharField(
         max_length=50,

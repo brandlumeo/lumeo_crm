@@ -618,7 +618,14 @@ class PayrollListCreateView(APIView):
         from .serializers import PayrollSerializer
         serializer = PayrollSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(company=request.user.company)
+            payroll = serializer.save(company=request.user.company)
+            
+            # Optionally update employee ID if provided
+            emp_id_str = request.data.get('employee_id')
+            if emp_id_str is not None:
+                payroll.user.employee_id = emp_id_str
+                payroll.user.save()
+                
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -656,7 +663,14 @@ class PayrollDetailView(APIView):
         from .serializers import PayrollSerializer
         serializer = PayrollSerializer(payroll, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            payroll = serializer.save()
+            
+            # Optionally update employee ID if provided
+            emp_id_str = request.data.get('employee_id')
+            if emp_id_str is not None:
+                payroll.user.employee_id = emp_id_str
+                payroll.user.save()
+                
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

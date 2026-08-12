@@ -42,6 +42,7 @@ export default function PayrollPage() {
   
   // Form State
   const [employeeId, setEmployeeId] = useState("");
+  const [empCode, setEmpCode] = useState("");
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   
@@ -62,6 +63,7 @@ export default function PayrollPage() {
 
   const resetForm = () => {
     setEmployeeId("");
+    setEmpCode("");
     setBasic("");
     setPaidDays("22");
     setLossOfPayDays("0");
@@ -82,6 +84,7 @@ export default function PayrollPage() {
       basic_salary: parseFloat(basic),
       paid_days: parseFloat(paidDays) || 0,
       loss_of_pay_days: parseFloat(lossOfPayDays) || 0,
+      employee_id: empCode || undefined,
       pay_date: payDate || null,
       earnings_breakdown: earningsList.map(e => ({ name: e.name, amount: parseFloat(e.amount) || 0 })).filter(e => e.amount > 0),
       deductions_breakdown: deductionsList.map(d => ({ name: d.name, amount: parseFloat(d.amount) || 0 })).filter(d => d.amount > 0),
@@ -122,6 +125,7 @@ export default function PayrollPage() {
   const handleEditClick = (slip: any) => {
     setEditPayrollId(slip.id);
     setEmployeeId(slip.user);
+    setEmpCode(slip.user_employee_id || "");
     setMonth(slip.month);
     setYear(slip.year);
     setBasic(slip.basic_salary.toString());
@@ -206,7 +210,15 @@ export default function PayrollPage() {
                   <select
                     required
                     value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
+                    onChange={(e) => {
+                      setEmployeeId(e.target.value);
+                      const emp = team.find((m: any) => m.id === e.target.value);
+                      if (emp) {
+                        setEmpCode(emp.employee_id || "");
+                      } else {
+                        setEmpCode("");
+                      }
+                    }}
                     className="input-field bg-paper capitalize"
                   >
                     <option value="">Select Employee...</option>
@@ -214,6 +226,11 @@ export default function PayrollPage() {
                       <option key={m.id} value={m.id} className="capitalize">{m.first_name} {m.last_name}</option>
                     ))}
                   </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">Employee ID (Optional)</label>
+                  <input type="text" value={empCode} onChange={e => setEmpCode(e.target.value)} placeholder="EMP-001" className="input-field bg-paper" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

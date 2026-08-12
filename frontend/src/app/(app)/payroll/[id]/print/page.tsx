@@ -126,6 +126,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
               <div className="font-medium text-lg text-ink capitalize">{slip.user_full_name}</div>
               <div className="text-muted text-sm capitalize">{Array.from(new Set([slip.user_designation, slip.user_department].filter(Boolean).map(s => String(s).trim().toLowerCase()))).join(' - ')}</div>
               <div className="text-muted text-sm">{slip.user_email}</div>
+              {slip.user_employee_id && <div className="text-muted text-sm mt-0.5">Emp ID: <span className="font-medium text-ink">{slip.user_employee_id}</span></div>}
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">

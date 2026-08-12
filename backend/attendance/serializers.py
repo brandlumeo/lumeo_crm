@@ -141,6 +141,7 @@ class PayrollSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source="user.email", read_only=True)
     user_full_name = serializers.CharField(source="user.get_full_name", read_only=True)
     user_designation = serializers.CharField(source="user.designation", read_only=True)
+    user_employee_id = serializers.CharField(source="user.employee_id", read_only=True)
     user_department = serializers.CharField(source="user.department", read_only=True)
 
     class Meta:
@@ -151,6 +152,7 @@ class PayrollSerializer(serializers.ModelSerializer):
             "user_email",
             "user_full_name",
             "user_designation",
+            "user_employee_id",
             "user_department",
             "company",
             "month",

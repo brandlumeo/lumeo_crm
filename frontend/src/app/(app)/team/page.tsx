@@ -43,6 +43,7 @@ export default function TeamPage() {
   const [inviteLastName, setInviteLastName] = useState("");
   const [inviteDesignation, setInviteDesignation] = useState("");
   const [inviteDepartment, setInviteDepartment] = useState("");
+  const [inviteEmployeeId, setInviteEmployeeId] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteRole, setInviteRole] = useState("employee");
 
@@ -108,6 +109,7 @@ export default function TeamPage() {
       last_name?: string;
       designation?: string;
       department?: string;
+      employee_id?: string;
       personal_message?: string;
     }) => inviteTeamMember(vars),
     onSuccess: () => {
@@ -391,6 +393,7 @@ export default function TeamPage() {
                   last_name: inviteLastName,
                   designation: inviteDesignation,
                   department: inviteDepartment,
+                  employee_id: inviteEmployeeId,
                   personal_message: inviteMessage,
                 });
               }}
@@ -469,6 +472,19 @@ export default function TeamPage() {
                       className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">
+                    Employee ID
+                  </label>
+                  <input
+                    type="text"
+                    value={inviteEmployeeId}
+                    onChange={(e) => setInviteEmployeeId(e.target.value)}
+                    placeholder="EMP-001"
+                    className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                  />
                 </div>
 
                 <div>
