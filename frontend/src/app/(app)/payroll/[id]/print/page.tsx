@@ -93,7 +93,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
                     {(company?.name || 'C').charAt(0).toUpperCase()}
                   </div>
                 )}
-                <h2 className={`text-2xl font-bold tracking-tight mb-1 ${tpl === 'template3' ? 'text-white' : 'text-ink'}`}>{company?.name || 'Company Name'}</h2>
+                <h2 className={`text-3xl md:text-4xl font-bold tracking-tight mb-1 ${tpl === 'template3' ? 'text-white' : 'text-ink'}`}>{company?.name || 'Company Name'}</h2>
                 
                 {company?.company_website && <p className={`text-sm md:text-base mt-1 ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>{company.company_website.replace(/^https?:\/\//, '')}</p>}
                 {company?.company_email && <p className={`text-sm md:text-base ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>{company.company_email}</p>}
@@ -112,8 +112,8 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
               </div>
 
               <div className={`text-left md:text-right print:text-right ${tpl === 'template2' ? 'md:text-left print:text-left' : ''}`}>
-                <h1 className={`text-4xl md:text-5xl font-bold mb-2 tracking-tight ${tpl === 'template3' ? 'text-white' : 'text-ink'}`} style={tpl === 'template1' ? { color: accentColor } : {}}>SALARY SLIP</h1>
-                <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'text-white/80' : 'text-muted'}`}>{`Salary Slip - ${slip.user_full_name}`}</p>
+                <h1 className={`text-3xl font-bold mb-2 tracking-tight ${tpl === 'template3' ? 'text-white' : 'text-ink'}`} style={tpl === 'template1' ? { color: accentColor } : {}}>SALARY SLIP</h1>
+                <p className={`text-base md:text-lg uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'text-white/80' : 'text-muted'}`}>{`Salary Slip - ${slip.user_full_name}`}</p>
                 <div className={`mt-4 ${tpl === 'template3' ? 'text-white/90' : 'text-muted'}`}>
                   <p className="font-medium">Period:</p>
                   <p>{new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long' })} {slip.year}</p>
