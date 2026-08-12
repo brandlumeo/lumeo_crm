@@ -124,7 +124,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             <div className="mb-8 print:mb-2">
               <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Employee Details</h3>
               <div className="font-medium text-lg text-ink capitalize">{slip.user_full_name}</div>
-              <div className="text-muted text-sm">{[slip.user_designation, slip.user_department].filter(Boolean).join(' - ')}</div>
+              <div className="text-muted text-sm capitalize">{Array.from(new Set([slip.user_designation, slip.user_department].filter(Boolean).map(s => String(s).trim().toLowerCase()))).join(' - ')}</div>
               <div className="text-muted text-sm">{slip.user_email}</div>
             </div>
 
