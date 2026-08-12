@@ -86,8 +86,8 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             
             <div className={`flex flex-col-reverse md:flex-row print:flex-row justify-between items-start gap-8 mb-12 print:mb-8 ${tpl === 'template2' ? 'md:flex-row-reverse print:flex-row-reverse' : ''} ${tpl === 'template3' ? 'bg-ink text-white p-8 rounded-xl print:rounded-none' : ''}`} style={tpl === 'template3' ? { backgroundColor: accentColor } : {}}>
               <div className="flex-1">
-                {invoiceSettings?.show_company_logo && invoiceSettings?.company_logo_url ? (
-                  <img src={invoiceSettings.company_logo_url} alt="Company Logo" className={`max-h-16 object-contain mb-6 ${tpl === 'template3' ? 'brightness-0 invert' : ''}`} crossOrigin="anonymous" />
+                {invoiceSettings?.invoice_logo ? (
+                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className={`max-h-16 object-contain mb-6 ${tpl === 'template3' ? 'brightness-0 invert' : ''}`} crossOrigin="anonymous" />
                 ) : (
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl font-bold mb-6 ${tpl === 'template3' ? 'bg-white/20 text-white' : 'bg-bone text-ink'}`}>
                     {(company?.name || 'C').charAt(0).toUpperCase()}
