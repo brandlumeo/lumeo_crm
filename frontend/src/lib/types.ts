@@ -651,6 +651,7 @@ export interface InvoiceInput {
   currency?: string;
   status?: string;
   due_date?: string;
+  terms?: string;
   items: InvoiceLineItem[];
 }
 
