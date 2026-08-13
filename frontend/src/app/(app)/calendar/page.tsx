@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useEvents, useCreateEvent } from "@/lib/queries";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, MapPin, Video, Info, Calendar as CalendarIcon, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
