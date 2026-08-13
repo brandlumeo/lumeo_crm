@@ -1160,7 +1160,12 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
         
     from_label = "BILLED FROM" if doc_type == "Invoice" else "PREPARED BY"
-    to_label = "BILLED TO" if doc_type == "Invoice" else "PREPARED FOR"
+    if doc_type == "Invoice":
+        to_label = "BILLED TO"
+    elif doc_type == "Purchase Order":
+        to_label = "VENDOR"
+    else:
+        to_label = "PREPARED FOR"
     
     billing_data = [
         [Paragraph(f"<b>{from_label}</b>", meta_label_style), Paragraph(f"<b>{to_label}</b>", meta_label_style)],
@@ -1205,10 +1210,12 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         row = [Paragraph(item_html, styles['Normal'])]
         if show_hsn:
             row.append(Paragraph(hsn, left_normal))
+        # Calculate line item amount explicitly (tax exclusive)
+        line_amount = (item.quantity or 0) * (item.unit_price or 0)
         row.extend([
             Paragraph(str(item.quantity), left_normal),
             Paragraph(f"{curr}{item.unit_price:,.2f}", left_normal),
-            Paragraph(f"{curr}{item.total:,.2f}", left_normal)
+            Paragraph(f"{curr}{line_amount:,.2f}", left_normal)
         ])
         table_data.append(row)
     
