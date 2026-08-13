@@ -22,6 +22,12 @@ export default function CalendarPage() {
   const [viewDate, setViewDate] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // Use a useEffect below to seed these when the modal opens
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("10:00");
 
   const { data: eventsData, isLoading } = useEvents();
   const createEventMutation = useCreateEvent();
@@ -33,12 +39,29 @@ export default function CalendarPage() {
   const [location, setLocation] = useState("");
   const [isVirtual, setIsVirtual] = useState(false);
   const [virtualLink, setVirtualLink] = useState("");
-  
-  const defaultDateStr = selectedDay ? `${viewDate.year}-${String(viewDate.month + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}` : "";
-  const [startDate, setStartDate] = useState(defaultDateStr);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endDate, setEndDate] = useState(defaultDateStr);
-  const [endTime, setEndTime] = useState("10:00");
+
+  // Update form defaults when modal opens based on current calendar selection
+  React.useEffect(() => {
+    if (isAddModalOpen) {
+      const year = viewDate.year;
+      const month = String(viewDate.month + 1).padStart(2, '0');
+      const day = String(selectedDay || today.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      setStartDate(dateStr);
+      setEndDate(dateStr);
+      
+      // Auto-adjust times to next hour
+      const now = new Date();
+      const nextHour = new Date(now);
+      nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+      const endHour = new Date(nextHour);
+      endHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+      
+      setStartTime(nextHour.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      setEndTime(endHour.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    }
+  }, [isAddModalOpen, selectedDay, viewDate.year, viewDate.month]);
 
   // Build calendar event map: date string → events[]
   const eventMap = useMemo(() => {
@@ -378,16 +401,16 @@ export default function CalendarPage() {
                   )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Description (Optional)</label>
-                  <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Add notes, agenda, or context..." className="input-field bg-white resize-none" />
+                <div className="space-y-1.5 flex flex-col">
+                  <label className="text-[13px] font-medium text-ink order-1">Description (Optional)</label>
+                  <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Add notes, agenda, or context..." className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white resize-none order-2" />
                 </div>
               </form>
             </div>
             
             <div className="shrink-0 px-6 py-4 border-t border-line bg-bone/30 flex justify-end gap-3">
               <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-ink hover:bg-line/50 rounded-lg transition-colors">Cancel</button>
-              <button type="submit" form="event-form" disabled={createEventMutation.isPending} className="px-5 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand/90 transition-all flex items-center gap-2 shadow-sm">
+              <button type="submit" form="event-form" disabled={createEventMutation.isPending || !title || !startDate || !endDate} className={cn("px-5 py-2 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm", (createEventMutation.isPending || !title || !startDate || !endDate) ? "bg-brand/50 cursor-not-allowed" : "bg-brand hover:bg-brand/90")}>
                 {createEventMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Event"}
               </button>
             </div>
