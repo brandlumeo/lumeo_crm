@@ -152,7 +152,7 @@ export default function CalendarPage() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand/90 transition-all shadow-sm"
+            className="btn-primary"
           >
             <Plus className="w-4 h-4" /> New Event
           </button>
@@ -221,9 +221,18 @@ export default function CalendarPage() {
                     )}>
                       {day}
                     </span>
-                    {dayEvents.length > 0 && (
-                      <span className="text-[10px] text-muted font-medium pr-1">{dayEvents.length}</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {dayEvents.length > 0 && (
+                        <span className="text-[10px] text-muted font-medium pr-1">{dayEvents.length}</span>
+                      )}
+                      <button 
+                        className="hidden group-hover:flex w-5 h-5 items-center justify-center rounded hover:bg-line text-muted hover:text-ink transition-colors"
+                        onClick={(e) => { e.stopPropagation(); setSelectedDay(day); setIsAddModalOpen(true); }}
+                        title="Add Event"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="space-y-1.5">
@@ -267,6 +276,15 @@ export default function CalendarPage() {
                     : "Select a specific date to view its schedule."}
                 </p>
               </div>
+              {selectedDay !== null && (
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="shrink-0 p-2 text-brand hover:bg-brand/10 rounded-full transition-colors"
+                  title="Add Event"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             {selectedDay !== null && (
