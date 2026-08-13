@@ -410,7 +410,7 @@ export default function CalendarPage() {
             
             <div className="shrink-0 px-6 py-4 border-t border-line bg-bone/30 flex justify-end gap-3">
               <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-ink hover:bg-line/50 rounded-lg transition-colors">Cancel</button>
-              <button type="submit" form="event-form" disabled={createEventMutation.isPending || !title || !startDate || !endDate} className={cn("px-5 py-2 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm", (createEventMutation.isPending || !title || !startDate || !endDate) ? "bg-brand/50 cursor-not-allowed" : "bg-brand hover:bg-brand/90")}>
+              <button type="submit" form="event-form" disabled={createEventMutation.isPending || !title || !startDate || !endDate} className={cn("px-5 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm", (createEventMutation.isPending || !title || !startDate || !endDate) ? "bg-line/50 text-muted cursor-not-allowed border border-line" : "bg-ink text-white hover:bg-ink/90")}>
                 {createEventMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Event"}
               </button>
             </div>
