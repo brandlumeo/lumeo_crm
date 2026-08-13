@@ -24,12 +24,13 @@ export default function PurchaseOrdersPage() {
   const [editPoId, setEditPoId] = useState<number | null>(null);
   const [deletePoId, setDeletePoId] = useState<number | null>(null);
   
-  const [newPo, setNewPo] = useState<{ vendor: number | null, issue_date: string, expected_delivery_date: string, status: string, notes: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const [newPo, setNewPo] = useState<{ vendor: number | null, issue_date: string, expected_delivery_date: string, status: string, notes: string, terms_conditions: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
     vendor: null, 
     issue_date: new Date().toISOString().split('T')[0],
     expected_delivery_date: "",
     status: "draft",
     notes: "",
+    terms_conditions: "",
     items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
   });
 
@@ -91,6 +92,7 @@ export default function PurchaseOrdersPage() {
       expected_delivery_date: "",
       status: "draft",
       notes: "",
+      terms_conditions: "",
       items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]
     });
   };
@@ -114,6 +116,7 @@ export default function PurchaseOrdersPage() {
       expected_delivery_date: po.expected_delivery_date || "",
       status: po.status,
       notes: po.notes || "",
+      terms_conditions: po.terms_conditions || "",
       items: po.items.map((item: any) => ({
         description: item.description,
         quantity: parseFloat(item.quantity),
@@ -448,6 +451,17 @@ export default function PurchaseOrdersPage() {
                   onChange={(e) => setNewPo({...newPo, notes: e.target.value})}
                   placeholder="Additional instructions for vendor..."
                 />
+              </label>
+
+              <label className="space-y-1.5 block">
+                <span className="label">Terms & Conditions</span>
+                <textarea 
+                  className="input min-h-[80px]"
+                  value={newPo.terms_conditions}
+                  onChange={(e) => setNewPo({...newPo, terms_conditions: e.target.value})}
+                  placeholder="e.g. Net 30, Payment due on receipt..."
+                />
+                <p className="text-xs text-muted mt-1">Leave blank to use company default terms.</p>
               </label>
 
               <div className="pt-4 border-t border-line flex justify-end gap-3 sticky bottom-0 bg-paper py-3">

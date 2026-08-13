@@ -1258,10 +1258,12 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     terms_p = []
     
     if doc_type == "Purchase Order":
-        terms_text = get_setting("purchase_order_terms", default="Standard purchase order terms apply.")
+        instance_terms = getattr(instance, 'terms_conditions', None)
+        terms_text = instance_terms if instance_terms else get_setting("purchase_order_terms", default="Standard purchase order terms apply.")
         terms_label = "Purchase Order Terms"
     elif doc_type == "Invoice":
-        terms_text = get_setting("invoice_terms", default="Thank you for your business.")
+        instance_terms = getattr(instance, 'terms', None)
+        terms_text = instance_terms if instance_terms else get_setting("invoice_terms", default="Thank you for your business.")
         terms_label = "Terms & Conditions"
     else:
         terms_text = get_setting("invoice_terms", default="Thank you for your business.")

@@ -564,6 +564,35 @@ export function FinanceSettingsForm() {
               </div>
             </div>
             
+            {/* Default Terms */}
+            <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8 mt-8">
+                <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Default Document Terms</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-1.5">
+                        <label className="text-[13.5px] font-medium text-ink">Default Invoice Terms</label>
+                        <textarea
+                            value={invoiceTerms}
+                            onChange={(e) => setInvoiceTerms(e.target.value)}
+                            disabled={!isAdmin}
+                            placeholder="e.g. Net 30, Payment due on receipt..."
+                            className="input w-full min-h-[100px] bg-bone/30 focus:bg-paper"
+                        />
+                        <p className="text-xs text-muted mt-1">These terms will automatically be applied to new Invoices and Quotes.</p>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[13.5px] font-medium text-ink">Default Purchase Order Terms</label>
+                        <textarea
+                            value={poTerms}
+                            onChange={(e) => setPoTerms(e.target.value)}
+                            disabled={!isAdmin}
+                            placeholder="e.g. Standard purchase order terms apply."
+                            className="input w-full min-h-[100px] bg-bone/30 focus:bg-paper"
+                        />
+                        <p className="text-xs text-muted mt-1">These terms will automatically be applied to new Purchase Orders.</p>
+                    </div>
+                </div>
+            </div>
+            
             {/* Premium Template Info */}
             <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8 mt-8">
                 <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Company & Bank Details (For Premium Templates)</h4>

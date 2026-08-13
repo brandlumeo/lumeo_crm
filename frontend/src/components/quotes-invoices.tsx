@@ -38,6 +38,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
   const [currency, setCurrency] = useState(
     typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR"
   );
+  const [terms, setTerms] = useState("");
   const [items, setItems] = useState<
     {
       product?: number;
@@ -106,6 +107,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
     setSelectedCustomer("");
     setDueDate("");
     setCurrency(typeof window !== "undefined" && (window as any).__CRM_CURRENCY__ ? (window as any).__CRM_CURRENCY__ : "INR");
+    setTerms("");
     setItems([]);
   };
 
@@ -195,6 +197,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         customer: parseInt(selectedCustomer, 10),
         currency,
         due_date: dueDate || undefined,
+        terms,
         items,
       });
     }
@@ -561,6 +564,19 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   Total: <span className="ml-2 text-accent">{formatINR(grandTotal, currency)}</span>
                 </div>
               </div>
+
+              {builderType === "invoice" && (
+                <label className="block mb-6">
+                  <span className="label">Terms & Conditions</span>
+                  <textarea
+                    className="input min-h-[80px]"
+                    placeholder="e.g. Net 30, Payment due on receipt..."
+                    value={terms}
+                    onChange={(e) => setTerms(e.target.value)}
+                  />
+                  <p className="text-xs text-muted mt-1">Leave blank to use company default terms.</p>
+                </label>
+              )}
 
               <div className="border-t border-line pt-6 flex justify-end gap-3">
                 <button
