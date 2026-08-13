@@ -22,7 +22,6 @@ export default function CalendarPage() {
   const [viewDate, setViewDate] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
 
   const { data: eventsData, isLoading } = useEvents();
   const createEventMutation = useCreateEvent();
@@ -119,17 +118,12 @@ export default function CalendarPage() {
             <CalendarDays className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-[22px] font-semibold text-ink tracking-tight">Calendar</h1>
+            <h1 className="text-[22px] font-semibold text-ink tracking-tight">My Calendar</h1>
             <p className="text-muted text-[13px] mt-0.5">Manage your schedule and upcoming meetings.</p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center bg-bone p-1 rounded-lg border border-line">
-            <button onClick={() => setViewMode('month')} className={cn("px-4 py-1.5 text-[13px] font-medium rounded-md transition-all", viewMode === 'month' ? "bg-white shadow-sm text-ink" : "text-muted hover:text-ink")}>Month</button>
-            <button onClick={() => setViewMode('week')} className={cn("px-4 py-1.5 text-[13px] font-medium rounded-md transition-all", viewMode === 'week' ? "bg-white shadow-sm text-ink" : "text-muted hover:text-ink")}>Week</button>
-            <button onClick={() => setViewMode('day')} className={cn("px-4 py-1.5 text-[13px] font-medium rounded-md transition-all", viewMode === 'day' ? "bg-white shadow-sm text-ink" : "text-muted hover:text-ink")}>Day</button>
-          </div>
           <button 
             onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand/90 transition-all shadow-sm"
@@ -174,7 +168,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Grid Body */}
-          <div className="flex-1 grid grid-cols-7 grid-rows-5 lg:grid-rows-6 overflow-y-auto bg-bone/10">
+          <div className="flex-1 grid grid-cols-7 auto-rows-[minmax(90px,1fr)] lg:grid-rows-6 lg:auto-rows-fr overflow-y-auto bg-bone/10">
             {Array.from({ length: firstDay }).map((_, i) => (
               <div key={`empty-${i}`} className="border-b border-r border-line/50 p-2 opacity-50 bg-bone/20" />
             ))}
@@ -190,14 +184,14 @@ export default function CalendarPage() {
                   key={day}
                   onClick={() => handleDayClick(day)}
                   className={cn(
-                    "group border-b border-r border-line/50 min-h-[100px] p-2 cursor-pointer transition-all hover:bg-brand/5 relative",
-                    isSelected ? "bg-brand/5 ring-1 ring-inset ring-brand/30 z-10" : ""
+                    "group border-b border-r border-line/50 p-2 cursor-pointer transition-all hover:bg-brand/5 relative",
+                    isSelected ? "bg-brand/5 ring-2 ring-inset ring-brand/40 z-10" : ""
                   )}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className={cn(
                       "inline-flex w-7 h-7 items-center justify-center rounded-full text-xs font-semibold transition-all",
-                      isTod ? "bg-brand text-white shadow-sm" : isSelected ? "text-brand bg-brand/10" : "text-ink group-hover:text-brand"
+                      isTod ? "bg-brand text-white shadow-sm" : isSelected ? "text-brand bg-brand/10 ring-1 ring-brand/30" : "text-ink group-hover:text-brand"
                     )}>
                       {day}
                     </span>
@@ -237,12 +231,14 @@ export default function CalendarPage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-ink">
-                  {selectedDay ? `${MONTH_NAMES[viewDate.month]} ${selectedDay}, ${viewDate.year}` : "Select a Date"}
+                  {selectedDay ? `${MONTH_NAMES[viewDate.month]} ${selectedDay}, ${viewDate.year}` : `${MONTH_NAMES[viewDate.month]} ${viewDate.year} Overview`}
                 </h3>
                 <p className="text-sm text-muted mt-0.5">
-                  {selectedDay && selectedEvents.length > 0 
-                    ? `You have ${selectedEvents.length} event${selectedEvents.length === 1 ? '' : 's'} scheduled.` 
-                    : "No events scheduled for this date."}
+                  {selectedDay 
+                    ? (selectedEvents.length > 0 
+                        ? `You have ${selectedEvents.length} event${selectedEvents.length === 1 ? '' : 's'} scheduled.` 
+                        : "Your schedule is clear for this day.")
+                    : "Select a specific date to view its schedule."}
                 </p>
               </div>
             </div>
