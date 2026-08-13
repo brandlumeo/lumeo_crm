@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useEvents, useCreateEvent } from "@/lib/queries";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, MapPin, Video, Info, Calendar as CalendarIcon, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export default function CalendarPage() {
   const [virtualLink, setVirtualLink] = useState("");
 
   // Update form defaults when modal opens based on current calendar selection
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAddModalOpen) {
       const year = viewDate.year;
       const month = String(viewDate.month + 1).padStart(2, '0');
