@@ -33,6 +33,9 @@ export default function CalendarPage() {
   const createEventMutation = useCreateEvent();
   const events = eventsData?.results ?? [];
 
+  const isInvalidTime = startDate && endDate && startTime && endTime ? new Date(`${startDate}T${startTime}`) >= new Date(`${endDate}T${endTime}`) : false;
+  const isSubmitDisabled = createEventMutation.isPending || !title || !startDate || !endDate || isInvalidTime;
+
   // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -356,35 +359,35 @@ export default function CalendarPage() {
             <div className="flex-1 overflow-y-auto p-6">
               <form id="event-form" onSubmit={handleCreateEvent} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Event Title *</label>
-                  <input required value={title} onChange={e => setTitle(e.target.value)} type="text" placeholder="e.g. Client Discovery Call" className="input-field bg-white" />
+                  <label className="text-[13px] font-medium text-ink">Event Title <span className="text-red-500">*</span></label>
+                  <input required value={title} onChange={e => setTitle(e.target.value)} type="text" placeholder="e.g. Client Discovery Call" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-medium text-ink">Start Date *</label>
-                    <input required value={startDate} onChange={e => setStartDate(e.target.value)} type="date" className="input-field bg-white" />
+                    <label className="text-[13px] font-medium text-ink">Start Date <span className="text-red-500">*</span></label>
+                    <input required value={startDate} onChange={e => setStartDate(e.target.value)} type="date" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-medium text-ink">Start Time *</label>
-                    <input required value={startTime} onChange={e => setStartTime(e.target.value)} type="time" className="input-field bg-white" />
+                    <label className="text-[13px] font-medium text-ink">Start Time <span className="text-red-500">*</span></label>
+                    <input required value={startTime} onChange={e => setStartTime(e.target.value)} type="time" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-medium text-ink">End Date *</label>
-                    <input required value={endDate} onChange={e => setEndDate(e.target.value)} type="date" className="input-field bg-white" />
+                    <label className="text-[13px] font-medium text-ink">End Date <span className="text-red-500">*</span></label>
+                    <input required value={endDate} onChange={e => setEndDate(e.target.value)} type="date" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-medium text-ink">End Time *</label>
-                    <input required value={endTime} onChange={e => setEndTime(e.target.value)} type="time" className="input-field bg-white" />
+                    <label className="text-[13px] font-medium text-ink">End Time <span className="text-red-500">*</span></label>
+                    <input required value={endTime} onChange={e => setEndTime(e.target.value)} type="time" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium text-ink">Location (Optional)</label>
-                  <input value={location} onChange={e => setLocation(e.target.value)} type="text" placeholder="e.g. Conference Room A" className="input-field bg-white" />
+                  <input value={location} onChange={e => setLocation(e.target.value)} type="text" placeholder="e.g. Conference Room A" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                 </div>
 
                 <div className="p-4 rounded-xl border border-line bg-bone/30 space-y-4">
@@ -396,7 +399,7 @@ export default function CalendarPage() {
                   {isVirtual && (
                     <div className="space-y-1.5 pl-7 animate-fade-in">
                       <label className="text-[12px] font-medium text-muted">Meeting Link</label>
-                      <input value={virtualLink} onChange={e => setVirtualLink(e.target.value)} type="url" placeholder="https://zoom.us/j/123456789" className="input-field bg-white text-sm" />
+                      <input value={virtualLink} onChange={e => setVirtualLink(e.target.value)} type="url" placeholder="https://zoom.us/j/123456789" className="w-full px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-colors bg-white" />
                     </div>
                   )}
                 </div>
@@ -408,9 +411,10 @@ export default function CalendarPage() {
               </form>
             </div>
             
-            <div className="shrink-0 px-6 py-4 border-t border-line bg-bone/30 flex justify-end gap-3">
+            <div className="shrink-0 px-6 py-4 border-t border-line bg-bone/30 flex justify-end gap-3 items-center">
+              {isInvalidTime && <span className="text-xs text-red-500 mr-auto font-medium">End time must be after start time</span>}
               <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-ink hover:bg-line/50 rounded-lg transition-colors">Cancel</button>
-              <button type="submit" form="event-form" disabled={createEventMutation.isPending || !title || !startDate || !endDate} className={cn("px-5 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm", (createEventMutation.isPending || !title || !startDate || !endDate) ? "bg-line/50 text-muted cursor-not-allowed border border-line" : "bg-ink text-white hover:bg-ink/90")}>
+              <button type="submit" form="event-form" disabled={isSubmitDisabled} className={cn("px-5 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm", isSubmitDisabled ? "bg-line/50 text-muted cursor-not-allowed border border-line" : "bg-ink text-white hover:bg-ink/90")}>
                 {createEventMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Event"}
               </button>
             </div>

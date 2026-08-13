@@ -1308,6 +1308,18 @@ class Event(models.Model):
         blank=True,
         related_name="organized_events",
     )
+    EVENT_TYPES = (
+        ("meeting", "Meeting"),
+        ("deadline", "Deadline"),
+        ("leave", "Leave"),
+        ("review", "Review"),
+    )
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default="meeting")
+    attendees = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="attended_events",
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
