@@ -33,13 +33,13 @@ export default function CalendarPage() {
   const createEventMutation = useCreateEvent();
   const events = eventsData?.results ?? [];
 
-  const isInvalidTime = startDate && endDate && startTime && endTime ? new Date(`${startDate}T${startTime}`) >= new Date(`${endDate}T${endTime}`) : false;
-  const isSubmitDisabled = createEventMutation.isPending || !title || !startDate || !endDate || isInvalidTime;
-
   // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+
+  const isInvalidTime = startDate && endDate && startTime && endTime ? new Date(`${startDate}T${startTime}`) >= new Date(`${endDate}T${endTime}`) : false;
+  const isSubmitDisabled = createEventMutation.isPending || !title || !startDate || !endDate || isInvalidTime;
   const [isVirtual, setIsVirtual] = useState(false);
   const [virtualLink, setVirtualLink] = useState("");
 
