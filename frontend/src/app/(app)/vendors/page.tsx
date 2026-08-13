@@ -57,7 +57,16 @@ export default function VendorsPage() {
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to create vendor");
+      const data = err.response?.data;
+      if (data && typeof data === 'object' && !data.error) {
+        // Extract first field error
+        const firstKey = Object.keys(data)[0];
+        if (firstKey && Array.isArray(data[firstKey])) {
+          toast.error(`${firstKey}: ${data[firstKey][0]}`);
+          return;
+        }
+      }
+      toast.error(data?.error || "Failed to create vendor");
     }
   });
 
@@ -70,7 +79,16 @@ export default function VendorsPage() {
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || "Failed to update vendor");
+      const data = err.response?.data;
+      if (data && typeof data === 'object' && !data.error) {
+        // Extract first field error
+        const firstKey = Object.keys(data)[0];
+        if (firstKey && Array.isArray(data[firstKey])) {
+          toast.error(`${firstKey}: ${data[firstKey][0]}`);
+          return;
+        }
+      }
+      toast.error(data?.error || "Failed to update vendor");
     }
   });
 
@@ -202,10 +220,14 @@ export default function VendorsPage() {
               className="p-5 space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
+                const payload = { ...form };
+                if (payload.website && !payload.website.startsWith('http://') && !payload.website.startsWith('https://')) {
+                  payload.website = `https://${payload.website}`;
+                }
                 if (editingId) {
-                  updateMutation.mutate(form);
+                  updateMutation.mutate(payload);
                 } else {
-                  mutation.mutate(form);
+                  mutation.mutate(payload);
                 }
               }}
             >
