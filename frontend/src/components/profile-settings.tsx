@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,7 @@ export function ProfileForm() {
               <div className="relative group">
                 <div className="w-28 h-28 rounded-2xl bg-gradient-to-b from-bone to-bone-2 grid place-items-center overflow-hidden shadow-md border-[3px] border-white ring-1 ring-line shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:shadow-lg">
                   {avatar ? (
-                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    <Image src={avatar} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
                   ) : (
                     <UserCircle className="w-14 h-14 text-muted/60" />
                   )}

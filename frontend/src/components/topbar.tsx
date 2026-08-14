@@ -2,6 +2,7 @@
 
 import { Bell, Inbox, LogOut, Search, X, CheckCheck, HelpCircle, Menu } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -289,7 +290,7 @@ export function Topbar() {
         >
           <div className="w-6 h-6 bg-ink text-paper rounded-full grid place-items-center text-[11px] font-medium overflow-hidden shrink-0">
             {user?.avatar ? (
-               <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+               <Image src={user.avatar} alt="Avatar" width={24} height={24} className="w-full h-full object-cover" />
             ) : (
                getInitials(displayName)
             )}

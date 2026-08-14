@@ -8,6 +8,22 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Don't advertise Next.js in response headers
   poweredByHeader: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'jmaclvnwiaycikaphxzs.storage.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'jmaclvnwiaycikaphxzs.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+      }
+    ],
+  },
   async redirects() {
     return [
       {
