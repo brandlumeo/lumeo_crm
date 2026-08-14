@@ -124,7 +124,7 @@ export function DataTable<T>({
                   <div className="flex items-center gap-1.5">
                     {column.header}
                     {column.sortable && (
-                      <span className={`flex flex-col text-[10px] ${sortColumn === column.key ? "opacity-100 text-ink" : "opacity-0 group-hover:opacity-40"}`}>
+                      <span className={`flex flex-col text-[10px] transition-opacity ${sortColumn === column.key ? "opacity-100 text-ink" : "opacity-40 group-hover:opacity-80"}`}>
                         {sortColumn === column.key ? (
                           sortDirection === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
                         ) : (

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Mail, Users, User, Download, Upload, X, Loader2 } from "lucide-react";
+import { Mail, Users, User, Download, Upload, X, Loader2, Phone, MoreHorizontal } from "lucide-react";
 
 import { createLead, exportLeads, updateLead, sendEmail, fetchTeam, fetchServiceCategories } from "@/lib/api";
 import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany, useDeleteLead } from "@/lib/queries";
@@ -21,11 +21,12 @@ import { LeadDetailsSlideover } from "@/components/lead-details-slideover";
 const PAGE_SIZE = 20;
 
 const statusTone: Record<string, string> = {
-  new: "chip chip-neutral",
+  new: "chip chip-info",
   contacted: "chip chip-warning",
   qualified: "chip chip-positive",
-  lost: "chip chip-neutral",
+  lost: "chip chip-danger",
   won: "chip chip-positive",
+  prospect: "chip chip-neutral"
 };
 
 export default function LeadsPage() {
@@ -211,11 +212,22 @@ export default function LeadsPage() {
                   header: "Lead",
                   sortable: true,
                   render: (lead) => (
-                    <div>
-                      <button onClick={() => setSelectedLeadId(lead.id)} className="font-medium text-ink hover:text-accent transition-colors hover:underline text-left">
+                    <div className="group/lead relative flex flex-col items-start min-w-[180px]">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedLeadId(lead.id); }} className="font-medium text-ink hover:text-accent transition-colors hover:underline text-left">
                         {lead.name}
                       </button>
-                      <div className="text-[12px] text-muted mt-0.5">{lead.email}</div>
+                      <div className="text-[12px] text-muted mt-0.5 w-[180px] truncate" title={lead.email}>{lead.email}</div>
+                      
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover/lead:opacity-100 group-hover/lead:pointer-events-auto flex items-center gap-1 z-10 bg-bone-2/95 backdrop-blur border border-line rounded shadow-sm p-1 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${lead.email}`; }} className="p-1 hover:bg-paper rounded text-muted hover:text-ink transition-colors" title="Email">
+                          <Mail className="w-3.5 h-3.5" />
+                        </button>
+                        {lead.mobile && (
+                          <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${lead.mobile}`; }} className="p-1 hover:bg-paper rounded text-muted hover:text-ink transition-colors" title="Call">
+                            <Phone className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ),
                 },
@@ -249,16 +261,25 @@ export default function LeadsPage() {
                   header: "Predictive Score",
                   sortable: true,
                   render: (lead) => {
-                    if (lead.score == null) return <span className="text-xs text-muted">Unscored</span>;
-                    let color = "text-muted";
-                    if (lead.score >= 80) color = "text-emerald-600 font-semibold";
-                    else if (lead.score >= 50) color = "text-amber-600 font-semibold";
-                    else color = "text-red-500 font-medium";
+                    if (lead.score == null) return (
+                      <div className="flex items-center gap-1.5 opacity-60">
+                        <div className="w-2 h-2 rounded-full bg-muted"></div>
+                        <span className="text-xs text-muted">Unscored</span>
+                      </div>
+                    );
+                    let color = "bg-muted";
+                    let textColor = "text-muted";
+                    if (lead.score >= 80) { color = "bg-emerald-500"; textColor = "text-emerald-700 dark:text-emerald-400 font-semibold"; }
+                    else if (lead.score >= 50) { color = "bg-amber-500"; textColor = "text-amber-700 dark:text-amber-400 font-semibold"; }
+                    else { color = "bg-red-500"; textColor = "text-red-700 dark:text-red-400 font-medium"; }
                     
                     return (
-                      <div className="flex items-center gap-1.5" title={lead.score_rationale || ""}>
-                        <span className={`text-sm ${color}`}>{lead.score}</span>
-                        <span className="text-[10px] text-muted">/100</span>
+                      <div className="flex items-center gap-2" title={lead.score_rationale || ""}>
+                        <div className={`w-2 h-2 rounded-full shadow-sm ${color}`}></div>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className={`text-sm ${textColor}`}>{lead.score}</span>
+                          <span className="text-[10px] text-muted">/100</span>
+                        </div>
                       </div>
                     );
                   },
@@ -267,13 +288,13 @@ export default function LeadsPage() {
                   key: "created_at",
                   header: "Added",
                   sortable: true,
-                  render: (lead) => formatDateTime(lead.created_at),
+                  render: (lead) => <span className="whitespace-nowrap">{formatDateTime(lead.created_at)}</span>,
                 },
                 {
                   key: "updated_at",
                   header: "Updated",
                   sortable: true,
-                  render: (lead) => formatDateTime(lead.updated_at),
+                  render: (lead) => <span className="whitespace-nowrap">{formatDateTime(lead.updated_at)}</span>,
                 },
               ]}
               rows={rows}

@@ -168,15 +168,15 @@
   }
 
   .input {
-    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink;
+    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink placeholder:text-muted/50 placeholder:italic;
   }
 
   .select {
-    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink;
+    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink placeholder:text-muted/50 placeholder:italic;
   }
 
   .textarea {
-    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink resize-y min-h-[132px];
+    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink resize-y min-h-[132px] placeholder:text-muted/50 placeholder:italic;
   }
 
   .label {
@@ -197,6 +197,14 @@
 
   .chip-neutral {
     @apply bg-bone-2 text-muted;
+  }
+
+  .chip-danger {
+    @apply bg-red-100 text-red-700 border-transparent dark:bg-red-900/30 dark:text-red-400;
+  }
+
+  .chip-info {
+    @apply bg-blue-100 text-blue-700 border-transparent dark:bg-blue-900/30 dark:text-blue-400;
   }
 
   .surface-muted {
