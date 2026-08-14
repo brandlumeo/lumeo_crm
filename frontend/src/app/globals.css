@@ -4,43 +4,41 @@
 
 @layer base {
   :root {
-    /* Modern Light Theme (Slate/Indigo based) */
-    --color-bone: 248 250 252;
-    --color-bone-2: 241 245 249;
-    --color-paper: 255 255 255;
-    --color-ink: 15 23 42;
-    --color-ink-2: 51 65 85;
-    --color-muted: 100 116 139;
-    --color-line: 226 232 240;
-    --color-line-2: 203 213 225;
-    --color-accent: 79 70 229;
-    --color-accent-soft: 224 231 255;
-    --color-green: 22 163 74;
-    --color-green-soft: 220 252 231;
-    --color-gold: 202 138 4;
-    --color-gold-soft: 254 249 195;
-    --color-blue: 37 99 235;
-    --color-blue-soft: 219 234 254;
+    --color-bone: 244 239 230;
+    --color-bone-2: 236 230 216;
+    --color-paper: 250 246 238;
+    --color-ink: 26 23 20;
+    --color-ink-2: 61 54 45;
+    --color-muted: 122 111 95;
+    --color-line: 221 212 192;
+    --color-line-2: 232 224 206;
+    --color-accent: 255 91 31;
+    --color-accent-soft: 255 230 217;
+    --color-green: 47 107 58;
+    --color-green-soft: 220 235 213;
+    --color-gold: 184 134 44;
+    --color-gold-soft: 242 228 188;
+    --color-blue: 42 78 140;
+    --color-blue-soft: 216 226 242;
   }
 
   .dark {
-    /* Modern Dark Theme (Slate based) */
-    --color-bone: 15 23 42;
-    --color-bone-2: 2 6 23;
-    --color-paper: 30 41 59;
-    --color-ink: 248 250 252;
-    --color-ink-2: 226 232 240;
-    --color-muted: 148 163 184;
-    --color-line: 51 65 85;
-    --color-line-2: 71 85 105;
-    --color-accent: 99 102 241;
-    --color-accent-soft: 49 46 129;
-    --color-green: 34 197 94;
-    --color-green-soft: 20 83 45;
-    --color-gold: 234 179 8;
-    --color-gold-soft: 113 63 18;
-    --color-blue: 59 130 246;
-    --color-blue-soft: 30 58 138;
+    --color-bone: 20 18 16;
+    --color-bone-2: 30 27 25;
+    --color-paper: 26 23 21;
+    --color-ink: 244 239 230;
+    --color-ink-2: 221 212 192;
+    --color-muted: 143 134 122;
+    --color-line: 53 48 42;
+    --color-line-2: 36 32 28;
+    --color-accent: 255 110 56;
+    --color-accent-soft: 56 27 16;
+    --color-green: 74 222 128;
+    --color-green-soft: 17 54 31;
+    --color-gold: 252 211 77;
+    --color-gold-soft: 59 42 16;
+    --color-blue: 96 165 250;
+    --color-blue-soft: 21 38 74;
   }
 
   html,
@@ -50,7 +48,7 @@
     font-family: var(--font-sans), system-ui, sans-serif;
     font-size: 14px;
     line-height: 1.5;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -67,6 +65,22 @@
 
   strong, b {
     font-weight: 600 !important;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    z-index: 1000;
+    mix-blend-mode: multiply;
+  }
+
+  @media print {
+    body::before {
+      display: none !important;
+    }
   }
 
   ::-webkit-scrollbar {
@@ -98,70 +112,71 @@
   }
 
   .card-title {
-    @apply font-sans font-semibold tracking-tight text-lg sm:text-xl flex items-baseline gap-2.5 text-ink;
+    @apply font-serif text-[22px] flex items-baseline gap-2.5;
   }
 
   .card-title-meta {
-    @apply font-sans text-xs text-muted font-normal;
+    @apply font-sans text-[11px] text-muted uppercase tracking-[0.1em];
   }
 
   /* Base button — clearly visible in both light & dark */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium
-           border border-line bg-paper text-ink shadow-sm
+    @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold
+           border border-line bg-bone-2 text-ink
            transition-all duration-200
-           hover:bg-bone-2 hover:-translate-y-[1px] hover:shadow-md
+           hover:bg-line hover:-translate-y-[0.5px]
            active:scale-[0.98] active:translate-y-0
-           focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent
+           focus:outline-none focus:ring-2 focus:ring-ink/20
            disabled:opacity-50 disabled:pointer-events-none;
   }
 
   /* Primary button — high contrast foreground on ink background */
   .btn-primary {
-    @apply bg-accent text-white border-transparent shadow-sm shadow-accent/20
-           hover:bg-accent/90 hover:-translate-y-[1px] hover:shadow-md hover:shadow-accent/30;
+    @apply bg-ink text-paper border-transparent
+           hover:bg-ink-2
+           shadow-sm;
   }
 
   /* Accent button */
   .btn-accent {
-    @apply bg-accent text-white border-transparent shadow-sm shadow-accent/20 hover:opacity-90;
+    @apply bg-accent text-white border-accent hover:opacity-90;
   }
 
   /* Settings save button — always stands out clearly */
   .btn-save {
     @apply inline-flex items-center justify-center gap-2
-           h-10 px-6 rounded-lg text-[13px] font-semibold
-           bg-accent text-white border border-transparent
-           shadow-sm shadow-accent/20
+           h-10 px-5 rounded-lg text-[13px] font-semibold
+           bg-ink text-paper border border-transparent
+           shadow-sm
            transition-all duration-200
-           hover:bg-accent/90 hover:-translate-y-[1px] hover:shadow-md hover:shadow-accent/30
+           hover:bg-ink-2 hover:-translate-y-[1px] hover:shadow-md
            active:scale-[0.98] active:translate-y-0
-           focus:outline-none focus:ring-2 focus:ring-accent/50
+           focus:outline-none focus:ring-2 focus:ring-ink/20
            disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .seg {
-    @apply flex bg-bone-2/50 border border-line rounded-lg p-1 gap-1;
+    @apply flex bg-bone-2 rounded-md p-0.5 gap-px;
   }
 
   .seg button {
-    @apply px-3 py-1.5 text-xs font-medium text-muted rounded-md transition-all duration-200;
+    @apply px-2.5 py-1 text-[11.5px] font-medium text-muted rounded-[4px] transition-colors;
   }
 
   .seg button.on {
-    @apply bg-paper text-ink shadow-sm ring-1 ring-black/5 dark:ring-white/10;
+    @apply bg-paper text-ink shadow-sm;
   }
 
   .input {
-    @apply w-full bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm text-ink outline-none shadow-sm transition-all duration-200 focus:border-accent focus:ring-1 focus:ring-accent placeholder:text-muted/70;
+    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink;
   }
 
   .select {
-    @apply w-full bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm text-ink outline-none shadow-sm transition-all duration-200 focus:border-accent focus:ring-1 focus:ring-accent;
+    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink;
   }
 
   .textarea {
-    @apply w-full bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm text-ink outline-none shadow-sm transition-all duration-200 focus:border-accent focus:ring-1 focus:ring-accent resize-y min-h-[132px] placeholder:text-muted/70;
+    @apply w-full bg-paper border border-line rounded-md px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus:border-ink resize-y min-h-[132px];
   }
 
   .label {
