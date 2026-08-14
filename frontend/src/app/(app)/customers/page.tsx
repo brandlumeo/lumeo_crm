@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Phone, UserCircle2 } from "lucide-react";
+import { Phone, UserCircle2, Mail } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
@@ -155,11 +155,22 @@ export default function CustomersPage() {
                   header: "Customer",
                   sortable: true,
                   render: (customer) => (
-                    <div>
+                    <div className="group/customer relative flex flex-col items-start min-w-[180px]">
                       <Link href={`/customers/${customer.id}`} className="font-medium text-ink hover:text-accent transition-colors hover:underline">
                         {customer.name}
                       </Link>
-                      <div className="text-[12px] text-muted mt-0.5">{customer.email}</div>
+                      <div className="text-[12px] text-muted mt-0.5 w-[180px] truncate" title={customer.email}>{customer.email}</div>
+                      
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover/customer:opacity-100 group-hover/customer:pointer-events-auto flex items-center gap-1 z-10 bg-bone-2/95 backdrop-blur border border-line rounded shadow-sm p-1 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${customer.email}`; }} className="p-1 hover:bg-paper rounded text-muted hover:text-ink transition-colors" title="Email">
+                          <Mail className="w-3.5 h-3.5" />
+                        </button>
+                        {customer.phone && (
+                          <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${customer.phone}`; }} className="p-1 hover:bg-paper rounded text-muted hover:text-ink transition-colors" title="Call">
+                            <Phone className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ),
                 },
@@ -173,7 +184,7 @@ export default function CustomersPage() {
                   key: "created_at",
                   header: "Created",
                   sortable: true,
-                  render: (customer) => formatDateTime(customer.created_at),
+                  render: (customer) => <span className="whitespace-nowrap">{formatDateTime(customer.created_at)}</span>,
                 },
                 {
                   key: "portal_access",
@@ -198,7 +209,7 @@ export default function CustomersPage() {
                     return (
                       <button
                         onClick={() => handleInvite(customer.id)}
-                        className="btn btn-secondary text-xs py-1 px-2"
+                        className="chip chip-info cursor-pointer hover:opacity-80 transition-opacity"
                         disabled={inviteMutation.isPending}
                       >
                         Invite
