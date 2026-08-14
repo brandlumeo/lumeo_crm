@@ -58,34 +58,38 @@ export default function HolidaysPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
         {/* Holidays List */}
-        <div className="card p-6 border border-line bg-paper flex flex-col gap-4">
-          <div className="flex items-center gap-2 border-b border-line-2 pb-3">
-            <CalendarIcon className="w-5 h-5 text-ink-2" />
-            <h2 className="font-serif text-[20px]">Upcoming Holidays</h2>
+        <div className="card h-fit">
+          <div className="card-head">
+            <div className="card-title">
+              <CalendarIcon className="w-[18px] h-[18px] mr-2 inline-block text-muted" />
+              Upcoming Holidays
+              <span className="card-title-meta">{holidays.length} configured</span>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="p-5 flex flex-col">
             {holidays.length === 0 ? (
-              <p className="text-sm text-muted italic">No holidays configured yet.</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-bone-2/30 rounded border border-dashed border-line">
+                <CalendarIcon className="w-8 h-8 text-muted mb-3 opacity-30" />
+                <p className="text-sm text-muted italic">No holidays configured yet.</p>
+              </div>
             ) : (
               holidays.map((holiday) => (
-                <div key={holiday.id} className="border border-line rounded-lg p-4 bg-bone/30 flex items-center justify-between group">
-                  <div className="flex flex-col gap-1">
-                    <div className="font-semibold text-[15px]">{holiday.name}</div>
-                    <div className="text-sm text-ink-2 flex items-center gap-1.5">
-                      <CalendarIcon className="w-3.5 h-3.5 text-muted" />
-                      {formatLongDate(new Date(holiday.date))}
-                    </div>
-                    {holiday.description && (
-                      <p className="text-[12.5px] text-muted mt-1 italic">{holiday.description}</p>
-                    )}
+                <div key={holiday.id} className="group relative flex flex-col gap-1 py-3.5 border-b border-line last:border-0 hover:bg-bone/30 px-3 -mx-3 rounded transition-colors">
+                  <div className="font-medium text-ink text-[14.5px]">{holiday.name}</div>
+                  <div className="text-[12px] text-muted flex items-center gap-1.5">
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    {formatLongDate(new Date(holiday.date))}
                   </div>
+                  {holiday.description && (
+                    <p className="text-[12.5px] text-muted mt-1 italic">{holiday.description}</p>
+                  )}
                   
                   {isManager && (
                     <button
                       onClick={() => deleteHolidayMutation.mutate(holiday.id)}
                       disabled={deleteHolidayMutation.isPending}
-                      className="text-red-500 hover:bg-red-50 p-2 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500/60 hover:text-red-600 hover:bg-red-50 p-2 rounded opacity-0 group-hover:opacity-100 transition-all"
                       title="Remove Holiday"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -99,9 +103,13 @@ export default function HolidaysPage() {
 
         {/* Create Holiday Form */}
         {isManager && (
-          <div className="card p-6 border border-line bg-bone flex flex-col gap-4 h-fit">
-            <h2 className="font-serif text-[18px]">Add New Holiday</h2>
-            <form onSubmit={handleCreate} className="flex flex-col gap-3.5">
+          <div className="card h-fit">
+            <div className="card-head">
+              <div className="card-title">
+                New holiday
+              </div>
+            </div>
+            <form onSubmit={handleCreate} className="p-5 flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Holiday Name</label>
                 <input
@@ -110,7 +118,7 @@ export default function HolidaysPage() {
                   placeholder="e.g. New Year's Day"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-paper border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none"
+                  className="bg-transparent border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none placeholder:text-muted/50 placeholder:italic transition-colors hover:border-line-2"
                 />
               </div>
 
@@ -121,7 +129,7 @@ export default function HolidaysPage() {
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="bg-paper border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none"
+                  className="bg-transparent border border-line rounded px-3 py-2 text-[13px] text-muted focus:text-ink focus:border-ink outline-none transition-colors hover:border-line-2"
                 />
               </div>
 
@@ -131,18 +139,18 @@ export default function HolidaysPage() {
                   placeholder="Additional context..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                  className="bg-paper border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none resize-none"
+                  rows={3}
+                  className="bg-transparent border border-line rounded px-3 py-2 text-sm focus:border-ink outline-none resize-none placeholder:text-muted/50 placeholder:italic transition-colors hover:border-line-2"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={createHolidayMutation.isPending}
-                className="bg-ink hover:opacity-90 text-paper py-2.5 rounded-lg text-xs font-semibold transition-all mt-2 flex items-center justify-center gap-1.5"
+                className="btn btn-primary w-full mt-2"
               >
-                <Plus className="w-4 h-4" />
-                {createHolidayMutation.isPending ? "ADDING..." : "ADD HOLIDAY"}
+                <Plus className="w-4 h-4 mr-1.5 inline-block" />
+                {createHolidayMutation.isPending ? "Adding..." : "Add holiday"}
               </button>
             </form>
           </div>
