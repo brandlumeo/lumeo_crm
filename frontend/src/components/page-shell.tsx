@@ -36,8 +36,8 @@ export function PageShell({
               {eyebrow}
             </div>
           )}
-          <h1 className="font-serif text-[40px] md:text-[56px] leading-none">{title}</h1>
-          {description && <p className="text-muted mt-2 text-sm max-w-2xl">{description}</p>}
+          <h1 className="font-sans font-bold tracking-tight text-3xl md:text-4xl text-ink leading-tight">{title}</h1>
+          {description && <p className="text-muted mt-2 text-[15px] max-w-2xl leading-relaxed">{description}</p>}
         </div>
 
         {actions && actions.length > 0 ? (
