@@ -204,7 +204,7 @@
   }
 
   .chip-info {
-    @apply bg-blue-100 text-blue-700 border-transparent dark:bg-blue-900/30 dark:text-blue-400;
+    @apply bg-blue-soft text-blue border-transparent;
   }
 
   .surface-muted {
