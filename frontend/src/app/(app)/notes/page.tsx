@@ -13,7 +13,9 @@ import { useNotePage } from "@/lib/queries";
 import { formatDateTime } from "@/lib/utils";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { SkeletonTable } from "@/components/skeleton-table";
-import { RichTextEditor, RichTextDisplay } from "@/components/rich-text-editor";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(() => import("@/components/rich-text-editor").then(mod => mod.RichTextEditor), { ssr: false });
+const RichTextDisplay = dynamic(() => import("@/components/rich-text-editor").then(mod => mod.RichTextDisplay), { ssr: false });
 
 const PAGE_SIZE = 20;
 

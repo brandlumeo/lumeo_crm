@@ -7,7 +7,8 @@ import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, T
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(() => import("@/components/rich-text-editor").then(mod => mod.RichTextEditor), { ssr: false });
 
 export default function QuotesPage() {
   const { data: company } = useCurrentCompany();

@@ -3,20 +3,12 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, Award, Activity, CheckCircle, XCircle, BarChart3, Clock, LayoutDashboard } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const RevenueAreaChart = dynamic(() => import("@/components/analytics-charts").then(mod => mod.RevenueAreaChart), { ssr: false });
+const ConversionAreaChart = dynamic(() => import("@/components/analytics-charts").then(mod => mod.ConversionAreaChart), { ssr: false });
+const ForecastBarChart = dynamic(() => import("@/components/analytics-charts").then(mod => mod.ForecastBarChart), { ssr: false });
+const WinLossPieChart = dynamic(() => import("@/components/analytics-charts").then(mod => mod.WinLossPieChart), { ssr: false });
 
 import { PageShell } from "@/components/page-shell";
 import { usePremiumAnalytics } from "@/lib/queries";
@@ -217,29 +209,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <div className="p-6 h-[300px]">
-                {revenue_by_month?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenue_by_month} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                      <XAxis dataKey="month" stroke="#475569" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#475569" fontSize={12} tickFormatter={(val) => formatCompactINR(val)} axisLine={false} tickLine={false} />
-                      <RechartsTooltip
-                        contentStyle={{ backgroundColor: "#020617", borderColor: "#1e293b", borderRadius: "8px" }}
-                        itemStyle={{ color: "#10b981", fontWeight: "bold" }}
-                        formatter={(value: any) => formatINR(value as number)}
-                      />
-                      <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-muted text-sm">No revenue data available yet.</div>
-                )}
+                <RevenueAreaChart data={revenue_by_month} />
               </div>
             </motion.div>
           )}
@@ -261,29 +231,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <div className="p-6 h-[300px]">
-                {lead_conversion?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={lead_conversion} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorConversion" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#B8862C" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#B8862C" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                      <XAxis dataKey="month" stroke="#475569" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#475569" fontSize={12} tickFormatter={(val) => `${val}%`} axisLine={false} tickLine={false} />
-                      <RechartsTooltip
-                        contentStyle={{ backgroundColor: "#020617", borderColor: "#1e293b", borderRadius: "8px" }}
-                        itemStyle={{ color: "#B8862C", fontWeight: "bold" }}
-                        formatter={(value: any) => `${(value as number).toFixed(1)}%`}
-                      />
-                      <Area type="monotone" dataKey="rate" stroke="#B8862C" strokeWidth={3} fillOpacity={1} fill="url(#colorConversion)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-muted text-sm">No conversion data available yet.</div>
-                )}
+                <ConversionAreaChart data={lead_conversion} />
               </div>
             </motion.div>
           )}
@@ -306,30 +254,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="p-6 h-[300px]">
-              {revenue_forecast?.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenue_forecast} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.2} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="month" stroke="#475569" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
-                    <YAxis stroke="#475569" fontSize={12} tickFormatter={(val) => formatCompactINR(val)} axisLine={false} tickLine={false} />
-                    <RechartsTooltip
-                      contentStyle={{ backgroundColor: "#020617", borderColor: "#1e293b", borderRadius: "8px" }}
-                      itemStyle={{ color: "#3b82f6", fontWeight: "bold" }}
-                      formatter={(value: any) => formatINR(value as number)}
-                      cursor={{ fill: "#1e293b", opacity: 0.4 }}
-                    />
-                    <Bar dataKey="expected_revenue" fill="url(#colorForecast)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted text-sm">No active deals with expected close dates available for forecasting.</div>
-              )}
+              <ForecastBarChart data={revenue_forecast} />
             </div>
           </motion.div>
         )}
@@ -453,30 +378,7 @@ export default function AnalyticsPage() {
 
                 {/* Win/Loss Pie Chart */}
                 <div className="flex flex-col items-center justify-center border-l border-slate-800/50 pl-4">
-                  {win_loss.won > 0 || win_loss.lost > 0 ? (
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip
-                          contentStyle={{ backgroundColor: "#020617", borderColor: "#1e293b", borderRadius: "8px" }}
-                          itemStyle={{ fontWeight: "bold" }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="text-sm text-muted">No closed deals</div>
-                  )}
+                  <WinLossPieChart data={pieData} />
                   <div className="text-center mt-2">
                     <div className="text-2xl font-serif text-ink">{win_loss.ratio.toFixed(1)}%</div>
                     <div className="text-xs text-muted uppercase tracking-wider">Win Ratio</div>
