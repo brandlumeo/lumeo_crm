@@ -122,11 +122,12 @@ export function RevenueChart({
               width={60}
             />
             <Tooltip
+              cursor={{ stroke: "#7A6F5F", strokeWidth: 1, strokeDasharray: "4 4", opacity: 0.5 }}
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-paper border border-line p-3 rounded-lg shadow-xl shadow-black/5 flex flex-col gap-1.5 min-w-[140px]">
-                      <div className="text-[11px] text-muted font-sans font-medium mb-1 border-b border-line pb-1">
+                    <div className="bg-bone-2/90 backdrop-blur-md border border-line p-3 rounded-lg shadow-xl shadow-black/5 flex flex-col gap-1.5 min-w-[140px] animate-rise">
+                      <div className="text-[11px] text-muted font-sans font-medium mb-1 border-b border-line pb-1.5">
                         {label}
                       </div>
                       {payload.map((entry: any) => {
@@ -136,8 +137,8 @@ export function RevenueChart({
                           <div key={entry.dataKey} className="flex items-center justify-between gap-4 font-mono text-[12px]">
                             <span className="flex items-center gap-1.5 capitalize text-ink">
                               <span
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: entry.color }}
+                                className="w-1.5 h-1.5 rounded-full ring-2 ring-offset-1 ring-offset-bone-2"
+                                style={{ backgroundColor: entry.color, ringColor: entry.color }}
                               />
                               {entry.dataKey}
                             </span>

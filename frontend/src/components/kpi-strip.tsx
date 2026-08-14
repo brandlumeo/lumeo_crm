@@ -31,21 +31,24 @@ export function KpiStrip({ items }: { items: KpiItem[] }) {
           <div
             key={item.label}
             className={cn(
-              "p-6",
+              "p-6 relative group transition-all duration-300 hover:bg-bone-2/30",
               index < items.length - 1 && "lg:border-r border-line-2",
               index % 2 === 0 && "sm:border-r",
               index < items.length - 1 && "border-b lg:border-b-0 border-line-2",
               index >= 2 && "sm:border-b-0"
             )}
           >
-            <div className="text-[11px] uppercase tracking-[0.1em] text-muted mb-3.5 flex justify-between items-center gap-3">
+            {/* Subtle radial gradient that follows hover (using simple css for now, or just a static gradient) */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+            
+            <div className="relative z-10 text-[11px] uppercase tracking-[0.1em] text-muted mb-3.5 flex justify-between items-center gap-3">
               <span>{item.label}</span>
               <span className={toneClassMap[item.tone]}>{item.meta}</span>
             </div>
-            <div className="font-serif text-[38px] leading-none mb-3.5 tabular-nums">
+            <div className="relative z-10 font-serif text-[38px] leading-none mb-3.5 tabular-nums">
               {item.value}
             </div>
-            <div className="h-10 w-full overflow-visible">
+            <div className="relative z-10 h-10 w-full overflow-visible">
               <ResponsiveContainer width="100%" height="100%">
                 {item.fillColor ? (
                   <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>

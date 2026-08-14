@@ -117,22 +117,22 @@ function DashboardHeader() {
           <span className="w-[18px] h-px bg-accent" />
           {today}
         </div>
-        <h1 className="font-serif text-[40px] md:text-[56px] leading-none">
+        <h1 className="font-serif text-[40px] md:text-[56px] leading-none tracking-tight">
           {greeting},
           <br />
-          <em className="text-accent not-italic">{name}.</em>
+          <em className="not-italic text-transparent bg-clip-text bg-gradient-to-r from-accent to-ink">{name}.</em>
         </h1>
         <p className="text-muted mt-2 text-sm max-w-2xl">
           {companyName} is tracking {leadsCount} leads, {customersCount} customers, and {activeDeals} active deals inside Lumeo.
         </p>
       </div>
-      <div className="flex gap-2 items-center shrink-0">
-        <Link href="/leads" className="btn">
-          <Plus className="w-3 h-3" strokeWidth={2.5} />
+      <div className="flex gap-3 items-center shrink-0">
+        <Link href="/leads" className="btn bg-paper border border-line shadow-sm hover:border-ink transition-colors">
+          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
           New lead
         </Link>
-        <Link href="/deals" className="btn btn-primary">
-          <Layers className="w-3 h-3" />
+        <Link href="/deals" className="btn btn-primary shadow-md hover:shadow-lg transition-all">
+          <Layers className="w-3.5 h-3.5" />
           New deal
         </Link>
       </div>
@@ -342,11 +342,20 @@ export default function DashboardPage() {
   return (
     <div className="p-4 md:p-7 pb-16 max-w-[1400px]">
       <DashboardHeader />
-      <DashboardKPIs />
-      <DashboardPipeline />
-      <DashboardCharts />
       
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 mb-6">
+      <div className="animate-rise" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+        <DashboardKPIs />
+      </div>
+      
+      <div className="animate-rise" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
+        <DashboardPipeline />
+      </div>
+      
+      <div className="animate-rise" style={{ animationDelay: "300ms", animationFillMode: "both" }}>
+        <DashboardCharts />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 mb-6 animate-rise" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
         <DashboardTasksNotes />
         <DashboardActivity />
       </div>
