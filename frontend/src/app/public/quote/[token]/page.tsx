@@ -6,6 +6,7 @@ import { useState, useRef, use, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePublicQuote, useSignPublicQuote } from "@/lib/queries";
 import dynamic from "next/dynamic";
+import type ReactSignatureCanvas from "react-signature-canvas";
 const SignatureCanvas = dynamic(() => import("react-signature-canvas"), { ssr: false });
 import { Loader2, CheckCircle2, FileText, Download } from "lucide-react";
 import { QuoteLineItem } from "@/lib/types";
@@ -79,7 +80,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
   const fontSizePx = SCALE_ROOT_PX[quoteScale] ?? '15px';
 
   const [signedByName, setSignedByName] = useState("");
-  const sigCanvas = useRef<SignatureCanvas>(null);
+  const sigCanvas = useRef<ReactSignatureCanvas>(null);
 
   if (isLoading) {
     return (
@@ -449,6 +450,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   </div>
                   <div className="border-2 border-dashed border-line bg-bone rounded-lg overflow-hidden cursor-crosshair">
                     <SignatureCanvas
+                      // @ts-expect-error dynamic component ref forwarding
                       ref={sigCanvas}
                       canvasProps={{
                         className: "w-full h-48",

@@ -6,6 +6,7 @@ import { useState, useRef, use, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyPublicInvoicePayment } from "@/lib/queries";
 import dynamic from "next/dynamic";
+import type ReactSignatureCanvas from "react-signature-canvas";
 const SignatureCanvas = dynamic(() => import("react-signature-canvas"), { ssr: false });
 import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-react";
 import { InvoiceLineItem } from "@/lib/types";
@@ -92,7 +93,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   const fontSizePx = SCALE_ROOT_PX[scale] ?? '15px';
 
   const [signedByName, setSignedByName] = useState("");
-  const sigCanvas = useRef<SignatureCanvas>(null);
+  const sigCanvas = useRef<ReactSignatureCanvas>(null);
 
   if (isLoading) {
     return (
@@ -531,6 +532,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   </div>
                   <div className="border-2 border-dashed border-line bg-bone rounded-lg overflow-hidden cursor-crosshair">
                     <SignatureCanvas
+                      // @ts-expect-error dynamic component ref forwarding
                       ref={sigCanvas}
                       canvasProps={{
                         className: "w-full h-48",
