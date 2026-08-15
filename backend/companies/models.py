@@ -279,6 +279,11 @@ class Company(models.Model):
     razorpay_key_id = models.CharField(max_length=255, blank=True, null=True)
     razorpay_key_secret = models.CharField(max_length=255, blank=True, null=True)
     
+    # WhatsApp Integration
+    whatsapp_access_token = models.CharField(max_length=512, blank=True, null=True, help_text="Meta System User Access Token")
+    whatsapp_phone_number_id = models.CharField(max_length=255, blank=True, null=True, help_text="WhatsApp Phone Number ID")
+    whatsapp_business_account_id = models.CharField(max_length=255, blank=True, null=True, help_text="WhatsApp Business Account ID")
+    
     tax_id = models.CharField(max_length=100, blank=True, null=True)
     tax_id_label = models.CharField(max_length=50, blank=True, null=True, help_text="e.g. VAT, EIN, GST")
     taxes = models.JSONField(default=list, blank=True)
