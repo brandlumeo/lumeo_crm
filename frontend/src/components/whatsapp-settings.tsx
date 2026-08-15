@@ -29,17 +29,14 @@ export function WhatsappSettingsForm() {
     e.preventDefault();
     if (!company) return;
 
-    updateCompany.mutate(
-      { id: company.id, payload: formData },
-      {
-        onSuccess: () => {
-          toast.success("WhatsApp credentials saved successfully.");
-        },
-        onError: (err) => {
-          toast.error("Failed to save credentials.");
-        },
-      }
-    );
+    updateCompany.mutate(formData, {
+      onSuccess: () => {
+        toast.success("WhatsApp credentials saved successfully.");
+      },
+      onError: () => {
+        toast.error("Failed to save credentials.");
+      },
+    });
   };
 
   if (isLoading) {
