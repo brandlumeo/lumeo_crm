@@ -138,7 +138,7 @@ export function RevenueChart({
                             <span className="flex items-center gap-1.5 capitalize text-ink">
                               <span
                                 className="w-1.5 h-1.5 rounded-full ring-2 ring-offset-1 ring-offset-bone-2"
-                                style={{ backgroundColor: entry.color, ringColor: entry.color }}
+                                style={{ backgroundColor: entry.color, "--tw-ring-color": entry.color } as React.CSSProperties}
                               />
                               {entry.dataKey}
                             </span>
