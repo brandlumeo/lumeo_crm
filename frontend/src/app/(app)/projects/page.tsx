@@ -66,11 +66,11 @@ export default function ProjectsPage() {
       description="Manage ongoing projects, track progress, and collaborate with your team to deliver on won deals."
     >
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_360px] gap-6">
-        <div className="card animate-rise">
-          <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <div className="card-title">
-              Project list
-              <span className="card-title-meta">{data?.count ?? 0} total projects</span>
+        <div className="bg-paper border border-line rounded-[14px] shadow-sm overflow-hidden flex flex-col h-full animate-rise">
+          <div className="p-5 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-muted/30">
+            <div className="flex flex-col">
+              <h2 className="text-sm font-semibold text-ink">Project list</h2>
+              <span className="text-xs text-muted mt-0.5">{data?.count ?? 0} total projects</span>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <input
@@ -216,12 +216,10 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        <div className="card animate-rise">
-          <div className="card-head">
-            <div className="card-title">
-              New project
-              <span className="card-title-meta">Manual entry</span>
-            </div>
+        <div className="bg-paper border border-line rounded-[14px] shadow-sm overflow-hidden h-max animate-rise">
+          <div className="p-5 border-b border-line bg-surface-muted/30">
+            <h2 className="text-sm font-semibold text-ink">New project</h2>
+            <p className="text-xs text-muted mt-0.5">Manual entry</p>
           </div>
           <form
             className="p-5 space-y-4"

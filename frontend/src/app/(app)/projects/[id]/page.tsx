@@ -122,8 +122,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">
         <div className="space-y-6">
-          <div className="card animate-rise">
-            <div className="p-6 border-b border-line flex flex-col items-center text-center">
+          <div className="bg-paper border border-line rounded-[14px] shadow-sm overflow-hidden animate-rise">
+            <div className="p-6 border-b border-line flex flex-col items-center text-center bg-surface-muted/30">
               <div className="w-16 h-16 bg-bone-2 rounded-full grid place-items-center mb-3 border border-line shadow-sm">
                 <FolderKanban className="w-8 h-8 text-muted" strokeWidth={1.5} />
               </div>
