@@ -8,6 +8,7 @@ import { cn, getInitials } from "@/lib/utils";
 import { commsApi, type Conversation, type Message } from "@/lib/api-communications";
 import { useCurrentUser } from "@/lib/queries";
 import { api } from "@/lib/api";
+import { WhatsappInbox } from "@/components/whatsapp-inbox";
 
 function timeAgoShort(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -21,6 +22,7 @@ function timeAgoShort(dateStr: string) {
 
 export default function InboxPage() {
   const { data: user } = useCurrentUser();
+  const [activeTab, setActiveTab] = useState<"internal" | "whatsapp">("internal");
   const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [msgBody, setMsgBody] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -84,8 +86,30 @@ export default function InboxPage() {
   const activeConv = conversations.find(c => c.id === activeConvId);
 
   return (
-    <PageShell title="Inbox" description="Internal team messages & communications">
-      <div className="flex h-[calc(100vh-280px)] min-h-[350px] bg-paper border border-line rounded-xl shadow-sm overflow-hidden">
+    <PageShell title="Inbox" description="Internal team messages & WhatsApp communications">
+      <div className="flex gap-4 border-b border-line mb-6">
+        <button
+          onClick={() => setActiveTab("internal")}
+          className={cn(
+            "pb-3 text-sm font-medium border-b-2 transition-colors",
+            activeTab === "internal" ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"
+          )}
+        >
+          Internal Chat
+        </button>
+        <button
+          onClick={() => setActiveTab("whatsapp")}
+          className={cn(
+            "pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5",
+            activeTab === "whatsapp" ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink"
+          )}
+        >
+          WhatsApp <span className="text-[9px] bg-accent/10 text-accent px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider">Beta</span>
+        </button>
+      </div>
+
+      {activeTab === "internal" ? (
+        <div className="flex h-[calc(100vh-280px)] min-h-[350px] bg-paper border border-line rounded-xl shadow-sm overflow-hidden">
         
         {/* Left: Sidebar */}
         <div className="w-full md:w-80 border-r border-line flex flex-col bg-bone/30 shrink-0">
@@ -270,19 +294,24 @@ export default function InboxPage() {
                 </form>
               </div>
             </>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-muted p-8 text-center bg-bone/10">
-              <div className="w-16 h-16 rounded-2xl bg-bone-2 grid place-items-center mb-4">
-                <MessageSquare className="w-8 h-8 text-muted/50" />
+            ) : (
+              <div className="flex-1 grid place-items-center text-muted">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-bone grid place-items-center mx-auto mb-4 border border-line">
+                    <MessageSquare className="w-8 h-8 opacity-40" />
+                  </div>
+                  <h3 className="text-sm font-medium text-ink">Your Messages</h3>
+                  <p className="text-xs max-w-[200px] mt-1 leading-relaxed">
+                    Select a conversation or start a new one to begin messaging.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-lg font-serif text-ink mb-2">Your Inbox</h3>
-              <p className="text-sm max-w-sm">
-                Select a conversation on the left to start messaging, or click the new message icon to start a chat with a team member.
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <WhatsappInbox />
+      )}
     </PageShell>
   );
 }

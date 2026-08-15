@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem, WhatsAppMessage
 
 
 
@@ -1837,3 +1837,20 @@ class BillSerializer(serializers.ModelSerializer):
                 BillItem.objects.create(bill=instance, **item_data)
         return bill
 
+
+class WhatsAppMessageSerializer(CompanyScopedSerializer):
+    class Meta:
+        model = WhatsAppMessage
+        fields = (
+            "id",
+            "company",
+            "company_id",
+            "lead",
+            "lead_id",
+            "message_id",
+            "direction",
+            "content",
+            "status",
+            "created_at",
+        )
+        read_only_fields = ("company", "company_id", "message_id", "created_at", "status")

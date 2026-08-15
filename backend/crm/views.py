@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, WhatsAppMessage
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -44,10 +44,11 @@ from .serializers import (
     ServiceCategorySerializer,
     ProjectSerializer,
     TimesheetSerializer,
-    QuoteSerializer,
     VendorSerializer,
     PurchaseOrderSerializer,
     BillSerializer,
+    BillItemSerializer,
+    WhatsAppMessageSerializer,
 )
 from .emailing import send_crm_email
 
@@ -178,6 +179,67 @@ class CompanyScopedModelViewSet(ModelViewSet):
                 pass
 
         return queryset
+
+class WhatsAppMessageViewSet(CompanyScopedModelViewSet):
+    queryset = WhatsAppMessage.objects.all()
+    serializer_class = WhatsAppMessageSerializer
+    filterset_fields = ["lead", "direction", "status"]
+    
+    @action(detail=False, methods=['post'])
+    def send_message(self, request):
+        company = request.user.company
+        lead_id = request.data.get('lead_id')
+        content = request.data.get('content')
+        
+        if not lead_id or not content:
+            return Response({"error": "lead_id and content are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            lead = Lead.objects.get(id=lead_id, company=company)
+        except Lead.DoesNotExist:
+            return Response({"error": "Lead not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if not company.whatsapp_access_token or not company.whatsapp_phone_number_id:
+            return Response({"error": "WhatsApp credentials not configured for this workspace"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        import requests
+        
+        url = f"https://graph.facebook.com/v19.0/{company.whatsapp_phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {company.whatsapp_access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": lead.mobile,
+            "type": "text",
+            "text": {"body": content}
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response_data = response.json()
+            
+            if response.status_code == 200:
+                message_id = response_data.get('messages', [{}])[0].get('id', 'unknown')
+                
+                # Save to database
+                wa_msg = WhatsAppMessage.objects.create(
+                    company=company,
+                    lead=lead,
+                    message_id=message_id,
+                    direction='outbound',
+                    content=content,
+                    status='sent',
+                    raw_payload=response_data
+                )
+                
+                return Response(WhatsAppMessageSerializer(wa_msg).data, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Failed to send via Meta API", "details": response_data}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ServiceCategoryViewSet(CompanyScopedModelViewSet):
     permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
