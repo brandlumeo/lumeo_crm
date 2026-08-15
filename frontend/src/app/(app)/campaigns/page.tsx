@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCampaigns, useCreateCampaign, useSendCampaign, useDeleteCampaign, useUpdateCampaign } from "@/lib/queries";
-import { Plus, Send, Trash2, Mail, Clock, Search, Loader2, Edit2, X, Copy } from "lucide-react";
+import { useCampaigns, useCreateCampaign, useSendCampaign, useDeleteCampaign, useUpdateCampaign, useSendTestCampaign, useScheduleCampaign } from "@/lib/queries";
+import { Plus, Send, Trash2, Mail, Clock, Search, Loader2, Edit2, X, Copy, CalendarClock } from "lucide-react";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,17 @@ export default function CampaignsPage() {
   const [newCampaign, setNewCampaign] = useState({ name: "", subject: "", from_name: "", from_email: "", body_html: "", target_audience: "all_leads" });
   const [confirmSendId, setConfirmSendId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  
+  const sendTestMutation = useSendTestCampaign();
+  const scheduleMutation = useScheduleCampaign();
+  
+  const [testEmailOpen, setTestEmailOpen] = useState(false);
+  const [testCampaignId, setTestCampaignId] = useState<number | null>(null);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleCampaignId, setScheduleCampaignId] = useState<number | null>(null);
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const campaigns = data?.results || [];
 
@@ -99,6 +110,32 @@ export default function CampaignsPage() {
       deleteMutation.mutate(confirmDeleteId, {
         onSuccess: () => setConfirmDeleteId(null),
         onError: () => setConfirmDeleteId(null)
+      });
+    }
+  };
+
+  const handleSendTest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (testCampaignId && testEmailAddress) {
+      sendTestMutation.mutate({ id: testCampaignId, email: testEmailAddress }, {
+        onSuccess: () => {
+          setTestEmailOpen(false);
+          setTestEmailAddress("");
+          setTestCampaignId(null);
+        }
+      });
+    }
+  };
+
+  const handleSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (scheduleCampaignId && scheduledAt) {
+      scheduleMutation.mutate({ id: scheduleCampaignId, scheduled_at: new Date(scheduledAt).toISOString() }, {
+        onSuccess: () => {
+          setScheduleOpen(false);
+          setScheduledAt("");
+          setScheduleCampaignId(null);
+        }
       });
     }
   };
@@ -183,6 +220,13 @@ export default function CampaignsPage() {
                         <span className="text-emerald-600 font-medium">{campaign.sent_count} sent</span>
                         {campaign.failed_count > 0 && <span className="text-red-600">{campaign.failed_count} failed</span>}
                       </div>
+                    ) : campaign.status === "scheduled" ? (
+                      <div className="flex items-center gap-1.5 text-amber-600 font-medium">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Scheduled for {new Date(campaign.scheduled_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                    ) : campaign.status === "sending" ? (
+                       <span className="text-blue-600 font-medium">Sending...</span>
                     ) : (
                       <span className="text-muted">-</span>
                     )}
@@ -209,10 +253,30 @@ export default function CampaignsPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => {
+                              setTestCampaignId(campaign.id);
+                              setTestEmailOpen(true);
+                            }}
+                            className="p-1.5 text-muted hover:text-ink hover:bg-bone rounded transition-colors"
+                            title="Send Test Email"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setScheduleCampaignId(campaign.id);
+                              setScheduleOpen(true);
+                            }}
+                            className="p-1.5 text-muted hover:text-ink hover:bg-bone rounded transition-colors"
+                            title="Schedule for Later"
+                          >
+                            <CalendarClock className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleSend(campaign.id)}
                             disabled={sendMutation.isPending}
                             className="p-1.5 text-ink hover:bg-bone rounded transition-colors"
-                            title="Send Campaign"
+                            title="Send Now"
                           >
                             <Send className="w-4 h-4" />
                           </button>
@@ -391,6 +455,92 @@ export default function CampaignsPage() {
         variant="danger"
         loading={deleteMutation.isPending}
       />
+
+      <Dialog.Root open={testEmailOpen} onOpenChange={setTestEmailOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-paper shadow-2xl z-50 border border-line rounded-[14px] p-6 animate-zoom-in">
+            <Dialog.Title className="font-serif text-[20px] text-ink mb-1">
+              Send Test Email
+            </Dialog.Title>
+            <Dialog.Description className="text-[13px] text-muted mb-5">
+              Send a test version of this campaign to verify formatting and content before blasting your audience.
+            </Dialog.Description>
+            
+            <form onSubmit={handleSendTest} className="flex flex-col gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Test Email Address</label>
+                <input
+                  required
+                  type="email"
+                  value={testEmailAddress}
+                  onChange={(e) => setTestEmailAddress(e.target.value)}
+                  placeholder="you@example.com"
+                  className="input w-full"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-2">
+                <Dialog.Close asChild>
+                  <button type="button" className="px-4 py-2 rounded-lg text-[13px] font-bold text-ink-2 hover:bg-bone transition-colors">
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={sendTestMutation.isPending || !testEmailAddress}
+                  className="btn bg-ink text-paper hover:bg-ink-2 shadow-sm font-medium px-6 py-2"
+                >
+                  {sendTestMutation.isPending ? "Sending..." : "Send Test"}
+                </button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <Dialog.Root open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-paper shadow-2xl z-50 border border-line rounded-[14px] p-6 animate-zoom-in">
+            <Dialog.Title className="font-serif text-[20px] text-ink mb-1">
+              Schedule Campaign
+            </Dialog.Title>
+            <Dialog.Description className="text-[13px] text-muted mb-5">
+              Pick a date and time to automatically send this campaign to your audience.
+            </Dialog.Description>
+            
+            <form onSubmit={handleSchedule} className="flex flex-col gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Date & Time</label>
+                <input
+                  required
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  className="input w-full"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-2">
+                <Dialog.Close asChild>
+                  <button type="button" className="px-4 py-2 rounded-lg text-[13px] font-bold text-ink-2 hover:bg-bone transition-colors">
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={scheduleMutation.isPending || !scheduledAt}
+                  className="btn bg-ink text-paper hover:bg-ink-2 shadow-sm font-medium px-6 py-2"
+                >
+                  {scheduleMutation.isPending ? "Scheduling..." : "Schedule"}
+                </button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
     </div>
   );
 }

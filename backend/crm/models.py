@@ -1144,6 +1144,7 @@ class BookingLink(models.Model):
 class Campaign(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
+        SCHEDULED = "scheduled", "Scheduled"
         SENDING = "sending", "Sending"
         COMPLETED = "completed", "Completed"
 
@@ -1162,6 +1163,7 @@ class Campaign(models.Model):
     
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

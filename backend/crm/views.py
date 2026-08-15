@@ -1805,6 +1805,49 @@ class CampaignViewSet(CompanyScopedModelViewSet):
     ordering_fields = ("created_at", "name", "status")
     ordering = ("-created_at",)
 
+    @action(detail=True, methods=["post"], url_path="send-test")
+    def send_test_email(self, request, pk=None):
+        campaign = self.get_object()
+        test_email = request.data.get("email")
+        
+        if not test_email:
+            return Response({"error": "Test email address is required."}, status=400)
+            
+        try:
+            send_crm_email(
+                company=request.user.company,
+                subject_template=campaign.subject,
+                body_template=campaign.body_html,
+                lead=None,
+                customer=None,
+                to_email=test_email,
+                actor_user=request.user,
+            )
+            return Response({"status": "Test email sent successfully"})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+    @action(detail=True, methods=["post"], url_path="schedule")
+    def schedule_campaign(self, request, pk=None):
+        import dateutil.parser
+        
+        campaign = self.get_object()
+        scheduled_at_str = request.data.get("scheduled_at")
+        
+        if not scheduled_at_str:
+            return Response({"error": "scheduled_at timestamp is required."}, status=400)
+            
+        try:
+            scheduled_at = dateutil.parser.parse(scheduled_at_str)
+        except Exception:
+            return Response({"error": "Invalid timestamp format."}, status=400)
+            
+        campaign.status = Campaign.Status.SCHEDULED
+        campaign.scheduled_at = scheduled_at
+        campaign.save(update_fields=["status", "scheduled_at"])
+        
+        return Response({"status": "Campaign scheduled successfully", "scheduled_at": scheduled_at})
+
     @action(detail=True, methods=["post"], url_path="send")
     def send_campaign(self, request, pk=None):
         import time

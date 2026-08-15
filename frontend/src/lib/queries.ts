@@ -96,6 +96,8 @@ import {
   updateCampaign,
   deleteCampaign,
   sendCampaign,
+  sendTestCampaign,
+  scheduleCampaign,
   fetchTickets,
   fetchTicket,
   createTicket,
@@ -984,6 +986,22 @@ export function useSendCampaign() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: sendCampaign,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+    },
+  });
+}
+
+export function useSendTestCampaign() {
+  return useMutation({
+    mutationFn: ({ id, email }: { id: number; email: string }) => sendTestCampaign(id, email),
+  });
+}
+
+export function useScheduleCampaign() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, scheduled_at }: { id: number; scheduled_at: string }) => scheduleCampaign(id, scheduled_at),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["campaigns"] });
     },

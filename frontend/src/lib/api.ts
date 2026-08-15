@@ -1270,6 +1270,16 @@ export async function sendCampaign(id: number) {
   return data;
 }
 
+export async function sendTestCampaign(id: number, email: string) {
+  const { data } = await api.post<{ status: string }>(`${endpoints.campaigns}${id}/send-test/`, { email });
+  return data;
+}
+
+export async function scheduleCampaign(id: number, scheduled_at: string) {
+  const { data } = await api.post<{ status: string; scheduled_at: string }>(`${endpoints.campaigns}${id}/schedule/`, { scheduled_at });
+  return data;
+}
+
 export async function fetchTickets(params?: ListParams) {
   return listPage<Ticket>(endpoints.tickets, params);
 }
