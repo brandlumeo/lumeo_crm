@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCampaigns, useCreateCampaign, useSendCampaign, useDeleteCampaign, useUpdateCampaign } from "@/lib/queries";
-import { Plus, Send, Trash2, Mail, Clock, Search, Loader2, Edit2, X } from "lucide-react";
+import { Plus, Send, Trash2, Mail, Clock, Search, Loader2, Edit2, X, Copy } from "lucide-react";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
@@ -61,6 +61,19 @@ export default function CampaignsPage() {
   const openCreateDrawer = () => {
     setEditCampaignId(null);
     setNewCampaign({ name: "", subject: "", from_name: "", from_email: "", body_html: "", target_audience: "all_leads" });
+    setIsDrawerOpen(true);
+  };
+
+  const handleDuplicate = (campaign: any) => {
+    setEditCampaignId(null); // It's a new campaign
+    setNewCampaign({
+      name: `${campaign.name} (Copy)`,
+      subject: campaign.subject,
+      from_name: campaign.from_name || "",
+      from_email: campaign.from_email || "",
+      body_html: campaign.body_html || "",
+      target_audience: campaign.target_audience || "all_leads",
+    });
     setIsDrawerOpen(true);
   };
 
@@ -179,6 +192,13 @@ export default function CampaignsPage() {
                   </td>
                   <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleDuplicate(campaign)}
+                        className="p-1.5 text-muted hover:text-ink hover:bg-bone rounded transition-colors"
+                        title="Duplicate Campaign"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
                       {campaign.status === "draft" && (
                         <>
                           <button
