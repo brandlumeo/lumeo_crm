@@ -167,21 +167,21 @@ export default function TasksPage() {
       <div className="flex flex-col gap-6 h-full pb-8">
         
         {/* Toolbar */}
-        <div className="bg-paper border border-line rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 animate-rise">
+        <div className="bg-paper border border-line rounded-[14px] p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 animate-rise">
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-[280px]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="input w-full pl-9 bg-bone/30 focus:bg-paper"
+                className="input w-full pl-9"
                 placeholder="Search tasks..."
               />
             </div>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="select w-[140px] bg-bone/30 focus:bg-paper"
+              className="select w-[140px]"
             >
               <option value="">All Statuses</option>
               <option value="todo">To Do</option>
@@ -216,7 +216,7 @@ export default function TasksPage() {
         {!mounted || (isLoading && !data) ? (
           <div className="flex-1 flex items-center justify-center text-muted">Loading workspace...</div>
         ) : rows.length === 0 ? (
-          <div className="flex-1 bg-paper border border-line rounded-xl shadow-sm">
+          <div className="flex-1 bg-paper border border-line rounded-[14px] shadow-sm">
             <EmptyState
               icon={CheckSquare}
               title="No tasks found"
@@ -224,11 +224,11 @@ export default function TasksPage() {
             />
           </div>
         ) : viewMode === "list" ? (
-          <div className="bg-paper border border-line rounded-xl shadow-sm overflow-hidden animate-fade-in flex-1">
+          <div className="bg-paper border border-line rounded-[14px] shadow-sm overflow-hidden animate-fade-in flex-1">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
-                  <tr className="border-b border-line bg-bone/50 text-muted/80 uppercase tracking-wider text-[11px] font-semibold">
+                  <tr className="border-b border-line bg-surface-muted/30 text-muted/80 uppercase tracking-wider text-[11px] font-semibold">
                     <th className="px-5 py-3 w-[38%]">Task Title</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">Assignee</th>
@@ -314,7 +314,7 @@ export default function TasksPage() {
           <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
           <Dialog.Content className="fixed right-0 top-0 h-full w-[400px] max-w-[90vw] bg-paper shadow-2xl z-50 border-l border-line flex flex-col animate-slide-in-right">
             
-            <div className="flex items-center justify-between p-5 border-b border-line bg-bone/30">
+            <div className="flex items-center justify-between p-5 border-b border-line bg-surface-muted/30">
               <Dialog.Title className="font-serif text-[20px] text-ink">
                 {editingTask ? "Edit Task" : "New Task"}
               </Dialog.Title>
@@ -328,7 +328,7 @@ export default function TasksPage() {
             <div className="flex-1 overflow-y-auto p-5">
               <form id="task-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Task Title *</label>
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Task Title *</label>
                   <textarea
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -339,7 +339,7 @@ export default function TasksPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Status</label>
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Status</label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value as any })}
@@ -352,7 +352,7 @@ export default function TasksPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Due Date *</label>
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Due Date *</label>
                   <input
                     type="date"
                     value={form.due_date}
@@ -363,7 +363,7 @@ export default function TasksPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-ink">Assign To</label>
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Assign To</label>
                   <select
                     value={form.assigned_to_id || ""}
                     onChange={(e) => setForm({ ...form, assigned_to_id: e.target.value ? parseInt(e.target.value) : null })}
