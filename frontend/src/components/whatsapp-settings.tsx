@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useCurrentCompany, useUpdateCompany } from "@/lib/queries";
 import { Loader2, MessageSquare, AlertCircle, Save } from "lucide-react";
 import { toast } from "sonner";
-import { Company } from "@/lib/types";
 
 export function WhatsappSettingsForm() {
   const { data: company, isLoading } = useCurrentCompany();
