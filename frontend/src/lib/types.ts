@@ -944,9 +944,12 @@ export interface BookingLink {
 
 export interface Campaign {
   id: number;
-  company?: CompanySummary;
+  company?: any;
+  company_id?: number;
   name: string;
   subject: string;
+  from_name?: string;
+  from_email?: string;
   body_html: string;
   status: "draft" | "sending" | "completed";
   target_audience: string;
@@ -960,6 +963,8 @@ export interface Campaign {
 export interface CampaignInput {
   name: string;
   subject: string;
+  from_name?: string;
+  from_email?: string;
   body_html: string;
   target_audience: string;
 }

@@ -6,6 +6,7 @@ import { Plus, Send, Trash2, Mail, Clock, Search, Loader2, Edit2, X } from "luci
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 export default function CampaignsPage() {
   const [search, setSearch] = useState("");
@@ -18,7 +19,7 @@ export default function CampaignsPage() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editCampaignId, setEditCampaignId] = useState<number | null>(null);
-  const [newCampaign, setNewCampaign] = useState({ name: "", subject: "", body_html: "", target_audience: "all_leads" });
+  const [newCampaign, setNewCampaign] = useState({ name: "", subject: "", from_name: "", from_email: "", body_html: "", target_audience: "all_leads" });
   const [confirmSendId, setConfirmSendId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
@@ -31,14 +32,14 @@ export default function CampaignsPage() {
         onSuccess: () => {
           setIsDrawerOpen(false);
           setEditCampaignId(null);
-          setNewCampaign({ name: "", subject: "", body_html: "", target_audience: "all_leads" });
+          setNewCampaign({ name: "", subject: "", from_name: "", from_email: "", body_html: "", target_audience: "all_leads" });
         }
       });
     } else {
       createMutation.mutate(newCampaign, {
         onSuccess: () => {
           setIsDrawerOpen(false);
-          setNewCampaign({ name: "", subject: "", body_html: "", target_audience: "all_leads" });
+          setNewCampaign({ name: "", subject: "", from_name: "", from_email: "", body_html: "", target_audience: "all_leads" });
         }
       });
     }
@@ -49,6 +50,8 @@ export default function CampaignsPage() {
     setNewCampaign({
       name: campaign.name,
       subject: campaign.subject,
+      from_name: campaign.from_name || "",
+      from_email: campaign.from_email || "",
       body_html: campaign.body_html || "",
       target_audience: campaign.target_audience || "all_leads",
     });
@@ -57,7 +60,7 @@ export default function CampaignsPage() {
 
   const openCreateDrawer = () => {
     setEditCampaignId(null);
-    setNewCampaign({ name: "", subject: "", body_html: "", target_audience: "all_leads" });
+    setNewCampaign({ name: "", subject: "", from_name: "", from_email: "", body_html: "", target_audience: "all_leads" });
     setIsDrawerOpen(true);
   };
 
@@ -278,6 +281,28 @@ export default function CampaignsPage() {
                   />
                   <p className="text-[12px] text-muted mt-1">Placeholders available: <code className="bg-bone px-1 rounded text-ink font-medium">{'{{name}}'}</code>, <code className="bg-bone px-1 rounded text-ink font-medium">{'{{company_name}}'}</code></p>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-ink uppercase tracking-wider">From Name</label>
+                    <input
+                      type="text"
+                      value={newCampaign.from_name}
+                      onChange={(e) => setNewCampaign({ ...newCampaign, from_name: e.target.value })}
+                      placeholder="e.g. John Doe"
+                      className="input w-full"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-bold text-ink uppercase tracking-wider">From Email</label>
+                    <input
+                      type="email"
+                      value={newCampaign.from_email}
+                      onChange={(e) => setNewCampaign({ ...newCampaign, from_email: e.target.value })}
+                      placeholder="john@example.com"
+                      className="input w-full"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Target Audience</label>
                   <select
@@ -291,15 +316,14 @@ export default function CampaignsPage() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Email Body (HTML) *</label>
-                  <textarea
-                    required
-                    value={newCampaign.body_html}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, body_html: e.target.value })}
-                    rows={12}
-                    placeholder="<p>Hi {{name}},</p><p>We are excited to share...</p>"
-                    className="input w-full font-mono text-[13px] resize-y"
-                  />
+                  <label className="text-[13px] font-bold text-ink uppercase tracking-wider">Email Body *</label>
+                  <div className="border border-line rounded-md overflow-hidden bg-paper">
+                    <RichTextEditor
+                      value={newCampaign.body_html}
+                      onChange={(html) => setNewCampaign({ ...newCampaign, body_html: html })}
+                      placeholder="Compose your email here. Use {{name}} to greet the recipient!"
+                    />
+                  </div>
                 </div>
               </form>
             </div>

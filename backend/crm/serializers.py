@@ -1473,6 +1473,8 @@ class CampaignSerializer(CompanyScopedSerializer):
             "company_id",
             "name",
             "subject",
+            "from_name",
+            "from_email",
             "body_html",
             "status",
             "target_audience",

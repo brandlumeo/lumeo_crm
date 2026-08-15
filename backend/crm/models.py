@@ -1150,6 +1150,8 @@ class Campaign(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="campaigns")
     name = models.CharField(max_length=255)
     subject = models.CharField(max_length=255)
+    from_name = models.CharField(max_length=255, blank=True, null=True)
+    from_email = models.EmailField(blank=True, null=True)
     body_html = models.TextField()
     status = models.CharField(max_length=50, choices=Status.choices, default=Status.DRAFT)
     
