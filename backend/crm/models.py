@@ -1534,3 +1534,32 @@ class BillItem(models.Model):
 
     def __str__(self):
         return f"{self.description} ({self.quantity})"
+
+class WhatsAppMessage(models.Model):
+    class Direction(models.TextChoices):
+        INBOUND = "inbound", "Inbound"
+        OUTBOUND = "outbound", "Outbound"
+
+    class Status(models.TextChoices):
+        SENT = "sent", "Sent"
+        DELIVERED = "delivered", "Delivered"
+        READ = "read", "Read"
+        FAILED = "failed", "Failed"
+        RECEIVED = "received", "Received"
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="whatsapp_messages")
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="whatsapp_messages", null=True, blank=True)
+    message_id = models.CharField(max_length=255, unique=True, help_text="WhatsApp Message ID (wamid)")
+    direction = models.CharField(max_length=20, choices=Direction.choices)
+    content = models.TextField(help_text="Text content of the message")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SENT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Store raw payload just in case (optional)
+    raw_payload = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("created_at",)
+
+    def __str__(self):
+        return f"WA {self.direction} - {self.id}"

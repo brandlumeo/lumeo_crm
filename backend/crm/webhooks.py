@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.conf import settings
-from crm.models import Lead
+from crm.models import Lead, WhatsAppMessage
 from companies.models import Company
 
 class WhatsAppWebhookView(APIView):
@@ -42,15 +42,31 @@ class WhatsAppWebhookView(APIView):
                         if messages and contacts:
                             message = messages[0]
                             contact = contacts[0]
+                            metadata = value.get('metadata', {})
                             
                             phone_number = contact.get('wa_id')
                             name = contact.get('profile', {}).get('name', f"WhatsApp Lead {phone_number}")
                             
-                            # Simple logic to find the primary company (tenant)
-                            # In a real multi-tenant setup, the webhook URL would include the tenant ID
-                            # e.g., /api/crm/webhooks/whatsapp/<company_id>/
-                            # For Leskor, we just pick the first company or Leskor directly
-                            company = Company.objects.filter(name__icontains="Leskor").first()
+                            wamid = message.get('id')
+                            msg_type = message.get('type')
+                            
+                            # Extract text content (can be expanded for media later)
+                            content = ""
+                            if msg_type == 'text':
+                                content = message.get('text', {}).get('body', '')
+                            else:
+                                content = f"[{msg_type} message received]"
+                            
+                            # Identify the Company via the phone number ID they registered
+                            phone_number_id = metadata.get('phone_number_id')
+                            
+                            company = None
+                            if phone_number_id:
+                                company = Company.objects.filter(whatsapp_phone_number_id=phone_number_id).first()
+                            
+                            # Fallback if not configured properly (or for backwards compatibility)
+                            if not company:
+                                company = Company.objects.filter(name__icontains="Leskor").first()
                             if not company:
                                 company = Company.objects.first()
 
@@ -69,6 +85,20 @@ class WhatsAppWebhookView(APIView):
                             if created:
                                 # You can add note creation or trigger sequence here
                                 pass
+                                
+                            # Save chat history
+                            if wamid:
+                                WhatsAppMessage.objects.get_or_create(
+                                    message_id=wamid,
+                                    defaults={
+                                        'company': company,
+                                        'lead': lead,
+                                        'direction': 'inbound',
+                                        'content': content,
+                                        'status': 'received',
+                                        'raw_payload': message
+                                    }
+                                )
                                 
             return Response({'status': 'ok'})
         except Exception as e:
