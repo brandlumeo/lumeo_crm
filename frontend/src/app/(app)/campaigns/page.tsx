@@ -115,7 +115,7 @@ export default function CampaignsPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="input w-full pl-9"
+              className="input w-full pl-9 bg-paper"
             />
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function CampaignsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-surface-muted/30 text-muted/80 uppercase tracking-wider text-[11px] font-semibold border-b border-line">
+              <thead className="bg-bone text-muted/80 uppercase tracking-wider text-[11px] font-semibold border-b border-line">
                 <tr>
                   <th className="px-6 py-3 font-medium">Campaign</th>
                   <th className="px-6 py-3 font-medium">Target</th>
@@ -153,7 +153,7 @@ export default function CampaignsPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {campaigns.map((campaign: any) => (
-                  <tr key={campaign.id} className="hover:bg-bone-2/50 transition-colors">
+                  <tr key={campaign.id} className="group hover:bg-bone-2/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-ink">{campaign.name}</div>
                       <div className="text-muted text-xs truncate max-w-[200px] mt-0.5">{campaign.subject}</div>
