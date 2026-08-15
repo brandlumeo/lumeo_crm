@@ -56,6 +56,9 @@ export interface CompanyDetail extends CompanySummary {
   paypal_secret: string | null;
   razorpay_key_id: string | null;
   razorpay_key_secret: string | null;
+  whatsapp_access_token: string | null;
+  whatsapp_phone_number_id: string | null;
+  whatsapp_business_account_id: string | null;
   invoice_prefix: string;
   quote_prefix: string;
   default_tax_rate: string;
