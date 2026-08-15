@@ -6,7 +6,8 @@ import { Plus, Send, Trash2, Mail, Clock, Search, Loader2, Edit2, X, Copy, Calen
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(() => import("@/components/rich-text-editor").then(mod => mod.RichTextEditor), { ssr: false });
 
 export default function CampaignsPage() {
   const [search, setSearch] = useState("");
