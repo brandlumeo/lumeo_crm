@@ -178,7 +178,8 @@ export default function TeamPage() {
         <div className="space-y-10">
           {/* Active Users */}
           <div>
-            <div className="mb-3 text-[11px] font-bold text-muted uppercase tracking-wider pl-1">Team Members</div>
+            <div className="mb-3 text-[11px] font-bold text-muted uppercase tracking-wider pl-1">Team Members (Debug: {data?.users?.length} users)</div>
+            {/* Debug payload: <pre className="text-xs">{JSON.stringify(data, null, 2)}</pre> */}
             <div className="bg-paper border border-line rounded-[14px] overflow-hidden shadow-sm">
               <div className="divide-y divide-line">
                 {data?.users?.map((user) => {
