@@ -82,9 +82,9 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             
             {/* Header Section */}
             <div className="flex flex-row justify-between items-start mb-12 print:mb-10 pb-8 border-b border-line">
-              <div className="flex flex-col">
+              <div className="flex flex-col items-start">
                 {invoiceSettings?.invoice_logo ? (
-                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-6" />
+                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-6 self-start" />
                 ) : (
                   <div className="w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold mb-6 bg-bone text-ink">
                     {(company?.name || 'C').charAt(0).toUpperCase()}

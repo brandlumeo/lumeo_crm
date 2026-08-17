@@ -241,9 +241,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
           
           {tpl === 'template4' && (
             <div className="md:w-1/3 print:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between" style={{ backgroundColor: '#1e293b' }}>
-              <div>
+              <div className="flex flex-col items-start">
                 {invoice.settings?.invoice_logo ? (
-                  <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-8 bg-white p-2 rounded" />
+                  <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-8 bg-white p-2 rounded self-start" />
                 ) : (
                   <h1 className="text-3xl font-bold mb-8">{invoice.company?.name || "Company"}</h1>
                 )}
@@ -274,9 +274,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8 print:pb-2 print:mb-2"
                    style={tpl === 'template3' ? { backgroundColor: accentColor, margin: '-3rem -3rem 2rem -3rem', padding: '3rem', color: 'white' } : {}}
               >
-                <div>
+                <div className="flex flex-col items-start">
                   {invoice.settings?.invoice_logo ? (
-                    <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-4" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
+                    <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-4 self-start" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
                   ) : (
                     <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">INVOICE</h1>
                   )}
