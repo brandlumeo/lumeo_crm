@@ -36,7 +36,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="card p-5 flex items-center gap-4 animate-rise">
+    <div className="bg-paper border border-line shadow-sm rounded-2xl p-5 flex items-center gap-4 animate-rise">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -120,29 +120,29 @@ export default function NoticeBoardPage() {
           label="Total Notices"
           value={stats.total}
           sub="all time"
-          color="bg-slate-100 text-slate-600"
+          color="bg-slate-50 text-slate-700 border border-slate-200/50"
         />
         <StatCard
           icon={Pin}
           label="Pinned"
           value={stats.pinned}
           sub="important updates"
-          color="bg-amber-50 text-amber-600"
+          color="bg-amber-50 text-amber-700 border border-amber-200/50"
         />
         <StatCard
           icon={Bell}
           label="New This Week"
           value={stats.recent}
           sub="recent announcements"
-          color="bg-blue-50 text-blue-600"
+          color="bg-blue-50 text-blue-700 border border-blue-200/50"
         />
       </div>
 
       {/* ── Main card ── */}
-      <div className="card animate-rise">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm animate-rise overflow-hidden">
         {/* Card header */}
-        <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="card-title">
+        <div className="p-5 border-b border-line bg-bone-2 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="text-lg font-semibold text-ink flex items-center gap-2">
             <Megaphone className="w-5 h-5 text-muted" /> All Announcements
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto ml-auto">
@@ -161,7 +161,7 @@ export default function NoticeBoardPage() {
             )}
             {/* Add new */}
             {isManagerOrAbove && (
-              <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm ml-2">
+              <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm ml-2 bg-ink text-paper border-ink hover:bg-ink/90">
                 <Plus className="w-4 h-4" /> Post Notice
               </button>
             )}
@@ -194,8 +194,8 @@ export default function NoticeBoardPage() {
                   className={cn(
                     "rounded-xl p-5 relative group transition-all duration-200",
                     notice.is_pinned 
-                      ? "bg-amber-50/50 border border-amber-200 shadow-sm" 
-                      : "bg-paper border border-line hover:shadow-sm"
+                      ? "bg-amber-50/60 border border-amber-200/80 shadow-sm" 
+                      : "bg-paper border border-line hover:border-brand/30 transition-colors shadow-sm"
                   )}
                 >
                   {/* Pin Indicator */}
@@ -211,7 +211,7 @@ export default function NoticeBoardPage() {
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         {notice.is_pinned && (
-                          <span className="chip chip-warning text-[10px] uppercase tracking-wider py-0 px-1.5">Pinned</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-800 border border-amber-200/60">Pinned</span>
                         )}
                         <h3 className={cn("text-lg font-semibold", notice.is_pinned ? "text-amber-900" : "text-ink")}>
                           {notice.title}
@@ -351,7 +351,7 @@ export default function NoticeBoardPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="btn btn-primary text-sm gap-2"
+                  className="btn btn-primary text-sm gap-2 bg-ink text-paper border-ink hover:bg-ink/90"
                 >
                   {createMutation.isPending ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Posting…</>
