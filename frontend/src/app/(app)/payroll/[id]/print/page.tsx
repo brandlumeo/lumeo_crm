@@ -56,6 +56,9 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        @page {
+          margin: 0; /* Hides browser headers and footers */
+        }
         @media print {
           body { 
             -webkit-print-color-adjust: exact; 
@@ -73,7 +76,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
         }
       `}} />
 
-      <div className="min-h-screen bg-bone/30 py-12 px-4 sm:px-6 print:py-0 print:px-0 print:bg-white" style={{ fontFamily: "'Outfit', sans-serif" }}>
+      <div className="min-h-screen bg-bone/30 py-12 px-4 sm:px-6 print:py-12 print:px-12 print:bg-white" style={{ fontFamily: "'Outfit', sans-serif" }}>
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-line p-8 md:p-16 print:shadow-none print:border-none print:p-0 print:m-0">
             
