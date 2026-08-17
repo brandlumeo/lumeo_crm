@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import {
+import { CheckSquare, Square, 
   Ticket as TicketIcon,
   Plus,
   Loader2,
@@ -29,18 +29,18 @@ import { Ticket, TicketInput } from "@/lib/types";
 const PAGE_SIZE = 20;
 
 const STATUS_META: Record<string, { label: string; chip: string; icon: React.ElementType }> = {
-  open:        { label: "Open",        chip: "chip chip-warning",  icon: AlertCircle },
-  in_progress: { label: "In Progress", chip: "chip chip-info",     icon: TrendingUp },
-  waiting:     { label: "Waiting",     chip: "chip chip-neutral",  icon: Clock },
-  resolved:    { label: "Resolved",    chip: "chip chip-positive", icon: CheckCircle2 },
-  closed:      { label: "Closed",      chip: "chip chip-neutral",  icon: XCircle },
+  open:        { label: "Open",        chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-amber-50 text-amber-700 border border-amber-200/50",  icon: AlertCircle },
+  in_progress: { label: "In Progress", chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-blue-50 text-blue-700 border border-blue-200/50",     icon: TrendingUp },
+  waiting:     { label: "Waiting",     chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-slate-100 text-slate-700 border border-slate-200",  icon: Clock },
+  resolved:    { label: "Resolved",    chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/50", icon: CheckCircle2 },
+  closed:      { label: "Closed",      chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-slate-100 text-slate-700 border border-slate-200",  icon: XCircle },
 };
 
 const PRIORITY_META: Record<string, { label: string; chip: string }> = {
-  low:    { label: "Low",    chip: "bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md text-xs font-medium" },
-  medium: { label: "Medium", chip: "bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-medium" },
-  high:   { label: "High",   chip: "bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-md text-xs font-medium" },
-  urgent: { label: "Urgent", chip: "bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-md text-xs font-medium" },
+  low:    { label: "Low",    chip: "inline-flex items-center px-2 py-0.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200 text-[11px] font-medium tracking-wide" },
+  medium: { label: "Medium", chip: "inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 text-[11px] font-medium tracking-wide" },
+  high:   { label: "High",   chip: "inline-flex items-center px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[11px] font-medium tracking-wide" },
+  urgent: { label: "Urgent", chip: "inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[11px] font-medium tracking-wide" },
 };
 
 const STATUSES = Object.keys(STATUS_META);
@@ -62,7 +62,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="card p-5 flex items-center gap-4 animate-rise">
+    <div className="bg-paper border border-line rounded-2xl shadow-sm p-5 flex items-center gap-4 animate-rise">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -248,6 +248,7 @@ export default function TicketsPage() {
   const [sortColumn, setSortColumn] = useState("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [mounted, setMounted] = useState(false);
 
   // New ticket form
@@ -376,45 +377,49 @@ export default function TicketsPage() {
       </div>
 
       {/* ── Main card ── */}
-      <div className="card animate-rise">
+      <div className="bg-paper border border-line rounded-2xl overflow-hidden shadow-sm animate-rise flex flex-col">
         {/* Card header */}
-        <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="card-title">
-            Ticket Inbox
-            <span className="card-title-meta">{total} total</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto ml-auto">
-            {/* Search */}
-            <input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="input sm:w-[220px]"
-              placeholder="Search by subject..."
-            />
-            {/* Status filter */}
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                className="input pr-8 appearance-none cursor-pointer"
-              >
-                <option value="">All Statuses</option>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{STATUS_META[s].label}</option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+        <div className="p-5 border-b border-line bg-bone-2">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-ink">Ticket Inbox</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-ink/5 text-ink/60 text-xs font-medium">
+                {total} total
+              </span>
             </div>
-            {/* Clear filters */}
-            {(statusFilter || search) && (
-              <button onClick={clearFilters} className="btn btn-ghost text-muted text-xs gap-1">
-                <X className="w-3.5 h-3.5" /> Clear
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  className="input sm:w-[220px]"
+                  placeholder="Search by subject..."
+                />
+              </div>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                  className="input pr-8 appearance-none cursor-pointer min-w-[140px]"
+                >
+                  <option value="">All Statuses</option>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{STATUS_META[s].label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+              </div>
+              {(statusFilter || search) && (
+                <button onClick={clearFilters} className="btn btn-ghost text-muted text-xs gap-1">
+                  <X className="w-3.5 h-3.5" /> Clear
+                </button>
+              )}
+              <div className="w-px h-6 bg-line mx-1 hidden sm:block"></div>
+              <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm bg-ink text-paper border-ink hover:bg-ink/90">
+                <Plus className="w-4 h-4" /> New Ticket
               </button>
-            )}
-            {/* Add new */}
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm ml-2">
-              <Plus className="w-4 h-4" /> New Ticket
-            </button>
+            </div>
           </div>
         </div>
 
@@ -432,146 +437,199 @@ export default function TicketsPage() {
             }
           />
         ) : (
-          <DataTable
-            columns={[
-              {
-                key: "id",
-                header: "ID",
-                sortable: true,
-                className: "w-20",
-                render: (ticket) => (
-                  <div className="font-mono text-xs font-semibold text-muted uppercase tracking-wide">
-                    #{ticket.id}
-                  </div>
-                ),
-              },
-              {
-                key: "subject",
-                header: "Subject & Customer",
-                sortable: true,
-                render: (ticket) => (
-                  <div className="max-w-[300px]">
-                    <div className="font-medium text-ink truncate group-hover:text-brand transition-colors">
-                      {ticket.subject}
-                    </div>
-                    <div className="text-[11px] text-muted truncate mt-0.5 flex items-center gap-2">
-                      {ticket.customer ? `Customer ID: ${ticket.customer}` : "No customer linked"}
-                      {ticket.comments && ticket.comments.length > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {ticket.comments.length}
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-bone-2 border-b border-line text-xs uppercase tracking-[0.12em] text-muted font-semibold">
+                {selectedIds.size > 0 ? (
+                  <tr>
+                    <th colSpan={7} className="px-5 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="p-1.5 rounded-md hover:bg-bone transition-colors text-ink"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="font-medium text-ink lowercase tracking-normal text-sm">
+                            <span className="font-semibold">{selectedIds.size}</span> selected
                           </span>
-                        </>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "resolved" } }));
+                              toast.success(`Marked ${selectedIds.size} ticket(s) as resolved.`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Resolved
+                          </button>
+                          <button
+                            onClick={() => {
+                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "closed" } }));
+                              toast.success(`Closed ${selectedIds.size} ticket(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> Closed
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Delete ${selectedIds.size} ticket(s)?`)) return;
+                              Array.from(selectedIds).forEach((id) => deleteMutation.mutate(id));
+                              toast.success(`Deleted ${selectedIds.size} ticket(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                ) : (
+                <tr>
+                  <th className="px-5 py-4 w-12 text-center">
+                    <button
+                      onClick={() => {
+                        if (selectedIds.size === tickets.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(tickets.map((t) => t.id)));
+                        }
+                      }}
+                      className="text-muted hover:text-ink transition-colors"
+                    >
+                      {selectedIds.size === tickets.length && tickets.length > 0 ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4" />
                       )}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                key: "status",
-                header: "Status",
-                sortable: true,
-                render: (ticket) => {
+                    </button>
+                  </th>
+                  <th className="px-5 py-4 font-medium">ID</th>
+                  <th className="px-5 py-4 font-medium w-full min-w-[300px]">Subject & Customer</th>
+                  <th className="px-5 py-4 font-medium">Status</th>
+                  <th className="px-5 py-4 font-medium">Priority</th>
+                  <th className="px-5 py-4 font-medium">Assignee</th>
+                  <th className="px-5 py-4 font-medium text-right">Created</th>
+                </tr>
+                )}
+              </thead>
+              <tbody className="divide-y divide-line">
+                {tickets.map((ticket) => {
                   const m = STATUS_META[ticket.status] ?? STATUS_META.open;
-                  return <span className={m.chip}>{m.label}</span>;
-                },
-              },
-              {
-                key: "priority",
-                header: "Priority",
-                sortable: true,
-                render: (ticket) => {
                   const p = PRIORITY_META[ticket.priority] ?? PRIORITY_META.medium;
                   return (
-                    <span className={p.chip}>
-                      {p.label}
-                    </span>
+                    <tr
+                      key={ticket.id}
+                      onClick={() => router.push(`/tickets/${ticket.id}`)}
+                      className="hover:bg-bone-2/40 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-5 py-4 text-center" onClick={(e) => { e.stopPropagation(); const next = new Set(selectedIds); if (next.has(ticket.id)) { next.delete(ticket.id); } else { next.add(ticket.id); } setSelectedIds(next); }}>
+                        <button className="text-muted hover:text-ink transition-colors focus:outline-none">
+                          {selectedIds.has(ticket.id) ? (
+                            <CheckSquare className="w-4 h-4 text-ink" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-mono text-xs font-semibold text-muted uppercase tracking-wide">
+                          #{ticket.id}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 whitespace-normal">
+                        <div className="max-w-[400px]">
+                          <div className="font-medium text-ink group-hover:text-brand transition-colors line-clamp-1">
+                            {ticket.subject}
+                          </div>
+                          <div className="text-[11px] text-muted truncate mt-0.5 flex items-center gap-2">
+                            {ticket.customer ? `Customer ID: ${ticket.customer}` : "No customer linked"}
+                            {ticket.comments && ticket.comments.length > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <MessageSquare className="w-3 h-3" />
+                                  {ticket.comments.length}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={m.chip}>{m.label}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={p.chip}>{p.label}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {!ticket.assigned_to ? (
+                          <span className="text-muted italic text-xs">Unassigned</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-bold">
+                              {(ticket.assigned_to.first_name?.[0] ?? ticket.assigned_to.username?.[0] ?? "?").toUpperCase()}
+                            </div>
+                            <span className="text-sm text-ink font-medium">{ticket.assigned_to.first_name || ticket.assigned_to.username}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-muted text-sm">
+                          {new Date(ticket.created_at).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </td>
+                    </tr>
                   );
-                },
-              },
-              {
-                key: "assigned_to",
-                header: "Assignee",
-                sortable: false,
-                render: (ticket) => {
-                  if (!ticket.assigned_to) {
-                    return <span className="text-muted italic text-xs">Unassigned</span>;
-                  }
-                  return (
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-brand/10 text-brand flex items-center justify-center text-[10px] font-bold">
-                        {(ticket.assigned_to.first_name?.[0] ?? ticket.assigned_to.username?.[0] ?? "?").toUpperCase()}
-                      </div>
-                      <span className="text-sm text-ink font-medium">{ticket.assigned_to.first_name || ticket.assigned_to.username}</span>
-                    </div>
-                  );
-                },
-              },
-              {
-                key: "created_at",
-                header: "Created",
-                sortable: true,
-                render: (ticket) => (
-                  <span className="text-muted text-sm">
-                    {new Date(ticket.created_at).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                ),
-              },
-            ]}
-            rows={tickets}
-            count={total}
-            page={page}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSortChange={(col, dir) => {
-              setSortColumn(col);
-              setSortDirection(dir);
-            }}
-            onRowClick={(ticket) => router.push(`/tickets/${ticket.id}`)}
-            bulkActions={[
-              {
-                label: "Mark Resolved",
-                onClick: (ids) => {
-                  ids.forEach((id) => updateMutation.mutate({ id: parseInt(id), payload: { status: "resolved" } }));
-                  toast.success(`Marked ${ids.length} ticket(s) as resolved.`);
-                },
-              },
-              {
-                label: "Mark Closed",
-                onClick: (ids) => {
-                  ids.forEach((id) => updateMutation.mutate({ id: parseInt(id), payload: { status: "closed" } }));
-                  toast.success(`Closed ${ids.length} ticket(s).`);
-                },
-              },
-              {
-                label: "Delete",
-                variant: "danger",
-                onClick: (ids) => {
-                  if (!confirm(`Delete ${ids.length} ticket(s)?`)) return;
-                  ids.forEach((id) => deleteMutation.mutate(parseInt(id)));
-                  toast.success(`Deleted ${ids.length} ticket(s).`);
-                },
-              },
-            ]}
-          />
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {/* Pagination */}
+        {!isLoading && tickets.length > 0 && (
+          <div className="px-5 py-4 border-t border-line bg-bone flex items-center justify-between text-sm">
+             <div className="text-muted">
+               Showing <span className="font-medium text-ink">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-ink">{Math.min(page * PAGE_SIZE, total)}</span> of <span className="font-medium text-ink">{total}</span> results
+             </div>
+             <div className="flex items-center gap-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="btn btn-secondary py-1.5 px-3 text-xs"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={page * PAGE_SIZE >= total}
+                  onClick={() => setPage(p => p + 1)}
+                  className="btn btn-secondary py-1.5 px-3 text-xs"
+                >
+                  Next
+                </button>
+             </div>
+          </div>
         )}
       </div>
-
       {/* ── Create ticket modal ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
           <form 
             onSubmit={handleCreate} 
-            className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+            className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-rise"
             style={{ maxHeight: 'calc(100vh - 2rem)' }}
           >
             {/* Modal header */}
