@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import {
+import { CheckSquare, Square, 
   Calendar,
   Plus,
   Loader2,
@@ -63,7 +63,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="card p-5 flex items-center gap-4 animate-rise">
+    <div className="bg-paper border border-line rounded-2xl shadow-sm p-5 flex items-center gap-4 animate-rise">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -230,6 +230,7 @@ export default function EventsPage() {
   const [sortColumn, setSortColumn] = useState("start_time");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -337,31 +338,36 @@ export default function EventsPage() {
       </div>
 
       {/* ── Main card ── */}
-      <div className="card animate-rise">
+      <div className="bg-paper border border-line rounded-2xl overflow-hidden shadow-sm animate-rise flex flex-col">
         {/* Card header */}
-        <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="card-title">
-            Event Schedule
-            <span className="card-title-meta">{total} total</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto ml-auto">
-            {/* Search */}
-            <input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="input sm:w-[260px]"
-              placeholder="Search by title or location..."
-            />
-            {/* Clear filters */}
-            {search && (
-              <button onClick={clearFilters} className="btn btn-ghost text-muted text-xs gap-1">
-                <X className="w-3.5 h-3.5" /> Clear
+        <div className="p-5 border-b border-line bg-bone-2">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-ink">Event Schedule</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-ink/5 text-ink/60 text-xs font-medium">
+                {total} total
+              </span>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  className="input sm:w-[260px]"
+                  placeholder="Search by title or location..."
+                />
+              </div>
+              {search && (
+                <button onClick={clearFilters} className="btn btn-ghost text-muted text-xs gap-1">
+                  <X className="w-3.5 h-3.5" /> Clear
+                </button>
+              )}
+              <div className="w-px h-6 bg-line mx-1 hidden sm:block"></div>
+              <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm bg-ink text-paper border-ink hover:bg-ink/90">
+                <Plus className="w-4 h-4" /> New Event
               </button>
-            )}
-            {/* Add new */}
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm ml-2">
-              <Plus className="w-4 h-4" /> New Event
-            </button>
+            </div>
           </div>
         </div>
 
@@ -379,132 +385,188 @@ export default function EventsPage() {
             }
           />
         ) : (
-          <DataTable
-            columns={[
-              {
-                key: "title",
-                header: "Event",
-                sortable: true,
-                render: (event) => (
-                  <div className="max-w-[280px]">
-                    <div className="font-semibold text-ink truncate group-hover:text-brand transition-colors">
-                      {event.title}
-                    </div>
-                    {event.description && (
-                      <div className="text-[11px] text-muted truncate mt-0.5">
-                        {event.description}
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-bone-2 border-b border-line text-xs uppercase tracking-[0.12em] text-muted font-semibold">
+                {selectedIds.size > 0 ? (
+                  <tr>
+                    <th colSpan={7} className="px-5 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="p-1.5 rounded-md hover:bg-bone transition-colors text-ink"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="font-medium text-ink lowercase tracking-normal text-sm">
+                            <span className="font-semibold">{selectedIds.size}</span> selected
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Delete ${selectedIds.size} event(s)?`)) return;
+                              Array.from(selectedIds).forEach((id) => deleteMutation.mutate(id));
+                              toast.success(`Deleted ${selectedIds.size} event(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ),
-              },
-              {
-                key: "start_time",
-                header: "Date & Time",
-                sortable: true,
-                render: (event) => (
-                  <div>
-                    <div className="font-medium text-ink flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
-                      {new Date(event.start_time).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
-                    </div>
-                    <div className="text-[11px] text-muted mt-0.5 ml-5">
-                      {new Date(event.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                key: "format",
-                header: "Format & Location",
-                sortable: false,
-                render: (event) => (
-                  <div>
-                    {event.is_virtual ? (
-                      <div className="flex flex-col gap-1">
-                        <span className="w-fit inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 uppercase tracking-wider">
-                          <Video className="w-3 h-3" /> Virtual
-                        </span>
-                        {event.virtual_link && (
-                          <div className="text-[11px] text-muted truncate max-w-[200px]">
-                            {event.virtual_link}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <span className="w-fit inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 uppercase tracking-wider">
-                          <MapPin className="w-3 h-3" /> In-Person
-                        </span>
-                        {event.location && (
-                          <div className="text-[11px] text-muted truncate max-w-[200px]">
-                            {event.location}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ),
-              },
-              {
-                key: "status",
-                header: "Status",
-                sortable: false,
-                render: (event) => {
+                    </th>
+                  </tr>
+                ) : (
+                <tr>
+                  <th className="px-5 py-4 w-12 text-center">
+                    <button
+                      onClick={() => {
+                        if (selectedIds.size === events.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(events.map((e) => e.id)));
+                        }
+                      }}
+                      className="text-muted hover:text-ink transition-colors"
+                    >
+                      {selectedIds.size === events.length && events.length > 0 ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-5 py-4 font-medium w-full min-w-[250px]">Event</th>
+                  <th className="px-5 py-4 font-medium">Date & Time</th>
+                  <th className="px-5 py-4 font-medium">Format & Location</th>
+                  <th className="px-5 py-4 font-medium">Status</th>
+                  <th className="px-5 py-4 font-medium">Organizer</th>
+                </tr>
+                )}
+              </thead>
+              <tbody className="divide-y divide-line">
+                {events.map((event) => {
                   const isPast = new Date(event.end_time).getTime() < Date.now();
-                  return isPast ? (
-                    <span className="chip chip-neutral text-[10px] uppercase font-semibold">Past</span>
-                  ) : (
-                    <span className="chip chip-info text-[10px] uppercase font-semibold">Upcoming</span>
-                  );
-                },
-              },
-              {
-                key: "organizer",
-                header: "Organizer",
-                sortable: false,
-                render: (event) => {
-                  if (!event.organizer) {
-                    return <span className="text-muted italic text-xs">System</span>;
-                  }
                   return (
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-ink/10 text-ink flex items-center justify-center text-[10px] font-bold">
-                        {(event.organizer.first_name?.[0] ?? event.organizer.username?.[0] ?? "?").toUpperCase()}
-                      </div>
-                      <span className="text-sm text-ink">{event.organizer.first_name || event.organizer.username}</span>
-                    </div>
+                    <tr
+                      key={event.id}
+                      onClick={() => setSelectedEvent(event)}
+                      className="hover:bg-bone-2/40 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-5 py-4 text-center" onClick={(e) => { e.stopPropagation(); const next = new Set(selectedIds); if (next.has(event.id)) { next.delete(event.id); } else { next.add(event.id); } setSelectedIds(next); }}>
+                        <button className="text-muted hover:text-ink transition-colors focus:outline-none">
+                          {selectedIds.has(event.id) ? (
+                            <CheckSquare className="w-4 h-4 text-ink" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-5 py-4 whitespace-normal">
+                        <div className="max-w-[300px]">
+                          <div className="font-semibold text-ink group-hover:text-brand transition-colors line-clamp-1">
+                            {event.title}
+                          </div>
+                          {event.description && (
+                            <div className="text-[11px] text-muted truncate mt-0.5">
+                              {event.description}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-ink flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
+                          {new Date(event.start_time).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                        </div>
+                        <div className="text-[11px] text-muted mt-0.5 ml-5">
+                          {new Date(event.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 whitespace-normal">
+                        {event.is_virtual ? (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/50 uppercase tracking-wider">
+                              <Video className="w-3 h-3" /> Virtual
+                            </span>
+                            {event.virtual_link && (
+                              <div className="text-[11px] text-muted truncate max-w-[200px]">
+                                {event.virtual_link}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/50 uppercase tracking-wider">
+                              <MapPin className="w-3 h-3" /> In-Person
+                            </span>
+                            {event.location && (
+                              <div className="text-[11px] text-muted truncate max-w-[200px]">
+                                {event.location}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {isPast ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold uppercase tracking-widest">
+                            Past
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/50 text-[10px] font-bold uppercase tracking-widest">
+                            Upcoming
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {!event.organizer ? (
+                          <span className="text-muted italic text-xs">System</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-ink/10 text-ink flex items-center justify-center text-[10px] font-bold">
+                              {(event.organizer.first_name?.[0] ?? event.organizer.username?.[0] ?? "?").toUpperCase()}
+                            </div>
+                            <span className="text-sm text-ink">{event.organizer.first_name || event.organizer.username}</span>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
                   );
-                },
-              },
-            ]}
-            rows={events}
-            count={total}
-            page={page}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSortChange={(col, dir) => {
-              setSortColumn(col);
-              setSortDirection(dir);
-            }}
-            onRowClick={(event) => setSelectedEvent(event)}
-            bulkActions={[
-              {
-                label: "Delete",
-                variant: "danger",
-                onClick: (ids) => {
-                  if (!confirm(`Delete ${ids.length} event(s)?`)) return;
-                  ids.forEach((id) => deleteMutation.mutate(parseInt(id)));
-                  toast.success(`Deleted ${ids.length} event(s).`);
-                },
-              },
-            ]}
-          />
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {/* Pagination */}
+        {!isLoading && events.length > 0 && (
+          <div className="px-5 py-4 border-t border-line bg-bone flex items-center justify-between text-sm">
+             <div className="text-muted">
+               Showing <span className="font-medium text-ink">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-ink">{Math.min(page * PAGE_SIZE, total)}</span> of <span className="font-medium text-ink">{total}</span> results
+             </div>
+             <div className="flex items-center gap-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="btn btn-secondary py-1.5 px-3 text-xs"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={page * PAGE_SIZE >= total}
+                  onClick={() => setPage(p => p + 1)}
+                  className="btn btn-secondary py-1.5 px-3 text-xs"
+                >
+                  Next
+                </button>
+             </div>
+          </div>
         )}
       </div>
-
       {/* ── Event detail slide-over ── */}
       {selectedEvent && (
         <EventDrawer
@@ -520,7 +582,7 @@ export default function EventsPage() {
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
           <form 
             onSubmit={handleCreate} 
-            className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+            className="relative w-full max-w-xl bg-paper border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-rise"
             style={{ maxHeight: 'calc(100vh - 2rem)' }}
           >
             {/* Modal header */}
