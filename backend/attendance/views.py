@@ -592,29 +592,41 @@ class OfficeAssetDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+from crm.permissions import CompanyRBACPermission
+
 class PayrollListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CompanyRBACPermission]
+    permission_module = "Payroll"
 
     def get(self, request):
         _auto_close_stale_shifts()
         from accounts.models import User
-        is_manager = request.user.has_management_access
+        
+        rbac = CompanyRBACPermission()
+        role_data = rbac._get_role_data(request.user)
+        
+        view_perm = "None"
+        if request.user.is_superuser or request.user.role in ['owner', 'admin', 'manager'] or request.user.can_manage_team:
+            view_perm = "All"
+        elif role_data and role_data.get("isAdmin"):
+            view_perm = "All"
+        elif role_data:
+            view_perm = role_data.get("permissions", {}).get("Payroll", {}).get("View", "None")
+            
         view_all = request.query_params.get("all") == "true"
 
-        if is_manager and view_all:
+        if view_perm == "All" and view_all:
             payrolls = Payroll.objects.filter(company=request.user.company)
-        else:
+        elif view_perm in ["All", "Owned"]:
             payrolls = Payroll.objects.filter(user=request.user, status__in=[Payroll.Status.PUBLISHED, Payroll.Status.PAID])
+        else:
+            payrolls = Payroll.objects.none()
 
         from .serializers import PayrollSerializer
         serializer = PayrollSerializer(payrolls, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        from accounts.models import User
-        if not request.user.has_management_access:
-            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
-        
         from .serializers import PayrollSerializer
         serializer = PayrollSerializer(data=request.data)
         if serializer.is_valid():
@@ -631,16 +643,27 @@ class PayrollListCreateView(APIView):
 
 
 class PayrollDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CompanyRBACPermission]
+    permission_module = "Payroll"
 
     def get(self, request, pk):
-        from accounts.models import User
         try:
             payroll = Payroll.objects.get(pk=pk, company=request.user.company)
         except Payroll.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
             
-        if not request.user.has_management_access:
+        rbac = CompanyRBACPermission()
+        role_data = rbac._get_role_data(request.user)
+        
+        view_perm = "None"
+        if request.user.is_superuser or request.user.role in ['owner', 'admin', 'manager'] or request.user.can_manage_team:
+            view_perm = "All"
+        elif role_data and role_data.get("isAdmin"):
+            view_perm = "All"
+        elif role_data:
+            view_perm = role_data.get("permissions", {}).get("Payroll", {}).get("View", "None")
+            
+        if view_perm != "All":
             if payroll.user != request.user:
                 return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
             if payroll.status not in [Payroll.Status.PUBLISHED, Payroll.Status.PAID]:
@@ -651,15 +674,11 @@ class PayrollDetailView(APIView):
         return Response(serializer.data)
 
     def put(self, request, pk):
-        from accounts.models import User
-        if not request.user.has_management_access:
-            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
-            
         try:
             payroll = Payroll.objects.get(pk=pk, company=request.user.company)
         except Payroll.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
+            
         from .serializers import PayrollSerializer
         serializer = PayrollSerializer(payroll, data=request.data, partial=True)
         if serializer.is_valid():
@@ -675,10 +694,6 @@ class PayrollDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        from accounts.models import User
-        if not request.user.has_management_access:
-            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
-            
         try:
             payroll = Payroll.objects.get(pk=pk, company=request.user.company)
         except Payroll.DoesNotExist:
