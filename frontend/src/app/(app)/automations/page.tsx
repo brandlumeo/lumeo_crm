@@ -13,13 +13,13 @@ export default function AutomationsPage() {
   return (
     <PageShell title="Automations" description="Build and manage workflow automations.">
       <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto">
-        <div className="flex bg-bone/50 p-1 rounded-lg w-fit border border-accent">
+        <div className="flex bg-bone/50 p-1 rounded-lg w-fit border border-line">
           <button
             onClick={() => setActiveTab("sequences")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
               activeTab === "sequences"
-                ? "bg-white text-ink shadow-sm border border-accent"
+                ? "bg-paper text-ink shadow-sm border border-line"
                 : "text-ink-2 hover:text-ink"
             )}
           >
@@ -31,7 +31,7 @@ export default function AutomationsPage() {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
               activeTab === "rules"
-                ? "bg-white text-ink shadow-sm border border-accent"
+                ? "bg-paper text-ink shadow-sm border border-line"
                 : "text-ink-2 hover:text-ink"
             )}
           >
@@ -40,7 +40,7 @@ export default function AutomationsPage() {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl border border-accent shadow-sm overflow-hidden min-h-[600px]">
+        <div className="bg-paper rounded-2xl border border-line shadow-sm overflow-hidden min-h-[600px] animate-rise">
           {activeTab === "rules" ? (
             <div className="p-6">
               <div className="mb-6">

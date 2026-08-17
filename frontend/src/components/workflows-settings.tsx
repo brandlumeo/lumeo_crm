@@ -132,7 +132,7 @@ export function WorkflowsSettings() {
           { label: "Paused", value: workflowRules.filter(r => !r.is_active).length, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
           { label: "Triggers", value: 3, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" },
         ].map(stat => (
-          <div key={stat.label} className={`${stat.bg} border border-line rounded-xl p-4 text-center shadow-sm`}>
+          <div key={stat.label} className={`${stat.bg} border border-line rounded-2xl p-4 text-center shadow-sm`}>
             <div className={`text-2xl font-bold ${stat.color} mb-0.5`}>{stat.value}</div>
             <div className="text-[12px] text-muted font-medium">{stat.label}</div>
           </div>
@@ -141,7 +141,7 @@ export function WorkflowsSettings() {
 
       {/* Main card */}
       <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-ink" />
 
         {/* Filter tabs */}
         <div className="flex gap-0 border-b border-line px-6 pt-8 overflow-x-auto">
@@ -201,7 +201,7 @@ export function WorkflowsSettings() {
                 return (
                   <div
                     key={rule.id}
-                    className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
                       rule.is_active
                         ? "border-line bg-paper hover:border-slate-300 hover:shadow-sm"
                         : "border-dashed border-line bg-bone/30 opacity-60"
@@ -272,11 +272,11 @@ export function WorkflowsSettings() {
       {/* Creation Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-paper w-full max-w-md rounded-2xl shadow-2xl border border-line flex flex-col animate-rise max-h-[92vh] overflow-y-auto">
+          <div className="bg-paper w-full max-w-md rounded-2xl shadow-2xl border border-line flex flex-col animate-rise max-h-[92vh] overflow-hidden">
             {/* Modal header */}
-            <div className="p-6 border-b border-line flex items-center justify-between bg-bone/40">
+            <div className="p-6 border-b border-line flex items-center justify-between bg-bone shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-ink flex items-center justify-center shadow-sm">
                   <Zap className="w-4 h-4 text-white" />
                 </div>
                 <div>
@@ -292,7 +292,7 @@ export function WorkflowsSettings() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto custom-scrollbar min-h-0">
               {/* Rule name */}
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-1.5">Rule Name</label>

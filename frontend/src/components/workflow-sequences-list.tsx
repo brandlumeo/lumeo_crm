@@ -45,14 +45,14 @@ export function WorkflowSequencesList() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-6 border-b border-accent">
+      <div className="flex items-center justify-between p-6 border-b border-line bg-bone-2">
         <div>
           <h3 className="text-lg font-semibold text-ink">Sequences</h3>
           <p className="text-sm text-ink-2">Multi-step drip campaigns and workflows.</p>
         </div>
         <button
           onClick={() => router.push("/automations/builder")}
-          className="bg-ink text-white hover:bg-ink-2 px-4 py-2 text-[13.5px] rounded-md transition-colors flex items-center gap-2"
+          className="btn btn-primary text-sm gap-2 bg-ink text-paper border-ink hover:bg-ink/90"
         >
           <Plus className="w-4 h-4" />
           Create Sequence
@@ -66,7 +66,7 @@ export function WorkflowSequencesList() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sequences.map((seq) => (
-              <div key={seq.id} className="border border-accent rounded-xl p-5 bg-white shadow-sm flex flex-col gap-4">
+              <div key={seq.id} className="border border-line rounded-2xl p-5 bg-paper shadow-sm flex flex-col gap-4 hover:border-brand/30 transition-colors">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-semibold text-ink text-[15px]">{seq.name}</h4>
@@ -85,14 +85,14 @@ export function WorkflowSequencesList() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${seq.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-bone text-ink-3'}`}>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${seq.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : 'bg-bone text-ink-3 border border-line'}`}>
                     {seq.is_active ? 'Active' : 'Inactive'}
                   </span>
                   <span className="text-[11px] text-ink-3">
                     {seq.steps.length} {seq.steps.length === 1 ? 'step' : 'steps'}
                   </span>
                 </div>
-                <div className="mt-auto pt-4 border-t border-accent flex justify-between items-center">
+                <div className="mt-auto pt-4 border-t border-line flex justify-between items-center">
                   <span className="text-[11px] text-ink-3">Updated {formatDateTime(seq.updated_at)}</span>
                   <div className="flex gap-2">
                     <button
