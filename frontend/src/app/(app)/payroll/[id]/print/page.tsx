@@ -81,9 +81,9 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             <div className="flex flex-row justify-between items-start mb-12 print:mb-10 pb-8 border-b border-line">
               <div className="flex flex-col">
                 {invoiceSettings?.invoice_logo ? (
-                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className="h-10 object-contain mb-4 mix-blend-multiply" />
+                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold mb-4 bg-bone text-ink">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold mb-4 bg-bone text-ink">
                     {(company?.name || 'C').charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -128,7 +128,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
                     <th className="py-3 px-0 border-b border-line font-bold text-[10px] uppercase tracking-widest text-muted text-right whitespace-nowrap">Amount</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line text-sm">
+                <tbody className="divide-y divide-line text-sm border-b border-line">
                   <tr>
                     <td className="py-4 px-0 font-medium text-ink">Basic Salary</td>
                     <td className="py-4 px-0 text-right text-ink font-medium whitespace-nowrap">{formatCurrency(parseFloat(slip.basic_salary), company?.currency || 'INR')}</td>
@@ -152,7 +152,7 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             </div>
 
             {/* Footer Summary */}
-            <div className="flex flex-row justify-between items-end border-t-2 border-ink pt-8 print:pt-6">
+            <div className="flex flex-row justify-between items-end pt-8 print:pt-6">
               
               <div className="flex gap-12 print:break-inside-avoid">
                 <div>
