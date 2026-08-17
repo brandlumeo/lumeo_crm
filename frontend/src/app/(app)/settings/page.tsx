@@ -108,7 +108,7 @@ export default function SettingsPage() {
         
         {/* Sidebar Nav */}
         <div className={cn(
-          "w-full md:w-64 shrink-0 grid grid-rows-[auto_1fr] md:sticky md:top-[100px] md:h-[calc(100vh-140px)] bg-paper rounded-xl border border-line shadow-sm overflow-hidden",
+          "w-full md:w-64 shrink-0 grid grid-rows-[auto_1fr] md:sticky md:top-[100px] md:h-[calc(100vh-140px)] bg-paper rounded-2xl border border-line shadow-sm overflow-hidden",
           !showMenuOnMobile && "hidden md:grid"
         )}>
           <div className="p-4 border-b border-line shrink-0 bg-bone/50">
@@ -149,8 +149,8 @@ export default function SettingsPage() {
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-colors text-left",
                     isActive 
-                      ? "bg-accent/10 text-accent font-semibold" 
-                      : "text-ink-2 hover:bg-bone hover:text-ink"
+                      ? "bg-bone-2 text-ink font-semibold shadow-sm" 
+                      : "text-ink-2 hover:bg-bone/50 hover:text-ink"
                   )}
                 >
                   <tab.icon className={cn("w-4 h-4", isActive ? "text-accent" : "text-muted")} />
@@ -166,7 +166,7 @@ export default function SettingsPage() {
           "flex-1 w-full max-w-4xl relative animate-rise",
           showMenuOnMobile ? "hidden md:block" : "block",
           activeTab !== "notifications" 
-            ? "bg-paper border border-line rounded-xl shadow-sm" 
+            ? "bg-paper border border-line rounded-2xl shadow-sm" 
             : ""
         )}>
           <div className={cn(activeTab !== "notifications" ? "p-8 md:p-10" : "h-full")}>
@@ -248,7 +248,7 @@ function PlaceholderForm({ tabId }: { tabId: string }) {
         <p className="text-[14px] text-muted">Configure your preferences and options for {tab.label.toLowerCase()}.</p>
       </div>
 
-      <div className="bg-paper border border-line rounded-xl shadow-sm overflow-hidden min-h-[400px] flex flex-col items-center justify-center p-12 text-center relative">
+      <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden min-h-[400px] flex flex-col items-center justify-center p-12 text-center relative">
         {/* Subtle background decoration */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-50"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-accent/5 opacity-40 blur-[100px]"></div>

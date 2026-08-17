@@ -59,8 +59,8 @@ export function WorkspaceForm() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-line">
         <div className="flex items-start gap-5">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/10 flex items-center justify-center border border-indigo-500/20 shadow-inner shrink-0">
-            <Building className="w-7 h-7 text-indigo-600" />
+          <div className="w-14 h-14 rounded-2xl bg-bone-2 flex items-center justify-center border border-line shadow-sm shrink-0">
+            <Building className="w-7 h-7 text-ink" />
           </div>
           <div>
             <h3 className="text-2xl font-bold text-ink tracking-tight mb-1">Company Settings</h3>
@@ -80,10 +80,9 @@ export function WorkspaceForm() {
               mutation.mutate({ name, currency, domain: domain || null, company_email: companyEmail || null, company_website: formattedWebsite });
             }}
             disabled={mutation.isPending}
-            className="btn btn-primary shadow-md hover:shadow-lg transition-all h-11 px-6 rounded-xl font-medium flex items-center gap-2 shrink-0 group relative overflow-hidden "
+            className="btn btn-primary h-11 px-6 rounded-xl text-[14px] bg-ink text-paper border-ink hover:bg-ink/90 shadow-sm flex items-center gap-2 shrink-0"
           >
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-            {mutation.isPending ? (
+                        {mutation.isPending ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
             ) : (
               <><CheckCircle className="w-4 h-4" /> Save Settings</>
@@ -113,11 +112,11 @@ export function WorkspaceForm() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* General Settings */}
         <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-ink"></div>
           <div className="p-6 sm:p-8 space-y-8 flex-1 pt-9">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                <LayoutDashboard className="w-5 h-5 text-indigo-600" />
+              <div className="w-10 h-10 rounded-xl bg-bone-2 flex items-center justify-center border border-line">
+                <LayoutDashboard className="w-5 h-5 text-ink" />
               </div>
               <div>
                 <h4 className="text-[16px] font-semibold text-ink">General Info</h4>
@@ -168,7 +167,7 @@ export function WorkspaceForm() {
           </div>
           <div className="bg-bone/40 px-8 py-4 border-t border-line flex items-center justify-between mt-auto">
             <span className="text-[12.5px] text-muted flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-ink"></div>
               Reflected on invoices and quotes.
             </span>
           </div>
@@ -176,11 +175,11 @@ export function WorkspaceForm() {
 
         {/* Regional & Domain Settings */}
         <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col group/card hover:shadow-md transition-shadow relative">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-ink"></div>
           <div className="p-6 sm:p-8 space-y-8 flex-1 pt-9">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
-                <Globe className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-bone-2 flex items-center justify-center border border-line">
+                <Globe className="w-5 h-5 text-ink" />
               </div>
               <div>
                 <h4 className="text-[16px] font-semibold text-ink">Regional & Domain</h4>
@@ -233,7 +232,7 @@ export function WorkspaceForm() {
           </div>
           <div className="bg-bone/40 px-8 py-4 border-t border-line flex items-center justify-between mt-auto">
             <span className="text-[12.5px] text-muted flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-ink"></div>
               Contact support for domain verification.
             </span>
           </div>
