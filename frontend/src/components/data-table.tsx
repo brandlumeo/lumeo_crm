@@ -96,12 +96,12 @@ export function DataTable<T>({
 
   return (
     <>
-      <div className="overflow-x-auto max-h-[calc(100vh-280px)] custom-scrollbar">
-        <table className="w-full min-w-[720px] relative">
-          <thead className="sticky top-0 z-10">
-            <tr className="text-left bg-bone/80 backdrop-blur-md shadow-[0_1px_0_0_var(--color-line-2)]">
+      <div className="overflow-x-auto custom-scrollbar bg-paper rounded-xl shadow-sm border border-line">
+        <table className="w-full min-w-[720px] relative text-left text-sm whitespace-nowrap">
+          <thead className="bg-bone-2 border-b border-line sticky top-0 z-10">
+            <tr>
               {hasSelection && (
-                <th className="px-5 py-2.5 w-10">
+                <th className="px-5 py-3.5 w-10">
                   <input
                     type="checkbox"
                     className="w-4 h-4 rounded border-line text-ink focus:ring-ink/20 cursor-pointer accent-ink"
@@ -116,7 +116,7 @@ export function DataTable<T>({
               {Array.isArray(columns) && columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-5 py-2.5 text-[11px] uppercase tracking-[0.12em] text-muted font-medium select-none ${
+                  className={`px-6 py-4 text-[13px] font-medium text-muted select-none ${
                     column.className ?? ""
                   } ${column.sortable ? "cursor-pointer hover:text-ink transition-colors group" : ""}`}
                   onClick={() => column.sortable && handleSort(column.key)}
@@ -149,10 +149,10 @@ export function DataTable<T>({
                 <tr
                   key={id || index}
                   onClick={() => onRowClick?.(row)}
-                  className={`border-b border-line-2 last:border-b-0 transition-colors group ${
-                    onRowClick ? "cursor-pointer" : ""
+                  className={`border-b border-line last:border-b-0 transition-colors group ${
+                    onRowClick ? "cursor-pointer hover:bg-bone-2/50" : "hover:bg-bone-2/50"
                   } ${
-                    isSelected ? "bg-bone-2/80" : "hover:bg-bone-2/40"
+                    isSelected ? "bg-bone-2/80" : ""
                   }`}
                 >
                   {hasSelection && (
@@ -168,7 +168,7 @@ export function DataTable<T>({
                   {Array.isArray(columns) && columns.map((column) => (
                     <td
                       key={column.key}
-                      className={`px-5 py-3 align-top text-[13px] text-ink-2 ${column.className ?? ""}`}
+                      className={`px-6 py-4 align-middle text-[13px] text-ink ${column.className ?? ""}`}
                     >
                       {column.render(row)}
                     </td>
@@ -180,7 +180,7 @@ export function DataTable<T>({
         </table>
       </div>
 
-      <div className="flex items-center justify-between px-5 py-3 border-t border-line-2 text-[12px] text-muted">
+      <div className="flex items-center justify-between px-2 py-3 text-[12px] text-muted">
         <div>
           Showing {pageStart}-{pageEnd} of {count}
         </div>
