@@ -33,7 +33,6 @@ export default function PayrollPage() {
   
   const { data: rawPayrolls = [], isLoading } = usePayrolls(isManager);
   const { data: rawTeam = [] } = useTeam();
-  const { data: company } = useCurrentCompany();
 
   const payrolls = Array.isArray(rawPayrolls) ? rawPayrolls : ((rawPayrolls as any)?.results || []);
   const team = Array.isArray(rawTeam) ? rawTeam : ((rawTeam as any)?.users || (rawTeam as any)?.results || []);
