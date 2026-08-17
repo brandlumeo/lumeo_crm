@@ -229,7 +229,7 @@ export function WorkflowsSettings() {
                     </div>
 
                     {/* Details */}
-                    <div className="hidden md:block max-w-[200px] shrink-0">
+                    <div className="hidden md:block w-[220px] shrink-0">
                       <p className="text-[12px] text-muted truncate">
                         {rule.action_type === "create_task"
                           ? `Task: ${rule.action_payload.task_title}`
@@ -247,7 +247,7 @@ export function WorkflowsSettings() {
                         onChange={(e) => toggleMutation.mutate({ id: rule.id, is_active: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-10 h-5 bg-bone-2 border border-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-200 after:rounded-full after:h-4 after:w-4 after:transition-all shadow-inner peer-checked:bg-ink peer-checked:border-ink"></div>
+                      <div className="w-9 h-5 bg-bone-2 border border-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border after:border-gray-200 after:rounded-full after:h-4 after:w-4 after:transition-all shadow-inner peer-checked:bg-ink peer-checked:border-ink"></div>
                     </label>
 
                     {/* Delete */}
