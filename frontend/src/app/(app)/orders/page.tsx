@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import {
+import { CheckSquare, Square, 
   ShoppingCart,
   Plus,
   Loader2,
@@ -29,10 +29,10 @@ import { formatINR, toNumber, formatDateTime } from "@/lib/utils";
 const PAGE_SIZE = 20;
 
 const STATUS_META: Record<string, { label: string; chip: string; icon: React.ElementType }> = {
-  pending:    { label: "Pending",    chip: "chip chip-warning",  icon: Clock         },
-  processing: { label: "Processing", chip: "chip chip-info",     icon: TrendingUp    },
-  completed:  { label: "Completed",  chip: "chip chip-positive", icon: CheckCircle2  },
-  cancelled:  { label: "Cancelled",  chip: "chip chip-neutral",  icon: XCircle       },
+  pending:    { label: "Pending",    chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-amber-50 text-amber-700 border border-amber-200/50",  icon: Clock         },
+  processing: { label: "Processing", chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-blue-50 text-blue-700 border border-blue-200/50",     icon: TrendingUp    },
+  completed:  { label: "Completed",  chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/50", icon: CheckCircle2  },
+  cancelled:  { label: "Cancelled",  chip: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-slate-100 text-slate-700 border border-slate-200",  icon: XCircle       },
 };
 
 const STATUSES = Object.keys(STATUS_META);
@@ -83,7 +83,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="card p-5 flex items-center gap-4 animate-rise">
+    <div className="bg-paper border border-line rounded-2xl shadow-sm p-5 flex items-center gap-4 animate-rise">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -173,14 +173,87 @@ function OrderDrawer({
               <div className="text-xs font-medium text-muted uppercase tracking-wider mb-3">Line Items</div>
               <div className="border border-line rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-bone-2 border-b border-line text-muted text-xs uppercase tracking-wide">
-                    <tr>
-                      <th className="px-3 py-2.5 text-left font-medium">Item</th>
-                      <th className="px-3 py-2.5 text-right font-medium">Qty</th>
-                      <th className="px-3 py-2.5 text-right font-medium">Rate</th>
-                      <th className="px-3 py-2.5 text-right font-medium">Total</th>
-                    </tr>
-                  </thead>
+                  <thead className="bg-bone-2 border-b border-line text-xs uppercase tracking-[0.12em] text-muted font-semibold">
+                {selectedIds.size > 0 ? (
+                  <tr>
+                    <th colSpan={7} className="px-5 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="p-1.5 rounded-md hover:bg-bone transition-colors text-ink"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="font-medium text-ink lowercase tracking-normal text-sm">
+                            <span className="font-semibold">{selectedIds.size}</span> selected
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "completed" } }));
+                              toast.success(`Marked ${selectedIds.size} order(s) as completed.`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Completed
+                          </button>
+                          <button
+                            onClick={() => {
+                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "cancelled" } }));
+                              toast.warning(`Cancelled ${selectedIds.size} order(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> Cancelled
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Delete ${selectedIds.size} order(s)?`)) return;
+                              Array.from(selectedIds).forEach((id) => deleteMutation.mutate(id));
+                              toast.success(`Deleted ${selectedIds.size} order(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                ) : (
+                <tr>
+                  <th className="px-5 py-4 w-12 text-center">
+                    <button
+                      onClick={() => {
+                        if (selectedIds.size === orders.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(orders.map((o) => o.id)));
+                        }
+                      }}
+                      className="text-muted hover:text-ink transition-colors"
+                    >
+                      {selectedIds.size === orders.length && orders.length > 0 ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-5 py-4 font-medium">Order #</th>
+                  <th className="px-5 py-4 font-medium">Client</th>
+                  <th className="px-5 py-4 font-medium">Status</th>
+                  <th className="px-5 py-4 font-medium">Total</th>
+                  <th className="px-5 py-4 font-medium">Items</th>
+                  <th className="px-5 py-4 font-medium text-right">Order Date</th>
+                </tr>
+                )}
+              </thead>
                   <tbody className="divide-y divide-line">
                     {order.items.map((item: any, idx: number) => (
                       <tr key={idx} className="hover:bg-bone-2/40 transition-colors">
@@ -277,6 +350,7 @@ export default function OrdersPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [mounted, setMounted] = useState(false);
 
   // New order form
@@ -440,64 +514,66 @@ export default function OrdersPage() {
       </div>
 
       {/* ── Main card ── */}
-      <div className="card animate-rise">
+      <div className="bg-paper border border-line rounded-2xl overflow-hidden shadow-sm animate-rise flex flex-col">
         {/* Card header */}
-        <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="card-title">
-            Order list
-            <span className="card-title-meta">{total} total</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto ml-auto">
-            {/* Search */}
-            <input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="input sm:w-[220px]"
-              placeholder="Search by order # or customer"
-            />
-            {/* Status filter */}
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                className="input pr-8 appearance-none cursor-pointer"
-              >
-                <option value="">All Statuses</option>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{STATUS_META[s].label}</option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+        <div className="p-5 border-b border-line bg-bone-2">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-ink">Orders</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-ink/5 text-ink/60 text-xs font-medium">
+                {total} total
+              </span>
             </div>
-            {/* Date range */}
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-              className="input text-sm"
-              title="From date"
-            />
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-              className="input text-sm"
-              title="To date"
-            />
-            {/* Clear filters */}
-            {hasFilters && (
-              <button onClick={clearFilters} className="btn btn-ghost text-muted text-xs gap-1">
-                <X className="w-3.5 h-3.5" /> Clear
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  className="input sm:w-[220px]"
+                  placeholder="Search by order # or customer"
+                />
+              </div>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                  className="input pr-8 appearance-none cursor-pointer min-w-[140px]"
+                >
+                  <option value="">All Statuses</option>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{STATUS_META[s].label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+              </div>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                className="input text-sm"
+                title="From date"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                className="input text-sm"
+                title="To date"
+              />
+              {hasFilters && (
+                <button onClick={clearFilters} className="btn btn-ghost text-muted text-xs gap-1">
+                  <X className="w-3.5 h-3.5" /> Clear
+                </button>
+              )}
+              <div className="w-px h-6 bg-line mx-1 hidden sm:block"></div>
+              <button onClick={handleExport} className="btn btn-secondary gap-2 text-sm">
+                <Download className="w-4 h-4" /> Export
               </button>
-            )}
-            {/* Export */}
-            <button onClick={handleExport} className="btn btn-secondary gap-2 text-sm">
-              <Download className="w-4 h-4" /> Export
-            </button>
-            {/* Add new */}
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm">
-              <Plus className="w-4 h-4" /> Add Order
-            </button>
+              <button onClick={() => setIsModalOpen(true)} className="btn btn-primary gap-2 text-sm bg-ink text-paper border-ink hover:bg-ink/90">
+                <Plus className="w-4 h-4" /> Add Order
+              </button>
+            </div>
           </div>
         </div>
 
@@ -515,123 +591,179 @@ export default function OrdersPage() {
             }
           />
         ) : (
-          <DataTable
-            columns={[
-              {
-                key: "order_number",
-                header: "Order #",
-                sortable: true,
-                render: (order) => (
-                  <div className="font-mono text-xs font-semibold text-ink uppercase tracking-wide">
-                    {order.order_number}
-                  </div>
-                ),
-              },
-              {
-                key: "customer",
-                header: "Client",
-                sortable: false,
-                render: (order) =>
-                  order.customer_name ? (
-                    <div>
-                      <div className="font-medium text-ink">{order.customer_name}</div>
-                    </div>
-                  ) : (
-                    <span className="text-muted italic text-sm">No client</span>
-                  ),
-              },
-              {
-                key: "status",
-                header: "Status",
-                sortable: true,
-                render: (order) => {
-                  const m = STATUS_META[order.status] ?? STATUS_META.pending;
-                  return <span className={m.chip}>{m.label}</span>;
-                },
-              },
-              {
-                key: "total",
-                header: "Total",
-                sortable: true,
-                render: (order) => (
-                  <div>
-                    <div className="font-serif text-base text-ink">
-                      {formatINR(toNumber(order.total))}
-                    </div>
-                    {toNumber(order.tax_amount) > 0 && (
-                      <div className="text-[10px] text-muted">
-                        incl. {formatINR(toNumber(order.tax_amount))} tax
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-bone-2 border-b border-line text-xs uppercase tracking-[0.12em] text-muted font-semibold">
+                {selectedIds.size > 0 ? (
+                  <tr>
+                    <th colSpan={7} className="px-5 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="p-1.5 rounded-md hover:bg-bone transition-colors text-ink"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="font-medium text-ink lowercase tracking-normal text-sm">
+                            <span className="font-semibold">{selectedIds.size}</span> selected
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "completed" } }));
+                              toast.success(`Marked ${selectedIds.size} order(s) as completed.`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Completed
+                          </button>
+                          <button
+                            onClick={() => {
+                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "cancelled" } }));
+                              toast.warning(`Cancelled ${selectedIds.size} order(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> Cancelled
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Delete ${selectedIds.size} order(s)?`)) return;
+                              Array.from(selectedIds).forEach((id) => deleteMutation.mutate(id));
+                              toast.success(`Deleted ${selectedIds.size} order(s).`);
+                              setSelectedIds(new Set());
+                            }}
+                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ),
-              },
-              {
-                key: "items",
-                header: "Items",
-                sortable: false,
-                render: (order) => (
-                  <span className="chip chip-neutral">
-                    {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}
-                  </span>
-                ),
-              },
-              {
-                key: "created_at",
-                header: "Order Date",
-                sortable: true,
-                render: (order) => (
-                  <span className="text-muted text-sm">
-                    {new Date(order.created_at).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                ),
-              },
-            ]}
-            rows={orders}
-            count={total}
-            page={page}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSortChange={(col, dir) => {
-              setSortColumn(col);
-              setSortDirection(dir);
-            }}
-            onRowClick={(order) => setSelectedOrder(order)}
-            bulkActions={[
-              {
-                label: "Mark Completed",
-                onClick: (ids) => {
-                  ids.forEach((id) => updateMutation.mutate({ id: Number(id), payload: { status: "completed" } }));
-                  toast.success(`Marked ${ids.length} order(s) as completed.`);
-                },
-              },
-              {
-                label: "Mark Cancelled",
-                onClick: (ids) => {
-                  ids.forEach((id) => updateMutation.mutate({ id: Number(id), payload: { status: "cancelled" } }));
-                  toast.warning(`Cancelled ${ids.length} order(s).`);
-                },
-              },
-              {
-                label: "Delete",
-                variant: "danger",
-                onClick: (ids) => {
-                  if (!confirm(`Delete ${ids.length} order(s)?`)) return;
-                  ids.forEach((id) => deleteMutation.mutate(Number(id)));
-                  toast.success(`Deleted ${ids.length} order(s).`);
-                },
-              },
-            ]}
-          />
+                    </th>
+                  </tr>
+                ) : (
+                <tr>
+                  <th className="px-5 py-4 w-12 text-center">
+                    <button
+                      onClick={() => {
+                        if (selectedIds.size === orders.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(orders.map((o) => o.id)));
+                        }
+                      }}
+                      className="text-muted hover:text-ink transition-colors"
+                    >
+                      {selectedIds.size === orders.length && orders.length > 0 ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-5 py-4 font-medium">Order #</th>
+                  <th className="px-5 py-4 font-medium">Client</th>
+                  <th className="px-5 py-4 font-medium">Status</th>
+                  <th className="px-5 py-4 font-medium">Total</th>
+                  <th className="px-5 py-4 font-medium">Items</th>
+                  <th className="px-5 py-4 font-medium text-right">Order Date</th>
+                </tr>
+                )}
+              </thead>
+              <tbody className="divide-y divide-line">
+                {orders.map((order) => {
+                  const m = STATUS_META[order.status] ?? STATUS_META.pending;
+                  return (
+                    <tr
+                      key={order.id}
+                      onClick={() => setSelectedOrder(order)}
+                      className="hover:bg-bone-2/40 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-5 py-4 text-center" onClick={(e) => { e.stopPropagation(); const next = new Set(selectedIds); if (next.has(order.id)) { next.delete(order.id); } else { next.add(order.id); } setSelectedIds(next); }}>
+                        <button className="text-muted hover:text-ink transition-colors focus:outline-none">
+                          {selectedIds.has(order.id) ? (
+                            <CheckSquare className="w-4 h-4 text-ink" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-mono text-xs font-semibold text-ink uppercase tracking-wide">
+                          {order.order_number}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {order.customer_name ? (
+                          <div className="font-medium text-ink">{order.customer_name}</div>
+                        ) : (
+                          <span className="text-muted italic text-sm">No client</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={m.chip}>{m.label}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-serif text-base text-ink">
+                          {formatINR(toNumber(order.total))}
+                        </div>
+                        {toNumber(order.tax_amount) > 0 && (
+                          <div className="text-[10px] text-muted">
+                            incl. {formatINR(toNumber(order.tax_amount))} tax
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-bone text-xs font-medium text-muted border border-line">
+                          {order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-muted text-sm">
+                          {new Date(order.created_at).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {/* Pagination placeholder (since we removed DataTable) */}
+        {!isLoading && orders.length > 0 && (
+          <div className="px-5 py-4 border-t border-line bg-bone flex items-center justify-between text-sm">
+             <div className="text-muted">
+               Showing <span className="font-medium text-ink">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-ink">{Math.min(page * PAGE_SIZE, total)}</span> of <span className="font-medium text-ink">{total}</span> results
+             </div>
+             <div className="flex items-center gap-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="btn btn-secondary py-1.5 px-3 text-xs"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={page * PAGE_SIZE >= total}
+                  onClick={() => setPage(p => p + 1)}
+                  className="btn btn-secondary py-1.5 px-3 text-xs"
+                >
+                  Next
+                </button>
+             </div>
+          </div>
         )}
       </div>
-
       {/* ── Order detail slide-over ── */}
       {selectedOrder && (
         <OrderDrawer
@@ -648,7 +780,7 @@ export default function OrdersPage() {
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
           <form 
             onSubmit={handleCreate} 
-            className="relative w-full max-w-2xl bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-rise"
+            className="relative w-full max-w-2xl bg-paper border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-rise"
             style={{ maxHeight: 'calc(100vh - 2rem)' }}
           >
             {/* Modal header */}
