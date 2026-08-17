@@ -243,7 +243,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             <div className="md:w-1/3 print:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between" style={{ backgroundColor: '#1e293b' }}>
               <div>
                 {invoice.settings?.invoice_logo ? (
-                  <img src={invoice.settings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-8 bg-white p-2 rounded" />
+                  <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-8 bg-white p-2 rounded" />
                 ) : (
                   <h1 className="text-3xl font-bold mb-8">{invoice.company?.name || "Company"}</h1>
                 )}
@@ -276,7 +276,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               >
                 <div>
                   {invoice.settings?.invoice_logo ? (
-                    <img src={invoice.settings.invoice_logo} alt="Company Logo" className="h-16 sm:h-20 print:h-24 object-contain mb-4 print:max-w-[250px]" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
+                    <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-4" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
                   ) : (
                     <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">INVOICE</h1>
                   )}
