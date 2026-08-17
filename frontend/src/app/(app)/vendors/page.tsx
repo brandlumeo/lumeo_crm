@@ -112,7 +112,7 @@ export default function VendorsPage() {
       description="Manage the companies and contractors who supply you with goods or services."
     >
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_380px] gap-6 xl:gap-8">
-        <div className="bg-white dark:bg-ink border border-line rounded-2xl shadow-sm animate-rise overflow-hidden flex flex-col">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm animate-rise overflow-hidden flex flex-col">
           <div className="px-6 py-5 border-b border-line flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between bg-bone/30">
             <div>
               <h2 className="font-serif text-[20px] text-ink flex items-center gap-2">
@@ -179,7 +179,7 @@ export default function VendorsPage() {
                                 deleteMutation.mutate([vendor.id.toString()]);
                               }
                             }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-red-200 bg-white dark:bg-ink opacity-0 group-hover:opacity-100"
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-red-200 bg-paper opacity-0 group-hover:opacity-100"
                             title="Delete Vendor"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -198,7 +198,7 @@ export default function VendorsPage() {
                   <button 
                     disabled={page <= 1}
                     onClick={() => setPage(p => p - 1)}
-                    className="flex items-center justify-center w-7 h-7 border border-line rounded bg-white dark:bg-ink hover:bg-bone-2 disabled:opacity-50 transition-colors"
+                    className="flex items-center justify-center w-7 h-7 border border-line rounded bg-paper hover:bg-bone-2 disabled:opacity-50 transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -206,7 +206,7 @@ export default function VendorsPage() {
                   <button 
                     disabled={page >= Math.ceil((data?.count ?? 0) / PAGE_SIZE)}
                     onClick={() => setPage(p => p + 1)}
-                    className="flex items-center justify-center w-7 h-7 border border-line rounded bg-white dark:bg-ink hover:bg-bone-2 disabled:opacity-50 transition-colors"
+                    className="flex items-center justify-center w-7 h-7 border border-line rounded bg-paper hover:bg-bone-2 disabled:opacity-50 transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -217,7 +217,7 @@ export default function VendorsPage() {
         </div>
 
         <div className="xl:col-start-2 xl:row-start-1">
-          <div className="bg-white dark:bg-ink border border-line rounded-2xl shadow-xl shadow-ink/5 animate-rise sticky top-6 overflow-hidden flex flex-col">
+          <div className="bg-paper border border-line rounded-2xl shadow-xl shadow-ink/5 animate-rise sticky top-6 overflow-hidden flex flex-col">
             <div className="px-6 py-5 border-b border-line bg-bone flex items-center justify-between">
               <h3 className="font-serif text-[20px] text-ink">{editingId ? "Edit Vendor" : "New Vendor"}</h3>
               {editingId && (
