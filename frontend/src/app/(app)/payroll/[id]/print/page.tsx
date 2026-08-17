@@ -176,14 +176,14 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
 
             {/* Signatures */}
             {invoiceSettings?.show_authorised_signatory && (
-                <div className="mt-20 pt-8 border-t border-line flex justify-end print:break-inside-avoid">
+                <div className="mt-20 pt-8 flex justify-end print:break-inside-avoid">
                     <div className="text-right">
                         {invoiceSettings?.authorised_signatory_signature ? (
-                            <img src={invoiceSettings.authorised_signatory_signature} alt="Authorised Signatory" className="h-10 object-contain mb-3 ml-auto" />
+                            <img src={invoiceSettings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2 ml-auto" />
                         ) : (
-                            <div className="h-10 w-32 mb-3"></div>
+                            <div className="h-10 w-48 mb-3 ml-auto border-b border-ink/40"></div>
                         )}
-                        <p className="text-xs font-semibold text-ink uppercase tracking-wider">Authorised Signatory</p>
+                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-2">Authorised Signatory</p>
                     </div>
                 </div>
             )}
