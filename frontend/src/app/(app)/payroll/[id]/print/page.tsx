@@ -15,13 +15,13 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     // Only print when everything is loaded
-    if (slip && company && !isLoading) {
+    if (slip && company && invoiceSettings && !isLoading) {
       document.title = `Salary Slip - ${slip.user_full_name}`;
       setTimeout(() => {
         window.print();
-      }, 500);
+      }, 800); // give images a bit more time to load
     }
-  }, [slip, company, isLoading]);
+  }, [slip, company, invoiceSettings, isLoading]);
 
   if (isLoading) {
     return (
@@ -81,9 +81,9 @@ export default function PayrollPrintPage({ params }: { params: Promise<{ id: str
             <div className="flex flex-row justify-between items-start mb-12 print:mb-10 pb-8 border-b border-line">
               <div className="flex flex-col">
                 {invoiceSettings?.invoice_logo ? (
-                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className="h-16 object-contain mb-4" />
+                  <img src={invoiceSettings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-6" />
                 ) : (
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold mb-4 bg-bone text-ink">
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold mb-6 bg-bone text-ink">
                     {(company?.name || 'C').charAt(0).toUpperCase()}
                   </div>
                 )}
