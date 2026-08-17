@@ -173,87 +173,14 @@ function OrderDrawer({
               <div className="text-xs font-medium text-muted uppercase tracking-wider mb-3">Line Items</div>
               <div className="border border-line rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-bone-2 border-b border-line text-xs uppercase tracking-[0.12em] text-muted font-semibold">
-                {selectedIds.size > 0 ? (
-                  <tr>
-                    <th colSpan={7} className="px-5 py-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setSelectedIds(new Set())}
-                            className="p-1.5 rounded-md hover:bg-bone transition-colors text-ink"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                          <span className="font-medium text-ink lowercase tracking-normal text-sm">
-                            <span className="font-semibold">{selectedIds.size}</span> selected
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "completed" } }));
-                              toast.success(`Marked ${selectedIds.size} order(s) as completed.`);
-                              setSelectedIds(new Set());
-                            }}
-                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Completed
-                          </button>
-                          <button
-                            onClick={() => {
-                              Array.from(selectedIds).forEach((id) => updateMutation.mutate({ id, payload: { status: "cancelled" } }));
-                              toast.warning(`Cancelled ${selectedIds.size} order(s).`);
-                              setSelectedIds(new Set());
-                            }}
-                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
-                          >
-                            <XCircle className="w-3.5 h-3.5 mr-1" /> Cancelled
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (!confirm(`Delete ${selectedIds.size} order(s)?`)) return;
-                              Array.from(selectedIds).forEach((id) => deleteMutation.mutate(id));
-                              toast.success(`Deleted ${selectedIds.size} order(s).`);
-                              setSelectedIds(new Set());
-                            }}
-                            className="btn btn-secondary text-xs py-1.5 h-auto bg-paper border-line hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
-                          </button>
-                        </div>
-                      </div>
-                    </th>
-                  </tr>
-                ) : (
-                <tr>
-                  <th className="px-5 py-4 w-12 text-center">
-                    <button
-                      onClick={() => {
-                        if (selectedIds.size === orders.length) {
-                          setSelectedIds(new Set());
-                        } else {
-                          setSelectedIds(new Set(orders.map((o) => o.id)));
-                        }
-                      }}
-                      className="text-muted hover:text-ink transition-colors"
-                    >
-                      {selectedIds.size === orders.length && orders.length > 0 ? (
-                        <CheckSquare className="w-4 h-4" />
-                      ) : (
-                        <Square className="w-4 h-4" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-5 py-4 font-medium">Order #</th>
-                  <th className="px-5 py-4 font-medium">Client</th>
-                  <th className="px-5 py-4 font-medium">Status</th>
-                  <th className="px-5 py-4 font-medium">Total</th>
-                  <th className="px-5 py-4 font-medium">Items</th>
-                  <th className="px-5 py-4 font-medium text-right">Order Date</th>
-                </tr>
-                )}
-              </thead>
+                  <thead className="bg-bone-2 border-b border-line text-xs uppercase tracking-wide text-muted font-medium">
+                    <tr>
+                      <th className="px-3 py-2.5 text-left font-medium">Item</th>
+                      <th className="px-3 py-2.5 text-right font-medium">Qty</th>
+                      <th className="px-3 py-2.5 text-right font-medium">Rate</th>
+                      <th className="px-3 py-2.5 text-right font-medium">Total</th>
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-line">
                     {order.items.map((item: any, idx: number) => (
                       <tr key={idx} className="hover:bg-bone-2/40 transition-colors">
