@@ -2,9 +2,7 @@
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Truck, Search, Building2, Phone, Mail, FileText, Globe, Landmark, MapPin } from "lucide-react";
-
-import { DataTable } from "@/components/data-table";
+import { Truck, Search, Building2, Phone, Mail, FileText, Globe, Landmark, MapPin, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { PageShell } from "@/components/page-shell";
@@ -114,7 +112,7 @@ export default function VendorsPage() {
       description="Manage the companies and contractors who supply you with goods or services."
     >
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_380px] gap-6 xl:gap-8">
-        <div className="bg-paper border border-line rounded-2xl shadow-sm animate-rise overflow-hidden flex flex-col">
+        <div className="bg-white dark:bg-ink border border-line rounded-2xl shadow-sm animate-rise overflow-hidden flex flex-col">
           <div className="px-6 py-5 border-b border-line flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between bg-bone/30">
             <div>
               <h2 className="font-serif text-[20px] text-ink flex items-center gap-2">
@@ -146,66 +144,80 @@ export default function VendorsPage() {
               description="Add your first supplier or contractor to start tracking your purchases."
             />
           ) : (
-            <DataTable
-              columns={[
-                {
-                  key: "name",
-                  header: "Vendor",
-                  sortable: true,
-                  render: (vendor: any) => (
-                    <div>
-                      <div className="font-medium text-ink">{vendor.name}</div>
-                      {vendor.contact_name && <div className="text-[12px] text-muted mt-0.5">Contact: {vendor.contact_name}</div>}
-                      <div className="text-[12px] text-muted mt-0.5">{vendor.email || "No email"}</div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "phone",
-                  header: "Phone",
-                  sortable: true,
-                  render: (vendor: any) => vendor.phone || "-",
-                },
-                {
-                  key: "tax_id",
-                  header: "Tax ID",
-                  sortable: true,
-                  render: (vendor: any) => vendor.tax_id || "-",
-                },
-                {
-                  key: "created_at",
-                  header: "Added",
-                  sortable: true,
-                  render: (vendor: any) => formatDateTime(vendor.created_at),
-                },
-              ]}
-              rows={rows}
-              count={data?.count ?? 0}
-              page={page}
-              pageSize={PAGE_SIZE}
-              onPageChange={setPage}
-              sortColumn={sortColumn}
-              sortDirection={sortDirection}
-              onSortChange={(col, dir) => {
-                setSortColumn(col);
-                setSortDirection(dir);
-              }}
-              bulkActions={[
-                {
-                  label: "Delete",
-                  variant: "danger",
-                  onClick: (ids) => deleteMutation.mutate(ids)
-                }
-              ]}
-              onRowClick={(vendor) => {
-                setViewingVendor(vendor);
-              }}
-            />
+            <div className="flex flex-col h-full">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-bone-2 border-b border-line">
+                    <tr>
+                      <th className="px-6 py-4 font-medium text-muted">Vendor</th>
+                      <th className="px-6 py-4 font-medium text-muted">Phone</th>
+                      <th className="px-6 py-4 font-medium text-muted">Tax ID</th>
+                      <th className="px-6 py-4 font-medium text-muted">Added</th>
+                      <th className="px-6 py-4 font-medium text-muted text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {rows.map((vendor: any) => (
+                      <tr 
+                        key={vendor.id} 
+                        className="hover:bg-bone-2/50 transition-colors cursor-pointer group"
+                        onClick={() => setViewingVendor(vendor)}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-ink">{vendor.name}</div>
+                          {vendor.contact_name && <div className="text-[12px] text-muted mt-0.5">Contact: {vendor.contact_name}</div>}
+                          <div className="text-[12px] text-muted mt-0.5">{vendor.email || "No email"}</div>
+                        </td>
+                        <td className="px-6 py-4 text-ink-2">{vendor.phone || "-"}</td>
+                        <td className="px-6 py-4 text-ink-2">{vendor.tax_id || "-"}</td>
+                        <td className="px-6 py-4 text-ink-2">{formatDateTime(vendor.created_at)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if (confirm("Are you sure you want to delete this vendor?")) {
+                                deleteMutation.mutate([vendor.id.toString()]);
+                              }
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-red-200 bg-white dark:bg-ink opacity-0 group-hover:opacity-100"
+                            title="Delete Vendor"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-auto px-6 py-4 border-t border-line flex items-center justify-between text-[12px] text-muted">
+                <div>
+                  Showing {rows.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, data?.count ?? 0)} of {data?.count ?? 0}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    disabled={page <= 1}
+                    onClick={() => setPage(p => p - 1)}
+                    className="flex items-center justify-center w-7 h-7 border border-line rounded bg-white dark:bg-ink hover:bg-bone-2 disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="font-mono text-ink mx-1">{page} / {Math.max(1, Math.ceil((data?.count ?? 0) / PAGE_SIZE))}</span>
+                  <button 
+                    disabled={page >= Math.ceil((data?.count ?? 0) / PAGE_SIZE)}
+                    onClick={() => setPage(p => p + 1)}
+                    className="flex items-center justify-center w-7 h-7 border border-line rounded bg-white dark:bg-ink hover:bg-bone-2 disabled:opacity-50 transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
         <div className="xl:col-start-2 xl:row-start-1">
-          <div className="bg-paper border border-line rounded-2xl shadow-xl shadow-ink/5 animate-rise sticky top-6 overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-ink border border-line rounded-2xl shadow-xl shadow-ink/5 animate-rise sticky top-6 overflow-hidden flex flex-col">
             <div className="px-6 py-5 border-b border-line bg-bone flex items-center justify-between">
               <h3 className="font-serif text-[20px] text-ink">{editingId ? "Edit Vendor" : "New Vendor"}</h3>
               {editingId && (
