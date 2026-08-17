@@ -137,14 +137,13 @@ export default function CalendarPage() {
       eyebrow="Work"
       title="My Calendar"
       description="Manage your schedule and upcoming meetings."
-      actions={
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
-        >
-          <Plus className="w-4 h-4" /> New Event
-        </button>
-      }
+      actions={[
+        {
+          label: "New Event",
+          variant: "primary",
+          onClick: () => setIsAddModalOpen(true)
+        }
+      ]}
     >
       <div className="bg-paper border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col lg:flex-row min-h-[600px] lg:h-[calc(100vh-220px)] animate-rise">
         
