@@ -2,7 +2,7 @@
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Truck } from "lucide-react";
+import { Truck, Search, Building2, Phone, Mail, FileText, Globe, Landmark, MapPin } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
@@ -113,22 +113,26 @@ export default function VendorsPage() {
       title="Vendors & Suppliers"
       description="Manage the companies and contractors who supply you with goods or services."
     >
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_360px] gap-6">
-        <div className="card animate-rise">
-          <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <div className="card-title">
-              Vendor List
-              <span className="card-title-meta">{data?.count ?? 0} total vendors</span>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_380px] gap-6 xl:gap-8">
+        <div className="bg-paper border border-line rounded-2xl shadow-sm animate-rise overflow-hidden flex flex-col">
+          <div className="px-6 py-5 border-b border-line flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between bg-bone/30">
+            <div>
+              <h2 className="font-serif text-[20px] text-ink flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-muted" />
+                Vendor List
+              </h2>
+              <p className="text-xs text-muted mt-1 font-medium tracking-wide uppercase">{data?.count ?? 0} total vendors</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
               <input
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);
                   setPage(1);
                 }}
-                className="input sm:w-[220px]"
-                placeholder="Search vendors"
+                className="w-full sm:w-[260px] pl-9 pr-4 py-2 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors placeholder:text-muted/70 focus:bg-paper"
+                placeholder="Search vendors..."
               />
             </div>
           </div>
@@ -201,12 +205,13 @@ export default function VendorsPage() {
         </div>
 
         <div className="xl:col-start-2 xl:row-start-1">
-          <div className="card animate-rise sticky top-6">
-            <div className="card-head">
-              <div className="card-title">{editingId ? "Edit vendor" : "New vendor"}</div>
+          <div className="bg-paper border border-line rounded-2xl shadow-xl shadow-ink/5 animate-rise sticky top-6 overflow-hidden flex flex-col">
+            <div className="px-6 py-5 border-b border-line bg-bone flex items-center justify-between">
+              <h3 className="font-serif text-[20px] text-ink">{editingId ? "Edit Vendor" : "New Vendor"}</h3>
               {editingId && (
                 <button
-                  className="text-xs text-muted hover:text-ink underline"
+                  type="button"
+                  className="text-[13px] font-medium text-muted hover:text-ink transition-colors bg-bone-2 px-3 py-1.5 rounded-lg border border-line hover:bg-line"
                   onClick={() => {
                     setEditingId(null);
                     setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
@@ -231,99 +236,99 @@ export default function VendorsPage() {
                 }
               }}
             >
-              <label>
-                <span className="label">Company Name *</span>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><Building2 className="w-3.5 h-3.5 text-muted"/> Company Name *</label>
                 <input
                   required
-                  className="input"
+                  className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  placeholder="Apex Supplies"
+                  placeholder="e.g. Apex Supplies"
                 />
-              </label>
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <label>
-                  <span className="label">Email</span>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5 text-muted"/> Email</label>
                   <input
                     type="email"
-                    className="input"
+                    className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                     value={form.email}
                     onChange={(event) => setForm({ ...form, email: event.target.value })}
                     placeholder="sales@apex.com"
                   />
-                </label>
-                <label>
-                  <span className="label">Phone</span>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5 text-muted"/> Phone</label>
                   <input
-                    className="input"
+                    className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                     value={form.phone}
                     onChange={(event) => setForm({ ...form, phone: event.target.value })}
                     placeholder="1-800-SUPPLY"
                   />
-                </label>
+                </div>
               </div>
 
-              <label>
-                <span className="label">Contact Name</span>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1">Contact Name</label>
                 <input
-                  className="input"
+                  className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                   value={form.contact_name}
                   onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
-                  placeholder="John Doe"
+                  placeholder="e.g. John Doe"
                 />
-              </label>
+              </div>
 
-              <label>
-                <span className="label">Tax / GST / VAT ID</span>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><FileText className="w-3.5 h-3.5 text-muted"/> Tax / GST / VAT ID</label>
                 <input
-                  className="input"
+                  className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                   value={form.tax_id}
                   onChange={(event) => setForm({ ...form, tax_id: event.target.value })}
-                  placeholder="AB12345678"
+                  placeholder="e.g. AB12345678"
                 />
-              </label>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <label>
-                  <span className="label">Website</span>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><Globe className="w-3.5 h-3.5 text-muted"/> Website</label>
                   <input
-                    className="input"
+                    className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                     value={form.website}
                     onChange={(event) => setForm({ ...form, website: event.target.value })}
                     placeholder="https://apex.com"
                   />
-                </label>
-                <label>
-                  <span className="label">Payment Terms</span>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1">Payment Terms</label>
                   <input
-                    className="input"
+                    className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
                     value={form.payment_terms}
                     onChange={(event) => setForm({ ...form, payment_terms: event.target.value })}
-                    placeholder="Net 30"
+                    placeholder="e.g. Net 30"
                   />
-                </label>
+                </div>
               </div>
               
-              <label>
-                <span className="label">Address</span>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5 text-muted"/> Address</label>
                 <textarea
-                  className="input min-h-[80px]"
+                  className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all min-h-[80px] resize-y"
                   value={form.address}
                   onChange={(event) => setForm({ ...form, address: event.target.value })}
-                  placeholder="123 Main St..."
+                  placeholder="Full physical address..."
                 />
-              </label>
+              </div>
               
-              <label>
-                <span className="label">Bank Details</span>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1"><Landmark className="w-3.5 h-3.5 text-muted"/> Bank Details</label>
                 <textarea
-                  className="input min-h-[80px]"
+                  className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all min-h-[80px] resize-y"
                   value={form.bank_details}
                   onChange={(event) => setForm({ ...form, bank_details: event.target.value })}
                   placeholder="Account Number, Routing, Wire Instructions..."
                 />
-              </label>
+              </div>
 
               <CustomFieldsFormInputs
                 modelName="vendor"
@@ -331,9 +336,14 @@ export default function VendorsPage() {
                 onChange={(custom_data) => setForm({ ...form, custom_data })}
               />
 
-              <button disabled={mutation.isPending || updateMutation.isPending} className="btn btn-primary w-full">
-                {mutation.isPending || updateMutation.isPending ? "Saving..." : editingId ? "Update vendor" : "Add vendor"}
-              </button>
+              <div className="pt-2">
+                <button 
+                  disabled={mutation.isPending || updateMutation.isPending} 
+                  className="w-full flex items-center justify-center h-11 bg-ink text-paper text-sm font-medium rounded-lg hover:bg-ink-2 shadow-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {mutation.isPending || updateMutation.isPending ? "Saving..." : editingId ? "Update vendor" : "Add vendor"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
