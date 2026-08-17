@@ -167,14 +167,14 @@ export default function PurchaseOrdersPage() {
       title="Purchase Orders"
       description="Manage your purchase orders and send them to vendors."
     >
-      <div className="card animate-rise">
-        <div className="card-head flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="card-title">All Purchase Orders</div>
+      <div className="bg-bone border border-line rounded-xl overflow-hidden shadow-sm animate-rise">
+        <div className="p-4 border-b border-line flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between bg-bone-2">
+          <div className="font-medium text-ink">All Purchase Orders</div>
           <button 
-            className="btn btn-primary"
+            className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
             onClick={() => { resetForm(); setIsCreateOpen(true); }}
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             New Purchase Order
           </button>
         </div>
@@ -188,37 +188,39 @@ export default function PurchaseOrdersPage() {
             description="Create your first PO to start ordering from vendors."
           />
         ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-bone-2 border-b border-line">
                 <tr>
-                  <th>PO Number</th>
-                  <th>Vendor</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
+                  <th className="px-6 py-4 font-medium text-muted">PO Number</th>
+                  <th className="px-6 py-4 font-medium text-muted">Vendor</th>
+                  <th className="px-6 py-4 font-medium text-muted">Date</th>
+                  <th className="px-6 py-4 font-medium text-muted">Total</th>
+                  <th className="px-6 py-4 font-medium text-muted">Status</th>
+                  <th className="px-6 py-4 font-medium text-muted text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-line">
                 {poList.map((po: any) => (
-                  <tr key={po.id}>
-                    <td className="font-medium text-ink">{po.po_number}</td>
-                    <td>{po.vendor_details?.name || "Unknown"}</td>
-                    <td>{po.issue_date}</td>
-                    <td className="font-mono text-sm">{formatCurrency(parseFloat(po.total_amount), company?.currency || "USD")}</td>
-                    <td>
+                  <tr key={po.id} className="hover:bg-bone-2/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-ink">{po.po_number}</div>
+                    </td>
+                    <td className="px-6 py-4 text-muted">{po.vendor_details?.name || "Unknown"}</td>
+                    <td className="px-6 py-4 text-muted">{po.issue_date}</td>
+                    <td className="px-6 py-4 font-medium text-ink">{formatCurrency(parseFloat(po.total_amount), company?.currency || "USD")}</td>
+                    <td className="px-6 py-4">
                       <select 
                         value={po.status}
                         onChange={(e) => statusMutation.mutate({ id: po.id, status: e.target.value })}
                         disabled={statusMutation.isPending}
-                        className={`text-xs px-2 py-1 rounded-full border-0 font-medium ${
-                          po.status === 'draft' ? 'bg-bone text-muted' :
-                          po.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
-                          po.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                          po.status === 'sent' ? 'bg-indigo-100 text-indigo-800' :
-                          po.status === 'billed' ? 'bg-emerald-100 text-emerald-800' :
-                          'bg-rose-100 text-rose-800'
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize outline-none transition-colors border cursor-pointer ${
+                          po.status === 'draft' ? 'bg-slate-100 text-slate-800 border-slate-200 focus:border-slate-400' :
+                          po.status === 'pending_approval' ? 'bg-amber-100 text-amber-800 border-amber-200 focus:border-amber-400' :
+                          po.status === 'approved' ? 'bg-blue-100 text-blue-800 border-blue-200 focus:border-blue-400' :
+                          po.status === 'sent' ? 'bg-indigo-100 text-indigo-800 border-indigo-200 focus:border-indigo-400' :
+                          po.status === 'billed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 focus:border-emerald-400' :
+                          'bg-rose-100 text-rose-800 border-rose-200 focus:border-rose-400'
                         }`}
                       >
                         <option value="draft">Draft</option>
@@ -229,38 +231,40 @@ export default function PurchaseOrdersPage() {
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </td>
-                    <td className="text-right space-x-2">
-                      <button 
-                        onClick={() => handleEditClick(po)}
-                        className="btn btn-secondary px-2 py-1"
-                        title="Edit PO"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={() => downloadPurchaseOrderPdf(po.id, po.po_number)}
-                        className="btn btn-secondary px-2 py-1"
-                        title="Download PDF"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                      {(po.status === 'approved' || po.status === 'sent') && (
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => handleConvertToBill(po)}
-                          className="btn btn-secondary px-2 py-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          title="Convert to Bill"
-                          disabled={convertMutation.isPending}
+                          onClick={() => handleEditClick(po)}
+                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line bg-paper"
+                          title="Edit PO"
                         >
-                          <Receipt className="w-3.5 h-3.5" />
+                          <Edit2 className="w-4 h-4" />
                         </button>
-                      )}
-                      <button 
-                        onClick={() => setDeletePoId(po.id)}
-                        className="btn btn-secondary text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1"
-                        title="Delete PO"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                        <button 
+                          onClick={() => downloadPurchaseOrderPdf(po.id, po.po_number)}
+                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line bg-paper"
+                          title="Download PDF"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        {(po.status === 'approved' || po.status === 'sent') && (
+                          <button 
+                            onClick={() => handleConvertToBill(po)}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors border border-emerald-200 bg-paper"
+                            title="Convert to Bill"
+                            disabled={convertMutation.isPending}
+                          >
+                            <Receipt className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setDeletePoId(po.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-red-200 bg-paper"
+                          title="Delete PO"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -271,25 +275,20 @@ export default function PurchaseOrdersPage() {
       </div>
 
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-paper border border-line rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-rise">
-            <div className="sticky top-0 bg-paper/90 backdrop-blur-md border-b border-line px-5 py-4 flex items-center justify-between z-10">
-              <h2 className="text-lg font-semibold">{editPoId ? "Edit Purchase Order" : "New Purchase Order"}</h2>
-              <button 
-                onClick={() => setIsCreateOpen(false)}
-                className="text-muted hover:text-ink transition-colors"
-              >
-                Cancel
-              </button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-rise">
+            <div className="p-5 border-b border-line flex justify-between items-center bg-bone">
+              <h2 className="text-lg font-semibold text-ink">{editPoId ? "Edit Purchase Order" : "New Purchase Order"}</h2>
+              <button onClick={() => setIsCreateOpen(false)} className="text-muted hover:text-ink text-xl font-light">&times;</button>
             </div>
             
-            <form onSubmit={handleCreate} className="p-5 space-y-6">
+            <form onSubmit={handleCreate} id="create-po-form" className="p-5 overflow-y-auto space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <label className="space-y-1.5">
-                  <span className="label">Vendor *</span>
+                <div>
+                  <label className="block text-sm font-medium text-ink mb-1.5">Vendor *</label>
                   <select 
                     required
-                    className="input"
+                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                     value={newPo.vendor || ""}
                     onChange={(e) => setNewPo({...newPo, vendor: parseInt(e.target.value)})}
                   >
@@ -298,12 +297,12 @@ export default function PurchaseOrdersPage() {
                       <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
                   </select>
-                </label>
+                </div>
                 
-                <label className="space-y-1.5">
-                  <span className="label">Status</span>
+                <div>
+                  <label className="block text-sm font-medium text-ink mb-1.5">Status</label>
                   <select 
-                    className="input"
+                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                     value={newPo.status}
                     onChange={(e) => setNewPo({...newPo, status: e.target.value})}
                   >
@@ -314,51 +313,51 @@ export default function PurchaseOrdersPage() {
                     <option value="billed">Billed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
-                </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <label className="space-y-1.5">
-                  <span className="label">Issue Date *</span>
+                <div>
+                  <label className="block text-sm font-medium text-ink mb-1.5">Issue Date *</label>
                   <input 
                     type="date"
                     required
-                    className="input"
+                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                     value={newPo.issue_date}
                     onChange={(e) => setNewPo({...newPo, issue_date: e.target.value})}
                   />
-                </label>
-                <label className="space-y-1.5">
-                  <span className="label">Expected Delivery Date</span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink mb-1.5">Expected Delivery Date</label>
                   <input 
                     type="date"
-                    className="input"
+                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                     value={newPo.expected_delivery_date}
                     onChange={(e) => setNewPo({...newPo, expected_delivery_date: e.target.value})}
                   />
-                </label>
+                </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium text-ink">Line Items</h3>
+                  <h3 className="text-sm font-medium text-ink">Line Items</h3>
                   <button 
                     type="button"
                     onClick={() => setNewPo({...newPo, items: [...newPo.items, { description: "", quantity: 1, unit_price: 0, tax_rate: 0 }]})}
-                    className="btn btn-secondary text-xs py-1"
+                    className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Add Item
+                    <Plus className="w-3 h-3" /> Add Item
                   </button>
                 </div>
                 
                 <div className="space-y-3">
                   {newPo.items.map((item, index) => (
-                    <div key={index} className="flex flex-wrap md:flex-nowrap gap-3 items-start p-3 bg-bone/30 rounded-lg border border-line">
+                    <div key={index} className="flex flex-wrap md:flex-nowrap items-start gap-2 sm:gap-3 p-3 bg-bone-2 rounded-lg border border-line/50">
                       <div className="flex-1 min-w-[200px]">
                         <input 
                           required
                           placeholder="Description"
-                          className="input"
+                          className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                           value={item.description}
                           onChange={(e) => {
                             const newItems = [...newPo.items];
@@ -367,67 +366,69 @@ export default function PurchaseOrdersPage() {
                           }}
                         />
                       </div>
-                      <div className="w-[100px]">
-                        <input 
-                          type="number"
-                          step="0.01"
-                          required
-                          placeholder="Qty"
-                          className="input font-mono"
-                          value={item.quantity}
-                          onChange={(e) => {
-                            const newItems = [...newPo.items];
-                            newItems[index].quantity = parseFloat(e.target.value) || 0;
-                            setNewPo({...newPo, items: newItems});
-                          }}
-                        />
+                      <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
+                        <div className="w-[80px]">
+                          <input 
+                            type="number"
+                            step="0.01"
+                            required
+                            placeholder="Qty"
+                            className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors font-mono"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const newItems = [...newPo.items];
+                              newItems[index].quantity = parseFloat(e.target.value) || 0;
+                              setNewPo({...newPo, items: newItems});
+                            }}
+                          />
+                        </div>
+                        <div className="w-[100px]">
+                          <input 
+                            type="number"
+                            step="0.01"
+                            required
+                            placeholder="Price"
+                            className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors font-mono"
+                            value={item.unit_price}
+                            onChange={(e) => {
+                              const newItems = [...newPo.items];
+                              newItems[index].unit_price = parseFloat(e.target.value) || 0;
+                              setNewPo({...newPo, items: newItems});
+                            }}
+                          />
+                        </div>
+                        <div className="w-[80px]">
+                          <input 
+                            type="number"
+                            step="0.01"
+                            placeholder="Tax %"
+                            className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors font-mono"
+                            value={item.tax_rate}
+                            onChange={(e) => {
+                              const newItems = [...newPo.items];
+                              newItems[index].tax_rate = parseFloat(e.target.value) || 0;
+                              setNewPo({...newPo, items: newItems});
+                            }}
+                          />
+                        </div>
+                        {newPo.items.length > 1 && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const newItems = newPo.items.filter((_, i) => i !== index);
+                              setNewPo({...newPo, items: newItems});
+                            }}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors mt-0.5"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-                      <div className="w-[120px]">
-                        <input 
-                          type="number"
-                          step="0.01"
-                          required
-                          placeholder="Price"
-                          className="input font-mono"
-                          value={item.unit_price}
-                          onChange={(e) => {
-                            const newItems = [...newPo.items];
-                            newItems[index].unit_price = parseFloat(e.target.value) || 0;
-                            setNewPo({...newPo, items: newItems});
-                          }}
-                        />
-                      </div>
-                      <div className="w-[100px]">
-                        <input 
-                          type="number"
-                          step="0.01"
-                          placeholder="Tax %"
-                          className="input font-mono"
-                          value={item.tax_rate}
-                          onChange={(e) => {
-                            const newItems = [...newPo.items];
-                            newItems[index].tax_rate = parseFloat(e.target.value) || 0;
-                            setNewPo({...newPo, items: newItems});
-                          }}
-                        />
-                      </div>
-                      {newPo.items.length > 1 && (
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const newItems = newPo.items.filter((_, i) => i !== index);
-                            setNewPo({...newPo, items: newItems});
-                          }}
-                          className="p-2 text-muted hover:text-rose-600 transition-colors mt-0.5"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-4 flex flex-col items-end gap-1 text-sm">
+                <div className="mt-4 flex flex-col items-end gap-1 text-sm bg-bone/30 p-3 rounded-lg border border-line">
                   <div className="w-full max-w-[240px] flex justify-between text-muted">
                     <span>Subtotal:</span>
                     <span className="font-mono">{formatCurrency(calculateSubtotal(), company?.currency || "USD")}</span>
@@ -443,76 +444,72 @@ export default function PurchaseOrdersPage() {
                 </div>
               </div>
               
-              <label className="space-y-1.5 block">
-                <span className="label">Notes</span>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1.5">Notes</label>
                 <textarea 
-                  className="input min-h-[80px]"
+                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors min-h-[80px]"
                   value={newPo.notes}
                   onChange={(e) => setNewPo({...newPo, notes: e.target.value})}
                   placeholder="Additional instructions for vendor..."
                 />
-              </label>
+              </div>
 
-              <label className="space-y-1.5 block">
-                <span className="label">Terms & Conditions</span>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1.5">Terms & Conditions</label>
                 <textarea 
-                  className="input min-h-[80px]"
+                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors min-h-[80px]"
                   value={newPo.terms_conditions}
                   onChange={(e) => setNewPo({...newPo, terms_conditions: e.target.value})}
                   placeholder="e.g. Net 30, Payment due on receipt..."
                 />
                 <p className="text-xs text-muted mt-1">Leave blank to use company default terms.</p>
-              </label>
+              </div>
+            </form>
 
-              <div className="pt-4 border-t border-line flex justify-end gap-3 sticky bottom-0 bg-paper py-3">
+            <div className="p-5 border-t border-line bg-bone flex justify-end gap-3 mt-auto">
                 <button 
                   type="button" 
                   onClick={() => setIsCreateOpen(false)}
-                  className="btn btn-secondary"
+                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
+                  form="create-po-form"
                   type="submit" 
-                  className="btn btn-primary"
+                  className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-ink text-bone text-sm font-medium rounded-lg hover:bg-ink/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                  {editPoId ? "Save Changes" : "Create PO"}
+                  {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editPoId ? "Save Changes" : "Create PO"}
                 </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
       {/* Delete Confirmation Modal */}
       <Dialog.Root open={deletePoId !== null} onOpenChange={(open) => !open && setDeletePoId(null)}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-paper shadow-2xl rounded-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+          <Dialog.Overlay className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 animate-fade-in" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-paper shadow-2xl rounded-xl overflow-hidden z-50 animate-in zoom-in-95 duration-200">
             <div className="p-6">
-              <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                <Trash2 className="w-6 h-6 text-rose-600" />
-              </div>
-              <Dialog.Title className="text-xl font-serif text-ink mb-2">Delete Purchase Order</Dialog.Title>
-              <Dialog.Description className="text-muted text-[15px] mb-6">
+              <h2 className="text-lg font-semibold text-ink">Delete Purchase Order</h2>
+              <p className="text-muted mt-2 text-sm">
                 Are you sure you want to delete this purchase order? This action cannot be undone and will permanently remove this record from your finance history.
-              </Dialog.Description>
-              <div className="flex items-center justify-end gap-3">
-                <Dialog.Close asChild>
-                  <button className="btn btn-secondary">Cancel</button>
-                </Dialog.Close>
-                <button 
-                  className="btn btn-primary bg-rose-600 hover:bg-rose-700 text-white border-transparent"
-                  onClick={() => {
-                    if (deletePoId) deleteMutation.mutate(deletePoId);
-                    setDeletePoId(null);
-                  }}
-                  disabled={deleteMutation.isPending}
-                >
-                  {deleteMutation.isPending ? "Deleting..." : "Delete PO"}
-                </button>
-              </div>
+              </p>
+            </div>
+            <div className="p-4 border-t border-line bg-bone flex justify-end gap-3">
+              <Dialog.Close asChild>
+                <button className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-md transition-colors">Cancel</button>
+              </Dialog.Close>
+              <button 
+                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                onClick={() => {
+                  if (deletePoId) deleteMutation.mutate(deletePoId);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete PO"}
+              </button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
