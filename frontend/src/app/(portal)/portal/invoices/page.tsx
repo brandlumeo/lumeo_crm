@@ -56,7 +56,7 @@ export default function PortalInvoicesPage() {
                   <th className="p-3 font-medium"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-line">
               {invoices.map((inv) => (
                 <tr key={inv.id} className="hover:bg-white/[0.02]">
                   <td className="p-3">{inv.invoice_number}</td>

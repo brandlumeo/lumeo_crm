@@ -59,7 +59,7 @@ export default function PortalProjectsPage() {
                   <th className="p-3 font-medium text-right">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-line">
               {projects.map((p: any) => (
                 <tr 
                   key={p.id} 
@@ -67,7 +67,7 @@ export default function PortalProjectsPage() {
                 >
                   <td className="p-3">{p.name}</td>
                   <td className="p-3 capitalize">
-                    <span className={`chip chip-positive`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/50`}>
                       Active
                     </span>
                   </td>

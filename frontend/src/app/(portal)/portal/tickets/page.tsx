@@ -100,7 +100,7 @@ export default function PortalTicketsPage() {
                   <th className="p-3 font-medium text-right">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-line">
               {tickets.map((t) => (
                 <tr 
                   key={t.id} 

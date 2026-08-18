@@ -10,7 +10,7 @@ export default function PortalLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen bg-canvas text-ink">
-      <header className="h-16 border-b border-white/5 bg-surface/80 backdrop-blur-md flex items-center px-8 justify-between sticky top-0 z-40">
+      <header className="h-16 border-b border-line bg-paper/80 backdrop-blur-md flex items-center px-8 justify-between sticky top-0 z-40">
         <div className="flex items-center gap-6">
           <Link href="/portal" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-accent rounded-md grid place-items-center text-bone font-serif italic text-[18px] leading-none pb-0.5">
@@ -34,7 +34,7 @@ export default function PortalLayout({
           <Link href="/portal/settings" className="text-sm font-medium text-muted hover:text-ink transition-colors">
             Settings
           </Link>
-          <div className="h-4 w-px bg-white/10" />
+          <div className="h-4 w-px bg-line" />
           <a href="#" onClick={(e) => {
             e.preventDefault();
             sessionStorage.clear();

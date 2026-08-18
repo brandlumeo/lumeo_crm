@@ -21,12 +21,12 @@ import { LeadDetailsSlideover } from "@/components/lead-details-slideover";
 const PAGE_SIZE = 20;
 
 const statusTone: Record<string, string> = {
-  new: "chip chip-info",
-  contacted: "chip chip-warning",
-  qualified: "chip chip-positive",
-  lost: "chip chip-danger",
-  won: "chip chip-positive",
-  prospect: "chip chip-neutral"
+  new: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-blue-50 text-blue-700 border border-blue-200/50",
+  contacted: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-amber-50 text-amber-700 border border-amber-200/50",
+  qualified: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/50",
+  lost: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-red-50 text-red-700 border border-red-200/50",
+  won: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/50",
+  prospect: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide bg-slate-100 text-slate-700 border border-slate-200"
 };
 
 export default function LeadsPage() {

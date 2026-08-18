@@ -41,8 +41,8 @@ export default function PortalDashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* INVOICES WIDGET */}
-        <div className="card shadow-xl border-white/5 bg-surface/40 backdrop-blur-md">
-          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-white/5">
+        <div className="card shadow-xl border-line bg-paper backdrop-blur-md">
+          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-line">
             <div className="card-title flex items-center gap-3 text-[16px]">
               <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                 <CreditCard className="w-4 h-4 text-accent" />
@@ -63,15 +63,15 @@ export default function PortalDashboardPage() {
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 text-muted text-left bg-black/20">
+                  <tr className="border-b border-line text-muted text-left bg-bone">
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Invoice #</th>
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Status</th>
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px] text-right">Amount</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-line">
                   {invoices.map((inv: any) => (
-                    <tr key={inv.id} className="hover:bg-white/5 transition-colors cursor-pointer group">
+                    <tr key={inv.id} className="hover:bg-bone-2 transition-colors cursor-pointer group">
                       <td className="px-6 py-4 font-mono text-muted group-hover:text-ink transition-colors">{inv.invoice_number}</td>
                       <td className="px-6 py-4">
                         <span className={`chip ${inv.status === 'paid' ? 'chip-positive' : inv.status === 'overdue' ? 'chip-danger' : 'chip-warning'}`}>
@@ -90,8 +90,8 @@ export default function PortalDashboardPage() {
         </div>
 
         {/* TICKETS WIDGET */}
-        <div className="card shadow-xl border-white/5 bg-surface/40 backdrop-blur-md">
-          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-white/5">
+        <div className="card shadow-xl border-line bg-paper backdrop-blur-md">
+          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-line">
             <div className="card-title flex items-center gap-3 text-[16px]">
               <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
                 <Ticket className="w-4 h-4 text-blue-400" />
@@ -112,15 +112,15 @@ export default function PortalDashboardPage() {
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 text-muted text-left bg-black/20">
+                  <tr className="border-b border-line text-muted text-left bg-bone">
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Subject</th>
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px]">Status</th>
                     <th className="px-6 py-4 font-medium uppercase tracking-wider text-[11px] text-right">Updated</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-line">
                   {tickets.map((t: any) => (
-                    <tr key={t.id} className="hover:bg-white/5 transition-colors cursor-pointer group">
+                    <tr key={t.id} className="hover:bg-bone-2 transition-colors cursor-pointer group">
                       <td className="px-6 py-4 font-medium group-hover:text-ink transition-colors">{t.subject}</td>
                       <td className="px-6 py-4">
                         <span className={`chip ${t.status === 'resolved' || t.status === 'closed' ? 'chip-positive' : 'chip-gold'}`}>
@@ -139,8 +139,8 @@ export default function PortalDashboardPage() {
         </div>
 
         {/* PROJECTS WIDGET */}
-        <div className="card shadow-xl border-white/5 bg-surface/40 backdrop-blur-md">
-          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-white/5">
+        <div className="card shadow-xl border-line bg-paper backdrop-blur-md">
+          <div className="card-head flex items-center justify-between py-5 px-6 border-b border-line">
             <div className="card-title flex items-center gap-3 text-[16px]">
               <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
                 <LayoutDashboard className="w-4 h-4 text-purple-400" />

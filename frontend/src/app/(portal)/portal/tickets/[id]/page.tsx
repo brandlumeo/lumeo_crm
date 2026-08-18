@@ -128,7 +128,7 @@ export default function TicketDetailPage() {
                         <div className={`px-4 py-3 shadow-sm ${
                           isCustomer 
                             ? "bg-white border border-line rounded-2xl rounded-tl-sm text-ink" 
-                            : "bg-ink text-white rounded-2xl rounded-tr-sm"
+                            : "bg-ink text-ink rounded-2xl rounded-tr-sm"
                         }`}>
                           <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{comment.body}</p>
                         </div>

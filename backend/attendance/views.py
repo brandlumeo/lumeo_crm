@@ -132,8 +132,8 @@ class PunchInView(APIView):
         notes = request.data.get("notes", "")
 
         # 3. Determine Shift Status dynamically based on Company settings
-        import pytz
-        company_tz = pytz.timezone(request.user.company.timezone)
+        import zoneinfo
+        company_tz = zoneinfo.ZoneInfo(request.user.company.timezone)
         local_time = timezone.now().astimezone(company_tz)
         company = request.user.company
         
