@@ -239,7 +239,7 @@ export function WorkflowsSettings() {
                     </div>
 
                     {/* Toggle */}
-                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <label className="inline-flex items-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
                         checked={rule.is_active}
@@ -247,7 +247,7 @@ export function WorkflowsSettings() {
                         onChange={(e) => toggleMutation.mutate({ id: rule.id, is_active: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-bone-2 border border-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border after:border-gray-200 after:rounded-full after:h-4 after:w-4 after:transition-all shadow-inner peer-checked:bg-ink peer-checked:border-ink"></div>
+                      <div className="relative w-9 h-5 bg-bone-2 border border-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border after:border-gray-200 after:rounded-full after:h-4 after:w-4 after:transition-all shadow-inner peer-checked:bg-ink peer-checked:border-ink"></div>
                     </label>
 
                     {/* Delete */}
