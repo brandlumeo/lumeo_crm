@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { api } from "@/lib/api";
 
-export default function GoogleOAuthCallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
@@ -86,5 +86,17 @@ export default function GoogleOAuthCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function GoogleOAuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-10 h-10 text-accent animate-spin mb-4" />
+      </div>
+    }>
+      <CallbackContent />
+    </Suspense>
   );
 }
