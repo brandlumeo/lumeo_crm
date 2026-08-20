@@ -20,6 +20,7 @@ import {
   Cpu,
   Lock,
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { PageShell } from "@/components/page-shell";
 import {
   useSMTPConfigs,
@@ -141,6 +142,17 @@ export default function IntegrationsSettingsPage() {
 
   const activeSmtpMutation = createSmtpMutation.isPending || updateSmtpMutation.isPending;
 
+  const handleGoogleConnect = async () => {
+    try {
+      const response = await api.get("/crm/integrations/google/authorize/");
+      if (response.data.auth_url) {
+        window.location.href = response.data.auth_url;
+      }
+    } catch (err) {
+      console.error("Failed to fetch Google auth URL", err);
+    }
+  };
+
   return (
     <PageShell
       eyebrow="Workspace settings"
@@ -165,6 +177,27 @@ export default function IntegrationsSettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] xl:grid-cols-[1fr_480px] gap-8 items-start">
         {/* Left Column: Config Panels */}
         <div className="space-y-8">
+          {/* Email Sync Panel */}
+          <div className="card border border-slate-900 bg-slate-950/40 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center">
+                <Mail className="w-4.5 h-4.5 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink uppercase tracking-wider">Email Sync (Google Workspace)</h3>
+                <p className="text-xs text-muted">Connect your Gmail to sync outbound and inbound emails to CRM timelines.</p>
+              </div>
+            </div>
+            
+            <div className="pt-2">
+               <button onClick={handleGoogleConnect} className="btn btn-secondary text-xs flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Connect Google Account</span>
+               </button>
+            </div>
+          </div>
+
           {/* SMTP Router Card */}
           <div className="card border border-slate-900 bg-slate-950/40 p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl pointer-events-none" />

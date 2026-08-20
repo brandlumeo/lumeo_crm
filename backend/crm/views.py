@@ -1990,41 +1990,59 @@ class AIAssistantView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
+        import os
+        import requests
+        
         action = request.data.get("action")
         context = request.data.get("context", "")
+        prompt = request.data.get("prompt", "")
         
-        import time
-        time.sleep(1.5) # Simulate AI processing time
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return Response({"error": "GEMINI_API_KEY is not configured."}, status=503)
+            
+        user = request.user
         
         if action == "draft_email":
-            prompt = request.data.get("prompt", "")
-            draft = f"Hi there,\n\nFollowing up regarding {prompt if prompt else 'our recent discussion'}. "
-            draft += "I wanted to see if you had any further thoughts or questions on how we can help you move forward.\n\n"
-            draft += "Let me know when you'd have a few minutes to connect.\n\nBest,\n" + request.user.first_name
-            return Response({"result": draft})
+            sys_prompt = f"You are Lumeo AI, an intelligent CRM assistant drafting an email for {user.first_name} ({user.role}).\n"
+            sys_prompt += f"Draft a professional email based on this instruction/subject: {prompt}\n"
+            sys_prompt += "Return ONLY the email body text. Do not include markdown formatting or json blocks."
             
         elif action == "summarize":
             if not context:
                 return Response({"error": "No context provided for summarization"}, status=400)
-            
-            # Simple mock summarization
-            sentences = context.split(".")
-            summary = " ".join(sentences[:2]) + ("..." if len(sentences) > 2 else ".")
-            summary = f"**AI Summary:**\n{summary.strip()}\n\n*Key takeaways:*\n- Customer showed interest\n- Next steps required"
-            return Response({"result": summary})
+            sys_prompt = f"Summarize the following notes/activities concisely into a few key bullet points:\n{context}"
             
         elif action == "executive_brief":
             if not context:
                 return Response({"error": "No context provided for executive brief"}, status=400)
+            sys_prompt = f"Provide a short, professional executive brief on the following CRM timeline history. Format with 'Status', 'Key Points', and 'Next Steps' using Markdown.\n{context}"
+        else:
+            return Response({"error": "Unknown action"}, status=400)
             
-            # Simulated AI output
-            brief = "**AI Executive Brief:**\n\n"
-            brief += "• **Status**: The lead has been highly engaged recently, showing strong intent to move forward.\n"
-            brief += "• **Key Points**: Multiple follow-ups have addressed feature requirements and pricing. The video was successfully completed.\n"
-            brief += "• **Next Steps**: Recommend scheduling a final alignment meeting to review the proposal."
-            return Response({"result": brief})
-
-        return Response({"error": "Unknown action"}, status=400)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": sys_prompt}]}],
+            "generationConfig": {"temperature": 0.7}
+        }
+        
+        import time
+        for attempt in range(3):
+            try:
+                resp = requests.post(url, json=payload, timeout=10)
+                resp_data = resp.json()
+                if resp.status_code == 200:
+                    reply = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+                    return Response({"result": reply})
+                elif resp.status_code == 503 and attempt < 2:
+                    time.sleep(1)
+                    continue
+                else:
+                    return Response({"error": f"Gemini Error: {resp_data.get('error', {}).get('message')}"}, status=400)
+            except Exception as e:
+                return Response({"error": str(e)}, status=500)
+                
+        return Response({"error": "API overloaded"}, status=503)
 
 class TicketViewSet(CompanyScopedModelViewSet):
     serializer_class = TicketSerializer

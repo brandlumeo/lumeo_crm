@@ -1058,6 +1058,10 @@ class EmailAccount(models.Model):
     refresh_token = models.TextField(blank=True)
     token_expires_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    
+    sync_state_id = models.CharField(max_length=255, null=True, blank=True)
+    subscription_id = models.CharField(max_length=255, null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

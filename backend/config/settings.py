@@ -452,6 +452,9 @@ RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', '')
 # Google OAuth Credentials
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', '')
+GCP_PUBSUB_TOPIC = env('GCP_PUBSUB_TOPIC', '')
+
+FRONTEND_URL = env('FRONTEND_URL', 'http://localhost:3000')
 
 # ------------------------------------------------------------------------------
 # DJANGO-DBBACKUP CONFIGURATION

@@ -90,3 +90,103 @@ class AIChatView(APIView):
             except Exception as e:
                 return Response({"reply": f"Failed to connect to AI: {str(e)}"})
         return Response({"reply": "Gemini API Error: The free API is currently overloaded. Please try again in a few seconds."})
+
+
+class AIEmailDraftView(APIView):
+    """
+    POST /api/v1/crm/ai-email-draft/
+    Generates an email draft using Gemini based on CRM context.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        lead_id = request.data.get("lead_id")
+        customer_id = request.data.get("customer_id")
+        prompt = request.data.get("prompt", "")
+
+        if not lead_id and not customer_id:
+            return Response({"error": "Must provide lead_id or customer_id"}, status=400)
+
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return Response({"error": "GEMINI_API_KEY is not configured."}, status=503)
+
+        user = request.user
+        company = getattr(user, "company", None)
+        
+        target = None
+        if lead_id:
+            from crm.models import Lead
+            target = Lead.objects.filter(id=lead_id, company=company).first()
+        else:
+            from crm.models import Customer
+            target = Customer.objects.filter(id=customer_id, company=company).first()
+            
+        if not target:
+            return Response({"error": "Record not found"}, status=404)
+
+        # Build Context
+        target_name = f"{target.first_name} {target.last_name}"
+        context_parts = [
+            f"You are Lumeo AI, drafting an email for {user.first_name or user.username} ({user.role}).",
+            f"The recipient is {target_name}, and their company is {target.company_name if hasattr(target, 'company_name') else target.company}."
+        ]
+        
+        # Add recent notes/activities
+        # limit to last 3 for brevity
+        from crm.models import Note, Activity
+        notes = Note.objects.filter(lead=target if lead_id else None, customer=target if customer_id else None).order_by('-created_at')[:3]
+        if notes:
+            context_parts.append("Recent notes on this person:")
+            for n in notes:
+                context_parts.append(f"- {n.content}")
+
+        activities = Activity.objects.filter(lead=target if lead_id else None, customer=target if customer_id else None).order_by('-created_at')[:3]
+        if activities:
+            context_parts.append("Recent activities:")
+            for a in activities:
+                context_parts.append(f"- {a.type}: {a.title} ({a.description})")
+                
+        if prompt:
+            context_parts.append(f"Specific instructions from user: {prompt}")
+        else:
+            context_parts.append("Draft a polite, professional follow-up email.")
+
+        context_parts.append("IMPORTANT: Output ONLY a JSON object with 'subject' and 'body' keys. No markdown blocks, no other text.")
+
+        final_prompt = "\n".join(context_parts)
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": final_prompt}]}],
+            "generationConfig": {
+                "temperature": 0.7,
+                "responseMimeType": "application/json"
+            }
+        }
+        
+        import time
+        for attempt in range(3):
+            try:
+                resp = requests.post(url, json=payload, timeout=10)
+                resp_data = resp.json()
+                
+                if resp.status_code == 200:
+                    reply = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+                    import json
+                    try:
+                        parsed = json.loads(reply)
+                        return Response(parsed)
+                    except:
+                        return Response({"subject": "Follow Up", "body": reply})
+                        
+                elif resp.status_code == 503 and attempt < 2:
+                    time.sleep(1)
+                    continue
+                else:
+                    return Response({"error": f"Gemini Error: {resp_data.get('error', {}).get('message')}"}, status=400)
+            except Exception as e:
+                return Response({"error": str(e)}, status=500)
+                
+        return Response({"error": "API overloaded"}, status=503)

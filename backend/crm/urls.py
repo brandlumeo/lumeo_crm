@@ -52,7 +52,8 @@ from .views import (
     WhatsAppMessageViewSet,
 )
 
-from .ai_views import AIChatView
+from .ai_views import AIChatView, AIEmailDraftView
+from .integrations import GoogleOAuthURLView, GoogleOAuthCallbackView, GooglePubSubWebhookView
 
 app_name = "crm"
 
@@ -108,10 +109,14 @@ urlpatterns = [
     path('emails/send/', EmailSendView.as_view(), name='email_send'),
     path('ai/assistant/', AIAssistantView.as_view(), name='ai_assistant'),
     path('ai-chat/', AIChatView.as_view(), name='ai-chat'),
+    path('ai-email-draft/', AIEmailDraftView.as_view(), name='ai_email_draft'),
     path('book/<slug:slug>/', PublicBookingView.as_view(), name='public_booking'),
     path('webhooks/whatsapp/', WhatsAppWebhookView.as_view(), name='whatsapp_webhook'),
     path('public/quote/<uuid:token>/', PublicQuoteView.as_view(), name='public_quote'),
     path('public/invoice/<uuid:token>/', PublicInvoiceView.as_view(), name='public_invoice'),
     path('public/invoice/<uuid:token>/pay/', PublicInvoicePayView.as_view(), name='public_invoice_pay'),
     path('public/invoice/<uuid:token>/verify-payment/', PublicInvoiceVerifyPaymentView.as_view(), name='public_invoice_verify_payment'),
+    path('integrations/google/authorize/', GoogleOAuthURLView.as_view(), name='google_oauth_authorize'),
+    path('integrations/google/callback/', GoogleOAuthCallbackView.as_view(), name='google_oauth_callback'),
+    path('integrations/google/webhook/', GooglePubSubWebhookView.as_view(), name='google_pubsub_webhook'),
 ] + router.urls + tickets_router.urls

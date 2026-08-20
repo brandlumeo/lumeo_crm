@@ -82,3 +82,83 @@ def process_scheduled_campaigns_task(self):
         
     return {"processed": processed}
 
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def sync_gmail_account_task(self, email_address, new_history_id=None):
+    from django.conf import settings
+    from django.utils import timezone
+    from crm.models import EmailAccount, EmailMessage, Lead, Customer
+    import googleapiclient.discovery
+    from google.oauth2.credentials import Credentials
+    import re
+    
+    account = EmailAccount.objects.filter(email_address=email_address, is_active=True).first()
+    if not account:
+        logger.warning(f"No active account found for {email_address}")
+        return {"processed": 0}
+
+    try:
+        credentials = Credentials(
+            token=account.access_token,
+            refresh_token=account.refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+        )
+        service = googleapiclient.discovery.build('gmail', 'v1', credentials=credentials)
+        
+        # Simple MVP logic: Just fetch the 10 most recent messages from Inbox/Sent
+        # and sync those that don't exist yet and match a Lead/Customer.
+        messages_response = service.users().messages().list(userId='me', maxResults=10).execute()
+        messages = messages_response.get('messages', [])
+        
+        processed = 0
+        def extract_email(s):
+            match = re.search(r'[\w\.-]+@[\w\.-]+', str(s))
+            return match.group(0) if match else str(s)
+            
+        for msg in messages:
+            msg_id = msg['id']
+            if EmailMessage.objects.filter(message_id=msg_id).exists():
+                continue
+                
+            msg_detail = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+            headers = {h['name'].lower(): h['value'] for h in msg_detail['payload']['headers']}
+            from_address = headers.get('from', '')
+            to_address = headers.get('to', '')
+            subject = headers.get('subject', '')
+            
+            clean_from = extract_email(from_address)
+            clean_to = extract_email(to_address)
+            
+            # Match with CRM records
+            lead = Lead.objects.filter(email=clean_from).first() or Lead.objects.filter(email=clean_to).first()
+            customer = Customer.objects.filter(email=clean_from).first() or Customer.objects.filter(email=clean_to).first()
+            
+            if lead or customer:
+                EmailMessage.objects.create(
+                    account=account,
+                    company=account.company,
+                    message_id=msg_id,
+                    thread_id=msg_detail.get('threadId', ''),
+                    direction=EmailMessage.Direction.INBOUND if clean_to == email_address else EmailMessage.Direction.OUTBOUND,
+                    from_address=from_address,
+                    to_addresses=[to_address],
+                    subject=subject,
+                    body_text="Synced via Gmail integration.", # Extract body logic omitted for MVP
+                    body_html="",
+                    is_read=True, 
+                    received_at=timezone.now(),
+                    lead=lead,
+                    customer=customer
+                )
+                processed += 1
+
+        if new_history_id:
+            account.sync_state_id = str(new_history_id)
+            account.save(update_fields=["sync_state_id"])
+            
+        return {"processed": processed}
+    except Exception as exc:
+        logger.exception(f"sync_gmail_account_task failed: {exc}")
+        raise self.retry(exc=exc)
