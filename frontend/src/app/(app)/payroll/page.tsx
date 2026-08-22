@@ -56,7 +56,9 @@ export default function PayrollPage() {
   
   const [basic, setBasic] = useState("");
   const [earningsList, setEarningsList] = useState<{name: string, amount: string}[]>([
-    { name: "House Rent Allowance", amount: "" }
+    { name: "House Rent Allowance", amount: "" },
+    { name: "Incentive", amount: "" },
+    { name: "Overtime", amount: "" }
   ]);
   const [deductionsList, setDeductionsList] = useState<{name: string, amount: string}[]>([
     { name: "Income Tax", amount: "" },
@@ -72,7 +74,11 @@ export default function PayrollPage() {
     setPaidDays("22");
     setLossOfPayDays("0");
     setPayDate("");
-    setEarningsList([{ name: "House Rent Allowance", amount: "" }]);
+    setEarningsList([
+      { name: "House Rent Allowance", amount: "" },
+      { name: "Incentive", amount: "" },
+      { name: "Overtime", amount: "" }
+    ]);
     setDeductionsList([{ name: "Income Tax", amount: "" }, { name: "Provident Fund", amount: "" }]);
     setEditPayrollId(null);
   };
@@ -144,7 +150,11 @@ export default function PayrollPage() {
     if (parsedEarnings.length > 0) {
       setEarningsList(parsedEarnings.map((e: any) => ({ name: e.name, amount: e.amount.toString() })));
     } else {
-      setEarningsList([{ name: "House Rent Allowance", amount: "" }]);
+      setEarningsList([
+        { name: "House Rent Allowance", amount: "" },
+        { name: "Incentive", amount: "" },
+        { name: "Overtime", amount: "" }
+      ]);
     }
     
     let parsedDeductions = slip.deductions_breakdown || [];
