@@ -200,7 +200,7 @@ export default function TimesheetsPage() {
                 </thead>
                 <tbody className="divide-y divide-line">
                   {rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-[#FAF9F7] transition-colors group">
+                    <tr key={row.id} className="hover:bg-bone transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm", getLocalAvatarTint(row.user_display?.email || "?"))}>
@@ -248,7 +248,7 @@ export default function TimesheetsPage() {
                           {isManager && row.status !== "approved" && (
                             <button
                               onClick={() => handleStatusChange(row.id, "approved")}
-                              className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[11px] font-bold hover:bg-emerald-100 transition-colors"
+                              className="px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-bold hover:bg-emerald-500/20 transition-colors"
                             >
                               Approve
                             </button>
@@ -256,7 +256,7 @@ export default function TimesheetsPage() {
                           {isManager && row.status !== "rejected" && (
                             <button
                               onClick={() => handleStatusChange(row.id, "rejected")}
-                              className="px-2 py-1 bg-rose-50 text-rose-600 rounded text-[11px] font-bold hover:bg-rose-100 transition-colors"
+                              className="px-2 py-1 bg-rose-500/10 text-rose-600 rounded text-[11px] font-bold hover:bg-rose-500/20 transition-colors"
                             >
                               Reject
                             </button>
@@ -265,13 +265,13 @@ export default function TimesheetsPage() {
                             <>
                               <button
                                 onClick={() => openEditDrawer(row)}
-                                className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-[12px] font-semibold transition-colors"
+                                className="px-2 py-1 text-ink-2 hover:text-ink hover:bg-bone-2 rounded text-[12px] font-semibold transition-colors"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => setDeletingId(row.id)}
-                                className="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded text-[12px] font-semibold transition-colors"
+                                className="px-2 py-1 text-rose-600 hover:bg-rose-500/10 rounded text-[12px] font-semibold transition-colors"
                               >
                                 Delete
                               </button>

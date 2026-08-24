@@ -595,7 +595,7 @@ export default function AttendancePage() {
                           }
 
                           return (
-                            <div key={log.id} className="flex items-center justify-between px-5 py-3 hover:bg-[#FAF9F7] transition-colors">
+                            <div key={log.id} className="flex items-center justify-between px-5 py-3 hover:bg-bone transition-colors">
                               {/* Left Side: Avatar & Name */}
                               <div className="flex items-center gap-4 min-w-[200px] flex-1">
                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-medium ${getAvatarTint(nameChar)}`}>
@@ -722,7 +722,7 @@ export default function AttendancePage() {
             ) : (
               <div className="divide-y divide-line">
                   {leaves.map((l) => (
-                    <div key={l.id} className="flex items-start sm:items-center justify-between p-5 hover:bg-[#FAF9F7] transition-colors">
+                    <div key={l.id} className="flex items-start sm:items-center justify-between p-5 hover:bg-bone transition-colors">
                       <div className="flex flex-col gap-1.5">
                         <span className={cn(
                           "px-2 py-0.5 rounded text-[11px] font-medium inline-block w-fit border",
@@ -792,7 +792,7 @@ export default function AttendancePage() {
                     const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
                     return (
-                      <div key={log.id} className="flex items-center justify-between p-5 hover:bg-[#FAF9F7] transition-colors">
+                      <div key={log.id} className="flex items-center justify-between p-5 hover:bg-bone transition-colors">
                         <div className="flex flex-col gap-2">
                           <div className="text-[12px] font-bold text-ink">{dateStr}</div>
                           <div className="flex items-center gap-3 text-[11px] text-muted">
