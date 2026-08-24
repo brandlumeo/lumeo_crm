@@ -51,7 +51,7 @@ function DealCard({ deal, isOverlay = false }: { deal: Deal; isOverlay?: boolean
     <div
       className={`border rounded-xl p-3.5 mb-3 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-grab active:cursor-grabbing ${
         deal.stage === "won"
-          ? "bg-[#F3F8F1] border-[#BFD9B3]"
+          ? "bg-gradient-to-br from-green-soft to-paper border-green/30 dark:border-green/20 shadow-sm shadow-green/5 dark:shadow-none"
           : "bg-paper border-line hover:border-ink hover:bg-bone"
       } ${isOverlay ? "shadow-2xl rotate-3 scale-105" : "hover:-translate-y-1 hover:shadow-lg hover:shadow-ink/5"}`}
     >
@@ -61,7 +61,7 @@ function DealCard({ deal, isOverlay = false }: { deal: Deal; isOverlay?: boolean
         </span>
         <span className="truncate">{deal.title}</span>
       </div>
-      <div className="font-serif text-[22px] leading-none my-2 pointer-events-none">
+      <div className={`font-serif text-[22px] leading-none my-2 pointer-events-none ${deal.stage === "won" ? "text-green" : ""}`}>
         {formatINR(toNumber(deal.amount))}
       </div>
       <div className="flex items-center justify-between text-[11px] text-muted pointer-events-none">
