@@ -210,6 +210,17 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         .invoice-container, .invoice-container * {
           font-family: ${resolvedFontStack} !important;
         }
+        .force-light-mode {
+          --color-bone: 244 239 230 !important;
+          --color-bone-2: 236 230 216 !important;
+          --color-paper: 250 246 238 !important;
+          --color-ink: 26 23 20 !important;
+          --color-ink-2: 61 54 45 !important;
+          --color-muted: 122 111 95 !important;
+          --color-line: 221 212 192 !important;
+          --color-line-2: 232 224 206 !important;
+          color: rgb(var(--color-ink)) !important;
+        }
         @media print {
           @page {
             margin: 0;
@@ -231,7 +242,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         
         {/* INVOICE DOCUMENT */}
         <div 
-          className={`rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
+          className={`force-light-mode rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
             tpl === 'template3' ? 'border-none overflow-hidden' : 
             tpl === 'template4' ? 'border-line flex flex-col md:flex-row print:flex-row p-0 overflow-hidden' : 
             'border-line'
