@@ -12,8 +12,13 @@
     --color-muted: 122 111 95;
     --color-line: 221 212 192;
     --color-line-2: 232 224 206;
-    --color-accent: 255 91 31;
-    --color-accent-soft: 255 230 217;
+    --color-accent-light: 255 91 31;
+    --color-accent-soft-light: 255 230 217;
+    --color-accent-dark: 255 110 56;
+    --color-accent-soft-dark: 56 27 16;
+    
+    --color-accent: var(--color-accent-light);
+    --color-accent-soft: var(--color-accent-soft-light);
     --color-green: 47 107 58;
     --color-green-soft: 220 235 213;
     --color-gold: 184 134 44;
@@ -31,8 +36,8 @@
     --color-muted: 143 134 122;
     --color-line: 53 48 42;
     --color-line-2: 36 32 28;
-    --color-accent: 255 110 56;
-    --color-accent-soft: 56 27 16;
+    --color-accent: var(--color-accent-dark);
+    --color-accent-soft: var(--color-accent-soft-dark);
     --color-green: 74 222 128;
     --color-green-soft: 17 54 31;
     --color-gold: 252 211 77;

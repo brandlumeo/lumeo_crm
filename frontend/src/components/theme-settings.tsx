@@ -54,26 +54,26 @@ export function ThemeSettingsForm() {
       document.documentElement.style.fontSize = fontMap[fontSize] ?? "14px";
       
       const colors: Record<string, string> = {
-        orange: "255 91 31",
-        blue: "42 78 140",
-        violet: "124 58 237",
-        emerald: "5 150 105",
-        rose: "225 29 72",
-        amber: "217 119 6"
+        orange: "255 91 31", blue: "42 78 140", violet: "124 58 237", emerald: "5 150 105", rose: "225 29 72", amber: "217 119 6"
       };
-      
+      const colorsDark: Record<string, string> = {
+        orange: "255 110 56", blue: "96 165 250", violet: "167 139 250", emerald: "52 211 153", rose: "251 113 133", amber: "251 191 36"
+      };
       const softColors: Record<string, string> = {
-        orange: "255 230 217",
-        blue: "216 226 242",
-        violet: "237 224 255",
-        emerald: "209 250 229",
-        rose: "255 228 230",
-        amber: "254 243 199"
+        orange: "255 230 217", blue: "216 226 242", violet: "237 224 255", emerald: "209 250 229", rose: "255 228 230", amber: "254 243 199"
+      };
+      const softColorsDark: Record<string, string> = {
+        orange: "56 27 16", blue: "21 38 74", violet: "45 22 84", emerald: "17 54 31", rose: "84 18 29", amber: "59 42 16"
       };
 
       if (colors[colorScheme]) {
-        document.documentElement.style.setProperty("--color-accent", colors[colorScheme]);
-        document.documentElement.style.setProperty("--color-accent-soft", softColors[colorScheme]);
+        document.documentElement.style.setProperty("--color-accent-light", colors[colorScheme]);
+        document.documentElement.style.setProperty("--color-accent-dark", colorsDark[colorScheme]);
+        document.documentElement.style.setProperty("--color-accent-soft-light", softColors[colorScheme]);
+        document.documentElement.style.setProperty("--color-accent-soft-dark", softColorsDark[colorScheme]);
+        // Also remove inline explicit variables so the stylesheet takes over
+        document.documentElement.style.removeProperty("--color-accent");
+        document.documentElement.style.removeProperty("--color-accent-soft");
       }
 
       setSaved(true);
