@@ -115,9 +115,9 @@ function BuilderContent() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#FDFDFD] overflow-hidden">
+    <div className="flex flex-col h-screen bg-bone-2 overflow-hidden">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-accent shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 bg-paper border-b border-accent shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push("/automations")} className="p-2 hover:bg-bone rounded-md text-ink-3 hover:text-ink transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -140,10 +140,10 @@ function BuilderContent() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Canvas / Builder Area */}
-        <div className="flex-1 overflow-y-auto p-12 bg-[#FAFAFA] flex flex-col items-center relative">
+        <div className="flex-1 overflow-y-auto p-12 bg-bone-2 flex flex-col items-center relative">
           
           {/* Trigger Node */}
-          <div className="w-[400px] bg-white border-2 border-emerald-500/20 rounded-xl shadow-sm p-5 relative group z-10 hover:border-emerald-500/40 transition-colors">
+          <div className="w-[400px] bg-paper border-2 border-emerald-500/20 rounded-xl shadow-sm p-5 relative group z-10 hover:border-emerald-500/40 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <Zap className="w-5 h-5" />
@@ -175,7 +175,7 @@ function BuilderContent() {
                 
                 {/* Delay configuration (between steps) */}
                 {index > 0 && (
-                   <div className="absolute -mt-5 bg-white border border-accent rounded-full px-3 py-1 shadow-sm text-[12px] font-medium text-ink-2 flex items-center gap-1.5 z-20 cursor-pointer hover:border-ink-3 transition-colors"
+                   <div className="absolute -mt-5 bg-paper border border-accent rounded-full px-3 py-1 shadow-sm text-[12px] font-medium text-ink-2 flex items-center gap-1.5 z-20 cursor-pointer hover:border-ink-3 transition-colors"
                         onClick={() => setActiveStepIndex(index)}>
                      <Clock className="w-3.5 h-3.5" />
                      {step.delay_minutes > 0 ? `Wait ${step.delay_minutes} mins` : 'No delay'}
@@ -187,7 +187,7 @@ function BuilderContent() {
                 <div 
                   onClick={() => setActiveStepIndex(index)}
                   className={cn(
-                    "w-full bg-white border-2 rounded-xl shadow-sm p-5 relative z-10 cursor-pointer transition-all",
+                    "w-full bg-paper border-2 rounded-xl shadow-sm p-5 relative z-10 cursor-pointer transition-all",
                     isActive ? "border-ink shadow-md" : "border-transparent hover:border-accent border-accent"
                   )}
                 >
@@ -214,11 +214,11 @@ function BuilderContent() {
           <div className="flex flex-col items-center w-[400px]">
             <div className="w-px h-12 bg-accent" />
             <div className="relative group">
-               <button className="w-12 h-12 rounded-full bg-white border border-accent shadow-sm flex items-center justify-center text-ink-2 group-hover:text-ink group-hover:border-ink transition-all">
+               <button className="w-12 h-12 rounded-full bg-paper border border-accent shadow-sm flex items-center justify-center text-ink-2 group-hover:text-ink group-hover:border-ink transition-all">
                  <Plus className="w-5 h-5" />
                </button>
                {/* Dropdown Menu */}
-               <div className="absolute top-14 left-1/2 -translate-x-1/2 w-48 bg-white border border-accent rounded-xl shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-30 p-1.5 flex flex-col gap-1">
+               <div className="absolute top-14 left-1/2 -translate-x-1/2 w-48 bg-paper border border-accent rounded-xl shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-30 p-1.5 flex flex-col gap-1">
                  {ACTION_TYPES.map(a => (
                    <button
                      key={a.value}
@@ -237,7 +237,7 @@ function BuilderContent() {
         </div>
 
         {/* Sidebar Configuration Panel */}
-        <div className={cn("w-[360px] bg-white border-l border-accent flex flex-col transition-all duration-300", activeStepIndex !== null ? "translate-x-0" : "translate-x-full")}>
+        <div className={cn("w-[360px] bg-paper border-l border-accent flex flex-col transition-all duration-300", activeStepIndex !== null ? "translate-x-0" : "translate-x-full")}>
            {activeStepIndex !== null && steps[activeStepIndex] && (
              <>
                <div className="p-5 border-b border-accent flex items-center justify-between shrink-0">
@@ -343,7 +343,7 @@ function BuilderContent() {
 
 export default function BuilderPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#FDFDFD]"><Loader2 className="w-6 h-6 animate-spin text-ink-3" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-screen bg-bone-2"><Loader2 className="w-6 h-6 animate-spin text-ink-3" /></div>}>
       <BuilderContent />
     </Suspense>
   );
