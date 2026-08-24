@@ -120,7 +120,7 @@ export default function SaasBilling() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 font-medium text-emerald-400">
                       <ArrowUpRight className="w-3.5 h-3.5" />
-                      {sub.plan === 'free' ? '$0' : sub.plan === 'starter' ? '$9.99' : sub.plan === 'pro' ? '$29.99' : '$79.99'}/mo
+                      {sub.plan === 'free' ? '₹0' : sub.plan === 'starter' ? '₹599' : sub.plan === 'pro' ? '₹1,199' : '₹7,999'}/mo
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
