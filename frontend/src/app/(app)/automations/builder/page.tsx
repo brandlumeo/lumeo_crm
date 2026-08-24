@@ -131,7 +131,7 @@ function BuilderContent() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={handleSave} disabled={isSaving} className="bg-ink text-white hover:bg-ink-2 px-6 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2">
+          <button onClick={handleSave} disabled={isSaving} className="bg-ink text-paper hover:bg-ink/90 px-6 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2">
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Sequence
           </button>
