@@ -194,14 +194,14 @@ export default function NoticeBoardPage() {
                   className={cn(
                     "rounded-xl p-5 relative group transition-all duration-200",
                     notice.is_pinned 
-                      ? "bg-amber-50/60 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20 shadow-sm" 
+                      ? "bg-gradient-to-br from-amber-50/80 to-amber-50/30 dark:from-amber-500/10 dark:to-paper border border-amber-200/80 dark:border-amber-500/20 shadow-sm" 
                       : "bg-paper border border-line hover:border-brand/30 transition-colors shadow-sm"
                   )}
                 >
                   {/* Pin Indicator */}
                   {notice.is_pinned && (
                     <div className="absolute -top-3 -right-2">
-                      <div className="bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 p-2 rounded-full shadow-sm border border-amber-200 dark:border-amber-500/30 transform rotate-12 group-hover:rotate-0 transition-transform">
+                      <div className="bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 p-2 rounded-full shadow-sm border border-amber-200 dark:border-amber-500/20 transform rotate-12 group-hover:rotate-0 transition-transform backdrop-blur-md">
                         <Pin className="w-4 h-4 fill-amber-700 dark:fill-amber-400" />
                       </div>
                     </div>
@@ -211,7 +211,7 @@ export default function NoticeBoardPage() {
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         {notice.is_pinned && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/30">Pinned</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">Pinned</span>
                         )}
                         <h3 className={cn("text-lg font-semibold", notice.is_pinned ? "text-amber-900 dark:text-amber-400" : "text-ink")}>
                           {notice.title}
@@ -220,7 +220,7 @@ export default function NoticeBoardPage() {
                       
                       <div className={cn(
                         "text-sm leading-relaxed whitespace-pre-wrap font-sans",
-                        notice.is_pinned ? "text-amber-800/80 dark:text-amber-400/80" : "text-ink-2"
+                        notice.is_pinned ? "text-amber-800/90 dark:text-ink-2" : "text-ink-2"
                       )}>
                         {notice.content}
                       </div>
