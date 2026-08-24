@@ -117,7 +117,7 @@ export function WorkflowsSettings() {
         </div>
         <button
           onClick={() => setIsOpen(true)}
-          className="btn bg-ink hover:bg-ink-dark text-white px-5 text-[13px] flex items-center gap-2 shadow-sm shrink-0 transition-all"
+          className="btn bg-ink hover:bg-ink/90 text-paper px-5 text-[13px] flex items-center gap-2 shadow-sm shrink-0 transition-all"
         >
           <Plus className="w-4 h-4" />
           Add Rule
@@ -188,7 +188,7 @@ export function WorkflowsSettings() {
               </div>
               <button
                 onClick={() => setIsOpen(true)}
-                className="btn bg-ink text-white text-[13px] px-5 mx-auto mt-2 flex items-center gap-2"
+                className="btn bg-ink text-paper hover:bg-ink/90 text-[13px] px-5 mx-auto mt-2 flex items-center gap-2"
               >
                 <Plus className="w-3.5 h-3.5" /> Add your first rule
               </button>
@@ -407,7 +407,7 @@ export function WorkflowsSettings() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="btn bg-ink hover:bg-ink-dark text-white text-[13px] px-5 flex items-center gap-2"
+                  className="btn bg-ink hover:bg-ink/90 text-paper text-[13px] px-5 flex items-center gap-2"
                 >
                   {createMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Create Rule
