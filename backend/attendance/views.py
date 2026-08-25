@@ -771,7 +771,7 @@ class AttendanceMatrixView(APIView):
         start_date = date(year, month, 1)
         end_date = date(year, month, num_days)
 
-        users = User.objects.filter(company=company, is_active=True).prefetch_related(
+        users = User.objects.filter(company=company, is_active=True).exclude(role=User.Role.CUSTOMER).prefetch_related(
             Prefetch(
                 'time_logs',
                 queryset=TimeLog.objects.filter(
