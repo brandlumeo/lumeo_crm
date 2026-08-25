@@ -26,7 +26,7 @@ export function WhatsappInbox() {
     queryKey: ["whatsapp-messages"],
     queryFn: async () => {
       const { data } = await api.get("/crm/whatsapp-messages/");
-      return data;
+      return Array.isArray(data) ? data : (data.results || []);
     },
     refetchInterval: 5000,
   });
@@ -35,7 +35,7 @@ export function WhatsappInbox() {
     queryKey: ["leads"],
     queryFn: async () => {
       const { data } = await api.get("/crm/leads/");
-      return data;
+      return Array.isArray(data) ? data : (data.results || []);
     },
   });
 
