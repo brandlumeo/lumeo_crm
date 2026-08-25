@@ -455,7 +455,7 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setShowEditModal(true)}
-                className="btn bg-white hover:bg-bone border border-line text-ink py-1.5 px-3 flex items-center gap-2"
+                className="btn btn-secondary py-1.5 px-3 flex items-center gap-2"
               >
                 <Edit2 className="w-3.5 h-3.5" />
                 Edit
