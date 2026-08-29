@@ -37,7 +37,19 @@ class CurrentCompanyView(APIView):
             )
 
         from accounts.models import User
-        if request.user.role not in [User.Role.OWNER, User.Role.ADMIN]:
+        has_permission = request.user.role in [User.Role.OWNER, User.Role.ADMIN]
+        
+        if not has_permission:
+            user_role_str = str(request.user.role).lower()
+            if company.roles:
+                for role_dict in company.roles:
+                    if role_dict.get('name', '').lower() == user_role_str:
+                        attendance_update = role_dict.get('permissions', {}).get('Attendance', {}).get('Update', 'None')
+                        if attendance_update in ['All', 'Owned']:
+                            has_permission = True
+                        break
+
+        if not has_permission:
             return Response(
                 {"detail": "You do not have permission to perform this action."},
                 status=status.HTTP_403_FORBIDDEN,
