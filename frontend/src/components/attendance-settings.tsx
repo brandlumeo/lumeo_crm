@@ -1147,9 +1147,9 @@ export function AttendanceSettingsForm() {
                     className="input w-full h-10 bg-paper"
                   />
                   <datalist id="departments-list">
-                    {Array.from(new Set(teamData?.map(u => u.department).filter(Boolean))).map(dept => (
+                    {Array.isArray(teamData) ? Array.from(new Set(teamData.map(u => u.department).filter(Boolean))).map(dept => (
                       <option key={dept as string} value={dept as string} />
-                    ))}
+                    )) : null}
                   </datalist>
                   <p className="text-[11px] text-muted mt-1">
                     Select a department to filter employees, or type a new one to categorize this shift.
@@ -1160,7 +1160,7 @@ export function AttendanceSettingsForm() {
                     Employees <span className="text-rose-500">*</span>
                   </label>
                   <div className="border border-line rounded-lg max-h-48 overflow-y-auto p-2 bg-bone/30">
-                    {!teamData || teamData.length === 0 ? (
+                    {!Array.isArray(teamData) || teamData.length === 0 ? (
                       <div className="text-[13px] text-muted p-2">No team members found</div>
                     ) : (
                       teamData.map(user => (
