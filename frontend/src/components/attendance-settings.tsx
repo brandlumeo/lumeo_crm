@@ -132,7 +132,9 @@ export function AttendanceSettingsForm() {
     }
   }, [company]);
 
-  const isAdmin = user?.role === "owner" || user?.role === "admin";
+  const userRoleObj = company?.roles?.find((r: any) => r.name?.toLowerCase() === user?.role?.toLowerCase());
+  const hasAttendanceUpdate = userRoleObj?.permissions?.Attendance?.Update === "All" || userRoleObj?.permissions?.Attendance?.Update === "Owned";
+  const isAdmin = user?.role === "owner" || user?.role === "admin" || hasAttendanceUpdate;
 
   const mutation = useMutation({
     mutationFn: updateCompany,
