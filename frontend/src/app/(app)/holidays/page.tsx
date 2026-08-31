@@ -62,7 +62,7 @@ export default function HolidaysPage() {
           <div className="card-head">
             <div className="card-title">
               <CalendarIcon className="w-[18px] h-[18px] mr-2 inline-block text-muted" />
-              Upcoming Holidays
+              Company Holidays
               <span className="card-title-meta">{holidays.length} configured</span>
             </div>
           </div>
@@ -74,29 +74,66 @@ export default function HolidaysPage() {
                 <p className="text-sm text-muted italic">No holidays configured yet.</p>
               </div>
             ) : (
-              holidays.map((holiday) => (
-                <div key={holiday.id} className="group relative flex flex-col gap-1 py-3.5 border-b border-line last:border-0 hover:bg-bone/30 px-3 -mx-3 rounded transition-colors">
-                  <div className="font-medium text-ink text-[14.5px]">{holiday.name}</div>
-                  <div className="text-[12px] text-muted flex items-center gap-1.5">
-                    <CalendarIcon className="w-3.5 h-3.5" />
-                    {formatLongDate(new Date(holiday.date))}
+              (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const upcomingHolidays = holidays.filter((h) => {
+                  const d = new Date(h.date);
+                  d.setHours(0, 0, 0, 0);
+                  return d >= today;
+                });
+
+                const pastHolidays = holidays.filter((h) => {
+                  const d = new Date(h.date);
+                  d.setHours(0, 0, 0, 0);
+                  return d < today;
+                });
+
+                const renderHoliday = (holiday: any) => (
+                  <div key={holiday.id} className="group relative flex flex-col gap-1 py-3.5 border-b border-line last:border-0 hover:bg-bone/30 px-3 -mx-3 rounded transition-colors">
+                    <div className="font-medium text-ink text-[14.5px]">{holiday.name}</div>
+                    <div className="text-[12px] text-muted flex items-center gap-1.5">
+                      <CalendarIcon className="w-3.5 h-3.5" />
+                      {formatLongDate(new Date(holiday.date))}
+                    </div>
+                    {holiday.description && (
+                      <p className="text-[12.5px] text-muted mt-1 italic">{holiday.description}</p>
+                    )}
+                    
+                    {isManager && (
+                      <button
+                        onClick={() => deleteHolidayMutation.mutate(holiday.id)}
+                        disabled={deleteHolidayMutation.isPending}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500/60 hover:text-red-600 hover:bg-red-50 p-2 rounded opacity-0 group-hover:opacity-100 transition-all"
+                        title="Remove Holiday"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  {holiday.description && (
-                    <p className="text-[12.5px] text-muted mt-1 italic">{holiday.description}</p>
-                  )}
-                  
-                  {isManager && (
-                    <button
-                      onClick={() => deleteHolidayMutation.mutate(holiday.id)}
-                      disabled={deleteHolidayMutation.isPending}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500/60 hover:text-red-600 hover:bg-red-50 p-2 rounded opacity-0 group-hover:opacity-100 transition-all"
-                      title="Remove Holiday"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))
+                );
+
+                return (
+                  <div className="flex flex-col gap-6">
+                    {upcomingHolidays.length > 0 && (
+                      <div className="flex flex-col">
+                        <h3 className="text-xs font-bold text-ink-2 uppercase tracking-wider mb-2 px-3">Upcoming Holidays</h3>
+                        {upcomingHolidays.map(renderHoliday)}
+                      </div>
+                    )}
+                    
+                    {pastHolidays.length > 0 && (
+                      <div className="flex flex-col">
+                        <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-2 px-3">Past Holidays</h3>
+                        <div className="opacity-75">
+                          {pastHolidays.map(renderHoliday)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             )}
           </div>
         </div>
