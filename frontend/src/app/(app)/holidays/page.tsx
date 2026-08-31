@@ -90,6 +90,20 @@ export default function HolidaysPage() {
                   return d < today;
                 });
 
+                const pastHolidaysByMonth = pastHolidays.reduce((acc: Record<string, any[]>, h) => {
+                  const d = new Date(h.date);
+                  const key = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+                  if (!acc[key]) acc[key] = [];
+                  acc[key].push(h);
+                  return acc;
+                }, {});
+
+                const sortedPastMonths = Object.keys(pastHolidaysByMonth).sort((a, b) => {
+                  const dateA = new Date(pastHolidaysByMonth[a][0].date);
+                  const dateB = new Date(pastHolidaysByMonth[b][0].date);
+                  return dateB.getTime() - dateA.getTime(); // Descending order
+                });
+
                 const renderHoliday = (holiday: any) => (
                   <div key={holiday.id} className="group relative flex flex-col gap-1 py-3.5 border-b border-line last:border-0 hover:bg-bone/30 px-3 -mx-3 rounded transition-colors">
                     <div className="font-medium text-ink text-[14.5px]">{holiday.name}</div>
@@ -123,12 +137,17 @@ export default function HolidaysPage() {
                       </div>
                     )}
                     
-                    {pastHolidays.length > 0 && (
-                      <div className="flex flex-col">
-                        <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-2 px-3">Past Holidays</h3>
-                        <div className="opacity-75">
-                          {pastHolidays.map(renderHoliday)}
-                        </div>
+                    {sortedPastMonths.length > 0 && (
+                      <div className="flex flex-col gap-4 mt-2 border-t border-line pt-4">
+                        <h3 className="text-xs font-bold text-muted uppercase tracking-wider px-3">Past Holidays</h3>
+                        {sortedPastMonths.map((month) => (
+                          <div key={month} className="flex flex-col">
+                            <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-1 px-3 bg-bone-2/50 py-1 rounded inline-block w-fit">{month}</h4>
+                            <div className="opacity-75">
+                              {pastHolidaysByMonth[month].map(renderHoliday)}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
