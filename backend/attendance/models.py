@@ -86,6 +86,7 @@ class LeaveRequest(models.Model):
         SICK = "sick", "Medical / Sick"
         CASUAL = "casual", "Casual"
         UNPAID = "unpaid", "Unpaid"
+        HALF_DAY = "half_day", "Half Day"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending Approval"

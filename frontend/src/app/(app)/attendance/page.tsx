@@ -74,7 +74,7 @@ export default function AttendancePage() {
   const [breakReason, setBreakReason] = useState("");
 
   // Leave Form states
-  const [leaveType, setLeaveType] = useState<"paid" | "sick" | "casual" | "unpaid">("paid");
+  const [leaveType, setLeaveType] = useState<"paid" | "sick" | "casual" | "unpaid" | "half_day">("paid");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [leaveReason, setLeaveReason] = useState("");
@@ -400,6 +400,7 @@ export default function AttendancePage() {
                   <option value="sick">Sick / Medical</option>
                   <option value="casual">Casual Leave</option>
                   <option value="unpaid">Unpaid Leave</option>
+                  <option value="half_day">Half Day</option>
                 </select>
               </div>
 
