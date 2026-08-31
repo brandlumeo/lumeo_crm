@@ -1099,7 +1099,7 @@ export async function fetchLeaves(all?: boolean) {
 }
 
 export async function submitLeave(payload: {
-  leave_type: "paid" | "sick" | "casual" | "unpaid";
+  leave_type: "paid" | "sick" | "casual" | "unpaid" | "half_day";
   start_date: string;
   end_date: string;
   reason: string;
