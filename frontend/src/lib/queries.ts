@@ -151,7 +151,7 @@ import {
   createNotice,
   updateNotice,
   deleteNotice,
-
+  fetchTeam,
 } from "@/lib/api";
 import type { ListParams, CampaignInput, TicketInput, TicketCommentInput } from "@/lib/types";
 
@@ -981,6 +981,15 @@ export function useDeleteCampaign() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["campaigns"] });
     },
+  });
+}
+
+export function useTeam() {
+  return useQuery({
+    queryKey: ["team"],
+    queryFn: fetchTeam,
+    staleTime: fiveMinutes,
+    enabled: authenticated(),
   });
 }
 

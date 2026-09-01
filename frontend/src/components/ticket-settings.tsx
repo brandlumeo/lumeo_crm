@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Loader2, Plus, Edit, Trash2, X, User, Users, Tag, Headphones, FileText, Check
 } from "lucide-react";
-import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
+import { useCurrentCompany, useCurrentUser, useTeam } from "@/lib/queries";
 import { updateCompany } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,7 @@ type TicketReplyTemplate = {
 export function TicketSettingsForm() {
   const { data: company } = useCurrentCompany();
   const { data: user } = useCurrentUser();
+  const { data: teamData } = useTeam();
   const queryClient = useQueryClient();
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
@@ -110,7 +111,9 @@ export function TicketSettingsForm() {
     if (editingIndex !== null) {
       newAgents[editingIndex] = { ...newAgents[editingIndex], name: agentName, group: agentGroup, status: agentStatus };
     } else {
-      newAgents.push({ id: Date.now().toString(), name: agentName, group: agentGroup, status: agentStatus });
+      // Find user to potentially use their ID if they are from the team
+      const matchedUser = teamData?.users.find(u => `${u.first_name} ${u.last_name}`.trim() === agentName);
+      newAgents.push({ id: matchedUser ? matchedUser.id.toString() : Date.now().toString(), name: agentName, group: agentGroup, status: agentStatus });
     }
     mutation.mutate({ ticket_agents: newAgents });
   };
@@ -667,14 +670,25 @@ export function TicketSettingsForm() {
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-ink">Agent Name <span className="text-rose-500">*</span></label>
-                <input
-                  type="text"
+                <select
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
                   className="input w-full h-10 bg-paper"
-                  placeholder="e.g. John Doe"
                   autoFocus
-                />
+                >
+                  <option value="" disabled>Select an employee...</option>
+                  {teamData?.users.map(u => {
+                    const fullName = `${u.first_name} ${u.last_name}`.trim() || u.email;
+                    return (
+                      <option key={u.id} value={fullName}>
+                        {fullName}
+                      </option>
+                    )
+                  })}
+                  {agentName && !teamData?.users.find(u => `${u.first_name} ${u.last_name}`.trim() === agentName || u.email === agentName) && (
+                     <option value={agentName}>{agentName}</option>
+                  )}
+                </select>
               </div>
               
               <div className="space-y-1.5">
