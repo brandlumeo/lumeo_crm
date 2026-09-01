@@ -984,14 +984,6 @@ export function useDeleteCampaign() {
   });
 }
 
-export function useTeam() {
-  return useQuery({
-    queryKey: ["team"],
-    queryFn: fetchTeam,
-    staleTime: fiveMinutes,
-    enabled: authenticated(),
-  });
-}
 
 export function useSendCampaign() {
   const queryClient = useQueryClient();

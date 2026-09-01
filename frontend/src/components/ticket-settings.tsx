@@ -112,7 +112,7 @@ export function TicketSettingsForm() {
       newAgents[editingIndex] = { ...newAgents[editingIndex], name: agentName, group: agentGroup, status: agentStatus };
     } else {
       // Find user to potentially use their ID if they are from the team
-      const matchedUser = teamData?.users.find(u => `${u.first_name} ${u.last_name}`.trim() === agentName);
+      const matchedUser = teamData?.find(u => `${u.first_name} ${u.last_name}`.trim() === agentName);
       newAgents.push({ id: matchedUser ? matchedUser.id.toString() : Date.now().toString(), name: agentName, group: agentGroup, status: agentStatus });
     }
     mutation.mutate({ ticket_agents: newAgents });
@@ -677,7 +677,7 @@ export function TicketSettingsForm() {
                   autoFocus
                 >
                   <option value="" disabled>Select an employee...</option>
-                  {teamData?.users.map(u => {
+                  {teamData?.map(u => {
                     const fullName = `${u.first_name} ${u.last_name}`.trim() || u.email;
                     return (
                       <option key={u.id} value={fullName}>
@@ -685,7 +685,7 @@ export function TicketSettingsForm() {
                       </option>
                     )
                   })}
-                  {agentName && !teamData?.users.find(u => `${u.first_name} ${u.last_name}`.trim() === agentName || u.email === agentName) && (
+                  {agentName && !teamData?.find(u => `${u.first_name} ${u.last_name}`.trim() === agentName || u.email === agentName) && (
                      <option value={agentName}>{agentName}</option>
                   )}
                 </select>
