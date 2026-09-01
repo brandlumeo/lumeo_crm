@@ -36,6 +36,12 @@ export function PaymentCredentialsForm() {
   const [paystackPublicKey, setPaystackPublicKey] = useState("");
   const [paystackSecretKey, setPaystackSecretKey] = useState("");
   const [paystackMerchantEmail, setPaystackMerchantEmail] = useState("");
+  
+  // Environment states
+  const [stripeEnv, setStripeEnv] = useState("test");
+  const [paypalEnv, setPaypalEnv] = useState("sandbox");
+  const [razorpayEnv, setRazorpayEnv] = useState("test");
+  const [paystackEnv, setPaystackEnv] = useState("sandbox");
 
   const isAdmin = user?.role === "owner" || user?.role === "admin";
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -112,6 +118,8 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
+                      value={stripeEnv}
+                      onChange={(e) => setStripeEnv(e.target.value)}
                       className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
@@ -122,7 +130,7 @@ export function PaymentCredentialsForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <label className="block">
-                      <span className="block text-[13px] text-muted mb-1.5">Test Stripe Publishable Key <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{stripeEnv === 'live' ? 'Live' : 'Test'} Stripe Publishable Key <span className="text-rose-500">*</span></span>
                       <input
                         type="text"
                         placeholder="e.g. pk_test_..."
@@ -133,7 +141,7 @@ export function PaymentCredentialsForm() {
                       />
                     </label>
                     <label className="block relative">
-                      <span className="block text-[13px] text-muted mb-1.5">Test Stripe Secret <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{stripeEnv === 'live' ? 'Live' : 'Test'} Stripe Secret <span className="text-rose-500">*</span></span>
                       <div className="relative">
                         <input
                           type="password"
@@ -154,7 +162,7 @@ export function PaymentCredentialsForm() {
                   </div>
 
                   <label className="block relative">
-                    <span className="block text-[13px] text-muted mb-1.5">Test Stripe Webhook Signing Secret</span>
+                    <span className="block text-[13px] text-muted mb-1.5">{stripeEnv === 'live' ? 'Live' : 'Test'} Stripe Webhook Signing Secret</span>
                     <div className="relative">
                       <input
                         type="password"
@@ -212,6 +220,8 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
+                      value={paypalEnv}
+                      onChange={(e) => setPaypalEnv(e.target.value)}
                       className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
@@ -222,7 +232,7 @@ export function PaymentCredentialsForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <label className="block">
-                      <span className="block text-[13px] text-muted mb-1.5">Sandbox Paypal Client Id <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{paypalEnv === 'production' ? 'Production' : 'Sandbox'} Paypal Client Id <span className="text-rose-500">*</span></span>
                       <input
                         type="text"
                         placeholder="e.g. AW-Ydt5KHz..."
@@ -233,7 +243,7 @@ export function PaymentCredentialsForm() {
                       />
                     </label>
                     <label className="block relative">
-                      <span className="block text-[13px] text-muted mb-1.5">Sandbox Paypal Secret <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{paypalEnv === 'production' ? 'Production' : 'Sandbox'} Paypal Secret <span className="text-rose-500">*</span></span>
                       <div className="relative">
                         <input
                           type="password"
@@ -293,6 +303,8 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
+                      value={razorpayEnv}
+                      onChange={(e) => setRazorpayEnv(e.target.value)}
                       className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
@@ -303,7 +315,7 @@ export function PaymentCredentialsForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <label className="block">
-                      <span className="block text-[13px] text-muted mb-1.5">Test Razorpay Key <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{razorpayEnv === 'live' ? 'Live' : 'Test'} Razorpay Key <span className="text-rose-500">*</span></span>
                       <input
                         type="text"
                         placeholder="e.g. rzp_test_znK7OLXXT3XXFX"
@@ -314,7 +326,7 @@ export function PaymentCredentialsForm() {
                       />
                     </label>
                     <label className="block relative">
-                      <span className="block text-[13px] text-muted mb-1.5">Test Razorpay Secret <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{razorpayEnv === 'live' ? 'Live' : 'Test'} Razorpay Secret <span className="text-rose-500">*</span></span>
                       <div className="relative">
                         <input
                           type="password"
@@ -335,7 +347,7 @@ export function PaymentCredentialsForm() {
                   </div>
 
                   <label className="block relative">
-                    <span className="block text-[13px] text-muted mb-1.5">Test Razorpay Webhook Signing Secret</span>
+                    <span className="block text-[13px] text-muted mb-1.5">{razorpayEnv === 'live' ? 'Live' : 'Test'} Razorpay Webhook Signing Secret</span>
                     <div className="relative">
                       <input
                         type="password"
@@ -392,6 +404,8 @@ export function PaymentCredentialsForm() {
                   <label className="block">
                     <span className="block text-[13px] text-muted mb-1.5">Select Environment</span>
                     <select 
+                      value={paystackEnv}
+                      onChange={(e) => setPaystackEnv(e.target.value)}
                       className="w-full h-10 px-3 bg-paper border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors appearance-none"
                       disabled={!isAdmin}
                     >
@@ -402,7 +416,7 @@ export function PaymentCredentialsForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <label className="block">
-                      <span className="block text-[13px] text-muted mb-1.5">Test Paystack Public Key <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{paystackEnv === 'live' ? 'Live' : 'Test'} Paystack Public Key <span className="text-rose-500">*</span></span>
                       <input
                         type="text"
                         placeholder="e.g. pk_live_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
@@ -413,7 +427,7 @@ export function PaymentCredentialsForm() {
                       />
                     </label>
                     <label className="block relative">
-                      <span className="block text-[13px] text-muted mb-1.5">Test Paystack Secret Key <span className="text-rose-500">*</span></span>
+                      <span className="block text-[13px] text-muted mb-1.5">{paystackEnv === 'live' ? 'Live' : 'Test'} Paystack Secret Key <span className="text-rose-500">*</span></span>
                       <div className="relative">
                         <input
                           type="password"
@@ -434,7 +448,7 @@ export function PaymentCredentialsForm() {
                   </div>
 
                   <label className="block">
-                    <span className="block text-[13px] text-muted mb-1.5">Test Paystack Merchant Email <span className="text-rose-500">*</span></span>
+                    <span className="block text-[13px] text-muted mb-1.5">{paystackEnv === 'live' ? 'Live' : 'Test'} Paystack Merchant Email <span className="text-rose-500">*</span></span>
                     <input
                       type="email"
                       placeholder=""
