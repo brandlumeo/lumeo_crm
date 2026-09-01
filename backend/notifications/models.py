@@ -9,6 +9,8 @@ class Notification(models.Model):
         TASK_DUE = "task_due", "Task Due"
         SUBSCRIPTION_EXPIRING = "subscription_expiring", "Subscription Expiring"
         SUBSCRIPTION_UPGRADED = "subscription_upgraded", "Subscription Upgraded"
+        TICKET_CREATED = "ticket_created", "Ticket Created"
+        TICKET_UPDATED = "ticket_updated", "Ticket Updated"
         GENERAL = "general", "General"
 
     user = models.ForeignKey(

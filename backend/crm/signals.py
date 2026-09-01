@@ -229,3 +229,47 @@ def task_post_save(sender, instance, created, **kwargs):
                     title="New Task Assigned",
                     body=f"Task '{instance.title}' is due by {instance.due_date}."
                 )
+
+from .models import Ticket, TicketComment
+
+@receiver(post_save, sender=Ticket)
+def ticket_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
+    if created:
+        users_to_notify = get_users_to_notify(instance)
+        for u in users_to_notify:
+            Notification.objects.create(
+                user=u,
+                notification_type=Notification.Type.TICKET_CREATED,
+                title="New Ticket Received",
+                body=f"A new ticket '#{instance.id} - {instance.subject}' has been submitted."
+            )
+
+@receiver(post_save, sender=TicketComment)
+def ticket_comment_post_save(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
+    if created and instance.author:
+        ticket = instance.ticket
+        is_customer = instance.author.role == 'CUSTOMER'
+        
+        if is_customer:
+            # Customer replied, notify staff
+            users_to_notify = get_users_to_notify(ticket)
+            for u in users_to_notify:
+                Notification.objects.create(
+                    user=u,
+                    notification_type=Notification.Type.TICKET_UPDATED,
+                    title="New Reply on Ticket",
+                    body=f"The customer replied to ticket '#{ticket.id} - {ticket.subject}'."
+                )
+        else:
+            # Staff replied, notify customer (only if not internal)
+            if not instance.is_internal and ticket.customer and ticket.customer.user:
+                Notification.objects.create(
+                    user=ticket.customer.user,
+                    notification_type=Notification.Type.TICKET_UPDATED,
+                    title="New Reply on Your Ticket",
+                    body=f"Support has replied to your ticket '#{ticket.id} - {ticket.subject}'."
+                )
