@@ -158,7 +158,7 @@ function ProductDrawer({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-line bg-bone shrink-0 flex justify-between items-center">
+        <div className="pl-6 pr-20 md:pr-24 py-4 border-t border-line bg-bone shrink-0 flex justify-between items-center">
           <button
             onClick={() => {
               if (confirm(`Delete product "${product.name}"?`)) {
