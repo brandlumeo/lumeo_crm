@@ -115,6 +115,8 @@ import {
   signPublicInvoice,
   payPublicInvoice,
   verifyPublicInvoicePayment,
+  paypalPayPublicInvoice,
+  verifyPaypalPublicInvoicePayment,
   getInvoiceSettings,
   updateInvoiceSettings,
   fetchExpenseClaims,
@@ -1119,6 +1121,22 @@ export function useVerifyPublicInvoicePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ token, payload }: { token: string; payload: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string } }) => verifyPublicInvoicePayment(token, payload),
+    onSuccess: (_, { token }) => {
+      void queryClient.invalidateQueries({ queryKey: ["public", "invoice", token] });
+    },
+  });
+}
+
+export function usePaypalPayPublicInvoice() {
+  return useMutation({
+    mutationFn: ({ token, payload }: { token: string; payload: { return_url: string; cancel_url: string } }) => paypalPayPublicInvoice(token, payload),
+  });
+}
+
+export function useVerifyPaypalPublicInvoicePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ token, payload }: { token: string; payload: { paypal_order_id: string } }) => verifyPaypalPublicInvoicePayment(token, payload),
     onSuccess: (_, { token }) => {
       void queryClient.invalidateQueries({ queryKey: ["public", "invoice", token] });
     },

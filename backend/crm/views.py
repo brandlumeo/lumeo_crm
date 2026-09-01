@@ -2216,6 +2216,156 @@ class PublicInvoiceVerifyPaymentView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=500)
 
+import requests
+
+def get_paypal_access_token(client_id, secret):
+    # Try Live first
+    response = requests.post(
+        "https://api-m.paypal.com/v1/oauth2/token",
+        auth=(client_id, secret),
+        data={"grant_type": "client_credentials"}
+    )
+    if response.status_code == 200:
+        return response.json()["access_token"], "https://api-m.paypal.com"
+        
+    # Try Sandbox
+    response = requests.post(
+        "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+        auth=(client_id, secret),
+        data={"grant_type": "client_credentials"}
+    )
+    if response.status_code == 200:
+        return response.json()["access_token"], "https://api-m.sandbox.paypal.com"
+        
+    raise Exception("Invalid PayPal credentials")
+
+class PublicInvoicePaypalPayView(APIView):
+    permission_classes = []
+
+    def post(self, request, token):
+        invoice = get_object_or_404(Invoice, public_token=token)
+        company = invoice.company
+        
+        if not company.paypal_client_id or not company.paypal_secret:
+            return Response({"error": "PayPal not configured for this company."}, status=503)
+
+        if invoice.amount_due <= 0:
+            return Response({"error": "Invoice is already fully paid"}, status=400)
+            
+        currency_code = company.currency or "USD"
+        amount = str(float(invoice.amount_due))
+        
+        try:
+            access_token, base_url = get_paypal_access_token(company.paypal_client_id, company.paypal_secret)
+            
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {access_token}"
+            }
+            
+            payload = {
+                "intent": "CAPTURE",
+                "purchase_units": [
+                    {
+                        "reference_id": str(invoice.invoice_number),
+                        "amount": {
+                            "currency_code": currency_code,
+                            "value": amount
+                        },
+                        "description": f"Invoice {invoice.invoice_number}"
+                    }
+                ],
+                "payment_source": {
+                    "paypal": {
+                        "experience_context": {
+                            "return_url": request.data.get("return_url", ""),
+                            "cancel_url": request.data.get("cancel_url", "")
+                        }
+                    }
+                }
+            }
+            
+            response = requests.post(f"{base_url}/v2/checkout/orders", headers=headers, json=payload)
+            if response.status_code not in (200, 201):
+                raise Exception(response.text)
+                
+            order_data = response.json()
+            
+            approve_link = next((link["href"] for link in order_data.get("links", []) if link["rel"] == "approve"), None)
+            
+            return Response({
+                "order_id": order_data["id"],
+                "approve_link": approve_link,
+                "client_id": company.paypal_client_id,
+                "environment": "production" if "sandbox" not in base_url else "sandbox",
+                "currency": currency_code
+            })
+        except Exception as e:
+            return Response({"error": f"PayPal initialization failed: {str(e)}"}, status=500)
+
+class PublicInvoiceVerifyPaypalPaymentView(APIView):
+    permission_classes = []
+
+    def post(self, request, token):
+        invoice = get_object_or_404(Invoice, public_token=token)
+        company = invoice.company
+        
+        paypal_order_id = request.data.get('paypal_order_id')
+        
+        if not company.paypal_client_id or not company.paypal_secret:
+            return Response({"error": "PayPal not configured."}, status=503)
+            
+        try:
+            access_token, base_url = get_paypal_access_token(company.paypal_client_id, company.paypal_secret)
+            
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {access_token}"
+            }
+            
+            # Capture the payment
+            response = requests.post(f"{base_url}/v2/checkout/orders/{paypal_order_id}/capture", headers=headers)
+            
+            if response.status_code not in (200, 201):
+                raise Exception(response.text)
+                
+            capture_data = response.json()
+            
+            # Extract payment amount
+            try:
+                capture = capture_data['purchase_units'][0]['payments']['captures'][0]
+                amount_paid = float(capture['amount']['value'])
+                transaction_id = capture['id']
+                status = capture['status']
+            except (KeyError, IndexError):
+                return Response({"error": "Failed to parse capture details from PayPal"}, status=500)
+            
+            if status != 'COMPLETED':
+                return Response({"error": f"Payment was not completed. Status: {status}"}, status=400)
+            
+            import uuid
+            receipt_number = f"REC-{uuid.uuid4().hex[:6].upper()}"
+            
+            from .models import InvoicePayment
+            InvoicePayment.objects.create(
+                invoice=invoice,
+                amount=amount_paid,
+                payment_method="PayPal",
+                transaction_id=transaction_id,
+                receipt_number=receipt_number,
+                notes="Online Payment via PayPal"
+            )
+            
+            if invoice.amount_due <= 0:
+                invoice.status = Invoice.Status.PAID
+            else:
+                invoice.status = Invoice.Status.PARTIALLY_PAID
+            invoice.save(update_fields=['status'])
+            
+            return Response({"message": "Payment successful."})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
 
 # ── Orders ───────────────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { useState, useRef, use, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyPublicInvoicePayment } from "@/lib/queries";
+import { usePublicInvoice, useSignPublicInvoice, usePayPublicInvoice, useVerifyPublicInvoicePayment, usePaypalPayPublicInvoice, useVerifyPaypalPublicInvoicePayment } from "@/lib/queries";
 import dynamic from "next/dynamic";
 import type ReactSignatureCanvas from "react-signature-canvas";
 const SignatureCanvas = dynamic(() => import("react-signature-canvas"), { ssr: false });
@@ -33,6 +33,32 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
   const signMutation = useSignPublicInvoice();
   const payMutation = usePayPublicInvoice();
   const verifyMutation = useVerifyPublicInvoicePayment();
+  const paypalPayMutation = usePaypalPayPublicInvoice();
+  const verifyPaypalMutation = useVerifyPaypalPublicInvoicePayment();
+
+  // Verify PayPal if returning from checkout
+  useEffect(() => {
+    const paypalOrderId = searchParams.get('token');
+    const payerId = searchParams.get('PayerID');
+    
+    // Only verify if invoice is not fully paid and we haven't already verified
+    if (paypalOrderId && payerId && invoice && parseFloat(invoice.amount_due || invoice.total) > 0) {
+      verifyPaypalMutation.mutate(
+        { token, payload: { paypal_order_id: paypalOrderId } },
+        {
+          onSuccess: () => {
+            toast.success("PayPal payment verified and successful!");
+            window.history.replaceState({}, document.title, window.location.pathname);
+          },
+          onError: (err: any) => {
+            toast.error(err.response?.data?.error || "Failed to verify PayPal payment.");
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, token, invoice?.amount_due, invoice?.total]);
 
   useEffect(() => {
     if (invoice) {
@@ -194,6 +220,26 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
     } catch (error) {
       toast.error("Something went wrong");
     }
+  };
+
+  const handlePaypalPay = () => {
+    const returnUrl = window.location.origin + window.location.pathname;
+    
+    paypalPayMutation.mutate(
+      { token, payload: { return_url: returnUrl, cancel_url: returnUrl } },
+      {
+        onSuccess: (data) => {
+          if (data.approve_link) {
+            window.location.href = data.approve_link;
+          } else {
+            toast.error("PayPal checkout link not found.");
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.error || "Failed to initialize PayPal.");
+        }
+      }
+    );
   };
 
   const isSigned = !!invoice.signature_data;
@@ -591,6 +637,24 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                     <>
                       <CreditCard className="w-5 h-5" />
                       Pay {formatCurrency(parseFloat(invoice.amount_due || "0"), invoice.currency || invoice.company?.currency)}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="text-center p-6 bg-bone rounded-xl border border-line flex flex-col items-center justify-center min-h-[200px] print:hidden">
+                <p className="text-muted mb-6">Securely pay this invoice using PayPal.</p>
+                <button
+                  onClick={handlePaypalPay}
+                  disabled={paypalPayMutation.isPending || verifyPaypalMutation.isPending}
+                  className="bg-[#0070ba] text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2 w-full max-w-[250px] justify-center"
+                >
+                  {paypalPayMutation.isPending || verifyPaypalMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      Pay with PayPal
                     </>
                   )}
                 </button>

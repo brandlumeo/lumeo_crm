@@ -1344,6 +1344,16 @@ export async function verifyPublicInvoicePayment(token: string, payload: { razor
   return data;
 }
 
+export async function paypalPayPublicInvoice(token: string, payload: { return_url: string; cancel_url: string }) {
+  const { data } = await api.post<{ order_id: string; approve_link?: string; client_id: string; environment: string; currency: string }>(`/crm/public/invoice/${token}/paypal/pay/`, payload);
+  return data;
+}
+
+export async function verifyPaypalPublicInvoicePayment(token: string, payload: { paypal_order_id: string }) {
+  const { data } = await api.post<{ message: string }>(`/crm/public/invoice/${token}/paypal/verify-payment/`, payload);
+  return data;
+}
+
 // ── HR: Expenses ─────────────────────────────────────────────────────────────
 
 export async function fetchExpenseClaims(all = false) {
