@@ -102,8 +102,8 @@ export default function QuotesPage() {
 
   return (
     <>
-      <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Quotes</h1>
           <p className="text-muted text-sm mt-1">Create quotes and share them securely with clients for e-signatures.</p>
@@ -114,7 +114,7 @@ export default function QuotesPage() {
             setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
             setIsModalOpen(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-ink text-bone font-medium rounded-lg hover:bg-ink/90 transition-colors shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-ink text-bone font-medium rounded-lg hover:bg-ink/90 transition-colors shrink-0 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           New Quote
@@ -122,8 +122,8 @@ export default function QuotesPage() {
       </div>
 
       <div className="bg-bone border border-line rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-line flex items-center gap-3 bg-bone-2">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-4 border-b border-line flex flex-col sm:flex-row items-center gap-3 bg-bone-2">
+          <div className="relative w-full flex-1 sm:max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="text"
