@@ -142,15 +142,15 @@ export default function CampaignsPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[22px] font-serif text-ink tracking-tight">Marketing Campaigns</h1>
           <p className="text-muted text-[13px] mt-1">Design and blast email campaigns to your audience.</p>
         </div>
         <button
           onClick={openCreateDrawer}
-          className="btn bg-ink text-paper hover:bg-ink-2 shadow-sm font-medium gap-2"
+          className="btn bg-ink text-paper hover:bg-ink-2 shadow-sm font-medium gap-2 w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" />
           Create Campaign
@@ -158,8 +158,8 @@ export default function CampaignsPage() {
       </div>
 
       <div className="bg-paper border border-line rounded-[14px] overflow-hidden shadow-sm animate-rise">
-        <div className="p-5 border-b border-line flex items-center gap-3 bg-surface-muted/30">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-4 sm:p-5 border-b border-line flex flex-col sm:flex-row items-center gap-3 bg-surface-muted/30">
+          <div className="relative w-full flex-1 sm:max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="text"
