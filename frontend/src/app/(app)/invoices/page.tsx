@@ -115,8 +115,8 @@ export default function InvoicesPage() {
 
   return (
     <>
-      <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Invoices</h1>
           <p className="text-muted text-sm mt-1">Bill your clients and collect e-signatures or payments securely.</p>
@@ -127,7 +127,7 @@ export default function InvoicesPage() {
             setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
             setIsModalOpen(true);
           }}
-          className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+          className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           New Invoice
@@ -135,8 +135,8 @@ export default function InvoicesPage() {
       </div>
 
       <div className="bg-bone border border-line rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-line flex items-center gap-3 bg-bone-2">
-          <div className="relative flex-1 max-w-md">
+        <div className="p-4 border-b border-line flex flex-col sm:flex-row items-center gap-3 bg-bone-2">
+          <div className="relative w-full flex-1 sm:max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="text"
