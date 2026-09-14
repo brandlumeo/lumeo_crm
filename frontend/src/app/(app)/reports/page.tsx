@@ -1,23 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { DailyReport, DailyReportInput } from "@/lib/types";
 import { useCurrentUser } from "@/lib/queries";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { PlusCircle, Search, Calendar as CalendarIcon, User as UserIcon, Loader2, Smile, Meh, Frown } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import * as Dialog from "@radix-ui/react-dialog";
+import { PlusCircle, Search, Calendar as CalendarIcon, User as UserIcon, Loader2, Smile, Meh, Frown, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
+import { PageShell } from "@/components/page-shell";
+import { EmptyState } from "@/components/empty-state";
 
 export default function DailyReportsPage() {
   const queryClient = useQueryClient();
@@ -43,7 +37,7 @@ export default function DailyReportsPage() {
       const res = await api.get("/attendance/reports/today/");
       return res.data;
     },
-    retry: false, // It will 404 if not submitted
+    retry: false,
   });
 
   const submitMutation = useMutation({
@@ -86,215 +80,210 @@ export default function DailyReportsPage() {
 
   const getSentimentIcon = (sent: string) => {
     switch (sent) {
-      case "Great": return <Smile className="h-4 w-4 text-green-500" />;
-      case "Okay": return <Meh className="h-4 w-4 text-amber-500" />;
-      case "Struggling": return <Frown className="h-4 w-4 text-red-500" />;
+      case "Great": return <Smile className="h-3.5 w-3.5 text-green-600" />;
+      case "Okay": return <Meh className="h-3.5 w-3.5 text-amber-600" />;
+      case "Struggling": return <Frown className="h-3.5 w-3.5 text-red-600" />;
       default: return null;
     }
   };
 
   const getSentimentColor = (sent: string) => {
     switch (sent) {
-      case "Great": return "bg-green-500/10 text-green-500 border-green-200/20";
-      case "Okay": return "bg-amber-500/10 text-amber-500 border-amber-200/20";
-      case "Struggling": return "bg-red-500/10 text-red-500 border-red-200/20";
-      default: return "";
+      case "Great": return "bg-green-50 text-green-700 border-green-200/50";
+      case "Okay": return "bg-amber-50 text-amber-700 border-amber-200/50";
+      case "Struggling": return "bg-red-50 text-red-700 border-red-200/50";
+      default: return "bg-neutral-50 text-neutral-700 border-line";
     }
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Daily Reports</h2>
-          <p className="text-muted-foreground mt-1">
-            Read team updates and submit your end-of-day summary.
-          </p>
+    <PageShell title="Daily Reports">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+          <input
+            type="search"
+            placeholder="Search reports..."
+            className="input w-full pl-9 h-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search reports..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <Dialog open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={!!todayReport}>
-                {todayReport ? "Submitted for Today" : (
-                  <>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Submit Report
-                  </>
-                )}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] h-[90vh] overflow-y-auto">
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle>Submit Daily Wrap-Up</DialogTitle>
-                  <DialogDescription>
-                    Write down what you accomplished today. This will be shared with your managers.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  
-                  <div className="space-y-2">
-                    <Label>How was your day?</Label>
-                    <Select value={sentiment} onValueChange={setSentiment}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select sentiment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Great">
-                          <div className="flex items-center">
-                            <Smile className="mr-2 h-4 w-4 text-green-500" /> Great & Productive
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Okay">
-                          <div className="flex items-center">
-                            <Meh className="mr-2 h-4 w-4 text-amber-500" /> Okay / Average
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Struggling">
-                          <div className="flex items-center">
-                            <Frown className="mr-2 h-4 w-4 text-red-500" /> Struggling / Hard Day
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label>What did you accomplish today?</Label>
-                    <Textarea 
-                      placeholder="I closed 2 deals, sent 10 emails, and finished the presentation..."
-                      className="min-h-[150px] resize-none"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Any blockers or challenges? (Optional)</Label>
-                    <Textarea 
-                      placeholder="I am waiting on approval for..."
-                      className="min-h-[80px] resize-none"
-                      value={blockers}
-                      onChange={(e) => setBlockers(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Main focus for tomorrow? (Optional)</Label>
-                    <Input 
-                      placeholder="Focusing on the XYZ project..."
-                      value={nextDayPlan}
-                      onChange={(e) => setNextDayPlan(e.target.value)}
-                    />
-                  </div>
-
+        <Dialog.Root open={isSubmitModalOpen} onOpenChange={setIsSubmitModalOpen}>
+          <Dialog.Trigger asChild>
+            <button 
+              className="btn btn-primary h-10 shadow-sm"
+              disabled={!!todayReport}
+            >
+              {todayReport ? "Submitted for Today" : (
+                <>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Submit Wrap-Up
+                </>
+              )}
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
+            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl max-h-[90vh] overflow-y-auto bg-paper shadow-2xl rounded-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between p-5 border-b border-line">
+                <div>
+                  <Dialog.Title className="text-lg font-bold text-ink">Submit Daily Wrap-Up</Dialog.Title>
+                  <Dialog.Description className="text-[13px] text-muted mt-1">
+                    Write down what you accomplished today. This will be shared with your team.
+                  </Dialog.Description>
                 </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsSubmitModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitMutation.isPending}>
-                    {submitMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Submit Wrap-Up
-                  </Button>
-                </DialogFooter>
+                <Dialog.Close asChild>
+                  <button className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted hover:bg-surface transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </Dialog.Close>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-5 space-y-5">
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">How was your day?</label>
+                  <select 
+                    value={sentiment} 
+                    onChange={(e) => setSentiment(e.target.value)}
+                    className="select w-full h-10"
+                  >
+                    <option value="Great">Great & Productive</option>
+                    <option value="Okay">Okay / Average</option>
+                    <option value="Struggling">Struggling / Hard Day</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">What did you accomplish today?</label>
+                  <textarea 
+                    required
+                    placeholder="I closed 2 deals, sent 10 emails, and finished the presentation..."
+                    className="input w-full min-h-[120px] resize-y py-2.5"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">Any blockers or challenges? (Optional)</label>
+                  <textarea 
+                    placeholder="I am waiting on approval for..."
+                    className="input w-full min-h-[80px] resize-y py-2.5"
+                    value={blockers}
+                    onChange={(e) => setBlockers(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">Main focus for tomorrow? (Optional)</label>
+                  <input 
+                    type="text"
+                    placeholder="Focusing on the XYZ project..."
+                    className="input w-full h-10"
+                    value={nextDayPlan}
+                    onChange={(e) => setNextDayPlan(e.target.value)}
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-line flex justify-end gap-3">
+                  <Dialog.Close asChild>
+                    <button type="button" className="btn btn-secondary h-10">
+                      Cancel
+                    </button>
+                  </Dialog.Close>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary h-10"
+                    disabled={submitMutation.isPending}
+                  >
+                    {submitMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit Wrap-Up"}
+                  </button>
+                </div>
               </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted" />
         </div>
       ) : filteredReports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center border rounded-xl bg-card border-dashed">
-          <div className="rounded-full bg-muted p-4 mb-4">
-            <FileText className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-semibold">No reports found</h3>
-          <p className="text-muted-foreground max-w-sm mt-2">
-            No one has submitted a daily report yet, or your search didn't match anything.
-          </p>
-        </div>
+        <EmptyState 
+          icon={FileText}
+          title="No daily reports yet"
+          description="Your team's daily wrap-ups will appear here."
+        />
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-4">
           {filteredReports.map((report) => (
-            <Card key={report.id} className="overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4 border-b">
+            <div key={report.id} className="bg-paper border border-line rounded-xl overflow-hidden shadow-sm">
+              <div className="p-5 border-b border-line bg-surface/30">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-border">
-                      <AvatarImage src={report.user_avatar} />
-                      <AvatarFallback>{getInitials(report.user_full_name)}</AvatarFallback>
-                    </Avatar>
+                    <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20">
+                      {report.user_avatar ? (
+                        <img src={report.user_avatar} alt="" className="h-full w-full rounded-full object-cover" />
+                      ) : (
+                        getInitials(report.user_full_name)
+                      )}
+                    </div>
                     <div>
-                      <CardTitle className="text-base">{report.user_full_name}</CardTitle>
-                      <CardDescription className="flex items-center mt-1">
+                      <h3 className="text-[15px] font-semibold text-ink">{report.user_full_name}</h3>
+                      <p className="text-xs text-muted flex items-center mt-0.5">
                         <CalendarIcon className="mr-1 h-3 w-3" />
                         {format(new Date(report.date), "EEEE, MMMM do, yyyy")}
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
                   {report.sentiment && (
-                    <Badge variant="outline" className={getSentimentColor(report.sentiment)}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide border ${getSentimentColor(report.sentiment)}`}>
                       {getSentimentIcon(report.sentiment)}
-                      <span className="ml-1.5">{report.sentiment}</span>
-                    </Badge>
+                      {report.sentiment}
+                    </span>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-6">
+              </div>
+              <div className="p-5">
+                <div className="space-y-5">
                   <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">Accomplishments</h4>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                    <h4 className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-2">Accomplishments</h4>
+                    <div className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink/90">
                       {report.content}
                     </div>
                   </div>
                   
                   {(report.blockers || report.next_day_plan) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-line/60">
                       {report.blockers && (
-                        <div className="bg-red-500/5 dark:bg-red-500/10 p-3 rounded-lg border border-red-200/20">
-                          <h4 className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1 flex items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>
-                            Blockers / Challenges
+                        <div className="bg-red-50 dark:bg-red-500/10 p-3.5 rounded-lg border border-red-100 dark:border-red-500/20">
+                          <h4 className="text-[12px] font-bold text-red-700 dark:text-red-400 mb-1 flex items-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
+                            Blockers & Challenges
                           </h4>
-                          <p className="text-sm text-foreground/80">{report.blockers}</p>
+                          <p className="text-[13.5px] text-red-900/80 dark:text-red-200/80 mt-1.5 leading-relaxed">{report.blockers}</p>
                         </div>
                       )}
                       {report.next_day_plan && (
-                        <div className="bg-blue-500/5 dark:bg-blue-500/10 p-3 rounded-lg border border-blue-200/20">
-                          <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
+                        <div className="bg-blue-50 dark:bg-blue-500/10 p-3.5 rounded-lg border border-blue-100 dark:border-blue-500/20">
+                          <h4 className="text-[12px] font-bold text-blue-700 dark:text-blue-400 mb-1 flex items-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>
                             Tomorrow's Focus
                           </h4>
-                          <p className="text-sm text-foreground/80">{report.next_day_plan}</p>
+                          <p className="text-[13.5px] text-blue-900/80 dark:text-blue-200/80 mt-1.5 leading-relaxed">{report.next_day_plan}</p>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
