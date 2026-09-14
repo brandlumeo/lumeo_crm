@@ -184,6 +184,7 @@ export interface UserProfile extends UserSummary {
   avatar: string | null;
   designation?: string;
   department?: string;
+  employee_id?: string;
   timezone: string;
   prefix: string | null;
   mobile: string | null;
