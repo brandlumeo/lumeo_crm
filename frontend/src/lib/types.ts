@@ -431,6 +431,7 @@ export interface TeamInvitation {
   last_name?: string;
   designation?: string;
   department?: string;
+  employee_id?: string;
   personal_message?: string;
   role: string;
   is_accepted: boolean;
