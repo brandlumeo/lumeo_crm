@@ -126,8 +126,8 @@ export default function DailyReportsPage() {
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl max-h-[90vh] overflow-y-auto bg-paper shadow-2xl rounded-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between p-5 border-b border-line">
+            <Dialog.Content className="fixed inset-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-xl h-[100dvh] md:h-auto md:max-h-[85vh] flex flex-col bg-paper shadow-2xl md:rounded-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between p-4 md:p-5 border-b border-line shrink-0">
                 <div>
                   <Dialog.Title className="text-lg font-bold text-ink">Submit Daily Wrap-Up</Dialog.Title>
                   <Dialog.Description className="text-[13px] text-muted mt-1">
@@ -135,13 +135,14 @@ export default function DailyReportsPage() {
                   </Dialog.Description>
                 </div>
                 <Dialog.Close asChild>
-                  <button className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted hover:bg-surface transition-colors">
+                  <button className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted hover:bg-surface transition-colors shrink-0 ml-4">
                     <X className="h-4 w-4" />
                   </button>
                 </Dialog.Close>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-5">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-5">
                 <div>
                   <label className="block text-[13px] font-medium text-ink mb-1.5">How was your day?</label>
                   <select 
@@ -187,7 +188,9 @@ export default function DailyReportsPage() {
                   />
                 </div>
 
-                <div className="pt-4 border-t border-line flex justify-end gap-3">
+                </div>
+
+                <div className="p-4 md:p-5 border-t border-line flex justify-end gap-3 shrink-0 bg-paper">
                   <Dialog.Close asChild>
                     <button type="button" className="btn btn-secondary h-10">
                       Cancel
