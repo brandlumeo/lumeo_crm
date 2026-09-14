@@ -1569,3 +1569,15 @@ class WhatsAppMessage(models.Model):
 
     def __str__(self):
         return f"WA {self.direction} - {self.id}"
+
+class DailyRevenue(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="daily_revenues")
+    date = models.DateField(db_index=True)
+    total_revenue = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+
+    class Meta:
+        unique_together = ('company', 'date')
+        ordering = ("-date",)
+
+    def __str__(self):
+        return f"{self.date} - {self.total_revenue}"

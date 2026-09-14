@@ -949,6 +949,7 @@ export interface PremiumAnalyticsResponse {
   revenue_by_month: { month: string; revenue: number }[];
   lead_conversion: { month: string; total: number; won: number; rate: number }[];
   revenue_forecast: { month: string; expected_revenue: number }[];
+  daily_revenue: { date: string; revenue: number }[];
 }
 
 export async function fetchPremiumAnalytics() {

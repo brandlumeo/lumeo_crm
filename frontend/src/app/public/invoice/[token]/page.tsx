@@ -288,9 +288,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
         
         {/* INVOICE DOCUMENT */}
         <div 
-          className={`force-light-mode rounded-2xl shadow-sm border p-8 md:p-12 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible ${
-            tpl === 'template3' ? 'border-none overflow-hidden' : 
-            tpl === 'template4' ? 'border-line flex flex-col md:flex-row print:flex-row p-0 overflow-hidden' : 
+          className={`force-light-mode rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border p-8 md:p-14 print:shadow-none print:border-none print:p-0 print:m-0 bg-white print:overflow-visible relative overflow-hidden ${
+            tpl === 'template3' ? 'border-none' : 
+            tpl === 'template4' ? 'border-line flex flex-col md:flex-row print:flex-row p-0' : 
             'border-line'
           }`}
           style={tpl === 'template3' ? { borderTop: `8px solid ${accentColor}` } : {}}
@@ -325,7 +325,14 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             </div>
           )}
 
-          <div className={tpl === 'template4' ? "md:w-2/3 print:w-2/3 p-8 md:p-12 bg-white" : ""}>
+          <div className={tpl === 'template4' ? "md:w-2/3 print:w-2/3 p-8 md:p-12 bg-white relative" : "relative"}>
+            {/* PAID Stamp overlay */}
+            {parseFloat(invoice.amount_due || invoice.total) <= 0 && (
+              <div className="absolute top-1/4 right-8 opacity-[0.04] transform rotate-12 pointer-events-none print:opacity-10 z-0">
+                <span className="text-8xl md:text-9xl font-black text-emerald-600 border-[12px] border-emerald-600 p-6 rounded-2xl uppercase tracking-widest">PAID</span>
+              </div>
+            )}
+            
             {/* Header Area */}
             {tpl !== 'template4' && (
               <div className="flex flex-col md:flex-row print:flex-row justify-between items-start gap-8 border-b border-line/50 pb-8 mb-8 print:pb-2 print:mb-2"
@@ -393,44 +400,46 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </div>
             )}
 
-            <div className="mb-8 print:mb-2">
-              <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-2" style={tpl === 'template1' ? { color: accentColor } : {}}>Billed To</h3>
+            <div className="mb-12 print:mb-6 relative z-10">
+              <h3 className="text-xs font-bold text-muted uppercase tracking-widest mb-3" style={tpl === 'template1' ? { color: accentColor } : {}}>Billed To</h3>
               {invoice.settings?.show_client_name !== false && (
-                <div className="font-medium text-lg text-ink">{invoice.customer_details?.name}</div>
+                <div className="font-bold text-2xl text-ink tracking-tight mb-1">{invoice.customer_details?.name}</div>
               )}
               {invoice.settings?.show_client_company_name && typeof (invoice.customer_details as any)?.company_name === 'string' && (
-                <div className="text-muted">{(invoice.customer_details as any).company_name}</div>
+                <div className="text-ink font-medium mb-1">{(invoice.customer_details as any).company_name}</div>
               )}
-              {invoice.settings?.show_client_email && invoice.customer_details?.email && (
-                <div className="text-muted">{invoice.customer_details.email}</div>
-              )}
-              {invoice.settings?.show_client_phone && invoice.customer_details?.phone && (
-                <div className="text-muted">{invoice.customer_details.phone}</div>
-              )}
-              {invoice.settings?.show_client_address && invoice.customer_details?.custom_data?.address && (
-                <div className="text-muted mt-1 whitespace-pre-wrap">{invoice.customer_details.custom_data.address}</div>
-              )}
+              <div className="flex flex-col gap-0.5 mt-2">
+                {invoice.settings?.show_client_email && invoice.customer_details?.email && (
+                  <div className="text-muted text-sm">{invoice.customer_details.email}</div>
+                )}
+                {invoice.settings?.show_client_phone && invoice.customer_details?.phone && (
+                  <div className="text-muted text-sm">{invoice.customer_details.phone}</div>
+                )}
+                {invoice.settings?.show_client_address && invoice.customer_details?.custom_data?.address && (
+                  <div className="text-muted text-sm mt-1 whitespace-pre-wrap leading-relaxed">{invoice.customer_details.custom_data.address}</div>
+                )}
+              </div>
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-left mb-8 print:mb-2 print:min-w-full">
+              <table className="w-full text-left mb-10 print:mb-6 print:min-w-full relative z-10">
                 <thead>
-                  <tr className="border-b border-line bg-bone/30" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted" style={{ color: accentColor }}>Item</th>
+                  <tr className="border-b-2 border-line bg-bone/40">
+                    <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted">Item</th>
                     {invoice.settings?.show_hsn_sac_code && (
-                      <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>HSN/SAC</th>
+                      <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted text-right whitespace-nowrap">HSN/SAC</th>
                     )}
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>Qty</th>
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>Price</th>
-                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap pr-4 sm:pr-6" style={{ color: accentColor }}>Total</th>
+                    <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted text-right whitespace-nowrap">Qty</th>
+                    <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted text-right whitespace-nowrap">Price</th>
+                    <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted text-right whitespace-nowrap pr-4 sm:pr-6">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {invoice.items.map((item: InvoiceLineItem, i: number) => (
                     <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-bone/20'}>
-                      <td className="py-4 px-4">
-                        <div className="font-semibold text-ink">{item.name}</div>
-                        {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
+                      <td className="py-5 px-4">
+                        <div className="font-bold text-ink text-base tracking-tight">{item.name}</div>
+                        {item.description && <div className="text-sm text-muted mt-1.5 leading-relaxed">{item.description}</div>}
                       </td>
                       {invoice.settings?.show_hsn_sac_code && (
                         <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
@@ -448,13 +457,13 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
               </table>
             </div>
 
-              <div className="flex flex-col md:flex-row print:flex print:flex-row justify-between border-t border-line pt-8 gap-8 print:gap-4 print:pt-2">
+              <div className="flex flex-col md:flex-row print:flex print:flex-row justify-between border-t border-line/60 pt-10 gap-8 print:gap-6 print:pt-6 relative z-10">
               
               {/* Terms and Info Section */}
-              <div className="flex-1 print:w-[60%] space-y-6 print:space-y-4">
+              <div className="flex-1 print:w-[60%] space-y-8 print:space-y-6">
                 {invoice.settings?.invoice_terms && (
-                  <div className="print:break-inside-avoid mb-6">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2 border-b-2 pb-1" style={{ borderColor: accentColor }}>Terms & Conditions</h4>
+                  <div className="print:break-inside-avoid">
+                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted mb-3 border-b border-line/60 pb-2">Terms & Conditions</h4>
                     <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed">{invoice.settings.invoice_terms}</p>
                   </div>
                 )}
@@ -462,20 +471,20 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {/* Bank Details & QR Codes */}
                 {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information || (invoice.payment_methods && invoice.payment_methods.length > 0)) && (
                   <div className="print:break-inside-avoid">
-                    <h4 className="text-sm font-bold text-ink mb-3 border-b-2 pb-1" style={{ color: accentColor, borderColor: accentColor }}>Payment & Bank Details</h4>
+                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted mb-3 border-b border-line/60 pb-2">Payment Details</h4>
                     
                     {invoice.settings?.invoice_other_information && (
-                      <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-3">{invoice.settings.invoice_other_information}</p>
+                      <p className="text-sm text-muted whitespace-pre-wrap leading-relaxed mb-4">{invoice.settings.invoice_other_information}</p>
                     )}
                     
                     <div className="flex flex-col sm:flex-row gap-4 items-start">
                       {invoice.settings?.bank_name && (
-                        <div className="text-xs text-muted bg-bone/30 p-4 rounded-lg border border-line space-y-1.5 flex-1 w-full sm:w-auto">
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Bank Name:</span> <span className="break-words flex-1">{invoice.settings.bank_name}</span></div>
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Account Name:</span> <span className="break-words flex-1">{invoice.settings.bank_account_name}</span></div>
-                          <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Account No:</span> <span className="break-all flex-1">{invoice.settings.bank_account_number}</span></div>
+                        <div className="text-sm text-ink bg-bone/40 p-5 rounded-xl border border-line/60 space-y-2 flex-1 w-full sm:w-auto shadow-sm">
+                          <div className="flex gap-2 sm:gap-4"><span className="text-muted w-28 shrink-0">Bank Name:</span> <span className="font-semibold break-words flex-1">{invoice.settings.bank_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="text-muted w-28 shrink-0">Account Name:</span> <span className="font-semibold break-words flex-1">{invoice.settings.bank_account_name}</span></div>
+                          <div className="flex gap-2 sm:gap-4"><span className="text-muted w-28 shrink-0">Account No:</span> <span className="font-semibold break-all flex-1">{invoice.settings.bank_account_number}</span></div>
                           {invoice.settings.bank_routing_number && (
-                            <div className="flex gap-2 sm:gap-4"><span className="font-medium w-28 shrink-0">Routing/SWIFT:</span> <span className="break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
+                            <div className="flex gap-2 sm:gap-4"><span className="text-muted w-28 shrink-0">Routing/SWIFT:</span> <span className="font-semibold break-all flex-1">{invoice.settings.bank_routing_number}</span></div>
                           )}
                         </div>
                       )}
@@ -484,9 +493,9 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                       {invoice.payment_methods && invoice.payment_methods.length > 0 && invoice.payment_methods.some((m: any) => m.qr_code) && (
                         <div className="flex gap-3 flex-wrap">
                           {invoice.payment_methods.filter((m: any) => m.qr_code).map((method: any) => (
-                            <div key={method.id} className="flex flex-col items-center bg-bone/30 p-3 rounded-lg border border-line shadow-sm">
-                              <span className="text-[10px] font-bold text-ink uppercase tracking-wider mb-2">{method.title}</span>
-                              <img src={method.qr_code} alt={method.title} loading="eager" decoding="sync" className="w-20 h-20 min-w-[5rem] min-h-[5rem] object-contain bg-white block rounded border border-line p-1" />
+                            <div key={method.id} className="flex flex-col items-center bg-bone/40 p-4 rounded-xl border border-line/60 shadow-sm">
+                              <span className="text-[10px] font-bold text-muted uppercase tracking-wider mb-3">{method.title}</span>
+                              <img src={method.qr_code} alt={method.title} loading="eager" decoding="sync" className="w-24 h-24 object-contain bg-white block rounded-lg shadow-sm" />
                             </div>
                           ))}
                         </div>
@@ -496,37 +505,37 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 )}
 
                 {invoice.settings?.show_authorised_signatory && (
-                  <div className="pt-6 print:break-inside-avoid">
+                  <div className="pt-8 print:break-inside-avoid">
                     {invoice.settings?.authorised_signatory_signature ? (
-                      <img src={invoice.settings.authorised_signatory_signature} alt="Authorised Signatory" className="h-12 object-contain mb-2" />
+                      <img src={invoice.settings.authorised_signatory_signature} alt="Authorised Signatory" className="h-14 object-contain mb-3" />
                     ) : (
-                      <div className="h-12 border-b border-line w-32 mb-2"></div>
+                      <div className="h-14 border-b border-line/60 w-40 mb-3"></div>
                     )}
-                    <p className="text-sm font-semibold text-ink">Authorised Signatory</p>
+                    <p className="text-sm font-bold text-ink uppercase tracking-wider">Authorised Signatory</p>
                   </div>
                 )}
               </div>
 
-              <div className="w-full max-w-sm print:max-w-none print:w-[35%] shrink-0 space-y-3 print:break-inside-avoid print:mt-0">
-                <div className="flex justify-between text-muted">
+              <div className="w-full max-w-sm print:max-w-none print:w-[35%] shrink-0 space-y-4 print:break-inside-avoid print:mt-0 bg-bone/20 p-6 rounded-2xl">
+                <div className="flex justify-between text-muted text-sm font-medium">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(parseFloat(invoice.subtotal), invoice.currency || invoice.company?.currency)}</span>
+                  <span className="text-ink">{formatCurrency(parseFloat(invoice.subtotal), invoice.currency || invoice.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-muted">
+                <div className="flex justify-between text-muted text-sm font-medium">
                   <span>Tax</span>
-                  <span>{formatCurrency(parseFloat(invoice.tax_amount), invoice.currency || invoice.company?.currency)}</span>
+                  <span className="text-ink">{formatCurrency(parseFloat(invoice.tax_amount), invoice.currency || invoice.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-xl font-bold text-ink pt-3 border-t border-line">
+                <div className="flex justify-between text-lg font-bold text-ink pt-4 border-t border-line/60">
                   <span>Total</span>
                   <span>{formatCurrency(parseFloat(invoice.total), invoice.currency || invoice.company?.currency)}</span>
                 </div>
                 {parseFloat(invoice.amount_paid || "0") > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-medium pt-1">
+                  <div className="flex justify-between text-emerald-600 font-bold pt-2">
                     <span>Amount Paid</span>
                     <span>{formatCurrency(parseFloat(invoice.amount_paid || "0"), invoice.currency || invoice.company?.currency)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-xl font-bold text-ink pt-4 border-t-2 border-line"
+                <div className="flex justify-between text-2xl font-black text-ink pt-5 border-t border-line/60 mt-2"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
                   <span style={tpl === 'template3' ? { color: 'white' } : {}}>Amount Due</span>

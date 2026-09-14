@@ -19,6 +19,8 @@ urlpatterns = [
     path("team/<int:pk>/", views.TeamMemberUpdateView.as_view(), name="team_member_update"),
     path("team/<int:pk>/reset-password/", views.TeamMemberResetPasswordView.as_view(), name="team_member_reset_password"),
     path("invites/", views.InviteMemberView.as_view(), name="invite_member"),
+    path("invites/<int:pk>/", views.InviteUpdateView.as_view(), name="invite_update"),
+    path("invites/<int:pk>/resend/", views.InviteResendView.as_view(), name="invite_resend"),
     path("invites/accept/", views.AcceptInviteView.as_view(), name="accept_invite"),
 
     # Password reset (unauthenticated)

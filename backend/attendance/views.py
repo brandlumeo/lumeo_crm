@@ -764,6 +764,11 @@ class AttendanceMatrixView(APIView):
         company = request.user.company
         from calendar import monthrange
         from datetime import date, timedelta
+        import zoneinfo
+        
+        company_tz = zoneinfo.ZoneInfo(company.timezone)
+        today_local_date = timezone.now().astimezone(company_tz).date()
+        
         _, num_days = monthrange(year, month)
         
         from django.db.models import Prefetch
@@ -839,8 +844,8 @@ class AttendanceMatrixView(APIView):
                 # We iterate to find the first log matching the date (which is the newest due to order_by)
                 tl = None
                 for log in user.month_logs:
-                    log_date = timezone.localtime(log.clock_in).date() if timezone.is_aware(log.clock_in) else log.clock_in.date()
-                    if log_date == current_date or log.clock_in.date() == current_date:
+                    log_date = log.clock_in.astimezone(company_tz).date() if timezone.is_aware(log.clock_in) else log.clock_in.date()
+                    if log_date == current_date:
                         tl = log
                         break
                         
@@ -860,7 +865,7 @@ class AttendanceMatrixView(APIView):
                             status = "present"
                             
                 # 4. If date is in the future, don't mark as absent
-                if current_date > timezone.localtime(timezone.now()).date() and status == "absent":
+                if current_date > today_local_date and status == "absent":
                     status = "future"
                     
                 user_days[str(day)] = status

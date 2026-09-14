@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import models
 from django.db.models import Sum, Count, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncMonth
-from crm.models import Deal, Lead, Customer, Task, Note, Product
+from crm.models import Deal, Lead, Customer, Task, Note, Product, DailyRevenue
 
 class CrmCountsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -163,6 +163,15 @@ class PremiumAnalyticsView(APIView):
             
         revenue_forecast = sorted(list(forecast_dict.values()), key=lambda x: x["month"])
 
+        daily_revenue_qs = DailyRevenue.objects.filter(company=company).order_by('date')
+        daily_revenue = [
+            {
+                "date": entry.date.strftime('%Y-%m-%d'),
+                "revenue": float(entry.total_revenue)
+            }
+            for entry in daily_revenue_qs
+        ]
+
         response_data = {
             "expected_pipeline_value": expected_value,
             "funnel": funnel_data,
@@ -175,7 +184,8 @@ class PremiumAnalyticsView(APIView):
             "sales_velocity_days": round(avg_velocity_days, 1),
             "revenue_by_month": revenue_by_month,
             "lead_conversion": lead_conversion,
-            "revenue_forecast": revenue_forecast
+            "revenue_forecast": revenue_forecast,
+            "daily_revenue": daily_revenue
         }
         
         # Save to cache for 15 minutes (900 seconds)

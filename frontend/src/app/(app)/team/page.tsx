@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users2, Mail, Plus, X, Loader2, Check, Key, Copy, AlertTriangle } from "lucide-react";
+import { Users2, Mail, Plus, X, Loader2, Check, Key, Copy, AlertTriangle, Edit2 } from "lucide-react";
 
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
 import { fetchTeam, inviteTeamMember, removeTeamMember, resetTeamMemberPassword, api } from "@/lib/api";
@@ -46,6 +46,8 @@ export default function TeamPage() {
   const [inviteEmployeeId, setInviteEmployeeId] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteRole, setInviteRole] = useState("employee");
+
+  const [editMemberData, setEditMemberData] = useState<any>(null);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -139,6 +141,30 @@ export default function TeamPage() {
     onError: (err: any) => {
       toast.error(err.response?.data?.detail || "Failed to update user.");
     },
+  });
+
+  const updateInviteMutation = useMutation({
+    mutationFn: (vars: { id: number; role?: string; first_name?: string; last_name?: string; designation?: string; department?: string; employee_id?: string; }) =>
+      api.patch(`/accounts/invites/${vars.id}/`, vars).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      toast.success("Team member updated.");
+      setEditMemberData(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.detail || "Failed to update member.");
+    },
+  });
+
+  const resendInviteMutation = useMutation({
+    mutationFn: (id: number) => api.post(`/accounts/invites/${id}/resend/`).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      toast.success("Invite resent successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || "Failed to resend invite.");
+    }
   });
 
   const isOwnerOrAdmin = currentUser?.role === "owner" || currentUser?.role === "admin";
@@ -251,6 +277,29 @@ export default function TeamPage() {
                           getRoleBadge(company?.roles?.find((r: any) => r.id === user.role)?.name || user.role)
                         )}
                         
+                        {/* Edit Member Button */}
+                        {isOwnerOrAdmin && !isOwner && (
+                          <button
+                            onClick={() => {
+                              setEditMemberData({
+                                id: user.id,
+                                isInvite: false,
+                                email: user.email || user.username,
+                                first_name: user.first_name || "",
+                                last_name: user.last_name || "",
+                                designation: user.designation || "",
+                                department: user.department || "",
+                                employee_id: user.employee_id || "",
+                                role: user.role
+                              });
+                            }}
+                            className="w-7 h-7 flex items-center justify-center rounded-full text-muted/50 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all"
+                            title="Edit details"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {/* Reset Password Button */}
                         {isOwnerOrAdmin && !isOwner && (
                           <button
@@ -265,7 +314,7 @@ export default function TeamPage() {
                                 onConfirm: () => resetPasswordMutation.mutate(user.id),
                               });
                             }}
-                            className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-amber-500 transition-colors"
+                            className="w-7 h-7 flex items-center justify-center rounded-full text-muted/50 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-all"
                             title="Reset password"
                           >
                             {resetPasswordMutation.isPending && resetPasswordMutation.variables === user.id ? (
@@ -290,7 +339,7 @@ export default function TeamPage() {
                                 onConfirm: () => removeMutation.mutate(user.id),
                               });
                             }}
-                            className="ml-2 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-slate-500 transition-colors"
+                            className="ml-2 w-7 h-7 flex items-center justify-center rounded-full text-muted/50 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
                             title="Remove member"
                           >
                             {removeMutation.isPending && removeMutation.variables === user.id ? (
@@ -341,12 +390,12 @@ export default function TeamPage() {
                               <span className="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded-full font-medium">Expired</span>
                               <button 
                                 onClick={() => {
-                                  // Resend logic
-                                  toast.success("Feature coming soon");
+                                  resendInviteMutation.mutate(invite.id);
                                 }}
-                                className="text-blue-600 font-medium hover:underline"
+                                disabled={resendInviteMutation.isPending}
+                                className="text-blue-600 font-medium hover:underline disabled:opacity-50"
                               >
-                                Resend
+                                {resendInviteMutation.isPending && resendInviteMutation.variables === invite.id ? "Resending..." : "Resend"}
                               </button>
                             </>
                           ) : invite.expires_at ? (
@@ -358,6 +407,27 @@ export default function TeamPage() {
                         
                         <div className="flex items-center gap-3">
                           {getRoleBadge(company?.roles?.find((r: any) => r.id === invite.role)?.name || invite.role)}
+                          {isOwnerOrAdmin && (
+                            <button
+                              onClick={() => {
+                                setEditMemberData({
+                                  id: invite.id,
+                                  isInvite: true,
+                                  email: invite.email,
+                                  first_name: invite.first_name || "",
+                                  last_name: invite.last_name || "",
+                                  designation: invite.designation || "",
+                                  department: invite.department || "",
+                                  employee_id: invite.employee_id || "",
+                                  role: invite.role
+                                });
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-full text-muted/50 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all"
+                              title="Edit invite details"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -558,6 +628,170 @@ export default function TeamPage() {
           </div>
         </div>
       )}
+
+      {/* Edit Member Modal */}
+      {editMemberData && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setEditMemberData(null)} />
+          <div className="relative w-full max-w-lg bg-paper border border-line rounded-2xl shadow-2xl shadow-ink/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
+              <h3 className="text-base font-medium text-ink">Edit Member Details</h3>
+              <button
+                onClick={() => setEditMemberData(null)}
+                className="text-muted hover:text-ink transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const payload = {
+                  id: editMemberData.id,
+                  first_name: editMemberData.first_name,
+                  last_name: editMemberData.last_name,
+                  designation: editMemberData.designation,
+                  department: editMemberData.department,
+                  employee_id: editMemberData.employee_id,
+                  role: editMemberData.role,
+                };
+                if (editMemberData.isInvite) {
+                  updateInviteMutation.mutate(payload);
+                } else {
+                  updateMutation.mutate(payload as any, {
+                    onSuccess: () => {
+                      queryClient.invalidateQueries({ queryKey: ["team"] });
+                      toast.success("Team member updated.");
+                      setEditMemberData(null);
+                    }
+                  });
+                }
+              }}
+              className="p-5 flex-1 overflow-y-auto custom-scrollbar min-h-0"
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-1.5">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    disabled
+                    value={editMemberData.email}
+                    className="w-full bg-bone-1 border border-line rounded-md px-3 py-2 text-[13px] outline-none text-muted cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editMemberData.first_name}
+                      onChange={(e) => setEditMemberData({...editMemberData, first_name: e.target.value})}
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editMemberData.last_name}
+                      onChange={(e) => setEditMemberData({...editMemberData, last_name: e.target.value})}
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Designation / Title
+                    </label>
+                    <input
+                      type="text"
+                      value={editMemberData.designation}
+                      onChange={(e) => setEditMemberData({...editMemberData, designation: e.target.value})}
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Department
+                    </label>
+                    <input
+                      type="text"
+                      value={editMemberData.department}
+                      onChange={(e) => setEditMemberData({...editMemberData, department: e.target.value})}
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Employee ID
+                    </label>
+                    <input
+                      type="text"
+                      value={editMemberData.employee_id}
+                      onChange={(e) => setEditMemberData({...editMemberData, employee_id: e.target.value})}
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-1.5">
+                      Role
+                    </label>
+                    <select
+                      value={editMemberData.role}
+                      onChange={(e) => setEditMemberData({...editMemberData, role: e.target.value})}
+                      className="w-full bg-bone border border-line rounded-md px-3 py-2 text-[13px] outline-none focus:border-ink transition-colors"
+                    >
+                      {company?.roles?.map((role: any) => {
+                        if (role.id === "client" || role.name.toLowerCase() === "client") return null;
+                        if (!isOwnerOrAdmin && role.id === "manager") return null;
+                        return (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-8 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditMemberData(null)}
+                  className="px-4 py-2 text-sm text-muted hover:text-ink transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateInviteMutation.isPending || updateMutation.isPending}
+                  className="flex items-center gap-2 bg-ink text-paper px-4 py-2 rounded-md text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
+                >
+                  {(updateInviteMutation.isPending || updateMutation.isPending) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* New Password Modal */}
       {resetPasswordResult && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">

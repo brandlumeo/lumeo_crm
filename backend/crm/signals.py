@@ -4,10 +4,10 @@ import hashlib
 import json
 import requests
 import threading
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
-from .models import Lead, Deal, Task, WorkflowRule, WebhookSubscription, WebhookDeliveryLog
+from .models import Lead, Deal, Task, WorkflowRule, WebhookSubscription, WebhookDeliveryLog, Invoice, DailyRevenue
 from notifications.models import Notification
 from accounts.models import User
 from .workflows import (

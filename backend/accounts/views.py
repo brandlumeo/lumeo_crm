@@ -494,6 +494,21 @@ class TeamMemberUpdateView(APIView):
         if "role" in request.data:
             member.role = request.data["role"]
 
+        if "first_name" in request.data:
+            member.first_name = request.data["first_name"]
+            
+        if "last_name" in request.data:
+            member.last_name = request.data["last_name"]
+            
+        if "designation" in request.data:
+            member.designation = request.data["designation"]
+            
+        if "department" in request.data:
+            member.department = request.data["department"]
+            
+        if "employee_id" in request.data:
+            member.employee_id = request.data["employee_id"]
+
         member.save()
 
         return Response(UserSerializer(member).data)
@@ -836,3 +851,78 @@ class ContactSupportView(APIView):
             logger.exception("Contact support email dispatch failed: %s", exc)
 
         return Response({"detail": "Support message sent successfully."}, status=status.HTTP_200_OK)
+
+class InviteUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        if not request.user.has_management_access:
+            return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            invite = TeamInvitation.objects.get(pk=pk, company=request.user.company)
+        except TeamInvitation.DoesNotExist:
+            return Response({"detail": "Invite not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if "role" in request.data:
+            invite.role = request.data["role"]
+            
+        if "first_name" in request.data:
+            invite.first_name = request.data["first_name"]
+            
+        if "last_name" in request.data:
+            invite.last_name = request.data["last_name"]
+            
+        if "designation" in request.data:
+            invite.designation = request.data["designation"]
+            
+        if "department" in request.data:
+            invite.department = request.data["department"]
+            
+        if "employee_id" in request.data:
+            invite.employee_id = request.data["employee_id"]
+
+        invite.save()
+
+        return Response({"detail": "Invite updated successfully."})
+
+class InviteResendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.has_management_access:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            invite = TeamInvitation.objects.get(pk=pk, company=request.user.company)
+        except TeamInvitation.DoesNotExist:
+            return Response({"error": "Invite not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if invite.is_accepted:
+            return Response({"error": "Invite is already accepted."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Renew the token and expiration
+        import uuid
+        from datetime import timedelta
+        from django.utils import timezone
+        invite.token = uuid.uuid4()
+        invite.expires_at = timezone.now() + timedelta(days=7)
+        invite.save()
+
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        invite_url = f"{frontend_url}/accept-invite?token={invite.token}"
+
+        from .tasks import send_invite_email
+        inviter_name = request.user.get_full_name() or request.user.username
+        company_name = request.user.company.name if request.user.company else "Lumeo CRM"
+        recipient_name = f"{invite.first_name or ''} {invite.last_name or ''}".strip()
+        
+        try:
+            send_invite_email.delay(
+                invite.email, inviter_name, company_name, invite_url, 
+                recipient_name, invite.designation, invite.department, invite.personal_message
+            )
+        except Exception:
+            pass
+
+        return Response({"detail": "Invite resent successfully."}, status=status.HTTP_200_OK)

@@ -20,6 +20,7 @@ export function WorkspaceForm() {
   const [domain, setDomain] = useState(company?.domain ?? "");
   const [companyEmail, setCompanyEmail] = useState(company?.company_email ?? "");
   const [companyWebsite, setCompanyWebsite] = useState(company?.company_website ?? "");
+  const [timezone, setTimezone] = useState(company?.timezone ?? "UTC");
 
   useEffect(() => {
     if (company) {
@@ -28,6 +29,7 @@ export function WorkspaceForm() {
       setDomain(company.domain ?? "");
       setCompanyEmail(company.company_email ?? "");
       setCompanyWebsite(company.company_website ?? "");
+      setTimezone(company.timezone ?? "UTC");
     }
   }, [company]);
 
@@ -77,7 +79,7 @@ export function WorkspaceForm() {
               if (formattedWebsite && !formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
                 formattedWebsite = 'https://' + formattedWebsite;
               }
-              mutation.mutate({ name, currency, domain: domain || null, company_email: companyEmail || null, company_website: formattedWebsite });
+              mutation.mutate({ name, currency, domain: domain || null, company_email: companyEmail || null, company_website: formattedWebsite, timezone });
             }}
             disabled={mutation.isPending}
             className="btn btn-primary h-11 px-6 rounded-xl text-[14px] bg-ink text-paper border-ink hover:bg-ink/90 shadow-sm flex items-center gap-2 shrink-0"
@@ -227,6 +229,34 @@ export function WorkspaceForm() {
                   placeholder="crm.yourcompany.com"
                   className={cn("input w-full h-11 font-mono text-[13.5px] bg-bone/30 focus:bg-paper", !isAdmin && "opacity-70 cursor-not-allowed")}
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[13.5px] font-medium text-ink flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-muted" /> Timezone
+                </label>
+                <div className="relative">
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    disabled={!isAdmin}
+                    className={cn("input w-full h-11 appearance-none bg-bone/30 focus:bg-paper cursor-pointer pr-10", !isAdmin && "opacity-70 cursor-not-allowed")}
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="Asia/Kolkata">India Standard Time (IST)</option>
+                    <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
+                    <option value="America/New_York">Eastern Time (ET)</option>
+                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                    <option value="Europe/London">London (GMT/BST)</option>
+                    <option value="Europe/Paris">Central European Time (CET)</option>
+                    <option value="Australia/Sydney">Sydney (AEST)</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

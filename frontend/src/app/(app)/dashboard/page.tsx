@@ -23,7 +23,8 @@ import {
   useCustomerPage, 
   useDealPage, 
   useTaskPage, 
-  useNotePage 
+  useNotePage,
+  usePremiumAnalytics
 } from "@/lib/queries";
 import { formatCompactINR, formatLongDate, getDisplayName, toNumber } from "@/lib/utils";
 
@@ -225,8 +226,9 @@ function DashboardPipeline() {
 
 function DashboardCharts() {
   const { data: dealsRes, isPending } = useDealPage({ limit: 100 });
+  const { data: analyticsRes, isPending: analyticsPending } = usePremiumAnalytics();
 
-  if (isPending) {
+  if (isPending || analyticsPending) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 mb-6">
         <div className="h-[300px] bg-card/30 rounded-xl animate-pulse border border-border/50 flex items-center justify-center">
@@ -240,12 +242,13 @@ function DashboardCharts() {
   }
 
   const deals = dealsRes?.results || [];
-  const wonDeals = deals.filter((deal: any) => deal.stage === "won");
   const openDeals = deals.filter((deal: any) => deal.stage !== "won" && deal.stage !== "lost");
-  const revenueValue = wonDeals.reduce((sum: number, deal: any) => sum + toNumber(deal.amount), 0);
   const pipelineValue = openDeals.reduce((sum: number, deal: any) => sum + toNumber(deal.amount), 0);
 
-  const revenueSeries = buildWeeklySeries(wonDeals.map((deal: any) => toNumber(deal.amount)));
+  const dailyRevenues = analyticsRes?.daily_revenue || [];
+  const revenueValue = dailyRevenues.reduce((sum: number, entry: any) => sum + entry.revenue, 0);
+  const revenueSeries = buildWeeklySeries(dailyRevenues.map((entry: any) => entry.revenue));
+  
   const revenueForecast = revenueSeries.map((value, index) => value + index * 3500);
   const targetTotal = Math.max(pipelineValue, revenueValue) * 1.15 || 50000;
 
