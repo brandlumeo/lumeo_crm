@@ -1140,6 +1140,32 @@ export interface Bill {
   updated_at: string;
 }
 
+export interface DailyReport {
+  id: string;
+  user: number;
+  user_email: string;
+  user_full_name: string;
+  user_avatar?: string;
+  company: string;
+  date: string;
+  content: string;
+  automated_stats?: Record<string, any>;
+  sentiment?: string;
+  blockers?: string;
+  next_day_plan?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyReportInput {
+  date?: string;
+  content: string;
+  automated_stats?: Record<string, any>;
+  sentiment?: string;
+  blockers?: string;
+  next_day_plan?: string;
+}
+
 export interface BillInput {
   vendor: number;
   purchase_order?: number | null;

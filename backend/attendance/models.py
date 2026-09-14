@@ -325,3 +325,34 @@ class Holiday(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.date}"
+
+
+class DailyReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="daily_reports",
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="daily_reports",
+    )
+    date = models.DateField(db_index=True)
+    content = models.TextField(help_text="The manual daily report written by the employee.", blank=True)
+    automated_stats = models.JSONField(blank=True, null=True, help_text="Stats captured at the time of submission")
+    sentiment = models.CharField(max_length=50, blank=True, null=True)
+    blockers = models.TextField(blank=True, null=True)
+    next_day_plan = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-date", "-created_at")
+        unique_together = ("user", "date")
+
+    def __str__(self):
+        user_id = self.user.email or self.user.username
+        return f"Report for {user_id} on {self.date}"
+

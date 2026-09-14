@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday
-from .serializers import TimeLogSerializer, BreakLogSerializer, LeaveRequestSerializer, ExpenseClaimSerializer, OfficeAssetSerializer
+from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday, DailyReport
+from .serializers import TimeLogSerializer, BreakLogSerializer, LeaveRequestSerializer, ExpenseClaimSerializer, OfficeAssetSerializer, DailyReportSerializer
 
 
 def _get_client_ip(request):
@@ -920,3 +920,68 @@ class AttendanceMatrixView(APIView):
             "days_in_month": num_days,
             "matrix": matrix
         })
+
+
+class DailyReportListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        reports = DailyReport.objects.filter(company=company).select_related("user").order_by("-date", "-created_at")
+        
+        # If not admin/owner/manager, only show own reports
+        if not request.user.is_superuser and request.user.role not in ["admin", "owner", "manager"] and not request.user.has_management_access:
+            reports = reports.filter(user=request.user)
+            
+        serializer = DailyReportSerializer(reports, many=True)
+        return Response(serializer.data)
+        
+    def post(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+        local_date = timezone.now().astimezone(tz).date()
+        
+        date_str = request.data.get("date", local_date.isoformat())
+        
+        # Check if already submitted for this date
+        if DailyReport.objects.filter(user=request.user, date=date_str).exists():
+            return Response({"detail": "Report already submitted for this date"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Optional: Auto-calculate stats here based on tasks/deals modified today by user
+        automated_stats = request.data.get("automated_stats", {})
+        
+        data = request.data.copy()
+        data["date"] = date_str
+        
+        serializer = DailyReportSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, company=company, automated_stats=automated_stats)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DailyReportTodayView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+        local_date = timezone.now().astimezone(tz).date()
+        
+        report = DailyReport.objects.filter(user=request.user, date=local_date).first()
+        if report:
+            serializer = DailyReportSerializer(report)
+            return Response(serializer.data)
+        return Response({"detail": "No report submitted today", "date": local_date.isoformat()}, status=status.HTTP_404_NOT_FOUND)
+

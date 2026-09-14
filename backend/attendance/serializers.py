@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday
+from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday, DailyReport
 
 
 class BreakLogSerializer(serializers.ModelSerializer):
@@ -184,3 +184,30 @@ class HolidaySerializer(serializers.ModelSerializer):
         model = Holiday
         fields = ("id", "company", "name", "date", "description")
         read_only_fields = ("id", "company")
+
+
+class DailyReportSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_full_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    user_avatar = serializers.CharField(source="user.avatar", read_only=True)
+
+    class Meta:
+        model = DailyReport
+        fields = (
+            "id",
+            "user",
+            "user_email",
+            "user_full_name",
+            "user_avatar",
+            "company",
+            "date",
+            "content",
+            "automated_stats",
+            "sentiment",
+            "blockers",
+            "next_day_plan",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "user", "company", "created_at", "updated_at")
+
