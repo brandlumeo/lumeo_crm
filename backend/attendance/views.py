@@ -848,20 +848,39 @@ class AttendanceMatrixView(APIView):
                     if log_date == current_date:
                         tl = log
                         break
-                        
                 if tl:
-                    if tl.shift_status == TimeLog.ShiftStatus.LATE:
-                        status = "late"
+                    # Dynamically calculate if late based on current company settings
+                    tl_local = tl.clock_in.astimezone(company_tz) if timezone.is_aware(tl.clock_in) else tl.clock_in
+                    
+                    if company.office_start_time:
+                        shift_start = datetime.datetime.combine(tl_local.date(), company.office_start_time)
+                        if timezone.is_naive(shift_start):
+                            shift_start = timezone.make_aware(shift_start, company_tz)
+                        cutoff_time = shift_start + timedelta(minutes=company.late_mark_after_minutes or 0)
+                        
+                        if tl.clock_in > cutoff_time:
+                            status = "late"
+                        else:
+                            # Not late, check for half day
+                            if tl.clock_out:
+                                duration = (tl.clock_out - tl.clock_in).total_seconds() / 3600
+                                if duration < 4:
+                                    status = "half_day"
+                                else:
+                                    status = "present"
+                            else:
+                                status = "present"
                     else:
-                        # Simple logic for half day: if worked less than 4 hours
-                        if tl.clock_out:
+                        # Fallback if no office_start_time is set
+                        if tl.shift_status == "late":
+                            status = "late"
+                        elif tl.clock_out:
                             duration = (tl.clock_out - tl.clock_in).total_seconds() / 3600
                             if duration < 4:
                                 status = "half_day"
                             else:
                                 status = "present"
                         else:
-                            # Still clocked in
                             status = "present"
                             
                 # 4. If date is in the future, don't mark as absent
