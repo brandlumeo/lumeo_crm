@@ -1004,3 +1004,53 @@ class DailyReportTodayView(APIView):
             return Response(serializer.data)
         return Response({"detail": "No report submitted today", "date": local_date.isoformat()}, status=status.HTTP_404_NOT_FOUND)
 
+
+class DailyReportDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, request, pk):
+        company = request.user.company
+        if not company:
+            return None
+        try:
+            return DailyReport.objects.get(id=pk, company=company)
+        except DailyReport.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        report = self.get_object(request, pk)
+        if not report:
+            return Response({"detail": "Daily report not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = DailyReportSerializer(report)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        report = self.get_object(request, pk)
+        if not report:
+            return Response({"detail": "Daily report not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Enforce that only the author who submitted the report can edit it
+        if report.user != request.user:
+            return Response({"detail": "You can only edit your own daily reports."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = DailyReportSerializer(report, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        return self.patch(request, pk)
+
+    def delete(self, request, pk):
+        report = self.get_object(request, pk)
+        if not report:
+            return Response({"detail": "Daily report not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Enforce that only the author who submitted the report can delete it
+        if report.user != request.user:
+            return Response({"detail": "You can only delete your own daily reports."}, status=status.HTTP_403_FORBIDDEN)
+
+        report.delete()
+        return Response({"detail": "Daily report deleted successfully."}, status=status.HTTP_200_OK)
+
