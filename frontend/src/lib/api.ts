@@ -864,6 +864,21 @@ export async function downloadInvoicePdf(id: number, invoiceNumber: string) {
   link.remove();
 }
 
+export async function downloadReceiptPdf(id: number, paymentId: number, receiptNumber: string) {
+  const timestamp = new Date().getTime();
+  const response = await api.get(`${endpoints.invoices}${id}/receipt_pdf/?payment_id=${paymentId}&t=${timestamp}`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `Receipt_${receiptNumber}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 export async function fetchCustomFields(params?: ListParams) {
   return listPage<CustomFieldDefinition>(endpoints.customFields, params);
 }

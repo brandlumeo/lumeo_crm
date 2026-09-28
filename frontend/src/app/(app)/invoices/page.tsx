@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useCustomerPage, useDealPage, useCurrentCompany, useAddInvoicePayment, useUnits } from "@/lib/queries";
-import { downloadInvoicePdf } from "@/lib/api";
+import { downloadInvoicePdf, downloadReceiptPdf } from "@/lib/api";
 import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Edit2, Receipt } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
@@ -553,7 +553,7 @@ export default function InvoicesPage() {
                             {formatCurrency(parseFloat(payment.amount), selectedInvoice.currency || company?.currency)}
                           </div>
                           <button
-                            onClick={() => window.open(`/api/v1/crm/invoices/${selectedInvoice.id}/receipt_pdf/?payment_id=${payment.id}`, '_blank')}
+                            onClick={() => downloadReceiptPdf(selectedInvoice.id, payment.id, payment.receipt_number || "Receipt")}
                             className="p-1.5 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line bg-paper"
                             title="Download Receipt"
                           >
