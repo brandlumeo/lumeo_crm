@@ -63,7 +63,7 @@ def generate_receipt_pdf_response(payment):
     
     # Payment Details
     details_data = [
-        ["Payment Method:", payment.payment_method],
+        ["Payment Method:", "Cheque" if payment.payment_method == "Check" else payment.payment_method],
         ["Transaction ID:", payment.transaction_id or "-"],
         ["Amount Received:", f"{payment.amount} {invoice.currency or comp.currency or ''}"],
         ["Notes:", payment.notes or "-"],

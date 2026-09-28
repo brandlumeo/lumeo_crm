@@ -1451,6 +1451,9 @@ class InvoiceViewSet(CompanyScopedModelViewSet):
         if not amount or not payment_method:
             return Response({"error": "amount and payment_method are required"}, status=400)
             
+        if payment_method == "Check":
+            payment_method = "Cheque"
+            
         import uuid
         receipt_number = f"REC-{uuid.uuid4().hex[:6].upper()}"
         

@@ -871,6 +871,12 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "receipt_number")
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get("payment_method") == "Check":
+            data["payment_method"] = "Cheque"
+        return data
+
 
 from companies.serializers import PublicInvoiceSettingsSerializer
 

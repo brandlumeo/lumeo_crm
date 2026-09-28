@@ -543,7 +543,9 @@ export default function InvoicesPage() {
                     {selectedInvoice.payments.map((payment: any) => (
                       <div key={payment.id} className="flex justify-between items-center p-3 bg-bone border border-line rounded-lg">
                         <div>
-                          <div className="text-sm font-medium text-ink">{payment.payment_method}</div>
+                          <div className="text-sm font-medium text-ink">
+                            {payment.payment_method === "Check" ? "Cheque" : payment.payment_method}
+                          </div>
                           <div className="text-xs text-muted mt-0.5">{payment.payment_date} • {payment.receipt_number}</div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -592,7 +594,7 @@ export default function InvoicesPage() {
                           <option value="Bank Transfer">Bank Transfer</option>
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
-                          <option value="Check">Check</option>
+                          <option value="Cheque">Cheque</option>
                           <option value="Other">Other</option>
                         </select>
                       </div>

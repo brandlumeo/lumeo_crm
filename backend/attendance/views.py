@@ -969,10 +969,6 @@ class DailyReportListCreateView(APIView):
         
         date_str = request.data.get("date", local_date.isoformat())
         
-        # Check if already submitted for this date
-        if DailyReport.objects.filter(user=request.user, date=date_str).exists():
-            return Response({"detail": "Report already submitted for this date"}, status=status.HTTP_400_BAD_REQUEST)
-            
         # Optional: Auto-calculate stats here based on tasks/deals modified today by user
         automated_stats = request.data.get("automated_stats", {})
         
@@ -998,11 +994,14 @@ class DailyReportTodayView(APIView):
         tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
         local_date = timezone.now().astimezone(tz).date()
         
-        report = DailyReport.objects.filter(user=request.user, date=local_date).first()
+        reports = DailyReport.objects.filter(user=request.user, date=local_date)
+        report = reports.first()
         if report:
             serializer = DailyReportSerializer(report)
-            return Response(serializer.data)
-        return Response({"detail": "No report submitted today", "date": local_date.isoformat()}, status=status.HTTP_404_NOT_FOUND)
+            data = serializer.data
+            data["today_count"] = reports.count()
+            return Response(data)
+        return Response({"detail": "No report submitted today", "date": local_date.isoformat(), "today_count": 0}, status=status.HTTP_404_NOT_FOUND)
 
 
 class DailyReportDetailView(APIView):

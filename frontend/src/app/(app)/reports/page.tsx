@@ -194,14 +194,9 @@ export default function DailyReportsPage() {
           <Dialog.Trigger asChild>
             <button 
               className="btn btn-primary h-10 shadow-sm"
-              disabled={!!todayReport}
             >
-              {todayReport ? "Submitted for Today" : (
-                <>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Submit Wrap-Up
-                </>
-              )}
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Submit Wrap-Up
             </button>
           </Dialog.Trigger>
           <Dialog.Portal>
@@ -321,6 +316,11 @@ export default function DailyReportsPage() {
                         <p className="text-xs text-muted flex items-center mt-0.5">
                           <CalendarIcon className="mr-1 h-3 w-3 shrink-0" />
                           {format(new Date(report.date), "EEEE, MMMM do, yyyy")}
+                          {report.created_at && (
+                            <span className="ml-1.5 opacity-80">
+                              • {format(new Date(report.created_at), "h:mm a")}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

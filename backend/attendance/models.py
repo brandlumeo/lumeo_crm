@@ -350,7 +350,6 @@ class DailyReport(models.Model):
 
     class Meta:
         ordering = ("-date", "-created_at")
-        unique_together = ("user", "date")
 
     def __str__(self):
         user_id = self.user.email or self.user.username
