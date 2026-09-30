@@ -14,7 +14,10 @@ class AttendanceAPITests(APITestCase):
     def setUp(self):
         # 1. Set up standard testing company
         self.company = Company.objects.create(
-            name="Test Workspace", slug="test-workspace", status="active"
+            name="Test Workspace",
+            slug="test-workspace",
+            status="active",
+            allow_clock_in_outside_shift=True,
         )
 
         # 2. Set up testing user
@@ -89,6 +92,16 @@ class AttendanceAPITests(APITestCase):
         response = self.client.post(self.punch_in_url, data={"work_location": "wfh"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "You are already clocked in.")
+
+    def test_punch_in_blocked_before_shift_start(self):
+        """Verify that clocking in before shift start time is blocked when allow_clock_in_outside_shift is False."""
+        self.company.allow_clock_in_outside_shift = False
+        self.company.office_start_time = "23:59:00"  # Shift starts late tonight
+        self.company.save()
+
+        response = self.client.post(self.punch_in_url, data={"work_location": "office"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Clock-in is not permitted before", response.data["detail"])
 
     def test_punch_out_offline_guard(self):
         """Verify punching out without active shift is blocked."""

@@ -839,6 +839,10 @@ export interface AttendanceStatus {
   is_on_break: boolean;
   active_log: TimeLog | null;
   active_break: BreakLog | null;
+  is_before_shift?: boolean;
+  office_start_time?: string | null;
+  office_end_time?: string | null;
+  allow_clock_in_outside_shift?: boolean;
 }
 
 export interface LeaveRequest {

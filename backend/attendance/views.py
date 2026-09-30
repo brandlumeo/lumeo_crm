@@ -40,6 +40,22 @@ def _auto_close_stale_shifts():
         pass
 
 
+def _parse_time(t):
+    if not t:
+        return None
+    if isinstance(t, datetime.time):
+        return t
+    if isinstance(t, str):
+        try:
+            return datetime.time.fromisoformat(t)
+        except Exception:
+            try:
+                return datetime.datetime.strptime(t, "%H:%M:%S").time()
+            except Exception:
+                return None
+    return None
+
+
 class CurrentStatusView(APIView):
     """
     GET /api/v1/attendance/status/
@@ -54,6 +70,27 @@ class CurrentStatusView(APIView):
             user=request.user, clock_out__isnull=True
         ).first()
 
+        company = request.user.company
+        is_before_shift = False
+        office_start_str = None
+        office_end_str = None
+
+        if company:
+            import zoneinfo
+            company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+            local_time = timezone.now().astimezone(company_tz)
+            start_t = _parse_time(company.office_start_time)
+            end_t = _parse_time(company.office_end_time)
+
+            if start_t:
+                office_start_str = start_t.strftime("%H:%M:%S")
+                shift_start = datetime.datetime.combine(local_time.date(), start_t)
+                shift_start = timezone.make_aware(shift_start, company_tz)
+                if not company.allow_clock_in_outside_shift and local_time < shift_start:
+                    is_before_shift = True
+            if end_t:
+                office_end_str = end_t.strftime("%H:%M:%S")
+
         if not active_log:
             return Response(
                 {
@@ -61,6 +98,10 @@ class CurrentStatusView(APIView):
                     "is_on_break": False,
                     "active_log": None,
                     "active_break": None,
+                    "is_before_shift": is_before_shift,
+                    "office_start_time": office_start_str,
+                    "office_end_time": office_end_str,
+                    "allow_clock_in_outside_shift": company.allow_clock_in_outside_shift if company else False,
                 }
             )
 
@@ -76,6 +117,10 @@ class CurrentStatusView(APIView):
                 "active_break": (
                     BreakLogSerializer(active_break).data if active_break else None
                 ),
+                "is_before_shift": is_before_shift,
+                "office_start_time": office_start_str,
+                "office_end_time": office_end_str,
+                "allow_clock_in_outside_shift": company.allow_clock_in_outside_shift if company else False,
             }
         )
 
@@ -97,6 +142,7 @@ def debug_athira_logs(request):
             'logs': list(user_logs)
         })
     return Response({'debug_data': logs})
+
 
 class PunchInView(APIView):
     """
@@ -133,20 +179,32 @@ class PunchInView(APIView):
 
         # 3. Determine Shift Status dynamically based on Company settings
         import zoneinfo
-        company_tz = zoneinfo.ZoneInfo(request.user.company.timezone)
-        local_time = timezone.now().astimezone(company_tz)
         company = request.user.company
+        company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+        local_time = timezone.now().astimezone(company_tz)
         
         # Combine today's date in company timezone with the shift start time
-        shift_start = datetime.datetime.combine(local_time.date(), company.office_start_time)
-        shift_start = timezone.make_aware(shift_start, company_tz)
-        
-        # Add grace period
-        cutoff_time = shift_start + datetime.timedelta(minutes=company.late_mark_after_minutes)
-        
-        shift_status = TimeLog.ShiftStatus.ON_TIME
-        if timezone.now() > cutoff_time:
-            shift_status = TimeLog.ShiftStatus.LATE
+        start_t = _parse_time(company.office_start_time) if company else None
+        if start_t:
+            shift_start = datetime.datetime.combine(local_time.date(), start_t)
+            shift_start = timezone.make_aware(shift_start, company_tz)
+            
+            # Enforce shift start time restriction: block clock-in before shift start
+            if not company.allow_clock_in_outside_shift and local_time < shift_start:
+                start_formatted = start_t.strftime("%I:%M %p").lstrip("0")
+                return Response(
+                    {"detail": f"Clock-in is not permitted before {start_formatted}. Shift starts at {start_formatted}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Add grace period
+            cutoff_time = shift_start + datetime.timedelta(minutes=company.late_mark_after_minutes or 0)
+            
+            shift_status = TimeLog.ShiftStatus.ON_TIME
+            if local_time > cutoff_time:
+                shift_status = TimeLog.ShiftStatus.LATE
+        else:
+            shift_status = TimeLog.ShiftStatus.ON_TIME
 
         # 4. Create log
         time_log = TimeLog.objects.create(

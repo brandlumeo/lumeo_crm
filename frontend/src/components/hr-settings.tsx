@@ -290,17 +290,19 @@ function AttendanceRulesForm() {
   const updateMutation = useUpdateCompany();
   
   const [formData, setFormData] = useState({
-    office_start_time: "09:30:00",
+    office_start_time: "09:00:00",
     office_end_time: "18:00:00",
     late_mark_after_minutes: 15,
+    allow_clock_in_outside_shift: false,
   });
 
   useEffect(() => {
     if (company) {
       setFormData({
-        office_start_time: company.office_start_time || "09:30:00",
+        office_start_time: company.office_start_time || "09:00:00",
         office_end_time: company.office_end_time || "18:00:00",
         late_mark_after_minutes: company.late_mark_after_minutes ?? 15,
+        allow_clock_in_outside_shift: company.allow_clock_in_outside_shift ?? false,
       });
     }
   }, [company]);
@@ -357,6 +359,26 @@ function AttendanceRulesForm() {
             className="input w-full bg-bone-2"
           />
         </div>
+      </div>
+
+      {/* Early / Outside Shift Hours Restriction */}
+      <div className="pt-2 border-t border-line/60">
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={formData.allow_clock_in_outside_shift}
+            onChange={e => setFormData({ ...formData, allow_clock_in_outside_shift: e.target.checked })}
+            className="mt-1 rounded border-line text-ink focus:ring-accent"
+          />
+          <div>
+            <span className="text-[13px] font-medium text-ink block">
+              Allow Clock-In Before Shift Start Time
+            </span>
+            <span className="text-xs text-muted block mt-0.5">
+              When disabled (recommended), staff are strictly blocked from clocking in before {formData.office_start_time.substring(0, 5)}.
+            </span>
+          </div>
+        </label>
       </div>
       
       <div className="flex items-center gap-3 pt-2">

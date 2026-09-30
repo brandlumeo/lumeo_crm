@@ -112,32 +112,33 @@ export default function AttendancePage() {
 
   // Punch actions
   const handlePunchIn = () => {
-    // Audit location telemetry optional capture
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          punchInMutation.mutate({
-            work_location: workLocation,
-            notes: notes || undefined,
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          });
-          setNotes("");
+    const executePunch = (coords?: { latitude: number; longitude: number }) => {
+      punchInMutation.mutate(
+        {
+          work_location: workLocation,
+          notes: notes || undefined,
+          latitude: coords?.latitude,
+          longitude: coords?.longitude,
         },
-        () => {
-          punchInMutation.mutate({
-            work_location: workLocation,
-            notes: notes || undefined,
-          });
-          setNotes("");
+        {
+          onSuccess: () => {
+            toast.success("Shift clocked in successfully!");
+            setNotes("");
+          },
+          onError: (err: any) => {
+            toast.error(err.response?.data?.detail ?? "Failed to punch in.");
+          },
         }
       );
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => executePunch({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        () => executePunch()
+      );
     } else {
-      punchInMutation.mutate({
-        work_location: workLocation,
-        notes: notes || undefined,
-      });
-      setNotes("");
+      executePunch();
     }
   };
 
@@ -225,6 +226,16 @@ export default function AttendancePage() {
     }
   };
 
+  const formatShiftTime = (timeStr?: string | null) => {
+    if (!timeStr) return "9:00 AM";
+    const [h, m] = timeStr.split(":");
+    const hour = parseInt(h, 10);
+    const minute = m || "00";
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const h12 = hour % 12 || 12;
+    return `${h12}:${minute} ${ampm}`;
+  };
+
   // Duration Helper
   const calcDuration = (inTime: string, outTime: string | null) => {
     if (!outTime) return "Ongoing";
@@ -302,12 +313,31 @@ export default function AttendancePage() {
                 </div>
               </div>
 
+              {status?.is_before_shift && (
+                <div className="bg-amber-50 border border-amber-200/80 rounded-lg p-3.5 flex items-center gap-2.5 text-xs text-amber-900 shadow-2xs">
+                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-semibold">Shift opens at {formatShiftTime(status.office_start_time)}.</span>
+                    <span className="text-amber-700 ml-1">Clock-in is locked until shift start time as per company rules.</span>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handlePunchIn}
-                disabled={punchInMutation.isPending}
-                className="w-full bg-ink hover:opacity-90 text-paper py-3 rounded-lg text-sm font-medium transition-all"
+                disabled={punchInMutation.isPending || status?.is_before_shift}
+                className={cn(
+                  "w-full py-3 rounded-lg text-sm font-medium transition-all",
+                  status?.is_before_shift
+                    ? "bg-bone-2 text-muted border border-line cursor-not-allowed"
+                    : "bg-ink hover:opacity-90 text-paper"
+                )}
               >
-                {punchInMutation.isPending ? "PUNCHING IN..." : "PUNCH IN SHIFT"}
+                {punchInMutation.isPending
+                  ? "PUNCHING IN..."
+                  : status?.is_before_shift
+                  ? `CLOCK-IN OPENS AT ${formatShiftTime(status.office_start_time).toUpperCase()}`
+                  : "PUNCH IN SHIFT"}
               </button>
             </div>
           ) : (
