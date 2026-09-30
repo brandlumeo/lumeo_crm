@@ -700,8 +700,11 @@ def notify_leave_updated(self, leave_id: int):
             <p>Leave application <strong>{leave.status}</strong>.</p>
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
                 <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
-                <p style="margin: 0; color: #1f2937;"><strong>Status:</strong> {leave.status}</p>
+                <p style="margin: 0 0 8px; color: #1f2937;"><strong>Status:</strong> {leave.status}</p>
         """
+        if leave.status == "approved":
+            pay_str = "Paid Leave" if leave.pay_status == "paid" else "Unpaid (Loss of Pay / LOP)"
+            html_msg += f"""<p style="margin: 0 0 8px; color: #1f2937;"><strong>Compensation:</strong> {pay_str}</p>"""
         if leave.manager_notes:
             html_msg += f"""<p style="margin: 8px 0 0; color: #1f2937;"><strong>Manager notes:</strong> {leave.manager_notes}</p>"""
         html_msg += "</div>"

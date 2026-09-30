@@ -1115,7 +1115,7 @@ export async function fetchLeaves(all?: boolean) {
 }
 
 export async function submitLeave(payload: {
-  leave_type: "paid" | "sick" | "casual" | "unpaid" | "half_day";
+  leave_type: "annual" | "paid" | "sick" | "casual" | "half_day" | "unpaid";
   start_date: string;
   end_date: string;
   reason: string;
@@ -1140,7 +1140,11 @@ export async function submitLeave(payload: {
 }
 
 
-export async function reviewLeave(id: string, payload: { status: "approved" | "rejected"; manager_notes?: string }) {
+export async function reviewLeave(id: string, payload: {
+  status: "approved" | "rejected";
+  manager_notes?: string;
+  pay_status?: "paid" | "unpaid";
+}) {
   const { data } = await api.patch<LeaveRequest>(`${endpoints.attendanceLeaves}${id}/approve/`, payload);
   return data;
 }

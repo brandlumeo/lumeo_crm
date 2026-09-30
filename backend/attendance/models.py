@@ -82,11 +82,16 @@ class BreakLog(models.Model):
 
 class LeaveRequest(models.Model):
     class LeaveType(models.TextChoices):
-        PAID = "paid", "Paid Annual"
+        ANNUAL = "annual", "Annual Leave"
+        PAID = "paid", "Annual Leave"  # Backward compatibility
         SICK = "sick", "Medical / Sick"
         CASUAL = "casual", "Casual"
-        UNPAID = "unpaid", "Unpaid"
         HALF_DAY = "half_day", "Half Day"
+        UNPAID = "unpaid", "Unpaid Leave (LOP)"
+
+    class PayStatus(models.TextChoices):
+        PAID = "paid", "Paid"
+        UNPAID = "unpaid", "Unpaid (Loss of Pay)"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending Approval"
@@ -107,7 +112,13 @@ class LeaveRequest(models.Model):
     leave_type = models.CharField(
         max_length=20,
         choices=LeaveType.choices,
-        default=LeaveType.PAID,
+        default=LeaveType.ANNUAL,
+        db_index=True,
+    )
+    pay_status = models.CharField(
+        max_length=20,
+        choices=PayStatus.choices,
+        default=PayStatus.PAID,
         db_index=True,
     )
     status = models.CharField(

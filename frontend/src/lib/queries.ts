@@ -745,7 +745,7 @@ export function useSubmitLeave() {
 export function useApproveLeave() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { status: "approved" | "rejected"; manager_notes?: string } }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: { status: "approved" | "rejected"; manager_notes?: string; pay_status?: "paid" | "unpaid" } }) =>
       reviewLeave(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance", "leaves"] });

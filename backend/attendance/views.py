@@ -334,10 +334,17 @@ class LeaveRequestListCreateView(APIView):
     def post(self, request):
         serializer = LeaveRequestSerializer(data=request.data)
         if serializer.is_valid():
+            leave_type = serializer.validated_data.get("leave_type")
+            initial_pay_status = (
+                LeaveRequest.PayStatus.UNPAID
+                if leave_type == LeaveRequest.LeaveType.UNPAID
+                else LeaveRequest.PayStatus.PAID
+            )
             leave = serializer.save(
                 user=request.user,
                 company=request.user.company,
                 status=LeaveRequest.Status.PENDING,
+                pay_status=initial_pay_status,
             )
             
             # Trigger celery task
@@ -355,8 +362,8 @@ class LeaveRequestListCreateView(APIView):
 class LeaveApprovalView(APIView):
     """
     PATCH /api/v1/attendance/leaves/<uuid:pk>/approve/
-    Body: { "status": "approved"/"rejected", "manager_notes": string }
-    Restricted to Owners and Admins to approve/reject leaves.
+    Body: { "status": "approved"/"rejected", "manager_notes": string, "pay_status": "paid"/"unpaid" }
+    Restricted to Owners and Admins to approve/reject leaves and decide paid vs unpaid.
     """
 
     permission_classes = [IsAuthenticated]
@@ -391,6 +398,12 @@ class LeaveApprovalView(APIView):
         leave.status = new_status
         leave.manager_notes = manager_notes
         leave.approved_by = request.user
+
+        if new_status == LeaveRequest.Status.APPROVED:
+            requested_pay_status = request.data.get("pay_status")
+            if requested_pay_status in [LeaveRequest.PayStatus.PAID, LeaveRequest.PayStatus.UNPAID]:
+                leave.pay_status = requested_pay_status
+
         leave.save()
 
         # Trigger celery task

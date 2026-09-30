@@ -847,7 +847,8 @@ export interface LeaveRequest {
   user_email: string;
   user_full_name: string;
   company: number;
-  leave_type: "paid" | "sick" | "casual" | "unpaid" | "half_day";
+  leave_type: "annual" | "paid" | "sick" | "casual" | "half_day" | "unpaid";
+  pay_status?: "paid" | "unpaid";
   status: "pending" | "approved" | "rejected";
   start_date: string;
   end_date: string;

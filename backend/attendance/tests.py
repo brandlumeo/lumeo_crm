@@ -210,14 +210,19 @@ class AttendanceAPITests(APITestCase):
         # 3. Authenticate as manager
         self.client.force_authenticate(user=manager)
 
-        # 4. Patch approval
+        # 4. Patch approval with pay_status
         approve_url = reverse("attendance:leave_approve", kwargs={"pk": leave.pk})
-        payload = {"status": "approved", "manager_notes": "Approved. Have a good trip!"}
+        payload = {
+            "status": "approved",
+            "pay_status": "unpaid",
+            "manager_notes": "Approved as Unpaid (LOP). Have a good trip!",
+        }
         response = self.client.patch(approve_url, data=payload)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "approved")
-        self.assertEqual(response.data["manager_notes"], "Approved. Have a good trip!")
+        self.assertEqual(response.data["pay_status"], "unpaid")
+        self.assertEqual(response.data["manager_notes"], "Approved as Unpaid (LOP). Have a good trip!")
         self.assertEqual(response.data["approved_by"], manager.pk)
 
     def test_leave_approval_permission_denied(self):

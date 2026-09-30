@@ -74,14 +74,15 @@ export default function AttendancePage() {
   const [breakReason, setBreakReason] = useState("");
 
   // Leave Form states
-  const [leaveType, setLeaveType] = useState<"paid" | "sick" | "casual" | "unpaid" | "half_day">("paid");
+  const [leaveType, setLeaveType] = useState<"annual" | "paid" | "sick" | "casual" | "half_day" | "unpaid">("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [leaveReason, setLeaveReason] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
 
-  // Manager Approval Note states
+  // Manager Approval states
   const [managerNotes, setManagerNotes] = useState<Record<string, string>>({});
+  const [payDecisions, setPayDecisions] = useState<Record<string, "paid" | "unpaid">>({});
 
   useEffect(() => {
     setMounted(true);
@@ -194,14 +195,34 @@ export default function AttendancePage() {
   };
 
   // Manager Approve/Reject
-  const handleReviewLeave = (id: string, decision: "approved" | "rejected") => {
+  const handleReviewLeave = (id: string, decision: "approved" | "rejected", defaultPayStatus: "paid" | "unpaid" = "paid") => {
+    const pay_status = payDecisions[id] ?? defaultPayStatus;
     approveLeaveMutation.mutate({
       id,
       payload: {
         status: decision,
         manager_notes: managerNotes[id] || undefined,
+        pay_status: decision === "approved" ? pay_status : undefined,
       },
     });
+  };
+
+  const getLeaveTypeDisplay = (type: string) => {
+    switch (type) {
+      case "annual":
+      case "paid":
+        return "Annual Leave";
+      case "sick":
+        return "Sick / Medical";
+      case "casual":
+        return "Casual Leave";
+      case "half_day":
+        return "Half Day";
+      case "unpaid":
+        return "Unpaid / LOP";
+      default:
+        return type;
+    }
   };
 
   // Duration Helper
@@ -396,11 +417,11 @@ export default function AttendancePage() {
                   onChange={(e) => setLeaveType(e.target.value as any)}
                   className="bg-bone border border-line rounded px-2.5 py-2 text-[12.5px] text-ink outline-none"
                 >
-                  <option value="paid">Paid Annual</option>
+                  <option value="annual">Annual Leave</option>
                   <option value="sick">Sick / Medical</option>
                   <option value="casual">Casual Leave</option>
-                  <option value="unpaid">Unpaid Leave</option>
                   <option value="half_day">Half Day</option>
+                  <option value="unpaid">Unpaid Leave (LOP)</option>
                 </select>
               </div>
 
@@ -482,59 +503,94 @@ export default function AttendancePage() {
           <div className="flex flex-col gap-3.5">
             {companyLeaves
               .filter((l) => l.status === "pending")
-              .map((leave) => (
-                <div key={leave.id} className="border border-line rounded-lg p-4 bg-bone flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex-1 flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-[13.5px]">{leave.user_full_name}</span>
-                      <span className="text-muted text-xs font-mono">({leave.user_email})</span>
-                      <span className="text-[10px] uppercase font-bold bg-ink text-paper px-2 py-0.5 rounded-full font-mono">
-                        {leave.leave_type.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-ink-2 mt-0.5 leading-snug">
-                      <strong>Dates</strong>: {leave.start_date} to {leave.end_date}
-                    </p>
-                    <p className="text-xs text-ink-2 italic">
-                      <strong>Reason</strong>: "{leave.reason}"
-                    </p>
-                    {leave.attachment && (
-                      <div className="mt-1">
-                        <a href={getMediaUrl(leave.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition-colors border border-emerald-200">
-                          <Paperclip className="w-3 h-3" />
-                          View Supporting Document
-                        </a>
+              .map((leave) => {
+                const defaultPay = leave.leave_type === "unpaid" ? "unpaid" : "paid";
+                const currentDecision = payDecisions[leave.id] ?? defaultPay;
+                return (
+                  <div key={leave.id} className="border border-line rounded-lg p-4 bg-bone flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1 flex flex-col gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-[13.5px]">{leave.user_full_name}</span>
+                        <span className="text-muted text-xs font-mono">({leave.user_email})</span>
+                        <span className="text-[10px] uppercase font-bold bg-ink text-paper px-2 py-0.5 rounded-full font-mono">
+                          {getLeaveTypeDisplay(leave.leave_type).toUpperCase()}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                      <p className="text-xs text-ink-2 mt-0.5 leading-snug">
+                        <strong>Dates</strong>: {leave.start_date} to {leave.end_date}
+                      </p>
+                      <p className="text-xs text-ink-2 italic">
+                        <strong>Reason</strong>: "{leave.reason}"
+                      </p>
+                      {leave.attachment && (
+                        <div className="mt-1">
+                          <a href={getMediaUrl(leave.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition-colors border border-emerald-200">
+                            <Paperclip className="w-3 h-3" />
+                            View Supporting Document
+                          </a>
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="text"
-                      placeholder="Review notes..."
-                      value={managerNotes[leave.id] || ""}
-                      onChange={(e) =>
-                        setManagerNotes({ ...managerNotes, [leave.id]: e.target.value })
-                      }
-                      className="bg-paper border border-line rounded px-2.5 py-1.5 text-xs outline-none focus:border-ink w-[180px]"
-                    />
-                    <button
-                      onClick={() => handleReviewLeave(leave.id, "approved")}
-                      disabled={approveLeaveMutation.isPending}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleReviewLeave(leave.id, "rejected")}
-                      disabled={approveLeaveMutation.isPending}
-                      className="bg-red-700 hover:bg-red-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all"
-                    >
-                      Reject
-                    </button>
+                    {/* Admin Decision Desk Controls */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+                      {/* Pay Status Segmented Selector */}
+                      <div className="flex items-center bg-paper p-0.5 rounded-md border border-line shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setPayDecisions(prev => ({ ...prev, [leave.id]: "paid" }))}
+                          className={cn(
+                            "px-2.5 py-1 text-[11.5px] font-semibold rounded transition-all cursor-pointer",
+                            currentDecision === "paid"
+                              ? "bg-emerald-700 text-white shadow-xs"
+                              : "text-muted hover:text-ink"
+                          )}
+                          title="Approve as Paid Leave"
+                        >
+                          Paid
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPayDecisions(prev => ({ ...prev, [leave.id]: "unpaid" }))}
+                          className={cn(
+                            "px-2.5 py-1 text-[11.5px] font-semibold rounded transition-all cursor-pointer",
+                            currentDecision === "unpaid"
+                              ? "bg-amber-600 text-white shadow-xs"
+                              : "text-muted hover:text-ink"
+                          )}
+                          title="Approve as Unpaid (Loss of Pay / LOP)"
+                        >
+                          Unpaid (LOP)
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Review notes..."
+                        value={managerNotes[leave.id] || ""}
+                        onChange={(e) =>
+                          setManagerNotes({ ...managerNotes, [leave.id]: e.target.value })
+                        }
+                        className="bg-paper border border-line rounded px-2.5 py-1.5 text-xs outline-none focus:border-ink w-[160px]"
+                      />
+                      <button
+                        onClick={() => handleReviewLeave(leave.id, "approved", defaultPay)}
+                        disabled={approveLeaveMutation.isPending}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReviewLeave(leave.id, "rejected", defaultPay)}
+                        disabled={approveLeaveMutation.isPending}
+                        className="bg-red-700 hover:bg-red-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         </div>
       )}
@@ -725,21 +781,43 @@ export default function AttendancePage() {
                   {leaves.map((l) => (
                     <div key={l.id} className="flex items-start sm:items-center justify-between p-5 hover:bg-bone transition-colors">
                       <div className="flex flex-col gap-1.5">
-                        <span className={cn(
-                          "px-2 py-0.5 rounded text-[11px] font-medium inline-block w-fit border",
-                          l.leave_type === 'sick' ? "bg-rose-50 text-rose-700 border-rose-100" 
-                          : l.leave_type === 'casual' ? "bg-blue-50 text-blue-700 border-blue-100"
-                          : "bg-bone-2 text-ink border-line"
-                        )}>
-                          <span className="capitalize">{l.leave_type}</span>
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[11px] font-medium inline-block w-fit border",
+                            l.leave_type === 'sick' ? "bg-rose-50 text-rose-700 border-rose-100" 
+                            : l.leave_type === 'casual' ? "bg-blue-50 text-blue-700 border-blue-100"
+                            : "bg-bone-2 text-ink border-line"
+                          )}>
+                            <span>{getLeaveTypeDisplay(l.leave_type)}</span>
+                          </span>
+                          {l.status === "approved" && (
+                            <span className={cn(
+                              "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border",
+                              l.pay_status === "unpaid"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            )}>
+                              {l.pay_status === "unpaid" ? "Unpaid (LOP)" : "Paid"}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[12px] text-muted">
                           {l.start_date === l.end_date ? l.start_date : `${l.start_date} → ${l.end_date}`}
                         </div>
+                        {l.reason && (
+                          <div className="text-[11.5px] text-muted italic line-clamp-1">
+                            "{l.reason}"
+                          </div>
+                        )}
                         {l.attachment && (
                           <a href={getMediaUrl(l.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:underline mt-0.5">
                             <Paperclip className="w-3 h-3" /> Document attached
                           </a>
+                        )}
+                        {l.manager_notes && (
+                          <div className="text-[11px] text-ink-2 bg-bone px-2 py-1 rounded border border-line w-fit">
+                            <strong>Note:</strong> {l.manager_notes}
+                          </div>
                         )}
                       </div>
                       

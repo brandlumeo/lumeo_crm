@@ -59,6 +59,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "user_full_name",
             "company",
             "leave_type",
+            "pay_status",
             "status",
             "start_date",
             "end_date",
@@ -69,7 +70,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "manager_notes",
             "created_at",
         )
-        read_only_fields = ("id", "user", "company", "status", "approved_by", "created_at")
+        read_only_fields = ("id", "user", "company", "status", "pay_status", "approved_by", "created_at")
 
     def validate(self, attrs):
         start_date = attrs.get("start_date")
