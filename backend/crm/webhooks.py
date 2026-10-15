@@ -265,6 +265,12 @@ class WhatsAppWebhookView(APIView):
                     for change in entry.get('changes', []):
                         if change.get('field') == 'leadgen':
                             process_meta_leadgen(change.get('value', {}), entry)
+            
+            # 3. Direct Sample test payload from Meta App Dashboard
+            if 'sample' in body:
+                sample = body.get('sample', {})
+                if sample.get('field') == 'leadgen':
+                    process_meta_leadgen(sample.get('value', {}))
                                 
             return Response({'status': 'ok'})
         except Exception as e:
@@ -279,6 +285,7 @@ class MetaLeadAdsWebhookView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        from django.http import HttpResponse
         mode = request.GET.get('hub.mode')
         token = request.GET.get('hub.verify_token')
         challenge = request.GET.get('hub.challenge')
@@ -286,7 +293,7 @@ class MetaLeadAdsWebhookView(APIView):
         verify_token = getattr(settings, 'META_LEADGEN_VERIFY_TOKEN', 'lumeo_crm_meta_token')
 
         if mode == 'subscribe' and token in [verify_token, 'lumeo_crm_meta_token', 'lumeo_crm_whatsapp_token']:
-            return Response(int(challenge), status=200)
+            return HttpResponse(challenge, content_type="text/plain", status=200)
         return Response({'error': 'Invalid verification token'}, status=403)
 
     def post(self, request):
@@ -296,6 +303,10 @@ class MetaLeadAdsWebhookView(APIView):
                 for change in entry.get('changes', []):
                     if change.get('field') == 'leadgen':
                         process_meta_leadgen(change.get('value', {}), entry)
+            if 'sample' in body:
+                sample = body.get('sample', {})
+                if sample.get('field') == 'leadgen':
+                    process_meta_leadgen(sample.get('value', {}))
             return Response({'status': 'ok'})
         except Exception as e:
             logger.error(f"Meta Lead Ads Webhook error: {e}")
