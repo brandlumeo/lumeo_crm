@@ -43,6 +43,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "whatsapp_access_token",
             "whatsapp_phone_number_id",
             "whatsapp_business_account_id",
+            "meta_pixel_id",
             "tax_id",
             "tax_id_label",
             "taxes",

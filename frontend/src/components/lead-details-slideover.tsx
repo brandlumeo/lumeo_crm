@@ -437,6 +437,7 @@ function ConvertLeadButton({ lead, onConverted }: { lead: Lead, onConverted: () 
 }
 
 export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: number | null, open: boolean, onOpenChange: (open: boolean) => void }) {
+  const queryClient = useQueryClient();
   const { data: lead, isLoading, error } = useLead(leadId ?? 0);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -477,9 +478,41 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
                     <UserCircle2 className="w-8 h-8 text-muted" strokeWidth={1.5} />
                   </div>
                   <h2 className="text-[22px] font-serif text-ink tracking-tight">{lead.name}</h2>
-                  <span className={`mt-2 ${statusTone[lead.status] ?? "chip chip-neutral"}`}>
-                    {lead.status.replaceAll("_", " ")}
-                  </span>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`${statusTone[lead.status] ?? "chip chip-neutral"}`}>
+                      {lead.status.replaceAll("_", " ")}
+                    </span>
+                  </div>
+
+                  <div className="mt-3.5 pt-3 border-t border-line/60 w-full flex items-center justify-center gap-2">
+                    <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Quality:</span>
+                    <select
+                      value={lead.quality || "unreviewed"}
+                      onChange={async (e) => {
+                        const newQ = e.target.value as any;
+                        try {
+                          await updateLead(lead.id, { quality: newQ });
+                          toast.success(newQ === "high_quality" ? "Marked as Good Quality (Meta event triggered)" : "Lead quality updated");
+                          void queryClient.invalidateQueries({ queryKey: ["crm", "lead", lead.id] });
+                          void queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+                        } catch {
+                          toast.error("Failed to update quality");
+                        }
+                      }}
+                      className={`text-[12px] font-medium rounded-full px-3 py-1 border cursor-pointer outline-none transition-colors ${
+                        lead.quality === "high_quality"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                          : lead.quality === "low_quality"
+                          ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                          : "bg-bone text-muted border-line hover:border-ink/20"
+                      }`}
+                      title="Rate lead quality to train Meta Ad targeting"
+                    >
+                      <option value="unreviewed">⚪ Unreviewed</option>
+                      <option value="high_quality">🟢 Good Quality (Train Meta)</option>
+                      <option value="low_quality">🔴 Low Quality</option>
+                    </select>
+                  </div>
                 </div>
                 
                 <div className="p-5 space-y-4">

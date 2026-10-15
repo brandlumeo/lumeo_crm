@@ -13,6 +13,7 @@ export function WhatsappSettingsForm() {
     whatsapp_access_token: "",
     whatsapp_phone_number_id: "",
     whatsapp_business_account_id: "",
+    meta_pixel_id: "",
   });
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export function WhatsappSettingsForm() {
         whatsapp_access_token: company.whatsapp_access_token || "",
         whatsapp_phone_number_id: company.whatsapp_phone_number_id || "",
         whatsapp_business_account_id: company.whatsapp_business_account_id || "",
+        meta_pixel_id: company.meta_pixel_id || "",
       });
     }
   }, [company]);
@@ -110,6 +112,23 @@ export function WhatsappSettingsForm() {
                   className="input w-full font-mono text-[13px]"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5 pt-2 border-t border-line/60">
+              <label className="text-[13px] font-bold text-ink uppercase tracking-wider flex items-center gap-2">
+                Meta Pixel / Dataset ID
+                <span className="text-[10px] text-accent bg-accent/10 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Conversion Leads</span>
+              </label>
+              <input
+                type="text"
+                value={formData.meta_pixel_id}
+                onChange={(e) => setFormData({ ...formData, meta_pixel_id: e.target.value })}
+                placeholder="e.g. 123456789012345"
+                className="input w-full font-mono text-[13px]"
+              />
+              <p className="text-[12px] text-muted">
+                Optional. Whenever you mark an ad lead as &ldquo;Good Quality&rdquo;, the CRM sends automated feedback to this Meta Dataset to optimize your Instagram &amp; Facebook ad targeting.
+              </p>
             </div>
           </div>
         </div>

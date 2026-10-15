@@ -38,6 +38,11 @@ class Lead(models.Model):
         LOST = "lost", "Lost"
         WON = "won", "Won"
 
+    class Quality(models.TextChoices):
+        UNREVIEWED = "unreviewed", "Unreviewed"
+        HIGH_QUALITY = "high_quality", "Good Quality"
+        LOW_QUALITY = "low_quality", "Low Quality"
+
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
@@ -50,6 +55,12 @@ class Lead(models.Model):
     status = models.CharField(
         max_length=50,
         default=Status.NEW,
+        db_index=True,
+    )
+    quality = models.CharField(
+        max_length=50,
+        choices=Quality.choices,
+        default=Quality.UNREVIEWED,
         db_index=True,
     )
     assigned_to = models.ForeignKey(

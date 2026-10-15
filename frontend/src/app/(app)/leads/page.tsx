@@ -10,7 +10,7 @@ import { Mail, Users, User, Download, Upload, X, Loader2, Phone, MoreHorizontal 
 import { createLead, exportLeads, updateLead, sendEmail, fetchTeam, fetchServiceCategories } from "@/lib/api";
 import { useCurrentUser, useLeadPage, useImportLeads, useCurrentCompany, useDeleteLead } from "@/lib/queries";
 import type { LeadInput } from "@/lib/types";
-import { formatDateTime, getDisplayName } from "@/lib/utils";
+import { formatDateTime, getDisplayName, cn } from "@/lib/utils";
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
@@ -95,6 +95,22 @@ export default function LeadsPage() {
       await exportLeads();
     } catch (err) {
       toast.error("Failed to export leads.");
+    }
+  };
+
+  const handleQualityChange = async (leadId: number, quality: "unreviewed" | "high_quality" | "low_quality") => {
+    try {
+      await updateLead(leadId, { quality });
+      toast.success(
+        quality === "high_quality"
+          ? "Marked as Good Quality (Meta event triggered)"
+          : quality === "low_quality"
+          ? "Marked as Low Quality"
+          : "Quality reset to Unreviewed"
+      );
+      void queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+    } catch (e) {
+      toast.error("Failed to update lead quality");
     }
   };
 
@@ -250,6 +266,35 @@ export default function LeadsPage() {
                       {lead.status.replaceAll("_", " ")}
                     </span>
                   ),
+                },
+                {
+                  key: "quality",
+                  header: "Meta Quality",
+                  render: (lead) => {
+                    const q = lead.quality || "unreviewed";
+                    return (
+                      <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={q}
+                          onChange={(e) => handleQualityChange(lead.id, e.target.value as any)}
+                          className={cn(
+                            "text-[11px] font-medium rounded-full px-2.5 py-1 border transition-all cursor-pointer appearance-none pr-5 outline-none shadow-2xs",
+                            q === "high_quality"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                              : q === "low_quality"
+                              ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                              : "bg-bone text-muted border-line hover:border-ink/30"
+                          )}
+                          title="Rate lead quality to train Meta Ad targeting"
+                        >
+                          <option value="unreviewed">⚪ Unreviewed</option>
+                          <option value="high_quality">🟢 Good Quality</option>
+                          <option value="low_quality">🔴 Low Quality</option>
+                        </select>
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-muted">▼</span>
+                      </div>
+                    );
+                  },
                 },
                 {
                   key: "owner",

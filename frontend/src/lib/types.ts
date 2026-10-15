@@ -59,6 +59,7 @@ export interface CompanyDetail extends CompanySummary {
   whatsapp_access_token: string | null;
   whatsapp_phone_number_id: string | null;
   whatsapp_business_account_id: string | null;
+  meta_pixel_id?: string | null;
   invoice_prefix: string;
   quote_prefix: string;
   default_tax_rate: string;
@@ -219,6 +220,7 @@ export interface Lead {
   mobile: string | null;
   source: string | null;
   status: string;
+  quality?: "unreviewed" | "high_quality" | "low_quality";
   assigned_to: UserSummary | null;
   custom_data: Record<string, any>;
   categories?: ServiceCategory[];
@@ -314,6 +316,7 @@ export interface LeadInput {
   mobile?: string;
   source?: string;
   status?: string;
+  quality?: "unreviewed" | "high_quality" | "low_quality";
   assigned_to_id?: number | null;
   category_ids?: number[];
   created_at?: string;

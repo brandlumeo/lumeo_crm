@@ -227,6 +227,7 @@ class LeadSerializer(CompanyScopedSerializer):
             "mobile",
             "source",
             "status",
+            "quality",
             "assigned_to",
             "assigned_to_id",
             "custom_data",

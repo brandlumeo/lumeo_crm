@@ -267,6 +267,7 @@ class LeadViewSet(CompanyScopedModelViewSet):
         return self._filter_by_assignee(queryset)
 
     def perform_update(self, serializer):
+        old_quality = getattr(self.get_object(), "quality", None)
         instance = serializer.save()
         # Sync the deal stage if a deal is linked
         if instance.deal and instance.deal.stage != instance.status:
@@ -275,6 +276,11 @@ class LeadViewSet(CompanyScopedModelViewSet):
         # Auto convert to deal if status changed to won and no deal exists
         elif instance.status == "won" and not instance.deal:
             self._convert_lead_to_deal(instance)
+            
+        # Trigger Meta Conversion Leads quality feedback if quality changed
+        if instance.quality != old_quality and instance.quality in ["high_quality", "low_quality"]:
+            from .webhooks import send_meta_lead_quality_event
+            send_meta_lead_quality_event(instance)
             
     def _convert_lead_to_deal(self, lead):
         # Create Customer
