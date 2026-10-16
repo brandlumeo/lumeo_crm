@@ -60,6 +60,9 @@ export interface CompanyDetail extends CompanySummary {
   whatsapp_phone_number_id: string | null;
   whatsapp_business_account_id: string | null;
   meta_pixel_id?: string | null;
+  meta_page_id?: string | null;
+  meta_page_name?: string | null;
+  meta_leadgen_subscribed?: boolean;
   invoice_prefix: string;
   quote_prefix: string;
   default_tax_rate: string;

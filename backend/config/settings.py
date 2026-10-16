@@ -454,6 +454,11 @@ GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', '')
 GCP_PUBSUB_TOPIC = env('GCP_PUBSUB_TOPIC', '')
 
+# Meta / Facebook OAuth Credentials (1-Click Lead Ads Connect)
+META_APP_ID = env('META_APP_ID', '1625759509088307')
+META_APP_SECRET = env('META_APP_SECRET', '')
+META_LEADGEN_VERIFY_TOKEN = env('META_LEADGEN_VERIFY_TOKEN', 'lumeo_crm_meta_token')
+
 FRONTEND_URL = env('FRONTEND_URL', 'http://localhost:3000')
 
 # ------------------------------------------------------------------------------

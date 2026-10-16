@@ -55,7 +55,10 @@ from .views import (
 )
 
 from .ai_views import AIChatView, AIEmailDraftView
-from .integrations import GoogleOAuthURLView, GoogleOAuthCallbackView, GooglePubSubWebhookView
+from .integrations import (
+    GoogleOAuthURLView, GoogleOAuthCallbackView, GooglePubSubWebhookView,
+    FacebookOAuthURLView, FacebookOAuthCallbackView, FacebookConnectPageView, FacebookDisconnectPageView
+)
 
 app_name = "crm"
 
@@ -124,4 +127,8 @@ urlpatterns = [
     path('integrations/google/authorize/', GoogleOAuthURLView.as_view(), name='google_oauth_authorize'),
     path('integrations/google/callback/', GoogleOAuthCallbackView.as_view(), name='google_oauth_callback'),
     path('integrations/google/webhook/', GooglePubSubWebhookView.as_view(), name='google_pubsub_webhook'),
+    path('integrations/facebook/authorize/', FacebookOAuthURLView.as_view(), name='facebook_oauth_authorize'),
+    path('integrations/facebook/callback/', FacebookOAuthCallbackView.as_view(), name='facebook_oauth_callback'),
+    path('integrations/facebook/connect-page/', FacebookConnectPageView.as_view(), name='facebook_connect_page'),
+    path('integrations/facebook/disconnect/', FacebookDisconnectPageView.as_view(), name='facebook_disconnect_page'),
 ] + router.urls + tickets_router.urls

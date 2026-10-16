@@ -21,9 +21,14 @@ def process_meta_leadgen(value, entry=None):
         page_id = value.get('page_id') or (entry.get('id') if entry else None)
         ad_id = value.get('ad_id')
         
-        # 1. Identify Company
+        # 1. Identify Company (Multi-tenant Page ID routing with legacy fallback)
         from django.db.models import Count
-        company = Company.objects.filter(name__icontains="MARKETING LLP").first()
+        company = None
+        if page_id:
+            company = Company.objects.filter(meta_page_id=str(page_id)).first()
+            
+        if not company:
+            company = Company.objects.filter(name__icontains="MARKETING LLP").first()
         if not company:
             company = Company.objects.annotate(lead_count=Count('leads')).filter(name__icontains="brandlumeo").order_by('-lead_count').first()
         if not company:
@@ -38,11 +43,17 @@ def process_meta_leadgen(value, entry=None):
         field_data = value.get('field_data') or []
         
         # 3. Fetch from Graph API if leadgen_id and token available
-        access_token = getattr(company, 'whatsapp_access_token', None) if company else None
+        access_token = (
+            getattr(company, 'meta_page_access_token', None) 
+            or getattr(company, 'whatsapp_access_token', None) 
+            if company else None
+        )
         if not access_token:
-            c_with_token = Company.objects.exclude(whatsapp_access_token__isnull=True).exclude(whatsapp_access_token="").first()
+            c_with_token = Company.objects.exclude(meta_page_access_token__isnull=True).exclude(meta_page_access_token="").first()
+            if not c_with_token:
+                c_with_token = Company.objects.exclude(whatsapp_access_token__isnull=True).exclude(whatsapp_access_token="").first()
             if c_with_token:
-                access_token = c_with_token.whatsapp_access_token
+                access_token = c_with_token.meta_page_access_token or c_with_token.whatsapp_access_token
                 
         if leadgen_id and access_token and not field_data:
             try:
@@ -138,7 +149,7 @@ def send_meta_lead_quality_event(lead):
             return
         
         pixel_id = getattr(company, 'meta_pixel_id', None)
-        access_token = getattr(company, 'whatsapp_access_token', None)
+        access_token = getattr(company, 'meta_page_access_token', None) or getattr(company, 'whatsapp_access_token', None)
         if not pixel_id or not access_token:
             logger.info("Meta CAPI: Skipped sending quality event (meta_pixel_id or access_token not set)")
             return

@@ -153,6 +153,18 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
+  const handleFacebookConnect = async () => {
+    try {
+      const redirect_uri = `${window.location.origin}/settings/integrations/facebook/callback`;
+      const response = await api.get(`/crm/integrations/facebook/authorize/?redirect_uri=${encodeURIComponent(redirect_uri)}`);
+      if (response.data.auth_url) {
+        window.location.href = response.data.auth_url;
+      }
+    } catch (err) {
+      console.error("Failed to fetch Facebook auth URL", err);
+    }
+  };
+
   return (
     <PageShell
       eyebrow="Workspace settings"
@@ -177,6 +189,32 @@ export default function IntegrationsSettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] xl:grid-cols-[1fr_480px] gap-8 items-start">
         {/* Left Column: Config Panels */}
         <div className="space-y-8">
+          {/* Meta / Facebook Lead Generation Card */}
+          <div className="card border border-slate-900 bg-slate-950/40 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#1877F2]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-[#1877F2]/10 border border-[#1877F2]/20 grid place-items-center">
+                <Globe className="w-4.5 h-4.5 text-[#1877F2]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink uppercase tracking-wider">Meta / Facebook Lead Generation</h3>
+                <p className="text-xs text-muted">1-Click connect Facebook Pages to sync Facebook &amp; Instagram leads automatically.</p>
+              </div>
+            </div>
+            
+            <div className="pt-2 flex items-center gap-4">
+               <button onClick={handleFacebookConnect} className="btn btn-secondary text-xs flex items-center gap-2 hover:border-[#1877F2]/40">
+                  <svg className="w-3.5 h-3.5 text-[#1877F2] fill-current" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  <span>Connect with Facebook</span>
+               </button>
+               <Link href="/settings?tab=meta_leads" className="text-xs text-accent hover:underline">
+                  Manage in Settings &rarr;
+               </Link>
+            </div>
+          </div>
+
           {/* Email Sync Panel */}
           <div className="card border border-slate-900 bg-slate-950/40 p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />

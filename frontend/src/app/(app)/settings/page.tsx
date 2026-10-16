@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   UserCircle, Building2, Bell, Shield, Loader2, Layers, Zap, 
@@ -9,7 +9,7 @@ import {
   Ticket as TicketIcon, FolderOpen, Clock, CalendarDays, 
   ShieldCheck, Target, Timer, CheckSquare, Palette, Blocks, 
   Link, Receipt, Users, Search, FolderGit2,
-  ChevronLeft, Copy, ExternalLink, Trash2, Plus, MessageSquare
+  ChevronLeft, Copy, ExternalLink, Trash2, Plus, MessageSquare, Globe
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCurrentCompany, useCurrentUser } from "@/lib/queries";
@@ -42,8 +42,10 @@ import { ThemeSettingsForm } from "@/components/theme-settings";
 import { ModuleSettingsForm } from "@/components/module-settings";
 import { CustomLinkSettingsForm } from "@/components/custom-link-settings";
 import { NotificationsForm } from "@/components/notifications-settings";
+import { useSearchParams } from "next/navigation";
 import { BillingSettings } from "@/components/billing-settings";
 import { WhatsappSettingsForm } from "@/components/whatsapp-settings";
+import { MetaLeadsSettingsForm } from "@/components/meta-leads-settings";
 import { cn } from "@/lib/utils";
 
 const SETTINGS_TABS = [
@@ -73,16 +75,25 @@ const SETTINGS_TABS = [
   { id: "hr", label: "HR & Staff", icon: Users },
   { id: "email", label: "Email Integrations", icon: Mail },
   { id: "whatsapp", label: "WhatsApp Integration", icon: MessageSquare },
+  { id: "meta_leads", label: "Meta & Facebook Leads", icon: Globe },
   { id: "google_calendar", label: "Google Calendar Settings", icon: Calendar },
   { id: "custom_link", label: "Custom Link Settings", icon: Link },
   { id: "billing", label: "Billing", icon: Receipt },
 ];
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { data: user } = useCurrentUser();
-  const [activeTab, setActiveTab] = useState("company");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam || "company");
   const [showMenuOnMobile, setShowMenuOnMobile] = useState(true);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   const isOwnerOrAdmin = user?.role === "owner" || user?.role === "admin";
   const isManagerOrAbove = isOwnerOrAdmin || user?.role === "manager" || user?.has_management_access;
@@ -222,18 +233,33 @@ export default function SettingsPage() {
             {activeTab === "hr" && <HRSettings />}
             {activeTab === "email" && <EmailSettings />}
             {activeTab === "whatsapp" && <WhatsappSettingsForm />}
+            {activeTab === "meta_leads" && <MetaLeadsSettingsForm />}
             {activeTab === "google_calendar" && <CalendarSettings />}
             {activeTab === "custom_link" && <CustomLinkSettingsForm />}
             {activeTab === "billing" && <BillingSettings />}
             
             {/* Placeholder for unimplemented tabs */}
-            {!["company", "business_address", "app", "currency", "payment", "finance", "contract", "tax", "ticket", "project", "attendance", "leaves", "roles", "lead", "time_log", "task", "profile", "notifications", "security", "theme", "module", "custom_fields", "workflows", "hr", "email", "whatsapp", "google_calendar", "custom_link", "billing"].includes(activeTab) && (
+            {!["company", "business_address", "app", "currency", "payment", "finance", "contract", "tax", "ticket", "project", "attendance", "leaves", "roles", "lead", "time_log", "task", "profile", "notifications", "security", "theme", "module", "custom_fields", "workflows", "hr", "email", "whatsapp", "meta_leads", "google_calendar", "custom_link", "billing"].includes(activeTab) && (
               <PlaceholderForm tabId={activeTab} />
             )}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 text-accent animate-spin" />
+        </div>
+      }
+    >
+      <SettingsPageContent />
+    </Suspense>
   );
 }
 

@@ -169,3 +169,241 @@ class GooglePubSubWebhookView(APIView):
             # Always return 200/204 to Google to acknowledge receipt, otherwise they retry
             print(f"Error processing Google Webhook: {e}")
             return Response(status=204)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Meta / Facebook Lead Generation Multi-tenant OAuth Integration
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_facebook_redirect_uri(request=None):
+    """Return redirect URI for Facebook OAuth callback."""
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    if request:
+        origin = request.headers.get('origin') or request.headers.get('referer')
+        if origin:
+            from urllib.parse import urlparse
+            parsed = urlparse(origin)
+            if parsed.scheme and parsed.netloc:
+                return f"{parsed.scheme}://{parsed.netloc}/settings/integrations/facebook/callback"
+    return f"{frontend_url}/settings/integrations/facebook/callback"
+
+
+class FacebookOAuthURLView(APIView):
+    """
+    Returns the Facebook OAuth authorization URL for Lead Generation & Page management.
+    Scopes: pages_show_list, pages_manage_metadata, leads_retrieval, pages_manage_ads
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        app_id = getattr(settings, 'META_APP_ID', '1625759509088307')
+        redirect_uri = request.GET.get('redirect_uri') or get_facebook_redirect_uri(request)
+        
+        scopes = [
+            'pages_show_list',
+            'pages_manage_metadata',
+            'leads_retrieval',
+            'pages_manage_ads',
+            'public_profile',
+        ]
+        
+        scope_str = ','.join(scopes)
+        auth_url = (
+            f"https://www.facebook.com/v21.0/dialog/oauth"
+            f"?client_id={app_id}"
+            f"&redirect_uri={redirect_uri}"
+            f"&scope={scope_str}"
+            f"&response_type=code"
+            f"&auth_type=rerequest"
+        )
+        return Response({"auth_url": auth_url, "redirect_uri": redirect_uri})
+
+
+class FacebookOAuthCallbackView(APIView):
+    """
+    Exchanges code for User Access Token, retrieves Pages managed by the user,
+    and if only 1 page exists or auto_connect is set, auto-subscribes the app to the page's leadgen webhook.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        import requests
+        code = request.data.get('code')
+        redirect_uri = request.data.get('redirect_uri') or get_facebook_redirect_uri(request)
+        app_id = getattr(settings, 'META_APP_ID', '1625759509088307')
+        app_secret = getattr(settings, 'META_APP_SECRET', '')
+
+        if not code:
+            return Response({"error": "No authorization code provided."}, status=400)
+
+        # 1. Exchange code for User Access Token
+        token_url = "https://graph.facebook.com/v21.0/oauth/access_token"
+        token_params = {
+            "client_id": app_id,
+            "redirect_uri": redirect_uri,
+            "code": code,
+        }
+        if app_secret:
+            token_params["client_secret"] = app_secret
+
+        try:
+            token_res = requests.get(token_url, params=token_params, timeout=12)
+            token_data = token_res.json()
+        except Exception as e:
+            return Response({"error": f"Failed to connect to Meta Graph API: {str(e)}"}, status=502)
+
+        if "access_token" not in token_data:
+            err_msg = token_data.get('error', {}).get('message', 'Failed to exchange authorization code with Meta.')
+            return Response({"error": err_msg, "meta_error": token_data}, status=400)
+
+        user_access_token = token_data["access_token"]
+
+        # 2. Fetch User's Pages
+        accounts_url = f"https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,category&access_token={user_access_token}"
+        try:
+            acc_res = requests.get(accounts_url, timeout=12)
+            acc_data = acc_res.json()
+        except Exception as e:
+            return Response({"error": f"Failed to fetch Facebook Pages: {str(e)}"}, status=502)
+
+        pages = acc_data.get('data', [])
+        if not pages:
+            return Response({
+                "status": "no_pages",
+                "error": "No Facebook Pages found for this account. Ensure you are an Admin of at least one Facebook Page."
+            }, status=400)
+
+        # If user has exactly 1 page or auto_connect requested, connect it immediately
+        company = request.user.company
+        if len(pages) == 1 and company:
+            page = pages[0]
+            page_id = page.get('id')
+            page_name = page.get('name')
+            page_token = page.get('access_token')
+
+            # Subscribe page to leadgen
+            sub_res = requests.post(
+                f"https://graph.facebook.com/v21.0/{page_id}/subscribed_apps",
+                params={"access_token": page_token, "subscribed_fields": "leadgen"},
+                timeout=10
+            )
+            sub_success = sub_res.status_code == 200 and sub_res.json().get('success') is True
+
+            company.meta_page_id = page_id
+            company.meta_page_name = page_name
+            company.meta_page_access_token = page_token
+            company.meta_leadgen_subscribed = sub_success
+            company.save(update_fields=[
+                'meta_page_id', 'meta_page_name', 'meta_page_access_token', 'meta_leadgen_subscribed'
+            ])
+
+            return Response({
+                "status": "connected",
+                "message": f"Successfully connected '{page_name}' to Lumeo CRM!",
+                "page": {
+                    "id": page_id,
+                    "name": page_name,
+                    "subscribed": sub_success
+                }
+            })
+
+        # Multiple pages: return pages so client admin can choose
+        simplified_pages = [
+            {"id": p.get('id'), "name": p.get('name'), "category": p.get('category'), "token": p.get('access_token')}
+            for p in pages
+        ]
+        return Response({
+            "status": "select_page",
+            "message": "Multiple pages found. Please select which Facebook Page to connect.",
+            "pages": simplified_pages
+        })
+
+
+class FacebookConnectPageView(APIView):
+    """
+    Subscribes the selected Facebook Page to the Lumeo CRM leadgen webhook
+    and saves its credentials to the current company.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        import requests
+        company = request.user.company
+        if not company:
+            return Response({"error": "No company associated with this user."}, status=400)
+
+        page_id = request.data.get('page_id')
+        page_name = request.data.get('page_name')
+        page_token = request.data.get('page_token')
+
+        if not page_id or not page_token:
+            return Response({"error": "page_id and page_token are required."}, status=400)
+
+        # Subscribe page to leadgen field
+        try:
+            sub_res = requests.post(
+                f"https://graph.facebook.com/v21.0/{page_id}/subscribed_apps",
+                params={"access_token": page_token, "subscribed_fields": "leadgen"},
+                timeout=10
+            )
+            sub_json = sub_res.json()
+            sub_success = sub_res.status_code == 200 and sub_json.get('success') is True
+        except Exception as e:
+            sub_success = False
+
+        company.meta_page_id = str(page_id)
+        company.meta_page_name = page_name or f"Page {page_id}"
+        company.meta_page_access_token = page_token
+        company.meta_leadgen_subscribed = sub_success
+        company.save(update_fields=[
+            'meta_page_id', 'meta_page_name', 'meta_page_access_token', 'meta_leadgen_subscribed'
+        ])
+
+        return Response({
+            "status": "success",
+            "message": f"Successfully connected '{company.meta_page_name}' to Lumeo CRM!",
+            "company": {
+                "meta_page_id": company.meta_page_id,
+                "meta_page_name": company.meta_page_name,
+                "meta_leadgen_subscribed": company.meta_leadgen_subscribed
+            }
+        })
+
+
+class FacebookDisconnectPageView(APIView):
+    """
+    Disconnects the connected Facebook Page and unsubscribes the webhook.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        import requests
+        company = request.user.company
+        if not company:
+            return Response({"error": "No company associated with this user."}, status=400)
+
+        page_id = company.meta_page_id
+        page_token = company.meta_page_access_token
+
+        if page_id and page_token:
+            try:
+                requests.delete(
+                    f"https://graph.facebook.com/v21.0/{page_id}/subscribed_apps",
+                    params={"access_token": page_token},
+                    timeout=8
+                )
+            except Exception as e:
+                pass
+
+        company.meta_page_id = None
+        company.meta_page_name = None
+        company.meta_page_access_token = None
+        company.meta_leadgen_subscribed = False
+        company.save(update_fields=[
+            'meta_page_id', 'meta_page_name', 'meta_page_access_token', 'meta_leadgen_subscribed'
+        ])
+
+        return Response({
+            "status": "success",
+            "message": "Facebook Page disconnected successfully."
+        })

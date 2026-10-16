@@ -285,6 +285,12 @@ class Company(models.Model):
     whatsapp_business_account_id = models.CharField(max_length=255, blank=True, null=True, help_text="WhatsApp Business Account ID")
     meta_pixel_id = models.CharField(max_length=255, blank=True, null=True, help_text="Meta Pixel / Dataset ID for Conversion Leads Optimization")
     
+    # Meta / Facebook Lead Generation Multi-tenant OAuth & Page Subscription
+    meta_page_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, help_text="Connected Facebook Page ID for Lead Ads")
+    meta_page_name = models.CharField(max_length=255, blank=True, null=True, help_text="Connected Facebook Page Name")
+    meta_page_access_token = models.TextField(blank=True, null=True, help_text="Page Access Token with leads_retrieval & pages_manage_metadata")
+    meta_leadgen_subscribed = models.BooleanField(default=False, help_text="True if app is subscribed to page leadgen webhook")
+    
     tax_id = models.CharField(max_length=100, blank=True, null=True)
     tax_id_label = models.CharField(max_length=50, blank=True, null=True, help_text="e.g. VAT, EIN, GST")
     taxes = models.JSONField(default=list, blank=True)
