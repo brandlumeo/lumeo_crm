@@ -38,6 +38,10 @@ def process_meta_leadgen(value, entry=None):
         lead_email = ""
         lead_mobile = ""
         raw_fields = {}
+        platform = "meta"
+        ad_name = ""
+        adset_name = ""
+        campaign_name = ""
         
         # 2. Check if field_data is passed directly (testing / simulator)
         field_data = value.get('field_data') or []
@@ -57,16 +61,24 @@ def process_meta_leadgen(value, entry=None):
                 
         if leadgen_id and access_token and not field_data:
             try:
-                graph_url = f"https://graph.facebook.com/v21.0/{leadgen_id}?access_token={access_token}"
+                graph_url = f"https://graph.facebook.com/v21.0/{leadgen_id}?fields=id,created_time,ad_id,ad_name,adset_name,campaign_name,form_id,field_data,platform&access_token={access_token}"
                 res = requests.get(graph_url, timeout=10)
                 if res.status_code == 200:
                     lead_json = res.json()
                     field_data = lead_json.get('field_data', [])
+                    platform = lead_json.get('platform') or 'meta'
+                    ad_name = lead_json.get('ad_name') or ''
+                    adset_name = lead_json.get('adset_name') or ''
+                    campaign_name = lead_json.get('campaign_name') or ''
                 else:
                     logger.warning(f"Meta Graph API error fetching leadgen {leadgen_id}: {res.text}")
             except Exception as ge:
                 logger.error(f"Error calling Meta Graph API for leadgen {leadgen_id}: {ge}")
                 
+        # Determine source: Instagram vs Facebook vs Meta
+        is_instagram = str(platform).lower() in ['ig', 'instagram']
+        lead_source = 'Instagram' if is_instagram else ('Facebook' if str(platform).lower() in ['fb', 'facebook'] else 'Meta')
+
         # Parse field_data
         for field in field_data:
             fn = str(field.get('name', '')).lower()
@@ -86,20 +98,24 @@ def process_meta_leadgen(value, entry=None):
                 lead_email = str(val).strip()
                 
         if not lead_name and lead_mobile:
-            lead_name = f"Meta Lead {lead_mobile}"
+            lead_name = f"{lead_source} Lead {lead_mobile}"
         elif not lead_name and lead_email:
             lead_name = lead_email.split('@')[0]
         elif not lead_name:
-            lead_name = f"Meta Lead {leadgen_id or 'Ad'}"
+            lead_name = f"{lead_source} Lead {leadgen_id or 'Ad'}"
             
         if not lead_email:
-            lead_email = f"lead_{leadgen_id or lead_mobile or 'meta'}@meta.local"
+            lead_email = f"lead_{leadgen_id or lead_mobile or 'meta'}@{lead_source.lower()}.local"
             
         custom_data = {
             'leadgen_id': leadgen_id,
             'page_id': page_id,
             'form_id': form_id,
             'ad_id': ad_id,
+            'ad_name': ad_name,
+            'adset_name': adset_name,
+            'campaign_name': campaign_name,
+            'platform': platform,
             'raw_fields': raw_fields,
         }
         
@@ -111,7 +127,7 @@ def process_meta_leadgen(value, entry=None):
                 defaults={
                     'name': lead_name,
                     'email': lead_email,
-                    'source': 'meta',
+                    'source': lead_source,
                     'status': 'new',
                     'custom_data': custom_data
                 }
@@ -126,7 +142,7 @@ def process_meta_leadgen(value, entry=None):
                 company=company,
                 name=lead_name,
                 email=lead_email,
-                source='meta',
+                source=lead_source,
                 status='new',
                 custom_data=custom_data
             )
