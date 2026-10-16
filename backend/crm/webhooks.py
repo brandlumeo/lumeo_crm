@@ -22,12 +22,12 @@ def process_meta_leadgen(value, entry=None):
         ad_id = value.get('ad_id')
         
         # 1. Identify Company
-        company = None
-        company = Company.objects.filter(name__icontains="brandlumeo").first()
+        from django.db.models import Count
+        company = Company.objects.filter(name__icontains="MARKETING LLP").first()
         if not company:
-            company = Company.objects.filter(name__icontains="Leskor").first()
+            company = Company.objects.annotate(lead_count=Count('leads')).filter(name__icontains="brandlumeo").order_by('-lead_count').first()
         if not company:
-            company = Company.objects.first()
+            company = Company.objects.annotate(lead_count=Count('leads')).order_by('-lead_count').first()
             
         lead_name = ""
         lead_email = ""
@@ -229,11 +229,12 @@ class WhatsAppWebhookView(APIView):
                                 company = Company.objects.filter(whatsapp_phone_number_id=phone_number_id).first()
                             
                             if not company:
-                                company = Company.objects.filter(name__icontains="brandlumeo").first()
+                                from django.db.models import Count
+                                company = Company.objects.filter(name__icontains="MARKETING LLP").first()
                             if not company:
-                                company = Company.objects.filter(name__icontains="Leskor").first()
+                                company = Company.objects.annotate(lead_count=Count('leads')).filter(name__icontains="brandlumeo").order_by('-lead_count').first()
                             if not company:
-                                company = Company.objects.first()
+                                company = Company.objects.annotate(lead_count=Count('leads')).order_by('-lead_count').first()
 
                             lead, created = Lead.objects.get_or_create(
                                 company=company,
@@ -259,12 +260,11 @@ class WhatsAppWebhookView(APIView):
                                     }
                                 )
 
-            # 2. Meta Leadgen (Page / Lead Ads) payload structure
-            elif body.get('object') == 'page':
-                for entry in body.get('entry', []):
-                    for change in entry.get('changes', []):
-                        if change.get('field') == 'leadgen':
-                            process_meta_leadgen(change.get('value', {}), entry)
+            # 2. Check for Leadgen in any entry changes (Page / Lead Ads / Click-to-WhatsApp)
+            for entry in body.get('entry', []):
+                for change in entry.get('changes', []):
+                    if change.get('field') == 'leadgen':
+                        process_meta_leadgen(change.get('value', {}), entry)
             
             # 3. Direct Sample test payload from Meta App Dashboard
             if 'sample' in body:
