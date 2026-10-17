@@ -197,8 +197,12 @@ class PunchInView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Add grace period
-            cutoff_time = shift_start + datetime.timedelta(minutes=company.late_mark_after_minutes or 0)
+            # Add grace period (inclusive of the entire grace minute, e.g. up to 09:20:59)
+            cutoff_time = shift_start + datetime.timedelta(
+                minutes=company.late_mark_after_minutes or 0,
+                seconds=59,
+                microseconds=999999
+            )
             
             shift_status = TimeLog.ShiftStatus.ON_TIME
             if local_time > cutoff_time:
@@ -927,9 +931,13 @@ class AttendanceMatrixView(APIView):
                         shift_start = datetime.datetime.combine(tl_local.date(), company.office_start_time)
                         if timezone.is_naive(shift_start):
                             shift_start = timezone.make_aware(shift_start, company_tz)
-                        cutoff_time = shift_start + timedelta(minutes=company.late_mark_after_minutes or 0)
+                        cutoff_time = shift_start + timedelta(
+                            minutes=company.late_mark_after_minutes or 0,
+                            seconds=59,
+                            microseconds=999999
+                        )
                         
-                        if tl.clock_in > cutoff_time:
+                        if tl_local > cutoff_time:
                             status = "late"
                         else:
                             # Not late, check for half day
