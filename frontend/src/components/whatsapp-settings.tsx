@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useCurrentCompany, useUpdateCompany } from "@/lib/queries";
-import { Loader2, MessageSquare, AlertCircle, Save } from "lucide-react";
+import { Loader2, MessageSquare, AlertCircle, Save, Trash2, CheckCircle2, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 export function WhatsappSettingsForm() {
   const { data: company, isLoading } = useCurrentCompany();
   const updateCompany = useUpdateCompany();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     whatsapp_access_token: "",
     whatsapp_phone_number_id: "",
     whatsapp_business_account_id: "",
   });
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
     if (company) {
@@ -25,12 +29,38 @@ export function WhatsappSettingsForm() {
     }
   }, [company]);
 
+  const handleDisconnect = async () => {
+    if (!confirm("Are you sure you want to completely remove this WhatsApp integration and clear all messages from your workspace?")) {
+      return;
+    }
+
+    try {
+      setIsDisconnecting(true);
+      await api.post("/crm/whatsapp-messages/disconnect/");
+      setFormData({
+        whatsapp_access_token: "",
+        whatsapp_phone_number_id: "",
+        whatsapp_business_account_id: "",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["current-company"] });
+      await queryClient.invalidateQueries({ queryKey: ["whatsapp-messages"] });
+      await queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("WhatsApp integration and personal messages completely removed.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Failed to remove WhatsApp integration.");
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!company) return;
 
     updateCompany.mutate(formData, {
       onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["current-company"] });
+        queryClient.invalidateQueries({ queryKey: ["whatsapp-messages"] });
         toast.success("WhatsApp credentials saved successfully.");
       },
       onError: () => {
@@ -114,10 +144,31 @@ export function WhatsappSettingsForm() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-between pt-2">
+          {Boolean(company?.whatsapp_phone_number_id || company?.whatsapp_access_token) ? (
+            <button
+              type="button"
+              onClick={handleDisconnect}
+              disabled={isDisconnecting}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors"
+            >
+              {isDisconnecting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Remove Integration &amp; Wipe Messages
+            </button>
+          ) : (
+            <div className="text-xs text-muted flex items-center gap-1.5">
+              <ShieldOff className="w-4 h-4 text-muted/60" />
+              WhatsApp integration is currently inactive.
+            </div>
+          )}
+
           <button 
             type="submit" 
-            disabled={updateCompany.isPending}
+            disabled={updateCompany.isPending || isDisconnecting}
             className="btn btn-primary min-w-[140px]"
           >
             {updateCompany.isPending ? (

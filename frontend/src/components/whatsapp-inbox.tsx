@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Search, MessageSquare, Loader2, User } from "lucide-react";
+import { Send, Search, MessageSquare, Loader2, User, Trash2 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 function timeAgoShort(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -69,6 +70,23 @@ export function WhatsappInbox() {
     onSuccess: () => {
       setMsgBody("");
       queryClient.invalidateQueries({ queryKey: ["whatsapp-messages"] });
+    }
+  });
+
+  const deleteConvoMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const msgsToDelete = messages.filter((m: any) => m.lead_id === leadId || m.lead === leadId);
+      for (const m of msgsToDelete) {
+        await api.delete(`/crm/whatsapp-messages/${m.id}/`);
+      }
+    },
+    onSuccess: () => {
+      setActiveLeadId(null);
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-messages"] });
+      toast.success("Conversation deleted.");
+    },
+    onError: () => {
+      toast.error("Failed to delete conversation.");
     }
   });
 
@@ -153,6 +171,26 @@ export function WhatsappInbox() {
                   <h3 className="font-medium text-sm text-ink">{activeConvo.lead.name}</h3>
                   <p className="text-[11px] text-muted">{activeConvo.lead.mobile || 'No phone number'}</p>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete this conversation with ${activeConvo.lead.name}?`)) {
+                      deleteConvoMutation.mutate(activeConvo.lead.id);
+                    }
+                  }}
+                  disabled={deleteConvoMutation.isPending}
+                  className="p-2 text-muted hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                  title="Delete this conversation"
+                >
+                  {deleteConvoMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 

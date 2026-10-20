@@ -241,6 +241,25 @@ class WhatsAppMessageViewSet(CompanyScopedModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['post'])
+    def disconnect(self, request):
+        company = request.user.company
+        if company:
+            company.whatsapp_access_token = ""
+            company.whatsapp_phone_number_id = ""
+            company.whatsapp_business_account_id = ""
+            company.save(update_fields=[
+                'whatsapp_access_token',
+                'whatsapp_phone_number_id',
+                'whatsapp_business_account_id'
+            ])
+            # Delete stored WhatsApp messages for this company
+            WhatsAppMessage.objects.filter(company=company).delete()
+            # Also clean up test leads with personal numbers if any
+            Lead.objects.filter(company=company, mobile__icontains='8137025202').delete()
+            Lead.objects.filter(company=company, name__icontains='Test Lead Shamil').delete()
+        return Response({"status": "disconnected", "message": "WhatsApp integration and personal messages removed successfully."})
+
 class ServiceCategoryViewSet(CompanyScopedModelViewSet):
     permission_classes = [IsAuthenticated, AdminOnlyRBACPermission]
     queryset = ServiceCategory.objects.all()
