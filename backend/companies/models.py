@@ -316,6 +316,8 @@ class Company(models.Model):
     office_start_time = models.TimeField(default="09:00:00")
     office_end_time = models.TimeField(default="18:00:00")
     late_mark_after_minutes = models.IntegerField(default=15)
+    half_day_start_time = models.TimeField(default="14:00:00", help_text="Start time of the half-day / afternoon shift.")
+    half_day_late_mark_after_minutes = models.IntegerField(default=15, help_text="Grace period in minutes after half_day_start_time before marking late.")
     
     # Advanced Attendance Settings
     allow_shift_change_request = models.BooleanField(default=True)

@@ -293,6 +293,8 @@ function AttendanceRulesForm() {
     office_start_time: "09:00:00",
     office_end_time: "18:00:00",
     late_mark_after_minutes: 15,
+    half_day_start_time: "14:00:00",
+    half_day_late_mark_after_minutes: 15,
     allow_clock_in_outside_shift: false,
   });
 
@@ -302,6 +304,8 @@ function AttendanceRulesForm() {
         office_start_time: company.office_start_time || "09:00:00",
         office_end_time: company.office_end_time || "18:00:00",
         late_mark_after_minutes: company.late_mark_after_minutes ?? 15,
+        half_day_start_time: company.half_day_start_time || "14:00:00",
+        half_day_late_mark_after_minutes: company.half_day_late_mark_after_minutes ?? 15,
         allow_clock_in_outside_shift: company.allow_clock_in_outside_shift ?? false,
       });
     }
@@ -358,6 +362,37 @@ function AttendanceRulesForm() {
             onChange={e => setFormData({ ...formData, late_mark_after_minutes: parseInt(e.target.value) || 0 })}
             className="input w-full bg-bone-2"
           />
+        </div>
+      </div>
+
+      {/* Half-Day Shift Settings */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-line/60">
+        <div>
+          <label className="block text-[13px] font-medium text-ink mb-1.5 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-500" /> Half-Day Shift Time
+          </label>
+          <input
+            type="time"
+            step="60"
+            required
+            value={formData.half_day_start_time.substring(0, 5)}
+            onChange={e => setFormData({ ...formData, half_day_start_time: e.target.value + ":00" })}
+            className="input w-full bg-bone-2"
+          />
+          <p className="text-[11.5px] text-muted mt-1">Default 14:00 (2:00 PM). Clock-ins at or after this time enter the afternoon half-day window.</p>
+        </div>
+        <div>
+          <label className="block text-[13px] font-medium text-ink mb-1.5">Half-Day Grace Period (Minutes)</label>
+          <input
+            type="number"
+            min="0"
+            max="120"
+            required
+            value={formData.half_day_late_mark_after_minutes}
+            onChange={e => setFormData({ ...formData, half_day_late_mark_after_minutes: parseInt(e.target.value) || 0 })}
+            className="input w-full bg-bone-2"
+          />
+          <p className="text-[11.5px] text-muted mt-1">Default 15 min. Clock-in within grace (up to 2:15 PM) is marked Half Day; clock-in after grace is marked Late.</p>
         </div>
       </div>
 

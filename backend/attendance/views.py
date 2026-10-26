@@ -924,7 +924,7 @@ class AttendanceMatrixView(APIView):
                         tl = log
                         break
                 if tl:
-                    # Dynamically calculate if late based on current company settings
+                    # Dynamically calculate attendance status based on current company settings
                     tl_local = tl.clock_in.astimezone(company_tz) if timezone.is_aware(tl.clock_in) else tl.clock_in
                     
                     if company.office_start_time:
@@ -937,30 +937,65 @@ class AttendanceMatrixView(APIView):
                             microseconds=999999
                         )
                         
-                        if tl_local > cutoff_time:
-                            status = "late"
-                        else:
-                            # Not late, check for half day
-                            if tl.clock_out:
-                                duration = (tl.clock_out - tl.clock_in).total_seconds() / 3600
-                                if duration < 4:
+                        # Half-day afternoon shift start (default 14:00 / 2:00 PM) and grace period (default 15 minutes)
+                        hd_time = getattr(company, 'half_day_start_time', None) or datetime.time(14, 0, 0)
+                        hd_grace = getattr(company, 'half_day_late_mark_after_minutes', None)
+                        if hd_grace is None:
+                            hd_grace = 15
+                            
+                        half_day_start = datetime.datetime.combine(tl_local.date(), hd_time)
+                        if timezone.is_naive(half_day_start):
+                            half_day_start = timezone.make_aware(half_day_start, company_tz)
+                        half_day_cutoff = half_day_start + timedelta(
+                            minutes=hd_grace,
+                            seconds=59,
+                            microseconds=999999
+                        )
+                        
+                        # Check if clocked out
+                        if tl.clock_out:
+                            duration = (tl.clock_out - tl.clock_in).total_seconds() / 3600
+                            if duration < 4:
+                                status = "half_day"
+                            elif tl_local >= half_day_start:
+                                if tl_local <= half_day_cutoff:
                                     status = "half_day"
                                 else:
-                                    status = "present"
+                                    status = "late"
+                            elif tl_local > cutoff_time:
+                                status = "late"
+                            else:
+                                status = "present"
+                        else:
+                            # Active / LIVE shift (clock_out is None)
+                            if tl_local >= half_day_start:
+                                if tl_local <= half_day_cutoff:
+                                    # Clocked in within half-day grace (e.g. 2:00 PM - 2:15 PM) -> Half Day!
+                                    status = "half_day"
+                                else:
+                                    # Clocked in after half-day grace (after 2:15 PM) -> Late, do not show half day
+                                    status = "late"
+                            elif tl_local > cutoff_time:
+                                status = "late"
                             else:
                                 status = "present"
                     else:
                         # Fallback if no office_start_time is set
-                        if tl.shift_status == "late":
-                            status = "late"
-                        elif tl.clock_out:
+                        if tl.clock_out:
                             duration = (tl.clock_out - tl.clock_in).total_seconds() / 3600
                             if duration < 4:
                                 status = "half_day"
+                            elif tl.shift_status == "late":
+                                status = "late"
                             else:
                                 status = "present"
                         else:
-                            status = "present"
+                            if tl_local.hour == 14 and tl_local.minute <= 15:
+                                status = "half_day"
+                            elif tl.shift_status == "late":
+                                status = "late"
+                            else:
+                                status = "present"
                             
                 # 4. If date is in the future, don't mark as absent
                 if current_date > today_local_date and status == "absent":

@@ -54,6 +54,8 @@ export function AttendanceSettingsForm() {
   const [officeStartTime, setOfficeStartTime] = useState("09:00:00");
   const [officeEndTime, setOfficeEndTime] = useState("18:00:00");
   const [lateMarkAfter, setLateMarkAfter] = useState("15");
+  const [halfDayStartTime, setHalfDayStartTime] = useState("14:00:00");
+  const [halfDayLateMarkAfter, setHalfDayLateMarkAfter] = useState("15");
 
   // Advanced Attendance Settings
   const [allowShiftChange, setAllowShiftChange] = useState(true);
@@ -113,6 +115,8 @@ export function AttendanceSettingsForm() {
       setOfficeStartTime(company.office_start_time ?? "09:00:00");
       setOfficeEndTime(company.office_end_time ?? "18:00:00");
       setLateMarkAfter(company.late_mark_after_minutes?.toString() ?? "15");
+      setHalfDayStartTime(company.half_day_start_time ?? "14:00:00");
+      setHalfDayLateMarkAfter(company.half_day_late_mark_after_minutes?.toString() ?? "15");
 
       setAllowShiftChange(company.allow_shift_change_request ?? true);
       setSaveClockInLocation(company.save_clock_in_location ?? true);
@@ -154,6 +158,8 @@ export function AttendanceSettingsForm() {
       office_start_time: officeStartTime,
       office_end_time: officeEndTime,
       late_mark_after_minutes: parseInt(lateMarkAfter) || 0,
+      half_day_start_time: halfDayStartTime,
+      half_day_late_mark_after_minutes: parseInt(halfDayLateMarkAfter) || 0,
       
       allow_shift_change_request: allowShiftChange,
       save_clock_in_location: saveClockInLocation,
@@ -604,33 +610,60 @@ export function AttendanceSettingsForm() {
               </div>
 
               {/* Legacy Office Timings */}
-              <div className="border-t border-line/60 pt-8 mt-8 hidden">
-                <h4 className="text-[14px] font-semibold text-ink mb-4">Standard Office Timings</h4>
+              {/* Office & Half-Day Shift Timings */}
+              <div className="border-t border-line/60 pt-8 mt-8">
+                <h4 className="text-[14px] font-semibold text-ink mb-1 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-accent" />
+                  Office Hours &amp; Half-Day Shift Configuration
+                </h4>
+                <p className="text-[12.5px] text-muted mb-4">Set standard shift hours, morning grace period, and afternoon half-day cutoff.</p>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-medium text-ink flex items-center gap-1.5">
-                      <Timer className="w-3.5 h-3.5 text-muted" /> Start Time
+                      <Timer className="w-3.5 h-3.5 text-muted" /> Shift Start Time
                     </label>
                     <input
-                      type="time" step="60" value={officeStartTime} onChange={(e) => setOfficeStartTime(e.target.value)} disabled={!isAdmin}
+                      type="time" step="60" value={officeStartTime.substring(0, 5)} onChange={(e) => setOfficeStartTime(e.target.value + ":00")} disabled={!isAdmin}
                       className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-medium text-ink flex items-center gap-1.5">
-                      <Timer className="w-3.5 h-3.5 text-muted" /> End Time
+                      <Timer className="w-3.5 h-3.5 text-muted" /> Shift End Time
                     </label>
                     <input
-                      type="time" step="60" value={officeEndTime} onChange={(e) => setOfficeEndTime(e.target.value)} disabled={!isAdmin}
+                      type="time" step="60" value={officeEndTime.substring(0, 5)} onChange={(e) => setOfficeEndTime(e.target.value + ":00")} disabled={!isAdmin}
                       className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-medium text-ink">Late Mark After (min)</label>
+                    <label className="text-[13px] font-medium text-ink">Morning Late Grace (min)</label>
                     <input
-                      type="number" min="0" value={lateMarkAfter} onChange={(e) => setLateMarkAfter(e.target.value)} disabled={!isAdmin}
+                      type="number" min="0" max="120" value={lateMarkAfter} onChange={(e) => setLateMarkAfter(e.target.value)} disabled={!isAdmin}
                       className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mt-4 pt-4 border-t border-line/40">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-ink flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" /> Half-Day Shift Time
+                    </label>
+                    <input
+                      type="time" step="60" value={halfDayStartTime.substring(0, 5)} onChange={(e) => setHalfDayStartTime(e.target.value + ":00")} disabled={!isAdmin}
+                      className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
+                    />
+                    <p className="text-[11.5px] text-muted">Default 14:00 (2:00 PM). Clock-ins at or after this time enter the half-day window.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-ink">Half-Day Grace Period (min)</label>
+                    <input
+                      type="number" min="0" max="120" value={halfDayLateMarkAfter} onChange={(e) => setHalfDayLateMarkAfter(e.target.value)} disabled={!isAdmin}
+                      className="input w-full h-10 bg-bone/30 focus:bg-paper font-mono text-sm"
+                    />
+                    <p className="text-[11.5px] text-muted">Default 15 min. Clock-in within grace (up to 2:15 PM) is marked Half Day; after grace is marked Late.</p>
                   </div>
                 </div>
               </div>

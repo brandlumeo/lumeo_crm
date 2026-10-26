@@ -69,6 +69,8 @@ class CompanySerializer(serializers.ModelSerializer):
             "office_start_time",
             "office_end_time",
             "late_mark_after_minutes",
+            "half_day_start_time",
+            "half_day_late_mark_after_minutes",
             "allow_shift_change_request",
             "save_clock_in_location",
             "allow_self_clock_in",

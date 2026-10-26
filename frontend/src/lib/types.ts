@@ -112,6 +112,8 @@ export interface CompanyDetail extends CompanySummary {
   office_start_time: string;
   office_end_time: string;
   late_mark_after_minutes: number;
+  half_day_start_time?: string;
+  half_day_late_mark_after_minutes?: number;
   allow_shift_change_request: boolean;
   save_clock_in_location: boolean;
   allow_self_clock_in: boolean;
