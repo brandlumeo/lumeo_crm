@@ -1,24 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   Clock,
   Coffee,
   CheckCircle,
-  FileText,
   MapPin,
   Calendar,
-  AlertCircle,
-  UserCheck,
   Users,
   Play,
   LogOut,
-  Paperclip,
   Home,
   Building,
   ArrowRight,
   AlertTriangle,
+  ExternalLink,
+  Timer,
+  CalendarDays,
 } from "lucide-react";
 
 const getAvatarTint = (name: string) => {
@@ -33,6 +33,7 @@ const getAvatarTint = (name: string) => {
   ];
   return tints[char.charCodeAt(0) % tints.length];
 };
+
 import {
   useAttendanceStatus,
   usePunchIn,
@@ -40,49 +41,27 @@ import {
   useStartBreak,
   useEndBreak,
   useShiftHistory,
-  useLeaves,
-  useSubmitLeave,
-  useApproveLeave,
   useCurrentUser,
 } from "@/lib/queries";
-import {
-  cn,
-  formatLongDate,
-  formatCompactINR,
-  getMediaUrl,
-} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export default function AttendancePage() {
   const { data: user } = useCurrentUser();
   const { data: status, isLoading: statusLoading } = useAttendanceStatus();
   const { data: history = [], isLoading: historyLoading } = useShiftHistory();
-  const { data: leaves = [], isLoading: leavesLoading } = useLeaves();
-  const { data: companyLeaves = [], isLoading: companyLeavesLoading } = useLeaves(true); // for managers
   const { data: companyHistory = [], isLoading: companyHistoryLoading } = useShiftHistory(true); // for managers
 
   const punchInMutation = usePunchIn();
   const punchOutMutation = usePunchOut();
   const startBreakMutation = useStartBreak();
   const endBreakMutation = useEndBreak();
-  const submitLeaveMutation = useSubmitLeave();
-  const approveLeaveMutation = useApproveLeave();
 
   // Component states
   const [mounted, setMounted] = useState(false);
   const [workLocation, setWorkLocation] = useState<"office" | "wfh" | "onsite" | "field">("office");
   const [notes, setNotes] = useState("");
   const [breakReason, setBreakReason] = useState("");
-
-  // Leave Form states
-  const [leaveType, setLeaveType] = useState<"annual" | "paid" | "sick" | "casual" | "half_day" | "unpaid">("annual");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [leaveReason, setLeaveReason] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
-
-  // Manager Approval states
-  const [managerNotes, setManagerNotes] = useState<Record<string, string>>({});
-  const [payDecisions, setPayDecisions] = useState<Record<string, "paid" | "unpaid">>({});
+  const [companyLogSearch, setCompanyLogSearch] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -91,24 +70,42 @@ export default function AttendancePage() {
   const formatTime = (isoString?: string) => {
     if (!isoString) return "--:--";
     const date = new Date(isoString);
-    return date.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   };
+
+  const formatShiftTime = (timeStr?: string | null) => {
+    if (!timeStr) return "9:00 AM";
+    const [h, m] = timeStr.split(":");
+    const hour = parseInt(h, 10);
+    const minute = m || "00";
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const h12 = hour % 12 || 12;
+    return `${h12}:${minute} ${ampm}`;
+  };
+
+  const calcDuration = (inTime: string, outTime: string | null) => {
+    if (!outTime) return "Ongoing";
+    const diff = new Date(outTime).getTime() - new Date(inTime).getTime();
+    const hours = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    return `${hours}h ${mins}m`;
+  };
+
+  const isManager = Boolean(user?.has_management_access);
 
   if (!mounted || statusLoading) {
     return (
       <div className="p-7 pb-16 max-w-[1400px]">
         <div className="flex flex-col gap-8">
-           <div className="h-10 bg-bone-2 rounded-lg w-1/4 animate-pulse" />
-           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6">
-             <div className="card h-[320px] bg-bone-2/30 animate-pulse" />
-             <div className="card h-[320px] bg-bone-2/30 animate-pulse" />
-           </div>
+          <div className="h-10 bg-bone-2 rounded-lg w-1/4 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6">
+            <div className="card h-[320px] bg-bone-2/30 animate-pulse" />
+            <div className="card h-[320px] bg-bone-2/30 animate-pulse" />
+          </div>
         </div>
       </div>
     );
   }
-
-  const isManager = user?.has_management_access;
 
   // Punch actions
   const handlePunchIn = () => {
@@ -143,143 +140,92 @@ export default function AttendancePage() {
   };
 
   const handlePunchOut = () => {
-    punchOutMutation.mutate({
-      notes: notes || undefined,
-    });
-    setNotes("");
-  };
-
-  const handleStartBreak = () => {
-    startBreakMutation.mutate({ reason: breakReason || undefined });
-    setBreakReason("");
-  };
-
-  const handleEndBreak = () => {
-    endBreakMutation.mutate();
-  };
-
-  // Leave Form Submit
-  const handleLeaveSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!startDate || !endDate || !leaveReason.trim()) {
-      toast.error("All fields are required.");
-      return;
-    }
-
-    if (new Date(endDate) < new Date(startDate)) {
-      toast.error("End date cannot be earlier than start date.");
-      return;
-    }
-
-    submitLeaveMutation.mutate(
+    punchOutMutation.mutate(
       {
-        leave_type: leaveType,
-        start_date: startDate,
-        end_date: endDate,
-        reason: leaveReason,
-        attachment: attachment || undefined,
+        notes: notes || undefined,
       },
       {
         onSuccess: () => {
-          toast.success("Leave request submitted successfully.");
-          setStartDate("");
-          setEndDate("");
-          setLeaveReason("");
-          setAttachment(null);
+          toast.success("Shift clocked out successfully!");
+          setNotes("");
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.detail ?? "Failed to submit leave claim.");
+          toast.error(err.response?.data?.detail ?? "Failed to punch out.");
         },
       }
     );
   };
 
-  // Manager Approve/Reject
-  const handleReviewLeave = (id: string, decision: "approved" | "rejected", defaultPayStatus: "paid" | "unpaid" = "paid") => {
-    const pay_status = payDecisions[id] ?? defaultPayStatus;
-    approveLeaveMutation.mutate({
-      id,
-      payload: {
-        status: decision,
-        manager_notes: managerNotes[id] || undefined,
-        pay_status: decision === "approved" ? pay_status : undefined,
+  const handleStartBreak = () => {
+    startBreakMutation.mutate(
+      { reason: breakReason || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Break started.");
+          setBreakReason("");
+        },
+      }
+    );
+  };
+
+  const handleEndBreak = () => {
+    endBreakMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success("Resumed shift from break.");
       },
     });
   };
 
-  const getLeaveTypeDisplay = (type: string) => {
-    switch (type) {
-      case "annual":
-      case "paid":
-        return "Annual Leave";
-      case "sick":
-        return "Sick / Medical";
-      case "casual":
-        return "Casual Leave";
-      case "half_day":
-        return "Half Day";
-      case "unpaid":
-        return "Unpaid / LOP";
-      default:
-        return type;
-    }
-  };
-
-  const formatShiftTime = (timeStr?: string | null) => {
-    if (!timeStr) return "9:00 AM";
-    const [h, m] = timeStr.split(":");
-    const hour = parseInt(h, 10);
-    const minute = m || "00";
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const h12 = hour % 12 || 12;
-    return `${h12}:${minute} ${ampm}`;
-  };
-
-  // Duration Helper
-  const calcDuration = (inTime: string, outTime: string | null) => {
-    if (!outTime) return "Ongoing";
-    const diff = new Date(outTime).getTime() - new Date(inTime).getTime();
-    const hours = Math.floor(diff / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-    return `${hours}h ${mins}m`;
-  };
-
-  const calcBreakDuration = (breaks?: any[]) => {
-    if (!breaks || breaks.length === 0) return "—";
-    let totalMs = 0;
-    breaks.forEach((b) => {
-      const start = new Date(b.start_time).getTime();
-      const end = b.end_time ? new Date(b.end_time).getTime() : Date.now();
-      totalMs += (end - start);
-    });
-    const mins = Math.round(totalMs / 60000);
-    if (mins === 0) return "< 1m";
-    const hours = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    if (hours > 0) {
-      return `${hours}h ${remainingMins}m`;
-    }
-    return `${mins}m`;
-  };
+  // Filter company logs
+  const filteredCompanyLogs = companyHistory.filter((log: any) => {
+    if (!companyLogSearch.trim()) return true;
+    const q = companyLogSearch.toLowerCase();
+    const nameMatch = (log.user_full_name || "").toLowerCase().includes(q);
+    const emailMatch = (log.user_email || "").toLowerCase().includes(q);
+    return nameMatch || emailMatch;
+  });
 
   return (
-    <div className="p-7 pb-16 max-w-[1400px] flex flex-col gap-8 animate-rise">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-serif text-[32px] tracking-tight">Attendance & Absence</h1>
-        <p className="text-[13.5px] text-muted">
-          Manage shifts, register work-from-home options, capture breaks, and track personal absences.
-        </p>
+    <div className="p-6 md:p-8 pb-16 max-w-[1400px] mx-auto flex flex-col gap-8 animate-rise">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/60 pb-5">
+        <div>
+          <div className="text-[12px] font-mono uppercase tracking-wider text-muted mb-1 flex items-center gap-2">
+            <span>HR</span>
+            <span>/</span>
+            <span className="text-ink font-semibold">Shift Controller</span>
+          </div>
+          <h1 className="font-serif text-[28px] md:text-[32px] text-ink font-normal tracking-tight">
+            Attendance &amp; Shift Controller
+          </h1>
+          <p className="text-[13.5px] text-muted mt-0.5">
+            Clock in and out, track duty notes, record breaks, and view your daily telemetry logs.
+          </p>
+        </div>
+
+        {/* Quick Link to Leaves Hub */}
+        <Link
+          href="/leaves"
+          className="btn btn-outline self-start md:self-auto h-10 px-4 rounded-lg flex items-center gap-2 text-xs font-semibold hover:border-ink transition-all"
+        >
+          <CalendarDays className="w-4 h-4 text-accent" />
+          <span>Apply for Leaves &amp; Absence</span>
+          <ArrowRight className="w-3.5 h-3.5 text-muted" />
+        </Link>
       </div>
 
-      {/* Grid: Toggles & Details */}
+      {/* Grid: Shift Controller & Daily Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6">
-        
-        {/* Attendance Console */}
+        {/* Left Column: Shift Controller */}
         <div className="card p-6 flex flex-col gap-5 border border-line bg-paper">
-          <div className="flex items-center gap-2 border-b border-line-2 pb-4">
-            <Clock className="w-5 h-5 text-ink-2" />
-            <h2 className="font-serif text-[20px]">Shift Controller</h2>
+          <div className="flex items-center justify-between border-b border-line-2 pb-4">
+            <div className="flex items-center gap-2.5">
+              <Clock className="w-5 h-5 text-accent" />
+              <h2 className="font-serif text-[20px] font-medium text-ink">Shift Controller</h2>
+            </div>
+            <span className="text-[11.5px] font-mono text-muted bg-bone-2 px-2.5 py-1 rounded-md border border-line">
+              {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+            </span>
           </div>
 
           {!status?.is_clocked_in ? (
@@ -327,7 +273,7 @@ export default function AttendancePage() {
                 onClick={handlePunchIn}
                 disabled={punchInMutation.isPending || status?.is_before_shift}
                 className={cn(
-                  "w-full py-3 rounded-lg text-sm font-medium transition-all",
+                  "w-full py-3.5 rounded-lg text-sm font-semibold transition-all cursor-pointer shadow-sm",
                   status?.is_before_shift
                     ? "bg-bone-2 text-muted border border-line cursor-not-allowed"
                     : "bg-ink hover:opacity-90 text-paper"
@@ -344,23 +290,22 @@ export default function AttendancePage() {
             /* CLOCKED IN STATE */
             <div className="flex flex-col gap-6">
               <div className="relative bg-gradient-to-b from-bone/50 to-bone/10 border border-line rounded-2xl p-8 flex flex-col items-center justify-center gap-5 text-center shadow-inner overflow-hidden">
-                {/* Decorative background circle */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-                
+
                 <div className="flex flex-col items-center gap-2 z-10">
                   <div className="flex items-center gap-2.5 px-3 py-1 bg-white rounded-full border border-line shadow-sm mb-2">
-                    <span className={cn("w-2 h-2 rounded-full shadow-sm", status.is_on_break ? "bg-gold animate-pulse" : "bg-emerald-500 animate-pulse")} />
+                    <span className={cn("w-2 h-2 rounded-full shadow-sm", status.is_on_break ? "bg-amber-500 animate-pulse" : "bg-emerald-500 animate-pulse")} />
                     <span className="text-[10px] uppercase tracking-widest text-ink-2 font-semibold">
                       {status.is_on_break ? "Currently On Break" : "Active Shift Running"}
                     </span>
                   </div>
 
                   <span className="text-[11px] uppercase tracking-widest text-muted font-medium mt-2">Clocked In At</span>
-                  <div className="font-serif text-[56px] leading-[1] text-ink select-none tracking-tight text-shadow-sm">
+                  <div className="font-serif text-[56px] leading-[1] text-ink select-none tracking-tight text-shadow-sm font-normal">
                     {formatTime(status.active_log?.clock_in)}
                   </div>
                   {status.is_on_break && (
-                    <div className="text-[12px] text-gold font-medium mt-1">
+                    <div className="text-[12px] text-amber-700 font-medium mt-1">
                       Break started at: {formatTime(status.active_break?.start_time)}
                     </div>
                   )}
@@ -372,10 +317,10 @@ export default function AttendancePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Break control */}
                 {!status.is_on_break ? (
-                  <div className="flex flex-col gap-2 border border-line rounded-lg p-3 bg-bone/40">
+                  <div className="flex flex-col gap-2 border border-line rounded-lg p-3.5 bg-bone/40">
                     <input
                       type="text"
                       placeholder="Break details (e.g. Lunch)"
@@ -386,21 +331,21 @@ export default function AttendancePage() {
                     <button
                       onClick={handleStartBreak}
                       disabled={startBreakMutation.isPending}
-                      className="bg-paper border border-line hover:bg-bone-2 text-ink py-2 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                      className="bg-paper border border-line hover:bg-bone-2 text-ink py-2 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Coffee className="w-3.5 h-3.5 text-muted" />
                       Take Break
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2 justify-end border border-line rounded-lg p-3 bg-gold/5">
+                  <div className="flex flex-col gap-2 justify-end border border-amber-200 rounded-lg p-3.5 bg-amber-50/20">
                     <p className="text-[11px] text-muted select-none italic text-center mb-1">
                       Reason: "{status.active_break?.reason ?? "Not specified"}"
                     </p>
                     <button
                       onClick={handleEndBreak}
                       disabled={endBreakMutation.isPending}
-                      className="bg-ink text-paper hover:opacity-90 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                      className="bg-ink text-paper hover:opacity-90 py-2 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Play className="w-3.5 h-3.5" />
                       Resume Shift
@@ -409,7 +354,7 @@ export default function AttendancePage() {
                 )}
 
                 {/* Clock Out */}
-                <div className="flex flex-col gap-2 border border-line rounded-lg p-3 bg-bone/40">
+                <div className="flex flex-col gap-2 border border-line rounded-lg p-3.5 bg-bone/40">
                   <input
                     type="text"
                     placeholder="Sign-off notes..."
@@ -420,7 +365,7 @@ export default function AttendancePage() {
                   <button
                     onClick={handlePunchOut}
                     disabled={punchOutMutation.isPending}
-                    className="bg-accent hover:opacity-95 text-white py-2 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                    className="bg-accent hover:opacity-95 text-white py-2 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     Punch Out Shift
@@ -431,199 +376,62 @@ export default function AttendancePage() {
           )}
         </div>
 
-        {/* Leaves Balance & Request Form */}
-        <div className="card p-6 flex flex-col gap-5 border border-line bg-paper">
-          <div className="flex items-center gap-2 border-b border-line-2 pb-4">
-            <Calendar className="w-5 h-5 text-ink-2" />
-            <h2 className="font-serif text-[20px]">Absence Request</h2>
+        {/* Right Column: Shift Status Overview & Leaves Hub Card */}
+        <div className="flex flex-col gap-6">
+          {/* Shift Timings & Office Info */}
+          <div className="card p-6 border border-line bg-paper flex flex-col gap-4">
+            <div className="flex items-center gap-2.5 border-b border-line-2 pb-3">
+              <Timer className="w-4 h-4 text-accent" />
+              <h3 className="font-serif text-[17px] font-medium text-ink">Office Shift Rules</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-bone-2 p-3 rounded-lg border border-line flex flex-col gap-1">
+                <span className="text-[11px] uppercase font-mono tracking-wider text-muted">Standard Shift</span>
+                <span className="font-semibold text-ink text-[13px]">
+                  {formatShiftTime(status?.office_start_time)} &rarr; {formatShiftTime(status?.office_end_time)}
+                </span>
+              </div>
+
+              <div className="bg-bone-2 p-3 rounded-lg border border-line flex flex-col gap-1">
+                <span className="text-[11px] uppercase font-mono tracking-wider text-muted">Half-Day Shift</span>
+                <span className="font-semibold text-amber-700 text-[13px]">
+                  Starts at 2:00 PM
+                </span>
+              </div>
+            </div>
+
+            <div className="text-[12px] text-muted leading-relaxed">
+              Clock-in within standard grace (or afternoon half-day grace) ensures accurate attendance marking on the team matrix.
+            </div>
           </div>
 
-          <form onSubmit={handleLeaveSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Leave Type</label>
-                <select
-                  value={leaveType}
-                  onChange={(e) => setLeaveType(e.target.value as any)}
-                  className="bg-bone border border-line rounded px-2.5 py-2 text-[12.5px] text-ink outline-none"
-                >
-                  <option value="annual">Annual Leave</option>
-                  <option value="sick">Sick / Medical</option>
-                  <option value="casual">Casual Leave</option>
-                  <option value="half_day">Half Day</option>
-                  <option value="unpaid">Unpaid Leave (LOP)</option>
-                </select>
+          {/* Dedicated Leaves Hub Banner Card */}
+          <div className="card p-6 border border-line bg-gradient-to-br from-paper via-bone/30 to-emerald-50/20 flex flex-col gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+                <CalendarDays className="w-5 h-5" />
               </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Reason</label>
-                <input
-                  type="text"
-                  placeholder="Medical, family..."
-                  value={leaveReason}
-                  onChange={(e) => setLeaveReason(e.target.value)}
-                  className="bg-bone border border-line rounded px-2.5 py-2 text-[12.5px] text-ink outline-none focus:border-ink"
-                />
+              <div>
+                <h3 className="font-serif text-[18px] font-medium text-ink">Leaves &amp; Absence Hub</h3>
+                <p className="text-[11.5px] text-muted">Dedicated portal for all leave requests</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">Start Date</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-bone border border-line rounded px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-ink"
-                />
-              </div>
+            <p className="text-[12.5px] text-muted leading-relaxed">
+              Absence applications, medical leaves, unpaid LOP tracking, and company-wide approval desks are now centralized in the new HR Leaves section.
+            </p>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] uppercase tracking-wider text-muted font-medium">End Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-bone border border-line rounded px-2.5 py-1.5 text-[12.5px] text-ink outline-none focus:border-ink"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1 mt-1">
-              <label className="text-[11px] uppercase tracking-wider text-muted font-medium flex items-center justify-between">
-                <span>Supporting Document (Optional)</span>
-                <span className="text-[9px] text-muted/60 lowercase tracking-normal">max 5mb</span>
-              </label>
-              <label className="border border-dashed border-line-2 hover:border-ink/50 hover:bg-bone-2 transition-all cursor-pointer rounded-lg p-4 flex flex-col items-center justify-center gap-2 group bg-bone/30">
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setAttachment(file);
-                  }}
-                />
-                <Paperclip className={`w-5 h-5 transition-colors ${attachment ? 'text-emerald-600' : 'text-muted group-hover:text-ink-2'}`} strokeWidth={1.5} />
-                <span className={`text-[12px] font-medium text-center ${attachment ? 'text-emerald-700' : 'text-muted group-hover:text-ink'}`}>
-                  {attachment ? attachment.name : "Click to upload medical sheet or proof"}
-                </span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitLeaveMutation.isPending}
-              className="btn btn-primary w-full mt-1"
+            <Link
+              href="/leaves"
+              className="btn btn-primary w-full h-10 rounded-lg text-xs font-semibold bg-ink text-paper hover:bg-ink/90 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
             >
-              {submitLeaveMutation.isPending ? "SUBMITTING..." : "SUBMIT LEAVE APPLICATION"}
-            </button>
-          </form>
+              <span>Open Leaves Section</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
-
-      {/* Manager Leave Approval panel */}
-      {isManager && companyLeaves.some((l) => l.status === "pending") && (
-        <div className="card p-6 border border-line bg-paper flex flex-col gap-4">
-          <div className="flex items-center gap-2 border-b border-line-2 pb-3">
-            <UserCheck className="w-5 h-5 text-accent" />
-            <h2 className="font-serif text-[20px]">Company Absence Requests Approval Desk</h2>
-          </div>
-
-          <div className="flex flex-col gap-3.5">
-            {companyLeaves
-              .filter((l) => l.status === "pending")
-              .map((leave) => {
-                const defaultPay = leave.leave_type === "unpaid" ? "unpaid" : "paid";
-                const currentDecision = payDecisions[leave.id] ?? defaultPay;
-                return (
-                  <div key={leave.id} className="border border-line rounded-lg p-4 bg-bone flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1 flex flex-col gap-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-[13.5px]">{leave.user_full_name}</span>
-                        <span className="text-muted text-xs font-mono">({leave.user_email})</span>
-                        <span className="text-[10px] uppercase font-bold bg-ink text-paper px-2 py-0.5 rounded-full font-mono">
-                          {getLeaveTypeDisplay(leave.leave_type).toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-ink-2 mt-0.5 leading-snug">
-                        <strong>Dates</strong>: {leave.start_date} to {leave.end_date}
-                      </p>
-                      <p className="text-xs text-ink-2 italic">
-                        <strong>Reason</strong>: "{leave.reason}"
-                      </p>
-                      {leave.attachment && (
-                        <div className="mt-1">
-                          <a href={getMediaUrl(leave.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition-colors border border-emerald-200">
-                            <Paperclip className="w-3 h-3" />
-                            View Supporting Document
-                          </a>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Admin Decision Desk Controls */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
-                      {/* Pay Status Segmented Selector */}
-                      <div className="flex items-center bg-paper p-0.5 rounded-md border border-line shadow-2xs">
-                        <button
-                          type="button"
-                          onClick={() => setPayDecisions(prev => ({ ...prev, [leave.id]: "paid" }))}
-                          className={cn(
-                            "px-2.5 py-1 text-[11.5px] font-semibold rounded transition-all cursor-pointer",
-                            currentDecision === "paid"
-                              ? "bg-emerald-700 text-white shadow-xs"
-                              : "text-muted hover:text-ink"
-                          )}
-                          title="Approve as Paid Leave"
-                        >
-                          Paid
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPayDecisions(prev => ({ ...prev, [leave.id]: "unpaid" }))}
-                          className={cn(
-                            "px-2.5 py-1 text-[11.5px] font-semibold rounded transition-all cursor-pointer",
-                            currentDecision === "unpaid"
-                              ? "bg-amber-600 text-white shadow-xs"
-                              : "text-muted hover:text-ink"
-                          )}
-                          title="Approve as Unpaid (Loss of Pay / LOP)"
-                        >
-                          Unpaid (LOP)
-                        </button>
-                      </div>
-
-                      <input
-                        type="text"
-                        placeholder="Review notes..."
-                        value={managerNotes[leave.id] || ""}
-                        onChange={(e) =>
-                          setManagerNotes({ ...managerNotes, [leave.id]: e.target.value })
-                        }
-                        className="bg-paper border border-line rounded px-2.5 py-1.5 text-xs outline-none focus:border-ink w-[160px]"
-                      />
-                      <button
-                        onClick={() => handleReviewLeave(leave.id, "approved", defaultPay)}
-                        disabled={approveLeaveMutation.isPending}
-                        className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all shadow-xs cursor-pointer"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReviewLeave(leave.id, "rejected", defaultPay)}
-                        disabled={approveLeaveMutation.isPending}
-                        className="bg-red-700 hover:bg-red-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition-all shadow-xs cursor-pointer"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
 
       {/* Manager Company Shift Logs Panel */}
       {isManager && (
@@ -638,12 +446,14 @@ export default function AttendancePage() {
                 <p className="text-[12px] text-muted mt-0.5">Overview of all staff check-ins and check-outs</p>
               </div>
             </div>
-            
+
             <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search staff" 
-                className="pl-8 pr-3 py-1.5 text-sm border border-line rounded-lg focus:outline-none focus:border-accent w-48 text-ink bg-bone-2 placeholder:text-muted/60"
+              <input
+                type="text"
+                placeholder="Search staff..."
+                value={companyLogSearch}
+                onChange={(e) => setCompanyLogSearch(e.target.value)}
+                className="pl-8 pr-3 py-1.5 text-xs border border-line rounded-lg focus:outline-none focus:border-accent w-48 text-ink bg-bone-2 placeholder:text-muted/60"
               />
               <svg className="w-4 h-4 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -651,20 +461,22 @@ export default function AttendancePage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto min-h-[200px]">
+          <div className="overflow-x-auto min-h-[160px]">
             {companyHistoryLoading ? (
               <p className="text-xs text-muted">Loading company shift logs...</p>
-            ) : companyHistory.length === 0 ? (
+            ) : filteredCompanyLogs.length === 0 ? (
               <p className="text-xs text-muted italic">No shifts recorded by staff yet.</p>
             ) : (
               <div className="space-y-6">
-                {Object.entries(companyHistory.reduce((acc: any, log: any) => {
-                  const dateObj = new Date(log.clock_in);
-                  const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-                  if (!acc[dateStr]) acc[dateStr] = [];
-                  acc[dateStr].push(log);
-                  return acc;
-                }, {})).map(([dateStr, logs]: [string, any]) => (
+                {Object.entries(
+                  filteredCompanyLogs.reduce((acc: any, log: any) => {
+                    const dateObj = new Date(log.clock_in);
+                    const dateStr = dateObj.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase();
+                    if (!acc[dateStr]) acc[dateStr] = [];
+                    acc[dateStr].push(log);
+                    return acc;
+                  }, {})
+                ).map(([dateStr, logs]: [string, any]) => (
                   <div key={dateStr}>
                     <div className="mb-2 text-[10px] font-bold text-muted uppercase tracking-wider pl-1">{dateStr}</div>
                     <div className="bg-paper border border-line rounded-[12px] overflow-hidden shadow-sm">
@@ -672,8 +484,6 @@ export default function AttendancePage() {
                         {logs.map((log: any) => {
                           const nameChar = (log.user_full_name?.[0] || log.user_email?.[0] || "?").toUpperCase();
                           const isWfh = log.work_location?.toLowerCase() === "wfh";
-                          
-                          // Duration Logic (flag anomalies)
                           const durationStr = calcDuration(log.clock_in, log.clock_out);
                           let isAnomalous = false;
                           if (log.clock_out) {
@@ -683,7 +493,6 @@ export default function AttendancePage() {
 
                           return (
                             <div key={log.id} className="flex items-center justify-between px-5 py-3 hover:bg-bone transition-colors">
-                              {/* Left Side: Avatar & Name */}
                               <div className="flex items-center gap-4 min-w-[200px] flex-1">
                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-medium ${getAvatarTint(nameChar)}`}>
                                   {nameChar}
@@ -693,43 +502,37 @@ export default function AttendancePage() {
                                   <div className="text-[11px] text-muted mt-0.5">{log.user_email}</div>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-8 justify-end">
-                                {/* Location Badge */}
                                 <div className="w-[80px] flex justify-start">
                                   <span className={cn(
-                                    "inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium shadow-sm",
-                                    isWfh ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-paper border border-line text-muted"
+                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-medium border shadow-2xs",
+                                    isWfh ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-bone-2 text-ink border-line"
                                   )}>
                                     {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
                                     {isWfh ? "WFH" : "Office"}
                                   </span>
                                 </div>
 
-                                {/* Timestamps */}
-                                <div className="flex items-center justify-center gap-2 text-[12px] font-medium text-muted w-[150px]">
-                                  <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                <div className="flex items-center gap-2 text-[12px] text-muted w-[160px] justify-center">
+                                  <span className="font-mono">{new Date(log.clock_in).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                                   {log.clock_out && (
                                     <>
                                       <ArrowRight className="w-3 h-3 text-muted/60" />
-                                      <span>{new Date(log.clock_out).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                      <span className="font-mono">{new Date(log.clock_out).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                                     </>
                                   )}
                                 </div>
 
-                                {/* Duration / Status */}
-                                <div className="w-[90px] flex justify-end">
+                                <div className="w-[80px] flex justify-end">
                                   {log.clock_out ? (
-                                    <span className={cn(
-                                      "text-[12px] font-bold flex items-center gap-1.5",
-                                      isAnomalous ? "text-amber-600" : "text-ink"
-                                    )}>
+                                    <span className={cn("text-[12px] font-bold flex items-center gap-1", isAnomalous ? "text-amber-600" : "text-ink")}>
                                       {durationStr}
                                       {isAnomalous && <AlertTriangle className="w-3.5 h-3.5" />}
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
-                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider">
+                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                       Live
                                     </span>
                                   )}
@@ -748,204 +551,81 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Current Status Strip */}
-      <div className="bg-paper border border-line rounded-[14px] p-4 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm gap-4">
-        <div className="flex items-center gap-4 min-w-[200px]">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${getAvatarTint(user?.email || '?')}`}>
-            {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+      {/* Personal Shifts Telemetry Logs */}
+      <div className="card p-0 border border-line bg-paper flex flex-col overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-line-2 p-5 bg-paper/50">
+          <div className="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-100/50">
+            <Clock className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[13.5px] font-medium text-ink leading-tight">{user?.email}</div>
-            <div className="text-[11px] text-muted mt-0.5">Today, {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+            <h2 className="font-serif text-[17px] font-medium text-ink">Recent Shift Telemetry</h2>
+            <p className="text-[11.5px] text-muted">Your personal check-in, check-out, and shift duration log</p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-6 sm:justify-end">
-           {status?.is_clocked_in && status.active_log ? (
-             <>
-               <div className="flex justify-start">
-                  <span className={cn(
-                    "inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium shadow-sm",
-                    status.active_log.work_location?.toLowerCase() === "wfh" ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-paper border border-line text-muted"
-                  )}>
-                    {status.active_log.work_location?.toLowerCase() === "wfh" ? <Home className="w-3.5 h-3.5" /> : <Building className="w-3.5 h-3.5" />}
-                    {status.active_log.work_location?.toLowerCase() === "wfh" ? "WFH" : "Office"}
-                  </span>
-               </div>
-               <div className="flex items-center justify-center gap-2 text-[12px] font-medium text-muted">
-                 <span>{formatTime(status.active_log.clock_in)}</span>
-                 <ArrowRight className="w-3 h-3 text-muted/60" />
-                 <span>--:--</span>
-               </div>
-               <div className="w-[60px] flex justify-end">
-                 <span className="text-[12px] font-bold text-ink">
-                    Ongoing
-                 </span>
-               </div>
-             </>
-           ) : (
-             <span className="text-[12px] font-medium text-muted italic">Not currently checked in.</span>
-           )}
-        </div>
-      </div>
 
-      {/* Double Column: History lists */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Personal Leave History */}
-        <div className="card p-0 border border-line bg-paper flex flex-col overflow-hidden">
-          <div className="flex items-center gap-3 border-b border-line-2 p-5 bg-paper/50">
-            <div className="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-100/50">
-              <FileText className="w-4 h-4" />
-            </div>
-            <h2 className="font-serif text-[17px] font-medium text-ink">My Leave Requests</h2>
-          </div>
+        <div className="overflow-x-auto p-0">
+          {historyLoading ? (
+            <p className="text-xs text-muted p-5">Loading shifts...</p>
+          ) : history.length === 0 ? (
+            <p className="text-xs text-muted italic p-5">No personal shifts recorded yet.</p>
+          ) : (
+            <div className="divide-y divide-line">
+              {history.slice(0, 15).map((log) => {
+                const isWfh = log.work_location?.toLowerCase() === "wfh";
+                const durationStr = calcDuration(log.clock_in, log.clock_out);
+                let isAnomalous = false;
+                if (log.clock_out) {
+                  const diffHours = (new Date(log.clock_out).getTime() - new Date(log.clock_in).getTime()) / (1000 * 60 * 60);
+                  if (diffHours > 16) isAnomalous = true;
+                }
+                const dateObj = new Date(log.clock_in);
+                const dateStr = dateObj.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-          <div className="overflow-x-auto p-0">
-            {leavesLoading ? (
-              <p className="text-xs text-muted p-5">Loading leave logs...</p>
-            ) : leaves.length === 0 ? (
-              <p className="text-xs text-muted italic p-5">No leave applications lodged yet.</p>
-            ) : (
-              <div className="divide-y divide-line">
-                  {leaves.map((l) => (
-                    <div key={l.id} className="flex items-start sm:items-center justify-between p-5 hover:bg-bone transition-colors">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={cn(
-                            "px-2 py-0.5 rounded text-[11px] font-medium inline-block w-fit border",
-                            l.leave_type === 'sick' ? "bg-rose-50 text-rose-700 border-rose-100" 
-                            : l.leave_type === 'casual' ? "bg-blue-50 text-blue-700 border-blue-100"
-                            : "bg-bone-2 text-ink border-line"
-                          )}>
-                            <span>{getLeaveTypeDisplay(l.leave_type)}</span>
-                          </span>
-                          {l.status === "approved" && (
-                            <span className={cn(
-                              "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border",
-                              l.pay_status === "unpaid"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            )}>
-                              {l.pay_status === "unpaid" ? "Unpaid (LOP)" : "Paid"}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[12px] text-muted">
-                          {l.start_date === l.end_date ? l.start_date : `${l.start_date} → ${l.end_date}`}
-                        </div>
-                        {l.reason && (
-                          <div className="text-[11.5px] text-muted italic line-clamp-1">
-                            "{l.reason}"
-                          </div>
-                        )}
-                        {l.attachment && (
-                          <a href={getMediaUrl(l.attachment)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:underline mt-0.5">
-                            <Paperclip className="w-3 h-3" /> Document attached
-                          </a>
-                        )}
-                        {l.manager_notes && (
-                          <div className="text-[11px] text-ink-2 bg-bone px-2 py-1 rounded border border-line w-fit">
-                            <strong>Note:</strong> {l.manager_notes}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <span
-                          className={cn(
-                            "flex items-center gap-1.5 text-[12px] font-medium bg-paper px-2.5 py-1 rounded-md border shadow-sm",
-                            l.status === "approved" ? "text-emerald-700 border-emerald-100 bg-emerald-50"
-                            : l.status === "rejected" ? "text-red-700 border-red-100 bg-red-50"
-                            : "text-amber-700 border-amber-100 bg-amber-50"
-                          )}
-                        >
-                          {l.status === "approved" && <CheckCircle className="w-3.5 h-3.5" />}
-                          {l.status === "rejected" && <AlertTriangle className="w-3.5 h-3.5" />}
-                          {l.status === "pending" && <Clock className="w-3.5 h-3.5" />}
-                          <span className="capitalize">{l.status}</span>
+                return (
+                  <div key={log.id} className="flex items-center justify-between p-5 hover:bg-bone transition-colors">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-[12.5px] font-semibold text-ink">{dateStr}</div>
+                      <div className="flex items-center gap-3 text-[11px] text-muted">
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded shadow-2xs text-[10.5px] font-medium border",
+                          isWfh ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-bone-2 text-ink border-line"
+                        )}>
+                          {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
+                          {isWfh ? "WFH" : "Office"}
                         </span>
+                        <div className="flex items-center gap-1.5 font-mono">
+                          <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                          {log.clock_out && (
+                            <>
+                              <ArrowRight className="w-3 h-3 text-muted/60" />
+                              <span>{new Date(log.clock_out).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Shifts Logs */}
-        <div className="card p-0 border border-line bg-paper flex flex-col overflow-hidden">
-          <div className="flex items-center gap-3 border-b border-line-2 p-5 bg-paper/50">
-            <div className="bg-blue-50 text-blue-600 p-2 rounded-lg border border-blue-100/50">
-              <Clock className="w-4 h-4" />
+                    <div className="flex justify-end">
+                      {log.clock_out ? (
+                        <span className={cn(
+                          "text-[12px] font-bold flex items-center gap-1.5",
+                          isAnomalous ? "text-amber-600" : "text-ink"
+                        )}>
+                          {durationStr}
+                          {isAnomalous && <AlertTriangle className="w-3.5 h-3.5" />}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                          Live Shift
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <h2 className="font-serif text-[17px] font-medium text-ink">Recent Shift Telemetry</h2>
-          </div>
-
-          <div className="overflow-x-auto p-0">
-            {historyLoading ? (
-              <p className="text-xs text-muted p-5">Loading shifts...</p>
-            ) : history.length === 0 ? (
-              <p className="text-xs text-muted italic p-5">No shifts recorded yet.</p>
-            ) : (
-              <div className="divide-y divide-line">
-                  {history.slice(0, 10).map((log) => {
-                    const isWfh = log.work_location?.toLowerCase() === "wfh";
-                    const durationStr = calcDuration(log.clock_in, log.clock_out);
-                    let isAnomalous = false;
-                    if (log.clock_out) {
-                      const diffHours = (new Date(log.clock_out).getTime() - new Date(log.clock_in).getTime()) / (1000 * 60 * 60);
-                      if (diffHours > 16) isAnomalous = true;
-                    }
-                    const dateObj = new Date(log.clock_in);
-                    const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-
-                    return (
-                      <div key={log.id} className="flex items-center justify-between p-5 hover:bg-bone transition-colors">
-                        <div className="flex flex-col gap-2">
-                          <div className="text-[12px] font-bold text-ink">{dateStr}</div>
-                          <div className="flex items-center gap-3 text-[11px] text-muted">
-                            <span className={cn(
-                              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm text-[10.5px] font-medium border",
-                              isWfh ? "bg-purple-50 text-purple-700 border-purple-100" : "bg-paper border-line text-muted"
-                            )}>
-                              {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
-                              {isWfh ? "WFH" : "Office"}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-                              {log.clock_out && (
-                                <>
-                                  <ArrowRight className="w-3 h-3 text-muted/60" />
-                                  <span>{new Date(log.clock_out).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-end">
-                          {log.clock_out ? (
-                            <span className={cn(
-                              "text-[12px] font-bold flex items-center gap-1.5",
-                              isAnomalous ? "text-amber-600" : "text-ink"
-                            )}>
-                              {durationStr}
-                              {isAnomalous && <AlertTriangle className="w-3.5 h-3.5" />}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                              Live
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

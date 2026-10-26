@@ -1107,10 +1107,16 @@ export async function downloadAttendanceMatrixCSV(month: number, year: number) {
   window.URL.revokeObjectURL(url);
 }
 
-export async function fetchLeaves(all?: boolean) {
-  const { data } = await api.get<LeaveRequest[]>(
-    all ? `${endpoints.attendanceLeaves}?all=true` : endpoints.attendanceLeaves
-  );
+export async function fetchLeaves(all?: boolean, params?: { status?: string; leave_type?: string; search?: string }) {
+  const query = new URLSearchParams();
+  if (all) query.append("all", "true");
+  if (params?.status && params.status !== "all") query.append("status", params.status);
+  if (params?.leave_type && params.leave_type !== "all") query.append("leave_type", params.leave_type);
+  if (params?.search) query.append("search", params.search);
+
+  const qs = query.toString();
+  const url = qs ? `${endpoints.attendanceLeaves}?${qs}` : endpoints.attendanceLeaves;
+  const { data } = await api.get<LeaveRequest[]>(url);
   return data;
 }
 

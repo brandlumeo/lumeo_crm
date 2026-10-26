@@ -192,6 +192,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         ...(mounted && isManagerOrAbove ? [{ label: "Team Directory", href: "/team" }] : []),
         ...(mounted && isManagerOrAbove ? [{ label: "Team Attendance", href: "/team-attendance" }] : []),
         { label: "My Attendance", href: "/attendance" },
+        { label: "Leaves", href: "/leaves" },
         { label: "Holidays", href: "/holidays" },
         { label: "Daily Reports", href: "/reports" },
       ]

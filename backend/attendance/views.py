@@ -374,21 +374,43 @@ class LeaveRequestListCreateView(APIView):
     GET/POST /api/v1/attendance/leaves/
     Employees can submit leaves and view their leave history.
     Managers (owners/admins) can view all leave requests in the company by passing ?all=true.
+    Supports filtering by status, leave_type, and search.
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         _auto_close_stale_shifts()
-        from accounts.models import User
+        from django.db.models import Q
         # Check manager privilege
         is_manager = request.user.has_management_access
         view_all = request.query_params.get("all") == "true"
 
         if is_manager and view_all:
-            leaves = LeaveRequest.objects.filter(company=request.user.company)
+            leaves = LeaveRequest.objects.filter(company=request.user.company).select_related("user", "approved_by")
         else:
-            leaves = LeaveRequest.objects.filter(user=request.user)
+            leaves = LeaveRequest.objects.filter(user=request.user).select_related("user", "approved_by")
+
+        # Filters
+        status_filter = request.query_params.get("status")
+        if status_filter and status_filter.lower() != "all":
+            leaves = leaves.filter(status=status_filter.lower())
+
+        leave_type_filter = request.query_params.get("leave_type")
+        if leave_type_filter and leave_type_filter.lower() != "all":
+            leaves = leaves.filter(leave_type=leave_type_filter.lower())
+
+        search = request.query_params.get("search")
+        if search:
+            search = search.strip()
+            leaves = leaves.filter(
+                Q(user__first_name__icontains=search)
+                | Q(user__last_name__icontains=search)
+                | Q(user__email__icontains=search)
+                | Q(reason__icontains=search)
+            )
+
+        leaves = leaves.order_by("-created_at")
 
         serializer = LeaveRequestSerializer(leaves, many=True)
         return Response(serializer.data)
@@ -417,7 +439,7 @@ class LeaveRequestListCreateView(APIView):
                 import logging
                 logging.getLogger(__name__).error(f"Failed to queue notify_leave_applied: {e}")
                 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(LeaveRequestSerializer(leave).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

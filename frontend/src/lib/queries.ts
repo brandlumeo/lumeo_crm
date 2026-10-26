@@ -724,10 +724,10 @@ export function useAttendanceMatrix(month: number, year: number) {
 }
 
 
-export function useLeaves(all?: boolean) {
+export function useLeaves(all?: boolean, params?: { status?: string; leave_type?: string; search?: string }) {
   return useQuery({
-    queryKey: ["attendance", "leaves", { all }],
-    queryFn: () => fetchLeaves(all),
+    queryKey: ["attendance", "leaves", { all, ...params }],
+    queryFn: () => fetchLeaves(all, params),
     enabled: authenticated(),
   });
 }
