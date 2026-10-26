@@ -2433,6 +2433,21 @@ class EventViewSet(CompanyScopedModelViewSet):
             queryset = queryset.filter(start_time__gte=dj_tz.now())
         return queryset
 
+    @action(detail=False, methods=["post"], url_path="send-daily-schedule")
+    def send_daily_schedule(self, request):
+        """
+        Trigger sending today's schedule email to all company members.
+        Available to managers / admins.
+        """
+        if not request.user.has_management_access:
+            return Response(
+                {"detail": "Only managers or admins can broadcast the daily team schedule."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        from crm.tasks import send_daily_morning_schedule_email
+        result = send_daily_morning_schedule_email(company_id=request.user.company_id)
+        return Response(result)
+
 
 # ── Notice Board ─────────────────────────────────────────────────────────────
 

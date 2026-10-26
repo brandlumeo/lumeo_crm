@@ -147,6 +147,7 @@ import {
   createEvent,
   updateEvent,
   deleteEvent,
+  sendDailyScheduleEmail,
   fetchNotices,
   createNotice,
   updateNotice,
@@ -1513,6 +1514,12 @@ export function useDeleteEvent() {
   return useMutation({
     mutationFn: deleteEvent,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["crm", "events"] }); },
+  });
+}
+
+export function useSendDailyScheduleEmail() {
+  return useMutation({
+    mutationFn: sendDailyScheduleEmail,
   });
 }
 

@@ -1620,6 +1620,8 @@ class EventSerializer(CompanyScopedSerializer):
             "location",
             "is_virtual",
             "virtual_link",
+            "color",
+            "event_type",
             "start_time",
             "end_time",
             "organizer",

@@ -162,3 +162,165 @@ def sync_gmail_account_task(self, email_address, new_history_id=None):
     except Exception as exc:
         logger.exception(f"sync_gmail_account_task failed: {exc}")
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_daily_morning_schedule_email(self, company_id=None):
+    """
+    Sends a daily morning schedule email to all active team members in the company
+    (from Primary Admins to local staff) summarising today's client deliverables,
+    meetings, posters, reels, and milestones.
+    """
+    from accounts.models import User
+    from companies.models import Company
+    from crm.models import Event
+    from accounts.emails import build_premium_email
+    from django.utils import timezone
+    import datetime
+
+    companies = Company.objects.all()
+    if company_id:
+        companies = companies.filter(id=company_id)
+
+    total_sent = 0
+    total_events = 0
+
+    for company in companies:
+        # Determine local timezone
+        company_tz = timezone.get_fixed_timezone(330)  # Default IST (+05:30)
+        if getattr(company, "timezone", None):
+            try:
+                import zoneinfo
+                company_tz = zoneinfo.ZoneInfo(company.timezone)
+            except Exception:
+                pass
+
+        now_local = timezone.now().astimezone(company_tz)
+        today_date = now_local.date()
+        today_start = timezone.make_aware(
+            datetime.datetime.combine(today_date, datetime.time.min), company_tz
+        )
+        today_end = timezone.make_aware(
+            datetime.datetime.combine(today_date, datetime.time.max), company_tz
+        )
+
+        # Query today's events for this company
+        events = Event.objects.filter(
+            company=company,
+            start_time__gte=today_start,
+            start_time__lte=today_end,
+        ).order_by("start_time")
+
+        event_count = events.count()
+        total_events += event_count
+
+        # Get all team members: primary admins, managers, and all staff
+        team_members = User.objects.filter(
+            company=company,
+            is_active=True,
+        ).exclude(role="customer")
+
+        if not team_members.exists():
+            continue
+
+        date_formatted = now_local.strftime("%A, %d %B %Y")
+
+        # Build events HTML section
+        if events.exists():
+            event_rows = []
+            for ev in events:
+                ev_local_start = ev.start_time.astimezone(company_tz)
+                time_str = ev_local_start.strftime("%I:%M %p")
+
+                # Color bar
+                palette = {
+                    "orange": "#ea580c",
+                    "coral": "#ea580c",
+                    "purple": "#7c3aed",
+                    "blue": "#2563eb",
+                    "green": "#059669",
+                    "emerald": "#059669",
+                    "indigo": "#4f46e5",
+                    "rose": "#e11d48",
+                }
+                color_bg = palette.get((ev.color or "").lower(), "#ea580c")
+                loc_badge = f"<span style='color:#78716c;'> &bull; {ev.location}</span>" if ev.location else ""
+                desc_line = (
+                    f"<p style='margin:6px 0 0;font-size:13px;color:#78716c;line-height:1.4;'>{ev.description}</p>"
+                    if ev.description
+                    else ""
+                )
+
+                event_rows.append(f"""
+                <div style="background:#ffffff;border:1px solid #e7e5e4;border-left:5px solid {color_bg};border-radius:8px;padding:14px 18px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div>
+                      <div style="font-family:Georgia,serif;font-weight:600;font-size:16px;color:#1c1917;">
+                        {ev.title}
+                      </div>
+                      <div style="font-size:12px;color:#78716c;margin-top:2px;">
+                        <span style="font-family:monospace;font-weight:600;color:#292524;">{time_str}</span>{loc_badge}
+                      </div>
+                    </div>
+                  </div>
+                  {desc_line}
+                </div>
+                """)
+
+            events_html = "".join(event_rows)
+            summary_banner = f"""
+            <div style="background:#f5f5f4;border-radius:8px;padding:12px 16px;margin-bottom:20px;border-left:3px solid #1c1917;">
+              <span style="font-size:13.5px;color:#292524;font-weight:500;">
+                Today's Schedule: <strong>{event_count}</strong> deliverable(s) and scheduled event(s) for your team.
+              </span>
+            </div>
+            """
+        else:
+            summary_banner = ""
+            events_html = """
+            <div style="background:#fafaf9;border:1px dashed #d6d3d1;border-radius:10px;padding:28px 20px;text-align:center;color:#78716c;">
+              <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:#292524;">No specific calendar deliverables or meetings scheduled for today.</p>
+              <p style="margin:6px 0 0;font-size:13px;color:#a8a29e;">A great day to focus on ongoing projects, content pipeline, and client outreach!</p>
+            </div>
+            """
+
+        body_html = f"""
+        <p style="margin:0 0 14px;color:#44403c;font-size:15px;line-height:1.5;">
+          Good morning, team! Here is your daily calendar schedule and deliverable briefing for <strong>{company.name}</strong> on <strong>{date_formatted}</strong>:
+        </p>
+        {summary_banner}
+        <div style="margin:16px 0 24px;">
+          {events_html}
+        </div>
+        <p style="margin:20px 0 0;color:#78716c;font-size:13px;line-height:1.5;">
+          Please make sure client posters, reels, and deliverables are completed on time. Check the live calendar for real-time updates and meeting links.
+        </p>
+        """
+
+        # Dispatch emails to all active team members
+        for member in team_members:
+            if not member.email:
+                continue
+            try:
+                msg = build_premium_email(
+                    subject=f"📅 Today's Schedule & Deliverables — {company.name} ({now_local.strftime('%a, %d %b')})",
+                    heading=f"Daily Schedule Briefing",
+                    body_text=f"Today's schedule for {company.name} ({date_formatted}): {event_count} event(s) scheduled. Visit https://lumeo.estgrp.in/calendar",
+                    body_html=body_html,
+                    pre_header=f"TODAY'S SCHEDULE — {date_formatted.upper()}",
+                    action_url="https://lumeo.estgrp.in/calendar",
+                    action_text="Open Live Calendar",
+                    to_email=member.email,
+                )
+                msg.send(fail_silently=True)
+                total_sent += 1
+            except Exception as e:
+                logger.error(f"Failed to send daily schedule email to {member.email}: {e}")
+
+    logger.info(
+        "send_daily_morning_schedule_email complete: sent %d email(s) across %d event(s)",
+        total_sent,
+        total_events,
+    )
+    return {"status": "success", "emails_sent": total_sent, "events_count": total_events}
+

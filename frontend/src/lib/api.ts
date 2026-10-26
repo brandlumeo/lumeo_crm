@@ -1509,6 +1509,13 @@ export async function deleteEvent(id: number) {
   await api.delete(`${endpoints.events}${id}/`);
 }
 
+export async function sendDailyScheduleEmail() {
+  const { data } = await api.post<{ status: string; emails_sent: number; events_count: number }>(
+    `${endpoints.events}send-daily-schedule/`
+  );
+  return data;
+}
+
 // ── Notices ───────────────────────────────────────────────────────────────────
 
 export async function fetchNotices(params?: ListParams) {

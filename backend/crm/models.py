@@ -1318,6 +1318,7 @@ class Event(models.Model):
     location = models.CharField(max_length=255, blank=True)
     is_virtual = models.BooleanField(default=False)
     virtual_link = models.URLField(blank=True)
+    color = models.CharField(max_length=30, blank=True, default="", help_text="Color category for calendar event (e.g. orange, purple, blue, green, indigo, rose)")
     start_time = models.DateTimeField(db_index=True)
     end_time = models.DateTimeField()
     organizer = models.ForeignKey(
