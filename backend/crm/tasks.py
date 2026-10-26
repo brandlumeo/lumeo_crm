@@ -165,11 +165,11 @@ def sync_gmail_account_task(self, email_address, new_history_id=None):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_daily_morning_schedule_email(self, company_id=None):
+def send_daily_morning_schedule_email(self, company_id=None, days_ahead=1):
     """
-    Sends a daily morning schedule email to all active team members in the company
-    (from Primary Admins to local staff) summarising today's client deliverables,
-    meetings, posters, reels, and milestones.
+    Sends an advance schedule email to all active team members in the company
+    (from Primary Admins to local staff) the day before, summarising tomorrow's
+    client deliverables, meetings, posters, reels, and milestones.
     """
     from accounts.models import User
     from companies.models import Company
@@ -196,19 +196,20 @@ def send_daily_morning_schedule_email(self, company_id=None):
                 pass
 
         now_local = timezone.now().astimezone(company_tz)
-        today_date = now_local.date()
-        today_start = timezone.make_aware(
-            datetime.datetime.combine(today_date, datetime.time.min), company_tz
+        # Target date is tomorrow (or days_ahead) sent the day before
+        target_date = now_local.date() + datetime.timedelta(days=days_ahead)
+        target_start = timezone.make_aware(
+            datetime.datetime.combine(target_date, datetime.time.min), company_tz
         )
-        today_end = timezone.make_aware(
-            datetime.datetime.combine(today_date, datetime.time.max), company_tz
+        target_end = timezone.make_aware(
+            datetime.datetime.combine(target_date, datetime.time.max), company_tz
         )
 
-        # Query today's events for this company
+        # Query events for the target day (tomorrow)
         events = Event.objects.filter(
             company=company,
-            start_time__gte=today_start,
-            start_time__lte=today_end,
+            start_time__gte=target_start,
+            start_time__lte=target_end,
         ).order_by("start_time")
 
         event_count = events.count()
@@ -223,7 +224,8 @@ def send_daily_morning_schedule_email(self, company_id=None):
         if not team_members.exists():
             continue
 
-        date_formatted = now_local.strftime("%A, %d %B %Y")
+        target_formatted = target_date.strftime("%A, %d %B %Y")
+        label_when = "Tomorrow" if days_ahead == 1 else target_date.strftime("%a, %d %b")
 
         # Build events HTML section
         if events.exists():
@@ -271,29 +273,29 @@ def send_daily_morning_schedule_email(self, company_id=None):
             summary_banner = f"""
             <div style="background:#f5f5f4;border-radius:8px;padding:12px 16px;margin-bottom:20px;border-left:3px solid #1c1917;">
               <span style="font-size:13.5px;color:#292524;font-weight:500;">
-                Today's Schedule: <strong>{event_count}</strong> deliverable(s) and scheduled event(s) for your team.
+                {label_when}'s Schedule: <strong>{event_count}</strong> deliverable(s) and scheduled event(s) for your team.
               </span>
             </div>
             """
         else:
             summary_banner = ""
-            events_html = """
+            events_html = f"""
             <div style="background:#fafaf9;border:1px dashed #d6d3d1;border-radius:10px;padding:28px 20px;text-align:center;color:#78716c;">
-              <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:#292524;">No specific calendar deliverables or meetings scheduled for today.</p>
-              <p style="margin:6px 0 0;font-size:13px;color:#a8a29e;">A great day to focus on ongoing projects, content pipeline, and client outreach!</p>
+              <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:#292524;">No specific deliverables or meetings scheduled for {target_formatted}.</p>
+              <p style="margin:6px 0 0;font-size:13px;color:#a8a29e;">Your team schedule is clear — a great opportunity for deep focus work, pipeline building, and ongoing projects!</p>
             </div>
             """
 
         body_html = f"""
         <p style="margin:0 0 14px;color:#44403c;font-size:15px;line-height:1.5;">
-          Good morning, team! Here is your daily calendar schedule and deliverable briefing for <strong>{company.name}</strong> on <strong>{date_formatted}</strong>:
+          Good evening, team! Here is your advance calendar schedule and deliverable briefing for <strong>{label_when.lower()}, {target_formatted}</strong> at <strong>{company.name}</strong>:
         </p>
         {summary_banner}
         <div style="margin:16px 0 24px;">
           {events_html}
         </div>
         <p style="margin:20px 0 0;color:#78716c;font-size:13px;line-height:1.5;">
-          Please make sure client posters, reels, and deliverables are completed on time. Check the live calendar for real-time updates and meeting links.
+          Please review tomorrow's client deliverables, posters, reels, and meetings in advance so you are fully prepared for the day ahead. Check the live calendar for real-time updates and meeting links.
         </p>
         """
 
@@ -303,11 +305,11 @@ def send_daily_morning_schedule_email(self, company_id=None):
                 continue
             try:
                 msg = build_premium_email(
-                    subject=f"📅 Today's Schedule & Deliverables — {company.name} ({now_local.strftime('%a, %d %b')})",
-                    heading=f"Daily Schedule Briefing",
-                    body_text=f"Today's schedule for {company.name} ({date_formatted}): {event_count} event(s) scheduled. Visit https://lumeo.estgrp.in/calendar",
+                    subject=f"📅 Tomorrow's Schedule & Deliverables — {company.name} ({target_date.strftime('%a, %d %b')})",
+                    heading=f"Tomorrow's Schedule Briefing",
+                    body_text=f"Tomorrow's schedule for {company.name} ({target_formatted}): {event_count} event(s) scheduled. Visit https://lumeo.estgrp.in/calendar",
                     body_html=body_html,
-                    pre_header=f"TODAY'S SCHEDULE — {date_formatted.upper()}",
+                    pre_header=f"ADVANCE BRIEFING — TOMORROW'S SCHEDULE ({target_formatted.upper()})",
                     action_url="https://lumeo.estgrp.in/calendar",
                     action_text="Open Live Calendar",
                     to_email=member.email,
@@ -315,10 +317,10 @@ def send_daily_morning_schedule_email(self, company_id=None):
                 msg.send(fail_silently=True)
                 total_sent += 1
             except Exception as e:
-                logger.error(f"Failed to send daily schedule email to {member.email}: {e}")
+                logger.error(f"Failed to send advance schedule email to {member.email}: {e}")
 
     logger.info(
-        "send_daily_morning_schedule_email complete: sent %d email(s) across %d event(s)",
+        "send_daily_morning_schedule_email complete (day before): sent %d email(s) across %d event(s)",
         total_sent,
         total_events,
     )

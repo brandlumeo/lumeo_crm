@@ -269,7 +269,7 @@ export default function CalendarPage() {
     sendScheduleEmailMutation.mutate(undefined, {
       onSuccess: (data) => {
         toast.success(
-          `Schedule email dispatched to ${data.emails_sent} team member(s) with ${data.events_count} event(s)!`
+          `Tomorrow's schedule email dispatched to ${data.emails_sent} team member(s) with ${data.events_count} event(s)!`
         );
       },
       onError: (err: any) => {
@@ -413,11 +413,11 @@ export default function CalendarPage() {
                   ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-zinc-700"
                   : "bg-white hover:bg-stone-100 text-stone-900 border-stone-300"
               )}
-              title="Broadcast today's schedule email to all company members"
+              title="Broadcast tomorrow's schedule email to all company members in advance"
             >
               <Send className="w-3.5 h-3.5 text-blue-500" />
               <span>
-                {sendScheduleEmailMutation.isPending ? "Sending..." : "Send Daily Schedule"}
+                {sendScheduleEmailMutation.isPending ? "Sending..." : "Send Tomorrow's Schedule"}
               </span>
             </button>
           )}

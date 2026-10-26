@@ -32,10 +32,10 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.send_daily_digest",
         "schedule": crontab(hour=9, minute=0, day_of_week="1-5"),
     },
-    # Send daily morning schedule email to all team members at 02:30 UTC (08:00 AM IST)
-    "send-daily-morning-schedule-email": {
+    # Send advance schedule email for tomorrow to all team members every evening at 14:30 UTC (08:00 PM IST)
+    "send-daily-advance-schedule-email": {
         "task": "crm.tasks.send_daily_morning_schedule_email",
-        "schedule": crontab(hour=2, minute=30),
+        "schedule": crontab(hour=14, minute=30),
     },
     # Check for tasks due today or overdue daily at 07:00 UTC
     "check-task-deadlines": {
