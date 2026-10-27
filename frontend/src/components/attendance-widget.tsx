@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Coffee, LogOut, Play, Building2, Home, MapPin, Briefcase } from "lucide-react";
+import { Clock, Coffee, LogOut, Play, Building2, Home, MapPin, Briefcase, Compass } from "lucide-react";
 import {
   useAttendanceStatus,
   usePunchIn,
@@ -83,8 +83,8 @@ export function AttendanceWidget() {
                     {[
                       { id: "office", label: "Office", icon: Building2 },
                       { id: "wfh", label: "Home", icon: Home },
-                      { id: "onsite", label: "On-Site", icon: MapPin },
-                      { id: "field", label: "Field", icon: Briefcase },
+                      { id: "onsite", label: "On-Site", icon: Briefcase },
+                      { id: "field", label: "Field", icon: Compass },
                     ].map((loc) => {
                       const Icon = loc.icon;
                       const isSelected = workLocation === loc.id;

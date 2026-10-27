@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -14,12 +14,68 @@ import {
   LogOut,
   Home,
   Building,
+  Building2,
+  Briefcase,
+  Compass,
+  ChevronDown,
+  Check,
   ArrowRight,
   AlertTriangle,
   ExternalLink,
   Timer,
   CalendarDays,
 } from "lucide-react";
+
+const WORK_LOCATION_OPTIONS = [
+  {
+    id: "office" as const,
+    label: "Office",
+    shortLabel: "Office",
+    sublabel: "Headquarters & regular desk",
+    icon: Building2,
+    badgeColor: "text-blue-600 bg-blue-50 border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/60",
+    iconColor: "text-blue-600 dark:text-blue-400",
+  },
+  {
+    id: "wfh" as const,
+    label: "Work From Home",
+    shortLabel: "WFH",
+    sublabel: "Remote residence / hybrid shift",
+    icon: Home,
+    badgeColor: "text-emerald-600 bg-emerald-50 border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    id: "onsite" as const,
+    label: "On-site Client",
+    shortLabel: "On-site",
+    sublabel: "Client premises, meetings & deliverables",
+    icon: Briefcase,
+    badgeColor: "text-purple-600 bg-purple-50 border-purple-200/70 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/60",
+    iconColor: "text-purple-600 dark:text-purple-400",
+  },
+  {
+    id: "field" as const,
+    label: "Field / Travel",
+    shortLabel: "Field",
+    sublabel: "Transit, shoot locations & client errands",
+    icon: Compass,
+    badgeColor: "text-amber-600 bg-amber-50 border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/60",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+];
+
+const renderLocationBadge = (locationKey?: string) => {
+  const key = (locationKey || "office").toLowerCase();
+  const loc = WORK_LOCATION_OPTIONS.find((l) => l.id === key) || WORK_LOCATION_OPTIONS[0];
+  const Icon = loc.icon;
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10.5px] font-medium border shadow-2xs", loc.badgeColor)}>
+      <Icon className="w-3 h-3" />
+      <span>{loc.shortLabel}</span>
+    </span>
+  );
+};
 
 const getAvatarTint = (name: string) => {
   const char = name ? name[0].toUpperCase() : "?";
@@ -59,6 +115,8 @@ export default function AttendancePage() {
   // Component states
   const [mounted, setMounted] = useState(false);
   const [workLocation, setWorkLocation] = useState<"office" | "wfh" | "onsite" | "field">("office");
+  const [isLocationMenuOpen, setIsLocationMenuOpen] = useState(false);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState("");
   const [breakReason, setBreakReason] = useState("");
   const [companyLogSearch, setCompanyLogSearch] = useState("");
@@ -66,6 +124,20 @@ export default function AttendancePage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
+        setIsLocationMenuOpen(false);
+      }
+    }
+    if (isLocationMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isLocationMenuOpen]);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return "--:--";
@@ -235,16 +307,65 @@ export default function AttendancePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] uppercase tracking-wider text-muted font-medium">Work Location</label>
-                    <select
-                      value={workLocation}
-                      onChange={(e) => setWorkLocation(e.target.value as any)}
-                      className="bg-paper border border-line rounded-md px-3 py-2 text-[13px] text-ink focus:border-ink outline-none"
-                    >
-                      <option value="office">🏢 Office</option>
-                      <option value="wfh">🏠 Work From Home</option>
-                      <option value="onsite">🚜 On-site Client</option>
-                      <option value="field">🚗 Field / Travel</option>
-                    </select>
+                    <div className="relative" ref={locationDropdownRef}>
+                      {(() => {
+                        const activeLoc = WORK_LOCATION_OPTIONS.find((l) => l.id === workLocation) || WORK_LOCATION_OPTIONS[0];
+                        const ActiveIcon = activeLoc.icon;
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setIsLocationMenuOpen(!isLocationMenuOpen)}
+                              className="w-full h-[42px] bg-paper border border-line hover:border-ink/40 rounded-lg px-3 text-[13px] text-ink flex items-center justify-between gap-2.5 transition-all outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 cursor-pointer shadow-2xs"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className={cn("w-6 h-6 rounded-md flex items-center justify-center border shrink-0", activeLoc.badgeColor)}>
+                                  <ActiveIcon className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="font-medium text-ink truncate">{activeLoc.label}</span>
+                              </div>
+                              <ChevronDown className={cn("w-4 h-4 text-muted transition-transform duration-200 shrink-0", isLocationMenuOpen && "rotate-180")} />
+                            </button>
+
+                            {isLocationMenuOpen && (
+                              <div className="absolute top-full left-0 right-0 mt-1.5 bg-paper/98 backdrop-blur-md border border-line rounded-xl shadow-xl z-50 p-1.5 flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-100">
+                                {WORK_LOCATION_OPTIONS.map((loc) => {
+                                  const LocIcon = loc.icon;
+                                  const isSelected = workLocation === loc.id;
+                                  return (
+                                    <button
+                                      key={loc.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setWorkLocation(loc.id);
+                                        setIsLocationMenuOpen(false);
+                                      }}
+                                      className={cn(
+                                        "w-full flex items-center justify-between gap-3 p-2.5 rounded-lg text-left transition-all cursor-pointer",
+                                        isSelected
+                                          ? "bg-bone-2 text-ink border border-line/60"
+                                          : "hover:bg-bone text-ink/80 hover:text-ink border border-transparent"
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <span className={cn("w-7 h-7 rounded-lg flex items-center justify-center border shrink-0", loc.badgeColor)}>
+                                          <LocIcon className="w-4 h-4" />
+                                        </span>
+                                        <div className="min-w-0 flex flex-col">
+                                          <span className="text-[13px] font-medium leading-tight">{loc.label}</span>
+                                          <span className="text-[11px] text-muted truncate mt-0.5">{loc.sublabel}</span>
+                                        </div>
+                                      </div>
+                                      {isSelected && <Check className="w-4 h-4 text-ink shrink-0" />}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] uppercase tracking-wider text-muted font-medium">Duty Notes</label>
@@ -253,7 +374,7 @@ export default function AttendancePage() {
                       placeholder="Optional notes..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="bg-paper border border-line rounded-md px-3 py-2 text-[13px] text-ink focus:border-ink outline-none"
+                      className="w-full h-[42px] bg-paper border border-line hover:border-ink/40 rounded-lg px-3 text-[13px] text-ink focus:border-ink outline-none transition-all shadow-2xs"
                     />
                   </div>
                 </div>
@@ -311,10 +432,18 @@ export default function AttendancePage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md border border-line/50 px-4 py-1.5 rounded-full text-[12px] text-ink-2 font-medium z-10">
-                  <MapPin className="w-3.5 h-3.5 text-muted" />
-                  <span>Logged in via <strong className="text-ink tracking-wide uppercase">{status.active_log?.work_location}</strong></span>
-                </div>
+                {(() => {
+                  const loc = WORK_LOCATION_OPTIONS.find(l => l.id === (status.active_log?.work_location || "").toLowerCase()) || WORK_LOCATION_OPTIONS[0];
+                  const LocIcon = loc.icon;
+                  return (
+                    <div className="flex items-center gap-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-line px-3.5 py-1.5 rounded-full text-[12px] text-ink-2 font-medium z-10 shadow-2xs">
+                      <span className={cn("w-5 h-5 rounded-full flex items-center justify-center border", loc.badgeColor)}>
+                        <LocIcon className="w-3 h-3" />
+                      </span>
+                      <span>Logged in via <strong className="text-ink font-semibold">{loc.label}</strong></span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -504,14 +633,8 @@ export default function AttendancePage() {
                               </div>
 
                               <div className="flex items-center gap-8 justify-end">
-                                <div className="w-[80px] flex justify-start">
-                                  <span className={cn(
-                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-medium border shadow-2xs",
-                                    isWfh ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-bone-2 text-ink border-line"
-                                  )}>
-                                    {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
-                                    {isWfh ? "WFH" : "Office"}
-                                  </span>
+                                <div className="w-[90px] flex justify-start">
+                                  {renderLocationBadge(log.work_location)}
                                 </div>
 
                                 <div className="flex items-center gap-2 text-[12px] text-muted w-[160px] justify-center">
@@ -586,13 +709,7 @@ export default function AttendancePage() {
                     <div className="flex flex-col gap-1.5">
                       <div className="text-[12.5px] font-semibold text-ink">{dateStr}</div>
                       <div className="flex items-center gap-3 text-[11px] text-muted">
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded shadow-2xs text-[10.5px] font-medium border",
-                          isWfh ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-bone-2 text-ink border-line"
-                        )}>
-                          {isWfh ? <Home className="w-3 h-3" /> : <Building className="w-3 h-3" />}
-                          {isWfh ? "WFH" : "Office"}
-                        </span>
+                        {renderLocationBadge(log.work_location)}
                         <div className="flex items-center gap-1.5 font-mono">
                           <span>{new Date(log.clock_in).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                           {log.clock_out && (
