@@ -621,62 +621,115 @@ def check_subscription_expiry(self):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)
-def notify_leave_applied(self, leave_id: int):
+def notify_leave_applied(self, leave_id):
     try:
         from attendance.models import LeaveRequest
         from accounts.emails import build_premium_email
         from django.conf import settings
         from accounts.models import User
+        from django.db.models import Q
         
         leave = LeaveRequest.objects.select_related('user', 'company').get(pk=leave_id)
         
-        subject = f"Leave application applied - {leave.company.name}"
-        text_content = f"Hello {leave.user.get_full_name()}!\n\nLeave application applied.:-\nDate: {leave.start_date}\nStatus: {leave.status}\nReason for absence: {leave.reason}\n"
+        # 1. Determine leave type & half-day status dynamically
+        is_half_day = (leave.leave_type == LeaveRequest.LeaveType.HALF_DAY)
+        leave_type_display = leave.get_leave_type_display() if hasattr(leave, 'get_leave_type_display') else "Leave"
+        
+        type_prefix = "[Half Day]" if is_half_day else f"[{leave_type_display}]"
+        badge_color = "#92400E" if is_half_day else "#1f2937"
+        badge_bg = "#FEF3C7" if is_half_day else "#e5e7eb"
+
+        # 2. Email for Applicant (Confirmation)
+        subject = f"{type_prefix} Leave application applied - {leave.company.name}"
+        heading = "Half Day Leave Applied" if is_half_day else "Leave Application Applied"
+        
+        text_content = (
+            f"Hello {leave.user.get_full_name()}!\n\n"
+            f"Leave application applied ({leave_type_display}):\n"
+            f"Date: {leave.start_date}\n"
+            f"Type: {leave_type_display}\n"
+            f"Status: {leave.status}\n"
+            f"Reason for absence: {leave.reason}\n"
+        )
         
         html_msg = f"""
             <p>Hello <strong>{leave.user.get_full_name()}</strong>!</p>
             <p>Leave application applied.:-</p>
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 8px; color: #1f2937;">
+                    <strong>Type:</strong> 
+                    <span style="background-color: {badge_bg}; color: {badge_color}; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 13px;">
+                        {leave_type_display.upper()}
+                    </span>
+                </p>
                 <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
                 <p style="margin: 0 0 8px; color: #1f2937;"><strong>Status:</strong> {leave.status}</p>
                 <p style="margin: 0; color: #1f2937;"><strong>Reason for absence:</strong> {leave.reason}</p>
             </div>
         """
-        msg = build_premium_email(
-            subject=subject,
-            heading="Leave Application Applied",
-            body_text=text_content,
-            body_html=html_msg,
-            pre_header="LEAVE REQUEST",
-            action_url=f"{settings.FRONTEND_URL}/team-attendance",
-            action_text="View Leave",
-            to_email=leave.user.email
-        )
-        msg.send(fail_silently=True)
         
-        # Also notify HR/Admins
-        admins = User.objects.filter(company=leave.company, role__in=[User.Role.ADMIN, User.Role.OWNER, User.Role.HR])
-        recipient_emails = [admin.email for admin in admins if admin.email]
-        if recipient_emails:
-            admin_html = f"""
-                <p>Hello Team,</p>
-                <p><strong>{leave.user.get_full_name()}</strong> has applied for leave.</p>
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                    <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
-                    <p style="margin: 0; color: #1f2937;"><strong>Reason:</strong> {leave.reason}</p>
-                </div>
-            """
-            admin_msg = build_premium_email(
-                subject=f"New Leave Request: {leave.user.get_full_name()}",
-                heading="Leave Request Submitted",
-                body_text=f"{leave.user.get_full_name()} has applied for leave.\nDate: {leave.start_date}\nReason: {leave.reason}",
-                body_html=admin_html,
-                pre_header="HR NOTIFICATION",
+        if leave.user.email:
+            msg = build_premium_email(
+                subject=subject,
+                heading=heading,
+                body_text=text_content,
+                body_html=html_msg,
+                pre_header="HALF DAY REQUEST" if is_half_day else "LEAVE REQUEST",
                 action_url=f"{settings.FRONTEND_URL}/team-attendance",
-                action_text="Review Leave",
-                bcc_list=recipient_emails
+                action_text="View Leave",
+                to_email=leave.user.email
             )
-            admin_msg.send(fail_silently=True)
+            msg.send(fail_silently=True)
+        
+        # 3. Notify Reviewers (Owners, Admins, Managers with management access)
+        # Dynamically query active company reviewers, excluding the applicant
+        try:
+            reviewers = User.objects.filter(
+                company=leave.company,
+                is_active=True
+            ).filter(
+                Q(role__in=[User.Role.ADMIN, User.Role.OWNER, User.Role.MANAGER, "hr"])
+                | Q(can_manage_team=True)
+            ).exclude(id=leave.user.id)
+            
+            applicant_email = (leave.user.email or "").strip().lower()
+            recipient_emails = list({
+                reviewer.email.strip().lower()
+                for reviewer in reviewers
+                if reviewer.email and reviewer.email.strip() and reviewer.email.strip().lower() != applicant_email
+            })
+            
+            if recipient_emails:
+                admin_html = f"""
+                    <p>Hello Team,</p>
+                    <p><strong>{leave.user.get_full_name()}</strong> has applied for leave.</p>
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                        <p style="margin: 0 0 8px; color: #1f2937;">
+                            <strong>Type:</strong> 
+                            <span style="background-color: {badge_bg}; color: {badge_color}; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 13px;">
+                                {leave_type_display.upper()}
+                            </span>
+                        </p>
+                        <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
+                        <p style="margin: 0; color: #1f2937;"><strong>Reason:</strong> {leave.reason}</p>
+                    </div>
+                """
+                admin_subject = f"New {type_prefix} Leave Request: {leave.user.get_full_name()}"
+                
+                admin_msg = build_premium_email(
+                    subject=admin_subject,
+                    heading=f"New {leave_type_display} Request",
+                    body_text=f"{leave.user.get_full_name()} has applied for {leave_type_display.lower()}.\nDate: {leave.start_date}\nReason: {leave.reason}",
+                    body_html=admin_html,
+                    pre_header="HR NOTIFICATION",
+                    action_url=f"{settings.FRONTEND_URL}/team-attendance",
+                    action_text="Review Leave",
+                    to_email=recipient_emails[0],
+                    bcc_list=recipient_emails[1:] if len(recipient_emails) > 1 else None
+                )
+                admin_msg.send(fail_silently=True)
+        except Exception as reviewer_err:
+            logger.warning(f"Failed to send reviewer leave notification: {reviewer_err}")
                 
     except Exception as exc:
         logger.exception('notify_leave_applied failed: %s', exc)
@@ -692,13 +745,25 @@ def notify_leave_updated(self, leave_id: int):
         
         leave = LeaveRequest.objects.select_related('user', 'company', 'approved_by').get(pk=leave_id)
         
-        subject = f"Leave application status updated - {leave.company.name}"
-        text_content = f"Hello {leave.user.get_full_name()}!\n\nLeave application {leave.status}.\nDate: {leave.start_date}\nStatus: {leave.status}\n"
+        is_half_day = (leave.leave_type == LeaveRequest.LeaveType.HALF_DAY)
+        leave_type_display = leave.get_leave_type_display() if hasattr(leave, 'get_leave_type_display') else "Leave"
+        type_prefix = "[Half Day]" if is_half_day else f"[{leave_type_display}]"
+        badge_color = "#92400E" if is_half_day else "#1f2937"
+        badge_bg = "#FEF3C7" if is_half_day else "#e5e7eb"
+
+        subject = f"{type_prefix} Leave application status updated - {leave.company.name}"
+        text_content = f"Hello {leave.user.get_full_name()}!\n\nLeave application ({leave_type_display}) {leave.status}.\nDate: {leave.start_date}\nStatus: {leave.status}\n"
         
         html_msg = f"""
             <p>Hello <strong>{leave.user.get_full_name()}</strong>!</p>
             <p>Leave application <strong>{leave.status}</strong>.</p>
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 8px; color: #1f2937;">
+                    <strong>Type:</strong> 
+                    <span style="background-color: {badge_bg}; color: {badge_color}; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 13px;">
+                        {leave_type_display.upper()}
+                    </span>
+                </p>
                 <p style="margin: 0 0 8px; color: #1f2937;"><strong>Date:</strong> {leave.start_date}</p>
                 <p style="margin: 0 0 8px; color: #1f2937;"><strong>Status:</strong> {leave.status}</p>
         """
@@ -711,7 +776,7 @@ def notify_leave_updated(self, leave_id: int):
             
         msg = build_premium_email(
             subject=subject,
-            heading=f"Leave {leave.status.title()}",
+            heading=f"{leave_type_display} {leave.status.title()}",
             body_text=text_content,
             body_html=html_msg,
             pre_header="LEAVE STATUS",
