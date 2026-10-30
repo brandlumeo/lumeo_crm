@@ -63,7 +63,7 @@ export default function TeamAttendancePage() {
       case 'late': return <div title="Late" className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white shadow-sm"><Clock className="w-4 h-4 stroke-[2.5]" /></div>;
       case 'leave': return <div title="On Leave" className="flex items-center justify-center w-7 h-7 rounded-full bg-[#378ADD] text-white shadow-sm"><PlaneTakeoff className="w-4 h-4 stroke-[2.5]" /></div>;
       case 'holiday': return <div title="Holiday" className="flex items-center justify-center w-7 h-7 rounded-full bg-purple-500 text-white shadow-sm"><Star className="w-4 h-4 stroke-[2.5] fill-white" /></div>;
-      case 'day_off': return <div title="Day Off" className="flex items-center justify-center w-7 h-7 rounded-full bg-transparent border border-slate-300 text-slate-400"><CalendarOff className="w-4 h-4 stroke-[2.5]" /></div>;
+      case 'day_off': return <div title="Day Off" className="flex items-center justify-center w-7 h-7 rounded-full bg-rose-500 text-white shadow-sm"><CalendarOff className="w-3.5 h-3.5 stroke-[2.5]" /></div>;
       case 'future': return <div className="w-7 h-7" />;
       default: return <div className="w-7 h-7 text-xs text-muted">-</div>;
     }
