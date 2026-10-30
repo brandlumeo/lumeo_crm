@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, Coffee, LogOut, Play, Building2, Home, MapPin, Briefcase, Compass } from "lucide-react";
+import { toast } from "sonner";
 import {
   useAttendanceStatus,
   usePunchIn,
@@ -26,12 +27,46 @@ export function AttendanceWidget() {
   }
 
   const handlePunchIn = () => {
-    punchInMutation({ work_location: workLocation, notes }, {
-      onSuccess: () => {
-        setIsOpen(false);
-        setNotes("");
+    const executePunch = (coords?: { latitude: number; longitude: number }) => {
+      punchInMutation(
+        {
+          work_location: workLocation,
+          notes,
+          latitude: coords?.latitude,
+          longitude: coords?.longitude,
+        },
+        {
+          onSuccess: () => {
+            setIsOpen(false);
+            setNotes("");
+            toast.success("Shift clocked in successfully!");
+          },
+          onError: (err: any) => {
+            toast.error(err.response?.data?.detail ?? "Failed to punch in.");
+          },
+        }
+      );
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => executePunch({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        (err) => {
+          if (workLocation === "office") {
+            toast.error("Location access is required to clock in from the office. Please allow location permissions in your browser.");
+          } else {
+            executePunch();
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      if (workLocation === "office") {
+        toast.error("Geolocation is not supported by your browser.");
+      } else {
+        executePunch();
       }
-    });
+    }
   };
 
   const handlePunchOut = () => {

@@ -119,6 +119,9 @@ export interface CompanyDetail extends CompanySummary {
   allow_self_clock_in: boolean;
   auto_clock_in_first_sign_in: boolean;
   clock_in_location_radius_check: boolean;
+  office_latitude?: number | null;
+  office_longitude?: number | null;
+  office_radius_meters?: number;
   allow_clock_in_outside_shift: boolean;
   clock_in_ip_address_check: boolean;
   send_monthly_attendance_report: boolean;

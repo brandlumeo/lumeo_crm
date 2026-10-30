@@ -325,6 +325,18 @@ class Company(models.Model):
     allow_self_clock_in = models.BooleanField(default=True)
     auto_clock_in_first_sign_in = models.BooleanField(default=False)
     clock_in_location_radius_check = models.BooleanField(default=False)
+    office_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Latitude coordinates of the office location."
+    )
+    office_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Longitude coordinates of the office location."
+    )
+    office_radius_meters = models.IntegerField(
+        default=100,
+        help_text="Allowed radius in meters for office clock-in."
+    )
     allow_clock_in_outside_shift = models.BooleanField(default=False)
     clock_in_ip_address_check = models.BooleanField(default=False)
     send_monthly_attendance_report = models.BooleanField(default=True)

@@ -176,10 +176,54 @@ class PunchInView(APIView):
         latitude = request.data.get("latitude")
         longitude = request.data.get("longitude")
         notes = request.data.get("notes", "")
-
-        # 3. Determine Shift Status dynamically based on Company settings
-        import zoneinfo
         company = request.user.company
+
+        # 3. Geofence check for Office clock-in (100m radius)
+        if work_location == TimeLog.WorkLocation.OFFICE and company and company.clock_in_location_radius_check:
+            if company.office_latitude is not None and company.office_longitude is not None:
+                if latitude is None or longitude is None:
+                    return Response(
+                        {"detail": "Location coordinates are required to clock in from the office. Please allow location access in your browser."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                try:
+                    user_lat = float(latitude)
+                    user_lon = float(longitude)
+                    office_lat = float(company.office_latitude)
+                    office_lon = float(company.office_longitude)
+
+                    import math
+                    R = 6371000  # Radius of Earth in meters
+                    phi1 = math.radians(office_lat)
+                    phi2 = math.radians(user_lat)
+                    delta_phi = math.radians(user_lat - office_lat)
+                    delta_lambda = math.radians(user_lon - office_lon)
+
+                    a = (math.sin(delta_phi / 2) ** 2 +
+                         math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2)
+                    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                    distance_meters = R * c
+
+                    allowed_radius = company.office_radius_meters or 100
+                    if distance_meters > allowed_radius:
+                        dist_int = int(round(distance_meters))
+                        return Response(
+                            {
+                                "detail": (
+                                    f"Clock-in rejected: You are {dist_int}m away from the office. "
+                                    f"Office clock-in is only permitted within {allowed_radius}m of the office."
+                                )
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                except (ValueError, TypeError):
+                    return Response(
+                        {"detail": "Invalid location coordinates received for office clock-in verification."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+        # 4. Determine Shift Status dynamically based on Company settings
+        import zoneinfo
         company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
         local_time = timezone.now().astimezone(company_tz)
         

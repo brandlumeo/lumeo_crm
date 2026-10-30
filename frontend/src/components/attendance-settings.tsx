@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Clock, Loader2, CheckCircle, XCircle, Shield, 
-  Timer, HelpCircle, Plus, Edit, Trash2, X, RotateCw, Settings
+  Timer, HelpCircle, Plus, Edit, Trash2, X, RotateCw, Settings,
+  MapPin, LocateFixed
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrentCompany, useCurrentUser, useTeam } from "@/lib/queries";
@@ -63,6 +64,10 @@ export function AttendanceSettingsForm() {
   const [allowSelfClockIn, setAllowSelfClockIn] = useState(true);
   const [autoClockInFirstSignIn, setAutoClockInFirstSignIn] = useState(false);
   const [clockInLocationRadius, setClockInLocationRadius] = useState(false);
+  const [officeLatitude, setOfficeLatitude] = useState<string>("");
+  const [officeLongitude, setOfficeLongitude] = useState<string>("");
+  const [officeRadiusMeters, setOfficeRadiusMeters] = useState<string>("100");
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [allowClockInOutsideShift, setAllowClockInOutsideShift] = useState(false);
   const [clockInIpAddress, setClockInIpAddress] = useState(false);
   const [sendMonthlyReport, setSendMonthlyReport] = useState(true);
@@ -123,6 +128,9 @@ export function AttendanceSettingsForm() {
       setAllowSelfClockIn(company.allow_self_clock_in ?? true);
       setAutoClockInFirstSignIn(company.auto_clock_in_first_sign_in ?? false);
       setClockInLocationRadius(company.clock_in_location_radius_check ?? false);
+      setOfficeLatitude(company.office_latitude?.toString() ?? "");
+      setOfficeLongitude(company.office_longitude?.toString() ?? "");
+      setOfficeRadiusMeters(company.office_radius_meters?.toString() ?? "100");
       setAllowClockInOutsideShift(company.allow_clock_in_outside_shift ?? false);
       setClockInIpAddress(company.clock_in_ip_address_check ?? false);
       setSendMonthlyReport(company.send_monthly_attendance_report ?? true);
@@ -153,6 +161,29 @@ export function AttendanceSettingsForm() {
     },
   });
 
+  const handleCaptureCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+    setIsCapturingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsCapturingLocation(false);
+        const lat = pos.coords.latitude.toFixed(6);
+        const lon = pos.coords.longitude.toFixed(6);
+        setOfficeLatitude(lat);
+        setOfficeLongitude(lon);
+        toast.success(`Captured current location: ${lat}, ${lon}`);
+      },
+      (err) => {
+        setIsCapturingLocation(false);
+        toast.error("Failed to detect location. Please allow browser location access.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const handleSaveGeneral = () => {
     mutation.mutate({
       office_start_time: officeStartTime,
@@ -166,6 +197,9 @@ export function AttendanceSettingsForm() {
       allow_self_clock_in: allowSelfClockIn,
       auto_clock_in_first_sign_in: autoClockInFirstSignIn,
       clock_in_location_radius_check: clockInLocationRadius,
+      office_latitude: officeLatitude ? parseFloat(officeLatitude) : null,
+      office_longitude: officeLongitude ? parseFloat(officeLongitude) : null,
+      office_radius_meters: parseInt(officeRadiusMeters) || 100,
       allow_clock_in_outside_shift: allowClockInOutsideShift,
       clock_in_ip_address_check: clockInIpAddress,
       send_monthly_attendance_report: sendMonthlyReport,
@@ -469,6 +503,68 @@ export function AttendanceSettingsForm() {
                   label="Clock-in check with added location Radius" 
                   checked={clockInLocationRadius} onChange={setClockInLocationRadius} disabled={!isAdmin} 
                 />
+                {clockInLocationRadius && (
+                  <div className="ml-6 p-4 rounded-xl border border-line bg-bone-2/40 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-primary" />
+                          Office GPS Geofence (Only for "Office" Clock-ins)
+                        </div>
+                        <p className="text-xs text-muted mt-0.5">
+                          Employees selecting "Office" must be within this radius. Non-office options (WFH, On-Site, Field) remain unrestricted.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCaptureCurrentLocation}
+                        disabled={!isAdmin || isCapturingLocation}
+                        className="btn-secondary !py-1.5 !px-3 !text-xs flex items-center gap-1.5 whitespace-nowrap shadow-sm hover:border-primary"
+                      >
+                        <LocateFixed className={`w-3.5 h-3.5 ${isCapturingLocation ? "animate-spin" : "text-primary"}`} />
+                        {isCapturingLocation ? "Detecting GPS..." : "📍 Capture My Current Location"}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-ink-2 mb-1">Office Latitude</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={officeLatitude}
+                          onChange={(e) => setOfficeLatitude(e.target.value)}
+                          placeholder="e.g. 11.522912"
+                          disabled={!isAdmin}
+                          className="input !text-xs !py-1.5 w-full font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-ink-2 mb-1">Office Longitude</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={officeLongitude}
+                          onChange={(e) => setOfficeLongitude(e.target.value)}
+                          placeholder="e.g. 75.636243"
+                          disabled={!isAdmin}
+                          className="input !text-xs !py-1.5 w-full font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-ink-2 mb-1">Allowed Radius (meters)</label>
+                        <input
+                          type="number"
+                          value={officeRadiusMeters}
+                          onChange={(e) => setOfficeRadiusMeters(e.target.value)}
+                          placeholder="100"
+                          disabled={!isAdmin}
+                          className="input !text-xs !py-1.5 w-full font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <CheckboxItem 
                   label="Allow clock-in outside shift hours" 
                   checked={allowClockInOutsideShift} onChange={setAllowClockInOutsideShift} disabled={!isAdmin} 

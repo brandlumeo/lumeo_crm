@@ -204,10 +204,21 @@ export default function AttendancePage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => executePunch({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        () => executePunch()
+        (err) => {
+          if (workLocation === "office") {
+            toast.error("Location access is required to clock in from the office. Please allow location access in your browser.");
+          } else {
+            executePunch();
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      executePunch();
+      if (workLocation === "office") {
+        toast.error("Geolocation is not supported by your browser.");
+      } else {
+        executePunch();
+      }
     }
   };
 
