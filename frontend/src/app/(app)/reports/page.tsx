@@ -48,12 +48,124 @@ import {
   BarChart3,
   TrendingUp,
   Info,
-  CheckCircle
+  CheckCircle,
+  Crown,
+  Zap,
+  Target
 } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
+
+
+/* ========================================================================= */
+/* LUXURY EXECUTIVE 3D EMBLEMS & MEDALLIONS                                   */
+/* ========================================================================= */
+function GoldTrophyJewel() {
+  return (
+    <div className="relative group">
+      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 opacity-60 blur-sm group-hover:opacity-90 transition duration-300" />
+      <div className="relative w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-700 p-0.5 shadow-xl shadow-amber-500/25 flex items-center justify-center">
+        <div className="w-full h-full rounded-2xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center relative overflow-hidden border border-yellow-200/50">
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent rounded-t-2xl pointer-events-none" />
+          <svg className="w-7 h-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="goldCupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFF9E6" />
+                <stop offset="45%" stopColor="#FFD700" />
+                <stop offset="100%" stopColor="#D48806" />
+              </linearGradient>
+              <linearGradient id="goldBaseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFE58F" />
+                <stop offset="100%" stopColor="#874D00" />
+              </linearGradient>
+            </defs>
+            <path d="M6 3H18V10C18 13.3137 15.3137 16 12 16C8.68629 16 6 13.3137 6 10V3Z" fill="url(#goldCupGrad)" stroke="#B87400" strokeWidth="1.2" />
+            <path d="M6 5H4C2.89543 5 2 5.89543 2 7C2 9.20914 3.79086 11 6 11" stroke="url(#goldCupGrad)" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M18 5H20C21.1046 5 22 5.89543 22 7C22 9.20914 20.2091 11 18 11" stroke="url(#goldCupGrad)" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M12 16V19" stroke="url(#goldBaseGrad)" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M8 20H16C16.5523 20 17 20.4477 17 21V21.5H7V21C7 20.4477 7.44772 20 8 20Z" fill="url(#goldBaseGrad)" stroke="#7A4B00" strokeWidth="1" />
+            <polygon points="12,6.5 13.2,9 16,9.3 14,11.2 14.5,14 12,12.7 9.5,14 10,11.2 8,9.3 10.8,9" fill="#FFFFFF" opacity="0.95" />
+          </svg>
+        </div>
+      </div>
+      <Sparkles className="w-4 h-4 text-yellow-200 absolute -top-1.5 -right-1.5 drop-shadow-[0_0_6px_rgba(255,215,0,0.8)] animate-pulse" />
+    </div>
+  );
+}
+
+function SilverMedalJewel() {
+  return (
+    <div className="relative group">
+      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-slate-200 via-slate-300 to-slate-400 opacity-50 blur-sm group-hover:opacity-80 transition duration-300" />
+      <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 p-0.5 shadow-lg shadow-slate-400/20 flex items-center justify-center">
+        <div className="w-full h-full rounded-2xl bg-gradient-to-b from-slate-100 via-slate-200 to-slate-400 dark:from-slate-700 dark:via-slate-600 dark:to-slate-800 flex items-center justify-center relative overflow-hidden border border-white/60">
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/45 to-transparent rounded-t-2xl pointer-events-none" />
+          <svg className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="silverGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="50%" stopColor="#CBD5E1" />
+                <stop offset="100%" stopColor="#64748B" />
+              </linearGradient>
+              <linearGradient id="silverRibbon2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#38BDF8" />
+                <stop offset="100%" stopColor="#0284C7" />
+              </linearGradient>
+            </defs>
+            <path d="M8 2L10 8H6L8 2Z" fill="url(#silverRibbon2)" opacity="0.9" />
+            <path d="M16 2L14 8H18L16 2Z" fill="url(#silverRibbon2)" opacity="0.9" />
+            <circle cx="12" cy="14" r="7" fill="url(#silverGrad2)" stroke="#475569" strokeWidth="1" />
+            <circle cx="12" cy="14" r="5" stroke="#FFFFFF" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.8" />
+            <text x="12" y="17.2" fontSize="9" fontWeight="900" fontFamily="sans-serif" textAnchor="middle" fill="#1E293B">2</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BronzeMedalJewel() {
+  return (
+    <div className="relative group">
+      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-600 via-orange-600 to-amber-800 opacity-40 blur-sm group-hover:opacity-70 transition duration-300" />
+      <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-700 to-orange-950 p-0.5 shadow-lg shadow-amber-900/20 flex items-center justify-center">
+        <div className="w-full h-full rounded-2xl bg-gradient-to-b from-amber-600 via-amber-700 to-orange-900 flex items-center justify-center relative overflow-hidden border border-amber-300/40">
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent rounded-t-2xl pointer-events-none" />
+          <svg className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="bronzeGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FDBA74" />
+                <stop offset="50%" stopColor="#C2410C" />
+                <stop offset="100%" stopColor="#7C2D12" />
+              </linearGradient>
+              <linearGradient id="bronzeRibbon2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#EA580C" />
+                <stop offset="100%" stopColor="#9A3412" />
+              </linearGradient>
+            </defs>
+            <path d="M8 2L10 8H6L8 2Z" fill="url(#bronzeRibbon2)" opacity="0.9" />
+            <path d="M16 2L14 8H18L16 2Z" fill="url(#bronzeRibbon2)" opacity="0.9" />
+            <circle cx="12" cy="14" r="7" fill="url(#bronzeGrad2)" stroke="#431407" strokeWidth="1" />
+            <circle cx="12" cy="14" r="5" stroke="#FED7AA" strokeWidth="0.8" strokeDasharray="1.5 1" opacity="0.8" />
+            <text x="12" y="17.2" fontSize="9" fontWeight="900" fontFamily="sans-serif" textAnchor="middle" fill="#FFFFFF">3</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeaderAITrophy() {
+  return (
+    <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 ring-2 ring-amber-300/40 shrink-0">
+      <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent rounded-t-2xl pointer-events-none" />
+      <Trophy className="w-5 h-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] fill-white/20 stroke-[2.2]" />
+      <Sparkles className="w-3.5 h-3.5 text-yellow-200 absolute -top-1 -right-1 drop-shadow-sm animate-pulse" />
+    </div>
+  );
+}
 
 export default function DailyReportsPage() {
   const queryClient = useQueryClient();
@@ -946,15 +1058,16 @@ export default function DailyReportsPage() {
               {/* Header with Month Nav & AI Trigger */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-5 rounded-2xl border border-amber-500/20 shadow-sm">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500 text-white shadow-sm">
-                      <Trophy className="w-4 h-4" />
-                    </span>
-                    <h2 className="text-lg font-bold text-ink">AI Monthly Best Performer Leaderboard</h2>
+                  <div className="flex items-center gap-3">
+                    <HeaderAITrophy />
+                    <div>
+                      <h2 className="text-lg font-bold text-ink tracking-tight">AI Monthly Best Performer Leaderboard</h2>
+                      <p className="text-xs text-muted mt-0.5">
+                        Powered by Gemini AI. Evaluates daily wrap-ups, problem-solving, and consistency in ranking order.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted mt-1">
-                    Powered by Gemini AI. Evaluates daily wrap-ups, problem-solving, and consistency in ranking order.
-                  </p>
+
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -1034,9 +1147,11 @@ export default function DailyReportsPage() {
                   {aiData.executive_summary && (
                     <div className="p-5 bg-paper rounded-2xl border border-amber-500/30 shadow-sm relative overflow-hidden">
                       <div className="flex items-center justify-between gap-4 mb-2">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-amber-500" />
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xs">
+                            <Sparkles className="w-3.5 h-3.5 text-white fill-white/20" />
+                          </div>
+                          <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-300">
                             AI Executive Performance Brief
                           </h3>
                         </div>
@@ -1056,15 +1171,16 @@ export default function DailyReportsPage() {
                   {aiData.rankings && aiData.rankings.length >= 3 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Rank 2 - Silver */}
-                      <div className="order-2 md:order-1 bg-paper p-5 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-3 right-3 text-slate-400">
-                          <Medal className="w-7 h-7" />
+                      <div className="order-2 md:order-1 bg-paper p-6 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-4 right-4">
+                          <SilverMedalJewel />
                         </div>
                         <div>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 shadow-xs uppercase tracking-wider">
+                            <Medal className="w-3.5 h-3.5 fill-current" />
                             #2 SILVER
                           </span>
-                          <h4 className="text-base font-bold text-ink mt-2">{aiData.rankings[1].name}</h4>
+                          <h4 className="text-base font-bold text-ink mt-3">{aiData.rankings[1].name}</h4>
                           <p className="text-xs text-muted capitalize">{aiData.rankings[1].role}</p>
 
                           <div className="my-3 flex items-baseline gap-1">
@@ -1073,17 +1189,20 @@ export default function DailyReportsPage() {
                           </div>
 
                           {aiData.rankings[1].badge && (
-                            <span className="inline-block text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md mb-2">
-                              {aiData.rankings[1].badge}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded-lg mb-2 shadow-xs">
+                              <Zap className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                              <span>{aiData.rankings[1].badge}</span>
+                            </div>
                           )}
 
                           {aiData.rankings[1].highlights && (
-                            <ul className="text-xs text-muted space-y-1 mt-2">
+                            <ul className="text-xs text-muted space-y-1.5 mt-2">
                               {aiData.rankings[1].highlights.slice(0, 2).map((h, i) => (
-                                <li key={i} className="flex items-start gap-1.5">
-                                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2">{h}</span>
+                                <li key={i} className="flex items-start gap-2">
+                                  <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </div>
+                                  <span className="line-clamp-2 text-ink/80">{h}</span>
                                 </li>
                               ))}
                             </ul>
@@ -1099,15 +1218,16 @@ export default function DailyReportsPage() {
                       </div>
 
                       {/* Rank 1 - Gold Champion */}
-                      <div className="order-1 md:order-2 bg-gradient-to-b from-amber-500/10 via-paper to-paper p-6 rounded-2xl border-2 border-amber-500 shadow-md flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-3 right-3 text-amber-500">
-                          <Trophy className="w-8 h-8" />
+                      <div className="order-1 md:order-2 bg-gradient-to-b from-amber-500/15 via-paper to-paper p-6 rounded-2xl border-2 border-amber-500 shadow-xl shadow-amber-500/10 flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-4 right-4">
+                          <GoldTrophyJewel />
                         </div>
                         <div>
-                          <span className="px-3 py-1 rounded-full text-[10px] font-black bg-amber-500 text-white shadow-sm">
-                            🏆 #1 TOP PERFORMER
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-md shadow-amber-500/25 border border-amber-300/40 uppercase tracking-wider">
+                            <Crown className="w-3.5 h-3.5 fill-current" />
+                            #1 TOP PERFORMER
                           </span>
-                          <h4 className="text-lg font-extrabold text-ink mt-2.5">{aiData.rankings[0].name}</h4>
+                          <h4 className="text-lg font-extrabold text-ink mt-3">{aiData.rankings[0].name}</h4>
                           <p className="text-xs text-muted capitalize">{aiData.rankings[0].role}</p>
 
                           <div className="my-3 flex items-baseline gap-1">
@@ -1118,16 +1238,19 @@ export default function DailyReportsPage() {
                           </div>
 
                           {aiData.rankings[0].badge && (
-                            <span className="inline-block text-[11px] font-bold text-amber-800 dark:text-amber-200 bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-md mb-2">
-                              {aiData.rankings[0].badge}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-900 dark:text-amber-100 bg-gradient-to-r from-amber-500/15 via-yellow-500/15 to-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg mb-2 shadow-xs">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <span>{aiData.rankings[0].badge}</span>
+                            </div>
                           )}
 
                           {aiData.rankings[0].highlights && (
                             <ul className="text-xs text-muted space-y-1.5 mt-2">
                               {aiData.rankings[0].highlights.slice(0, 3).map((h, i) => (
-                                <li key={i} className="flex items-start gap-1.5">
-                                  <CheckCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                <li key={i} className="flex items-start gap-2">
+                                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </div>
                                   <span className="line-clamp-2 text-ink/90 font-medium">{h}</span>
                                 </li>
                               ))}
@@ -1144,15 +1267,16 @@ export default function DailyReportsPage() {
                       </div>
 
                       {/* Rank 3 - Bronze */}
-                      <div className="order-3 bg-paper p-5 rounded-2xl border border-amber-800/30 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-3 right-3 text-amber-700">
-                          <Award className="w-7 h-7" />
+                      <div className="order-3 bg-paper p-6 rounded-2xl border border-amber-800/30 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-4 right-4">
+                          <BronzeMedalJewel />
                         </div>
                         <div>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-amber-100 via-orange-100 to-amber-200 dark:from-amber-950/60 dark:via-orange-950/60 dark:to-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300/40 shadow-xs uppercase tracking-wider">
+                            <Award className="w-3.5 h-3.5 fill-current" />
                             #3 BRONZE
                           </span>
-                          <h4 className="text-base font-bold text-ink mt-2">{aiData.rankings[2].name}</h4>
+                          <h4 className="text-base font-bold text-ink mt-3">{aiData.rankings[2].name}</h4>
                           <p className="text-xs text-muted capitalize">{aiData.rankings[2].role}</p>
 
                           <div className="my-3 flex items-baseline gap-1">
@@ -1161,17 +1285,20 @@ export default function DailyReportsPage() {
                           </div>
 
                           {aiData.rankings[2].badge && (
-                            <span className="inline-block text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md mb-2">
-                              {aiData.rankings[2].badge}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-300/50 dark:border-amber-800/50 px-2.5 py-1 rounded-lg mb-2 shadow-xs">
+                              <Target className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                              <span>{aiData.rankings[2].badge}</span>
+                            </div>
                           )}
 
                           {aiData.rankings[2].highlights && (
-                            <ul className="text-xs text-muted space-y-1 mt-2">
+                            <ul className="text-xs text-muted space-y-1.5 mt-2">
                               {aiData.rankings[2].highlights.slice(0, 2).map((h, i) => (
-                                <li key={i} className="flex items-start gap-1.5">
-                                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                  <span className="line-clamp-2">{h}</span>
+                                <li key={i} className="flex items-start gap-2">
+                                  <div className="w-4 h-4 rounded-full bg-amber-700/20 text-amber-800 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </div>
+                                  <span className="line-clamp-2 text-ink/80">{h}</span>
                                 </li>
                               ))}
                             </ul>
@@ -1214,19 +1341,19 @@ export default function DailyReportsPage() {
                             <tr key={item.rank} className="hover:bg-surface/30 transition-colors">
                               <td className="py-3.5 px-4 text-center">
                                 {item.rank === 1 ? (
-                                  <span className="w-6 h-6 rounded-full bg-amber-500 text-white font-extrabold flex items-center justify-center mx-auto text-xs shadow-sm">
+                                  <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 text-white font-black flex items-center justify-center mx-auto text-xs shadow-md shadow-amber-500/25 border border-yellow-200/50">
                                     1
-                                  </span>
+                                  </div>
                                 ) : item.rank === 2 ? (
-                                  <span className="w-6 h-6 rounded-full bg-slate-400 text-white font-bold flex items-center justify-center mx-auto text-xs">
+                                  <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-slate-200 via-slate-400 to-slate-500 text-white font-black flex items-center justify-center mx-auto text-xs shadow-xs border border-white/50">
                                     2
-                                  </span>
+                                  </div>
                                 ) : item.rank === 3 ? (
-                                  <span className="w-6 h-6 rounded-full bg-amber-700 text-white font-bold flex items-center justify-center mx-auto text-xs">
+                                  <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-amber-600 via-orange-700 to-amber-900 text-white font-black flex items-center justify-center mx-auto text-xs shadow-xs border border-amber-400/30">
                                     3
-                                  </span>
+                                  </div>
                                 ) : (
-                                  <span className="font-mono text-muted font-medium">#{item.rank}</span>
+                                  <span className="font-mono text-muted font-semibold text-[11px]">#{item.rank}</span>
                                 )}
                               </td>
 
