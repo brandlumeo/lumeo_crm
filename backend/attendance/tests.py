@@ -424,3 +424,64 @@ class AttendanceAPITests(APITestCase):
 
 
 
+    def test_daily_report_matrix_leave_exemption(self):
+        """Verify approved leaves exempt employees from daily reports without penalizing compliance."""
+        from datetime import date
+        from attendance.models import DailyReport, LeaveRequest
+
+        # Submit 1 report on 2026-10-01
+        DailyReport.objects.create(
+            user=self.user,
+            company=self.company,
+            date=date(2026, 10, 1),
+            content="Worked on feature X"
+        )
+
+        # Approved leave from 2026-10-02 to 2026-10-05
+        LeaveRequest.objects.create(
+            user=self.user,
+            company=self.company,
+            leave_type="annual",
+            start_date=date(2026, 10, 2),
+            end_date=date(2026, 10, 5),
+            status=LeaveRequest.Status.APPROVED,
+            reason="Family trip"
+        )
+
+        url = reverse("attendance:report_monthly_matrix") + "?month=10&year=2026"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        matrix = response.data["matrix"]
+        user_row = next((u for u in matrix if u["id"] == str(self.user.id)), None)
+        self.assertIsNotNone(user_row)
+
+        days = user_row["days"]
+        # Oct 1 is submitted
+        self.assertEqual(days["1"]["status"], "submitted")
+        # Oct 2, 3, 4, 5 are leave
+        self.assertEqual(days["2"]["status"], "leave")
+        self.assertEqual(days["3"]["status"], "leave")
+        self.assertEqual(days["4"]["status"], "leave")
+        self.assertEqual(days["5"]["status"], "leave")
+
+    def test_ai_monthly_performance_access_control(self):
+        """Verify only primary admin, manager, and secondary admin can access AI monthly leaderboard."""
+        url = reverse("attendance:report_ai_monthly_analysis") + "?month=10&year=2026"
+
+        # Regular staff should be forbidden (403)
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Manager should have access (200)
+        manager = User.objects.create_user(
+            username="mgr_evaluator",
+            email="mgr_eval@lumeo.local",
+            password="SecurePassword123#",
+            company=self.company,
+            role="manager"
+        )
+        self.client.force_authenticate(user=manager)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["has_analysis"])

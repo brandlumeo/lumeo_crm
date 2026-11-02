@@ -1182,6 +1182,70 @@ export interface DailyReportInput {
   next_day_plan?: string;
 }
 
+export interface DailyReportMatrixDayItem {
+  status: 'submitted' | 'missed' | 'leave' | 'day_off' | 'holiday' | 'future';
+  date: string;
+  report_id?: string;
+  sentiment?: string;
+  snippet?: string;
+  label?: string;
+  worked?: boolean;
+}
+
+export interface DailyReportMatrixCounts {
+  submitted: number;
+  missed: number;
+  leave: number;
+  day_off: number;
+  holiday: number;
+  expected_working_days: number;
+}
+
+export interface DailyReportMatrixUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  designation: string;
+  avatar: string;
+  days: Record<string, DailyReportMatrixDayItem>;
+  counts: DailyReportMatrixCounts;
+  compliance_rate: number;
+}
+
+export interface DailyReportMatrixResponse {
+  month: number;
+  year: number;
+  days_in_month: number;
+  today: string;
+  matrix: DailyReportMatrixUser[];
+}
+
+export interface PerformerRanking {
+  rank: number;
+  user_id: string;
+  name: string;
+  role: string;
+  score: number;
+  badge?: string;
+  highlights?: string[];
+  strengths?: string[];
+  feedback?: string;
+  reports_submitted?: number;
+}
+
+export interface AIMonthlyPerformanceResponse {
+  has_analysis: boolean;
+  id?: string;
+  month: number;
+  year: number;
+  executive_summary?: string;
+  rankings?: PerformerRanking[];
+  generated_at?: string;
+  generated_by?: string;
+  detail?: string;
+}
+
 export interface BillInput {
   vendor: number;
   purchase_order?: number | null;

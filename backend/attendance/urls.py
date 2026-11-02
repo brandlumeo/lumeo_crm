@@ -23,6 +23,8 @@ urlpatterns = [
     path("holidays/<uuid:pk>/", views.HolidayDetailView.as_view(), name="holiday_detail"),
     path("reports/", views.DailyReportListCreateView.as_view(), name="report_list_create"),
     path("reports/today/", views.DailyReportTodayView.as_view(), name="report_today"),
+    path("reports/monthly-matrix/", views.DailyReportMatrixView.as_view(), name="report_monthly_matrix"),
+    path("reports/ai-monthly-analysis/", views.AIMonthlyPerformanceView.as_view(), name="report_ai_monthly_analysis"),
     path("reports/<uuid:pk>/", views.DailyReportDetailView.as_view(), name="report_detail"),
     path('debug-athira/', views.debug_athira_logs, name='debug_athira'),
 ]

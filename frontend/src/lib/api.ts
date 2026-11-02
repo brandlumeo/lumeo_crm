@@ -69,6 +69,8 @@ import type {
   ProjectInput,
   Timesheet,
   TimesheetInput,
+  DailyReportMatrixResponse,
+  AIMonthlyPerformanceResponse,
 } from "@/lib/types";
 
 // Hybrid auth pattern:
@@ -1725,5 +1727,21 @@ export async function getBill(id: number) {
 }
 export async function updateBillStatus(id: number, status: string) {
   const { data } = await api.post<any>(`/crm/bills/${id}/change_status/`, { status });
+  return data;
+}
+
+
+export async function getReportMonthlyMatrix(month: number, year: number) {
+  const { data } = await api.get<DailyReportMatrixResponse>(`/attendance/reports/monthly-matrix/?month=${month}&year=${year}`);
+  return data;
+}
+
+export async function getAIMonthlyAnalysis(month: number, year: number) {
+  const { data } = await api.get<AIMonthlyPerformanceResponse>(`/attendance/reports/ai-monthly-analysis/?month=${month}&year=${year}`);
+  return data;
+}
+
+export async function generateAIMonthlyAnalysis(month: number, year: number) {
+  const { data } = await api.post<AIMonthlyPerformanceResponse>("/attendance/reports/ai-monthly-analysis/", { month, year });
   return data;
 }

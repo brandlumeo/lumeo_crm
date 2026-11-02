@@ -153,8 +153,11 @@ import {
   updateNotice,
   deleteNotice,
   fetchTeam,
+  getReportMonthlyMatrix,
+  getAIMonthlyAnalysis,
+  generateAIMonthlyAnalysis,
 } from "@/lib/api";
-import type { ListParams, CampaignInput, TicketInput, TicketCommentInput } from "@/lib/types";
+import type { ListParams, CampaignInput, TicketInput, TicketCommentInput, DailyReportMatrixResponse, AIMonthlyPerformanceResponse } from "@/lib/types";
 
 const fiveMinutes = 5 * 60 * 1000;
 
@@ -1741,6 +1744,35 @@ export function useDeleteBill() {
     mutationFn: (id: number) => deleteBill(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}
+
+
+export function useReportMonthlyMatrix(month: number, year: number) {
+  return useQuery<DailyReportMatrixResponse>({
+    queryKey: ["daily-reports-matrix", month, year],
+    queryFn: () => getReportMonthlyMatrix(month, year),
+    enabled: authenticated(),
+  });
+}
+
+export function useAIMonthlyAnalysis(month: number, year: number) {
+  return useQuery<AIMonthlyPerformanceResponse>({
+    queryKey: ["ai-monthly-performance", month, year],
+    queryFn: () => getAIMonthlyAnalysis(month, year),
+    enabled: authenticated(),
+  });
+}
+
+export function useGenerateAIMonthlyAnalysis() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ month, year }: { month: number; year: number }) =>
+      generateAIMonthlyAnalysis(month, year),
+    onSuccess: (data, { month, year }) => {
+      queryClient.setQueryData(["ai-monthly-performance", month, year], data);
+      queryClient.invalidateQueries({ queryKey: ["ai-monthly-performance", month, year] });
     },
   });
 }

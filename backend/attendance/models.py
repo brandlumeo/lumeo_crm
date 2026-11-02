@@ -366,3 +366,35 @@ class DailyReport(models.Model):
         user_id = self.user.email or self.user.username
         return f"Report for {user_id} on {self.date}"
 
+
+class MonthlyPerformanceReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="monthly_performance_reports",
+    )
+    month = models.IntegerField(help_text="Month number 1-12")
+    year = models.IntegerField(help_text="Year e.g. 2026")
+    executive_summary = models.TextField(blank=True, default="")
+    rankings = models.JSONField(
+        default=list,
+        help_text="List of ranked performers with scores, strengths, and badges"
+    )
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="generated_performance_reports"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-year", "-month", "-created_at")
+        unique_together = ("company", "year", "month")
+
+    def __str__(self):
+        return f"{self.company.name} - Performance Report {self.month}/{self.year}"
+

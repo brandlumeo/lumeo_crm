@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday, DailyReport
+from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday, DailyReport, MonthlyPerformanceReport
 from .serializers import TimeLogSerializer, BreakLogSerializer, LeaveRequestSerializer, ExpenseClaimSerializer, OfficeAssetSerializer, DailyReportSerializer
 
 
@@ -1233,3 +1233,423 @@ class DailyReportDetailView(APIView):
         report.delete()
         return Response({"detail": "Daily report deleted successfully."}, status=status.HTTP_200_OK)
 
+
+
+class DailyReportMatrixView(APIView):
+    """
+    GET /api/v1/attendance/reports/monthly-matrix/?month=10&year=2026
+    Returns a day-by-day submission matrix of daily reports for all team members in the company.
+    Approved leave days exempt the employee from submitting and do not penalize compliance.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+
+        from calendar import monthrange
+        from datetime import date, timedelta
+        import zoneinfo
+        from accounts.models import User
+
+        try:
+            month = int(request.GET.get('month', timezone.now().month))
+            year = int(request.GET.get('year', timezone.now().year))
+        except (ValueError, TypeError):
+            month = timezone.now().month
+            year = timezone.now().year
+
+        company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+        today_local_date = timezone.now().astimezone(company_tz).date()
+
+        _, num_days = monthrange(year, month)
+        start_date = date(year, month, 1)
+        end_date = date(year, month, num_days)
+
+        from django.db.models import Prefetch
+        users = User.objects.filter(
+            company=company, 
+            is_active=True
+        ).exclude(role=User.Role.CUSTOMER).prefetch_related(
+            Prefetch(
+                'daily_reports',
+                queryset=DailyReport.objects.filter(
+                    company=company,
+                    date__gte=start_date,
+                    date__lte=end_date
+                ).order_by('created_at'),
+                to_attr='month_daily_reports'
+            ),
+            Prefetch(
+                'leaves',
+                queryset=LeaveRequest.objects.filter(
+                    company=company,
+                    status=LeaveRequest.Status.APPROVED,
+                    start_date__lte=end_date,
+                    end_date__gte=start_date
+                ),
+                to_attr='month_leaves'
+            ),
+            Prefetch(
+                'time_logs',
+                queryset=TimeLog.objects.filter(
+                    company=company,
+                    clock_in__date__gte=start_date,
+                    clock_in__date__lte=end_date
+                ),
+                to_attr='month_timelogs'
+            )
+        ).order_by('first_name', 'username')
+
+        holidays = Holiday.objects.filter(
+            company=company,
+            date__gte=start_date,
+            date__lte=end_date
+        )
+        holiday_dates = {h.date for h in holidays}
+
+        matrix = []
+        for user in users:
+            reports_by_date = {r.date: r for r in getattr(user, 'month_daily_reports', [])}
+            worked_dates = {tl.clock_in.astimezone(company_tz).date() for tl in getattr(user, 'month_timelogs', []) if tl.clock_in}
+            
+            # Map leave dates
+            leave_dates = set()
+            for l in getattr(user, 'month_leaves', []):
+                curr = max(l.start_date, start_date)
+                l_end = min(l.end_date, end_date)
+                while curr <= l_end:
+                    leave_dates.add(curr)
+                    curr += timedelta(days=1)
+
+            user_days = {}
+            counts = {
+                "submitted": 0,
+                "missed": 0,
+                "leave": 0,
+                "day_off": 0,
+                "holiday": 0,
+                "expected_working_days": 0,
+            }
+
+            for day in range(1, num_days + 1):
+                current_date = date(year, month, day)
+                day_str = str(day)
+                
+                # 1. Future date
+                if current_date > today_local_date:
+                    user_days[day_str] = {
+                        "status": "future",
+                        "date": current_date.isoformat(),
+                    }
+                    continue
+
+                # 2. Check if employee was on approved leave (EXEMPT from daily report)
+                if current_date in leave_dates:
+                    counts["leave"] += 1
+                    user_days[day_str] = {
+                        "status": "leave",
+                        "date": current_date.isoformat(),
+                        "label": "On Leave",
+                    }
+                    continue
+
+                # 3. Check if company holiday
+                is_holiday = current_date in holiday_dates
+                # 4. Check if company day off / weekend
+                is_day_off = company.is_day_off(current_date)
+
+                report = reports_by_date.get(current_date)
+                worked = current_date in worked_dates
+
+                # If report was submitted
+                if report:
+                    counts["submitted"] += 1
+                    if not is_holiday and not is_day_off:
+                        counts["expected_working_days"] += 1
+                    user_days[day_str] = {
+                        "status": "submitted",
+                        "report_id": str(report.id),
+                        "date": current_date.isoformat(),
+                        "sentiment": report.sentiment or "Great",
+                        "snippet": (report.content or "")[:140],
+                    }
+                elif is_holiday:
+                    counts["holiday"] += 1
+                    user_days[day_str] = {
+                        "status": "holiday",
+                        "date": current_date.isoformat(),
+                        "label": "Holiday",
+                    }
+                elif is_day_off and not worked:
+                    counts["day_off"] += 1
+                    user_days[day_str] = {
+                        "status": "day_off",
+                        "date": current_date.isoformat(),
+                        "label": "Day Off",
+                    }
+                else:
+                    # Regular working day (or clocked in on weekend) and missed daily report
+                    counts["expected_working_days"] += 1
+                    counts["missed"] += 1
+                    user_days[day_str] = {
+                        "status": "missed",
+                        "date": current_date.isoformat(),
+                        "worked": worked,
+                        "label": "Missed Wrap-Up",
+                    }
+
+            expected = counts["expected_working_days"]
+            compliance_rate = round((counts["submitted"] / expected * 100), 1) if expected > 0 else (100.0 if counts["submitted"] > 0 else 0.0)
+
+            matrix.append({
+                "id": str(user.id),
+                "name": user.get_full_name() or user.username,
+                "email": user.email,
+                "role": user.role,
+                "designation": user.designation or "",
+                "avatar": user.avatar or "",
+                "days": user_days,
+                "counts": counts,
+                "compliance_rate": compliance_rate,
+            })
+
+        return Response({
+            "month": month,
+            "year": year,
+            "days_in_month": num_days,
+            "today": today_local_date.isoformat(),
+            "matrix": matrix,
+        })
+
+
+class AIMonthlyPerformanceView(APIView):
+    """
+    GET/POST /api/v1/attendance/reports/ai-monthly-analysis/
+    Analyzes all daily reports and performance metrics for the month to select and rank best performers.
+    Restricted to Primary Admin (owner/admin) and Manager / Secondary Admin (manager).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _check_permission(self, user):
+        from accounts.models import User
+        # Primary admin (owner, admin) or Secondary admin (manager)
+        return (
+            user.is_superuser
+            or user.role in [User.Role.OWNER, User.Role.ADMIN, User.Role.MANAGER]
+            or getattr(user, 'has_management_access', False)
+        )
+
+    def get(self, request):
+        if not self._check_permission(request.user):
+            return Response(
+                {"detail": "Permission denied. Only primary admin, manager, and secondary admin can access the AI monthly leaderboard."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            month = int(request.GET.get('month', timezone.now().month))
+            year = int(request.GET.get('year', timezone.now().year))
+        except (ValueError, TypeError):
+            month = timezone.now().month
+            year = timezone.now().year
+
+        report = MonthlyPerformanceReport.objects.filter(
+            company=company,
+            month=month,
+            year=year
+        ).first()
+
+        if not report:
+            return Response({"has_analysis": False, "month": month, "year": year})
+
+        return Response({
+            "has_analysis": True,
+            "id": str(report.id),
+            "month": report.month,
+            "year": report.year,
+            "executive_summary": report.executive_summary,
+            "rankings": report.rankings,
+            "generated_at": report.updated_at.isoformat(),
+            "generated_by": report.generated_by.get_full_name() if report.generated_by else "Lumeo AI",
+        })
+
+    def post(self, request):
+        if not self._check_permission(request.user):
+            return Response(
+                {"detail": "Permission denied. Only primary admin, manager, and secondary admin can access the AI monthly leaderboard."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            month = int(request.data.get('month', timezone.now().month))
+            year = int(request.data.get('year', timezone.now().year))
+        except (ValueError, TypeError):
+            month = timezone.now().month
+            year = timezone.now().year
+
+        import os, requests, json, logging
+        logger = logging.getLogger(__name__)
+
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return Response({
+                "detail": "GEMINI_API_KEY is not configured in the backend environment."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        from calendar import monthrange
+        from datetime import date
+        _, num_days = monthrange(year, month)
+        start_date = date(year, month, 1)
+        end_date = date(year, month, num_days)
+
+        from accounts.models import User
+        from crm.models import Task
+        employees = User.objects.filter(company=company, is_active=True).exclude(role=User.Role.CUSTOMER)
+        
+        employee_data_list = []
+        for emp in employees:
+            reports = DailyReport.objects.filter(
+                user=emp,
+                date__gte=start_date,
+                date__lte=end_date
+            ).order_by('date')
+
+            completed_tasks = Task.objects.filter(
+                company=company,
+                assigned_to=emp,
+                status=Task.Status.DONE,
+                updated_at__date__gte=start_date,
+                updated_at__date__lte=end_date
+            )
+
+            approved_leaves = LeaveRequest.objects.filter(
+                user=emp,
+                status=LeaveRequest.Status.APPROVED,
+                start_date__lte=end_date,
+                end_date__gte=start_date
+            )
+
+            report_samples = []
+            for r in reports[:12]:
+                text_clean = (r.content or "").replace("\n", " ")[:200]
+                report_samples.append(f"[{r.date}] {text_clean}")
+
+            employee_data_list.append({
+                "user_id": str(emp.id),
+                "name": emp.get_full_name() or emp.username,
+                "role": emp.role,
+                "designation": emp.designation or emp.role,
+                "reports_submitted": reports.count(),
+                "completed_tasks_count": completed_tasks.count(),
+                "approved_leaves_count": approved_leaves.count(),
+                "reports_preview": "\n".join(report_samples) if report_samples else "No reports submitted."
+            })
+
+        if not employee_data_list:
+            return Response({"detail": "No active employees found to analyze."}, status=status.HTTP_400_BAD_REQUEST)
+
+        system_instructions = (
+            "You are an expert HR Performance & Talent Evaluation AI. "
+            f"Analyze the team's monthly work accomplishments for {month}/{year} at {company.name}. "
+            "Evaluate each employee on:\n"
+            "1. Output & Impact (quality, complexity, and scope of accomplishments)\n"
+            "2. Consistency & Discipline (daily reports submitted, steady output)\n"
+            "3. Initiative & Problem Solving\n"
+            "Important rule: Approved leaves are excused and should NOT penalize an employee's score.\n"
+            "Return a strictly valid JSON object matching this schema:\n"
+            "{\n"
+            '  "executive_summary": "2-3 sentence executive summary of company productivity and highlights.",\n'
+            '  "rankings": [\n'
+            '    {\n'
+            '      "rank": 1,\n'
+            '      "user_id": "string",\n'
+            '      "name": "string",\n'
+            '      "role": "string",\n'
+            '      "score": 95,\n'
+            '      "badge": "🏆 Top Performer of the Month",\n'
+            '      "highlights": ["Accomplished XYZ", "Delivered ABC"],\n'
+            '      "strengths": ["Strong execution", "Consistent delivery"],\n'
+            '      "feedback": "Short constructive growth tip",\n'
+            '      "reports_submitted": 25\n'
+            '    }\n'
+            '  ]\n'
+            "}\n"
+            "Order the rankings array strictly by rank (1 being best performer). Do not include markdown or backticks in the response, only pure JSON."
+        )
+
+        prompt_payload = {
+            "employees": employee_data_list,
+            "month": month,
+            "year": year,
+        }
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        body = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": f"{system_instructions}\n\nData:\n{json.dumps(prompt_payload)}"}
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.4,
+                "responseMimeType": "application/json",
+            }
+        }
+
+        try:
+            resp = requests.post(url, json=body, timeout=45)
+            if resp.status_code != 200:
+                logger.error(f"Gemini API error: {resp.text}")
+                return Response({"detail": f"AI evaluation error: {resp.status_code} - {resp.text[:100]}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            resp_json = resp.json()
+            raw_text = resp_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+            
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:]
+            if raw_text.startswith("```"):
+                raw_text = raw_text[3:]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+
+            parsed_result = json.loads(raw_text.strip())
+            rankings = parsed_result.get("rankings", [])
+            exec_summary = parsed_result.get("executive_summary", "")
+
+            perf_report, _ = MonthlyPerformanceReport.objects.update_or_create(
+                company=company,
+                month=month,
+                year=year,
+                defaults={
+                    "executive_summary": exec_summary,
+                    "rankings": rankings,
+                    "generated_by": request.user,
+                }
+            )
+
+            return Response({
+                "has_analysis": True,
+                "id": str(perf_report.id),
+                "month": perf_report.month,
+                "year": perf_report.year,
+                "executive_summary": perf_report.executive_summary,
+                "rankings": perf_report.rankings,
+                "generated_at": perf_report.updated_at.isoformat(),
+                "generated_by": request.user.get_full_name() or request.user.username,
+            })
+        except Exception as e:
+            logger.exception("AI monthly analysis failed")
+            return Response({"detail": f"Failed to generate AI analysis: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
