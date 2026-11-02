@@ -1612,12 +1612,20 @@ class AIMonthlyPerformanceView(APIView):
 
         from calendar import monthrange
         from datetime import date
+        import datetime
         _, num_days = monthrange(year, month)
         start_date = date(year, month, 1)
         end_date = date(year, month, num_days)
 
         import zoneinfo
         company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+
+        start_dt = datetime.datetime.combine(start_date, datetime.time.min)
+        end_dt = datetime.datetime.combine(end_date, datetime.time.max)
+        if timezone.is_naive(start_dt):
+            start_dt = timezone.make_aware(start_dt, company_tz)
+        if timezone.is_naive(end_dt):
+            end_dt = timezone.make_aware(end_dt, company_tz)
 
         from accounts.models import User
         from crm.models import Task
@@ -1631,19 +1639,20 @@ class AIMonthlyPerformanceView(APIView):
                 date__lte=end_date
             ).order_by('date')
 
-            # Actual daily work attendance (TimeLog shifts clocked in)
+            # Actual staff daily attendance (TimeLog shifts clocked in)
             time_logs = TimeLog.objects.filter(
                 company=company,
                 user=emp,
-                clock_in__date__gte=start_date,
-                clock_in__date__lte=end_date
+                clock_in__gte=start_dt,
+                clock_in__lte=end_dt
             )
             attended_dates = set()
             total_shift_seconds = 0
             for tl in time_logs:
                 if tl.clock_in:
                     local_dt = tl.clock_in.astimezone(company_tz) if timezone.is_aware(tl.clock_in) else tl.clock_in
-                    attended_dates.add(local_dt.date())
+                    if start_date <= local_dt.date() <= end_date:
+                        attended_dates.add(local_dt.date())
                 if tl.clock_in and tl.clock_out:
                     total_shift_seconds += max(0, (tl.clock_out - tl.clock_in).total_seconds())
 
@@ -1725,24 +1734,26 @@ class AIMonthlyPerformanceView(APIView):
         system_instructions = (
             "You are an elite Chief Operating Officer & Senior HR Performance Evaluation AI. "
             f"Perform a rigorous performance assessment and rank the best performers at {company.name} for {month}/{year}.\n\n"
-            "CRITICAL MANDATORY INSTRUCTION - DAILY WORK ATTENDANCE FIRST:\n"
-            "- You MUST prioritize and heavily credit employees who have the MOST DAILY WORK ATTENDANCE (`daily_attendance_days`) for the month.\n"
-            "- Notice: Daily work attendance means the actual days an employee showed up to work and clocked in (`daily_attendance_days`), NOT their daily report submissions.\n"
-            "- The employee with the highest daily attendance of the month who consistently shows up to work must be strongly credited and favored for the top rankings (#1, #2, #3).\n\n"
+            "CRITICAL MANDATORY INSTRUCTION - STAFF DAILY ATTENDANCE TOTAL OF THE MONTH:\n"
+            "- When evaluating attendance, you MUST strictly consider the staff's actual daily work attendance total (`daily_attendance_days` from shift clock-ins), NOT daily report attendance.\n"
+            "- Daily reports are submitted as work logs and are evaluated for their QUALITATIVE WORK CONTENT, project deliverables, and technical/creative complexity.\n"
+            "- The staff member who has the highest staff daily attendance total of that month (`daily_attendance_days`) who consistently came to work must be prioritized and heavily rewarded in the rankings.\n"
+            "- Under NO circumstance should daily report submission count replace or override actual staff daily attendance.\n"
+            "- If two or more employees tie on staff daily attendance, break ties using qualitative work complexity, technical impact, and project deliverables.\n\n"
             "EVALUATION CRITERIA & WEIGHTING:\n"
-            "1. DAILY WORK ATTENDANCE & SHIFT RELIABILITY (40% Weight):\n"
-            "   - Reward the employees with the highest `daily_attendance_days` and shift hours.\n"
-            "   - Consistent daily presence at work is the primary pillar of team value.\n"
-            "   - Approved leaves are excused and should not penalize an employee.\n\n"
+            "1. DAILY WORK ATTENDANCE OF THE MONTH (50% Weight - Primary Ranking Determinant):\n"
+            "   - Heavily prioritize and reward the highest `daily_attendance_days` and shift hours.\n"
+            "   - The team member who has the most daily attendance of that month must be considered first for the #1 rank.\n"
+            "   - Approved leaves are excused and official.\n\n"
             "2. QUALITATIVE WORK COMPLEXITY & TECHNICAL/CREATIVE IMPACT (30% Weight):\n"
             "   - Read their submitted daily work logs thoroughly.\n"
             "   - Evaluate the depth, difficulty, and business impact of what was delivered (e.g. software engineering, Next.js migrations, system architecture, marketing ad campaign setups, video editing/shoots, influencer coordination, client deliverables vs routine updates).\n\n"
-            "3. PROJECT BREADTH & DELIVERABLES (20% Weight):\n"
+            "3. PROJECT BREADTH & DELIVERABLES (15% Weight):\n"
             "   - Tangible milestones completed across actual projects (e.g. Bestflowers.ae, EyeTrack Solutions, Edufix, Infinity, BrandLumeo, etc.).\n\n"
-            "4. INITIATIVE, PROBLEM SOLVING & REPORTING INTEGRITY (10% Weight):\n"
-            "   - Proactive troubleshooting, leadership, and multi-day catch-up reporting.\n\n"
+            "4. INITIATIVE & AUTONOMY (5% Weight):\n"
+            "   - Proactive troubleshooting, leadership, mentoring, and cross-functional coordination.\n\n"
             "SCORING & DIFFERENTIATION RULES:\n"
-            "- Top performers must have superior daily attendance (`daily_attendance_days`) combined with strong qualitative output.\n"
+            "- The #1 winner MUST be the person who has the most daily attendance (`daily_attendance_days`) of the month combined with strong deliverable output.\n"
             "- Do NOT give identical generic scores. Distribute scores accurately between 60 and 98 reflecting real, measurable differences in their daily attendance, accomplishments, and deliverable complexity.\n"
             "- In the highlights array, ALWAYS explicitly state their daily attendance (e.g., 'Achieved peak daily attendance with 25 days present') and cite 2-3 specific project achievements.\n"
             "- Include `daily_attendance_days` in every ranking item.\n\n"
@@ -1832,6 +1843,17 @@ class AIMonthlyPerformanceView(APIView):
             if parsed_result and parsed_result.get("rankings"):
                 rankings = parsed_result.get("rankings", [])
                 exec_summary = parsed_result.get("executive_summary", "")
+                emp_map = {e["user_id"]: e for e in employee_data_list}
+                for r in rankings:
+                    uid = str(r.get("user_id", ""))
+                    if uid in emp_map:
+                        r["daily_attendance_days"] = emp_map[uid]["daily_attendance_days"]
+                        if not r.get("reports_submitted"):
+                            r["reports_submitted"] = emp_map[uid]["reports_submitted"]
+                # Enforce that rankings order strictly prioritizes most daily attendance of the month
+                rankings.sort(key=lambda x: (x.get("daily_attendance_days", 0), x.get("score", 0)), reverse=True)
+                for idx, r in enumerate(rankings, start=1):
+                    r["rank"] = idx
             else:
                 logger.info("Using intelligent performance analysis engine fallback")
                 scored_employees = []
@@ -1910,7 +1932,7 @@ class AIMonthlyPerformanceView(APIView):
                     })
 
                 # Sort by score, then attendance days (top priority), then content depth, then tasks
-                scored_employees.sort(key=lambda x: (x["score"], x["attendance_days"], x["content_length"], x["task_count"]), reverse=True)
+                scored_employees.sort(key=lambda x: (x["attendance_days"], x["score"], x["content_length"], x["task_count"]), reverse=True)
 
                 badges_pool = [
                     "🏆 Top Performer of the Month",

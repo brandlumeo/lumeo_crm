@@ -1135,7 +1135,7 @@ export default function DailyReportsPage() {
                     <div>
                       <h2 className="text-lg font-bold text-ink tracking-tight">AI Monthly Best Performer Leaderboard</h2>
                       <p className="text-xs text-muted mt-0.5">
-                        Powered by Gemini AI. Evaluates daily wrap-ups, problem-solving, and consistency in ranking order.
+                        Powered by Gemini AI. Evaluates staff monthly attendance totals, qualitative deliverables, and project impact in ranking order.
                       </p>
                     </div>
                   </div>
@@ -1262,7 +1262,8 @@ export default function DailyReportsPage() {
 
                           <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700 shadow-2xs">
                             <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
-                            <span>{aiData.rankings[1].daily_attendance_days ?? aiData.rankings[1].reports_submitted ?? 0} Days Attended</span>
+                            <span>{aiData.rankings[1].daily_attendance_days ?? 0} Days Staff Attendance</span>
+                            <span className="text-[10px] opacity-75 font-normal">({aiData.rankings[1].reports_submitted ?? 0} wrap-ups)</span>
                           </div>
 
                           {aiData.rankings[1].badge && (
@@ -1316,7 +1317,8 @@ export default function DailyReportsPage() {
 
                           <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30 shadow-2xs">
                             <CalendarCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                            <span>{aiData.rankings[0].daily_attendance_days ?? aiData.rankings[0].reports_submitted ?? 0} Days Attended</span>
+                            <span>{aiData.rankings[0].daily_attendance_days ?? 0} Days Staff Attendance</span>
+                            <span className="text-[10px] opacity-75 font-normal">({aiData.rankings[0].reports_submitted ?? 0} wrap-ups)</span>
                           </div>
 
                           {aiData.rankings[0].badge && (
@@ -1368,7 +1370,8 @@ export default function DailyReportsPage() {
 
                           <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-900/10 text-amber-800 dark:text-amber-300 border border-amber-800/30 shadow-2xs">
                             <CalendarCheck className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
-                            <span>{aiData.rankings[2].daily_attendance_days ?? aiData.rankings[2].reports_submitted ?? 0} Days Attended</span>
+                            <span>{aiData.rankings[2].daily_attendance_days ?? 0} Days Staff Attendance</span>
+                            <span className="text-[10px] opacity-75 font-normal">({aiData.rankings[2].reports_submitted ?? 0} wrap-ups)</span>
                           </div>
 
                           {aiData.rankings[2].badge && (
@@ -1417,7 +1420,7 @@ export default function DailyReportsPage() {
                           <tr className="bg-surface/60 border-b border-line text-[11px] font-semibold text-muted uppercase tracking-wider">
                             <th className="py-3 px-4 w-16 text-center">Rank</th>
                             <th className="py-3 px-4 min-w-[170px]">Team Member</th>
-                            <th className="py-3 px-4 w-36 text-center text-emerald-700 dark:text-emerald-400">Daily Attendance</th>
+                            <th className="py-3 px-4 w-44 text-center text-emerald-700 dark:text-emerald-400">Staff Daily Attendance</th>
                             <th className="py-3 px-4 w-28 text-center">AI Score</th>
                             <th className="py-3 px-4 min-w-[160px]">AI Recognition Badge</th>
                             <th className="py-3 px-4 min-w-[220px]">Key Accomplishments</th>
@@ -1451,10 +1454,15 @@ export default function DailyReportsPage() {
                               </td>
 
                               <td className="py-3.5 px-4 text-center">
-                                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-200/70 dark:border-emerald-500/20 shadow-2xs">
-                                  <CalendarCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                  <span>{item.daily_attendance_days ?? item.reports_submitted ?? 0} days</span>
-                                </span>
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-200/70 dark:border-emerald-500/20 shadow-2xs">
+                                    <CalendarCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span>{item.daily_attendance_days ?? 0} days</span>
+                                  </span>
+                                  <span className="text-[10px] text-muted font-medium">
+                                    {item.reports_submitted ?? 0} wrap-ups
+                                  </span>
+                                </div>
                               </td>
 
                               <td className="py-3.5 px-4 text-center">
@@ -1636,10 +1644,15 @@ export default function DailyReportsPage() {
                       {selectedPerformer.badge}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                    <CalendarCheck className="w-3.5 h-3.5" />
-                    {selectedPerformer?.daily_attendance_days ?? selectedPerformer?.reports_submitted ?? 0} days present
-                  </span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                      <CalendarCheck className="w-3.5 h-3.5" />
+                      {selectedPerformer?.daily_attendance_days ?? 0} days staff attendance
+                    </span>
+                    <span className="text-[10px] text-muted">
+                      {selectedPerformer?.reports_submitted ?? 0} daily wrap-ups submitted
+                    </span>
+                  </div>
                 </div>
               </div>
 
