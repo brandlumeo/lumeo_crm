@@ -51,7 +51,8 @@ import {
   CheckCircle,
   Crown,
   Zap,
-  Target
+  Target,
+  Hourglass
 } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
@@ -459,6 +460,63 @@ export default function DailyReportsPage() {
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
           </button>
         );
+      case "half_day_submitted":
+        return (
+          <button 
+            type="button"
+            onClick={() => setSelectedMatrixCell({
+              userName: item.userName || "Team Member",
+              userRole: item.userRole || "",
+              date: item.date,
+              status: item.status,
+              sentiment: item.sentiment,
+              snippet: item.snippet,
+              label: item.label || "Submitted (Half Day Shift & Reported)",
+            })}
+            title={`Submitted (Half Day): ${item.snippet || "Click to view"}`}
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-emerald-400 transition-all cursor-pointer relative"
+          >
+            <Check className="w-4 h-4 stroke-[3]" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border border-white dark:border-black" title="Half Day Shift" />
+          </button>
+        );
+      case "half_day_covered":
+        return (
+          <button 
+            type="button"
+            onClick={() => setSelectedMatrixCell({
+              userName: item.userName || "Team Member",
+              userRole: item.userRole || "",
+              date: item.date,
+              status: item.status,
+              sentiment: item.sentiment,
+              snippet: item.snippet,
+              label: item.label || "Covered in subsequent wrap-up (Half Day)",
+            })}
+            title={item.label || "Covered in next report (Half Day)"}
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-teal-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer relative"
+          >
+            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border border-white dark:border-black" title="Half Day Shift" />
+          </button>
+        );
+      case "half_day":
+        return (
+          <button
+            type="button"
+            onClick={() => setSelectedMatrixCell({
+              userName: item.userName || "Team Member",
+              userRole: item.userRole || "",
+              date: item.date,
+              status: item.status,
+              label: item.label || "Half Day Leave (Approved)",
+            })}
+            title={item.label || "Half Day Leave (Approved)"}
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-amber-300 transition-all cursor-pointer"
+          >
+            <Hourglass className="w-3.5 h-3.5 stroke-[2.5]" />
+          </button>
+        );
       case "leave":
         return (
           <button
@@ -518,7 +576,7 @@ export default function DailyReportsPage() {
       return;
     }
     const daysHeader = Array.from({ length: matrixData.days_in_month }, (_, i) => `Day ${i + 1}`);
-    const headers = ["Employee", "Email", "Role", "Designation", ...daysHeader, "Submitted", "Approved Leaves", "Missed", "Compliance Rate (%)"];
+    const headers = ["Employee", "Email", "Role", "Designation", ...daysHeader, "Submitted", "Half Day", "Approved Leaves", "Missed", "Compliance Rate (%)"];
     
     const rows = matrixData.matrix.map((row) => {
       const dayValues = Array.from({ length: matrixData.days_in_month }, (_, i) => {
@@ -532,6 +590,7 @@ export default function DailyReportsPage() {
         `"${row.designation}"`,
         ...dayValues,
         row.counts.submitted,
+        row.counts.half_day || 0,
         row.counts.leave,
         row.counts.missed,
         `"${row.compliance_rate}%"`,
@@ -897,6 +956,12 @@ export default function DailyReportsPage() {
               <span>Covered in Next Report (Credited)</span>
             </div>
             <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 text-white flex items-center justify-center shadow-xs">
+                <Hourglass className="w-3 h-3 stroke-[2.5]" />
+              </div>
+              <span>Half Day</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 rounded-full bg-[#378ADD] text-white flex items-center justify-center">
                 <PlaneTakeoff className="w-3 h-3 stroke-[2.5]" />
               </div>
@@ -955,6 +1020,9 @@ export default function DailyReportsPage() {
                       })}
                       <th className="py-3.5 px-3 text-center min-w-[80px] border-l border-line text-emerald-700 dark:text-emerald-400">
                         Submitted
+                      </th>
+                      <th className="py-3.5 px-3 text-center min-w-[75px] text-amber-700 dark:text-amber-400">
+                        Half Day
                       </th>
                       <th className="py-3.5 px-3 text-center min-w-[70px] text-blue-700 dark:text-blue-400">
                         Leave
@@ -1015,6 +1083,9 @@ export default function DailyReportsPage() {
 
                           <td className="py-3 px-3 text-center font-semibold text-emerald-600 border-l border-line">
                             {row.counts.submitted}
+                          </td>
+                          <td className={`py-3 px-3 text-center font-medium ${(row.counts?.half_day || 0) > 0 ? "text-amber-600 font-bold" : "text-muted"}`}>
+                            {row.counts?.half_day || 0}
                           </td>
                           <td className="py-3 px-3 text-center text-blue-600 font-medium">
                             {row.counts.leave}

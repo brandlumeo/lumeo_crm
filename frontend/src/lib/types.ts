@@ -1183,7 +1183,7 @@ export interface DailyReportInput {
 }
 
 export interface DailyReportMatrixDayItem {
-  status: 'submitted' | 'covered' | 'missed' | 'leave' | 'day_off' | 'holiday' | 'future';
+  status: 'submitted' | 'covered' | 'half_day' | 'half_day_submitted' | 'half_day_covered' | 'missed' | 'leave' | 'day_off' | 'holiday' | 'future';
   covered_in_date?: string;
   date: string;
   report_id?: string;
@@ -1191,12 +1191,14 @@ export interface DailyReportMatrixDayItem {
   snippet?: string;
   label?: string;
   worked?: boolean;
+  is_half_day?: boolean;
 }
 
 export interface DailyReportMatrixCounts {
   submitted: number;
   missed: number;
   leave: number;
+  half_day?: number;
   day_off: number;
   holiday: number;
   expected_working_days: number;

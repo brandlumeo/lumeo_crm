@@ -1373,13 +1373,18 @@ class DailyReportMatrixView(APIView):
                     if d_date != r.date and d_date not in consolidated_coverage:
                         consolidated_coverage[d_date] = (r, f"Covered in {r.date.strftime('%b %d')} wrap-up (Yesterday)")
 
-            # Map leave dates
-            leave_dates = set()
+            # Map leave dates, explicitly differentiating full leaves from half-day leaves
+            full_leave_dates = set()
+            half_day_leave_dates = set()
             for l in getattr(user, 'month_leaves', []):
                 curr = max(l.start_date, start_date)
                 l_end = min(l.end_date, end_date)
+                is_half = (l.leave_type == LeaveRequest.LeaveType.HALF_DAY)
                 while curr <= l_end:
-                    leave_dates.add(curr)
+                    if is_half:
+                        half_day_leave_dates.add(curr)
+                    else:
+                        full_leave_dates.add(curr)
                     curr += timedelta(days=1)
 
             user_days = {}
@@ -1387,6 +1392,7 @@ class DailyReportMatrixView(APIView):
                 "submitted": 0,
                 "missed": 0,
                 "leave": 0,
+                "half_day": 0,
                 "day_off": 0,
                 "holiday": 0,
                 "expected_working_days": 0,
@@ -1404,35 +1410,74 @@ class DailyReportMatrixView(APIView):
                     }
                     continue
 
-                # 2. Check if employee was on approved leave (EXEMPT from daily report)
-                if current_date in leave_dates:
-                    counts["leave"] += 1
-                    user_days[day_str] = {
-                        "status": "leave",
-                        "date": current_date.isoformat(),
-                        "label": "On Leave",
-                    }
-                    continue
-
-                # 3. Check if company holiday
-                is_holiday = current_date in holiday_dates
-                # 4. Check if company day off / weekend
-                is_day_off = company.is_day_off(current_date)
-
+                # 2. Check report submitted, work logs, and leave status
                 report = reports_by_date.get(current_date)
                 worked = current_date in worked_dates
+                is_full_leave = current_date in full_leave_dates
+                is_half_day_leave = current_date in half_day_leave_dates
+                is_holiday = current_date in holiday_dates
+                is_day_off = company.is_day_off(current_date)
 
-                # If report was submitted
                 if report:
                     counts["submitted"] += 1
+                    if is_half_day_leave:
+                        counts["half_day"] += 1
+                        st = "half_day_submitted"
+                        lbl = "Submitted (Half Day Shift & Reported)"
+                    elif is_full_leave:
+                        counts["leave"] += 1
+                        st = "submitted"
+                        lbl = "Submitted (Reported on Leave Day)"
+                    else:
+                        st = "submitted"
+                        lbl = "Submitted"
                     if not is_holiday and not is_day_off:
                         counts["expected_working_days"] += 1
                     user_days[day_str] = {
-                        "status": "submitted",
+                        "status": st,
                         "report_id": str(report.id),
                         "date": current_date.isoformat(),
                         "sentiment": report.sentiment or "Great",
                         "snippet": (report.content or "")[:140],
+                        "label": lbl,
+                        "is_half_day": is_half_day_leave,
+                    }
+                elif current_date in consolidated_coverage:
+                    cov_report, cov_label = consolidated_coverage[current_date]
+                    counts["submitted"] += 1
+                    if is_half_day_leave:
+                        counts["half_day"] += 1
+                        st = "half_day_covered"
+                        lbl = f"{cov_label} (Half Day)"
+                    else:
+                        st = "covered"
+                        lbl = cov_label
+                    if not is_holiday and not is_day_off:
+                        counts["expected_working_days"] += 1
+                    user_days[day_str] = {
+                        "status": st,
+                        "report_id": str(cov_report.id),
+                        "date": current_date.isoformat(),
+                        "sentiment": cov_report.sentiment or "Great",
+                        "label": lbl,
+                        "covered_in_date": cov_report.date.isoformat(),
+                        "snippet": f"[{lbl}] {(cov_report.content or '')[:140]}",
+                        "is_half_day": is_half_day_leave,
+                    }
+                elif is_full_leave:
+                    counts["leave"] += 1
+                    user_days[day_str] = {
+                        "status": "leave",
+                        "date": current_date.isoformat(),
+                        "label": "On Leave (Full Day Excused)",
+                    }
+                elif is_half_day_leave:
+                    counts["half_day"] += 1
+                    user_days[day_str] = {
+                        "status": "half_day",
+                        "date": current_date.isoformat(),
+                        "label": "Half Day Leave (Approved)",
+                        "is_half_day": True,
                     }
                 elif is_holiday:
                     counts["holiday"] += 1
@@ -1447,21 +1492,6 @@ class DailyReportMatrixView(APIView):
                         "status": "day_off",
                         "date": current_date.isoformat(),
                         "label": "Day Off",
-                    }
-                elif current_date in consolidated_coverage:
-                    # Retroactively covered in a subsequent daily report!
-                    cov_report, cov_label = consolidated_coverage[current_date]
-                    counts["submitted"] += 1
-                    if not is_holiday and not is_day_off:
-                        counts["expected_working_days"] += 1
-                    user_days[day_str] = {
-                        "status": "covered",
-                        "report_id": str(cov_report.id),
-                        "date": current_date.isoformat(),
-                        "sentiment": cov_report.sentiment or "Great",
-                        "label": cov_label,
-                        "covered_in_date": cov_report.date.isoformat(),
-                        "snippet": f"[{cov_label}] {(cov_report.content or '')[:140]}",
                     }
                 else:
                     # Regular working day (or clocked in on weekend) and missed daily report
