@@ -52,7 +52,8 @@ import {
   Crown,
   Zap,
   Target,
-  Hourglass
+  Hourglass,
+  CalendarCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
@@ -1259,6 +1260,11 @@ export default function DailyReportsPage() {
                             <span className="text-xs text-muted font-medium">/ 100</span>
                           </div>
 
+                          <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700 shadow-2xs">
+                            <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
+                            <span>{aiData.rankings[1].daily_attendance_days ?? aiData.rankings[1].reports_submitted ?? 0} Days Attended</span>
+                          </div>
+
                           {aiData.rankings[1].badge && (
                             <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded-lg mb-2 shadow-xs">
                               <Zap className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -1308,6 +1314,11 @@ export default function DailyReportsPage() {
                             <span className="text-xs text-muted font-medium">/ 100</span>
                           </div>
 
+                          <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30 shadow-2xs">
+                            <CalendarCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>{aiData.rankings[0].daily_attendance_days ?? aiData.rankings[0].reports_submitted ?? 0} Days Attended</span>
+                          </div>
+
                           {aiData.rankings[0].badge && (
                             <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-900 dark:text-amber-100 bg-gradient-to-r from-amber-500/15 via-yellow-500/15 to-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg mb-2 shadow-xs">
                               <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -1355,6 +1366,11 @@ export default function DailyReportsPage() {
                             <span className="text-xs text-muted font-medium">/ 100</span>
                           </div>
 
+                          <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-900/10 text-amber-800 dark:text-amber-300 border border-amber-800/30 shadow-2xs">
+                            <CalendarCheck className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                            <span>{aiData.rankings[2].daily_attendance_days ?? aiData.rankings[2].reports_submitted ?? 0} Days Attended</span>
+                          </div>
+
                           {aiData.rankings[2].badge && (
                             <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-300/50 dark:border-amber-800/50 px-2.5 py-1 rounded-lg mb-2 shadow-xs">
                               <Target className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
@@ -1400,8 +1416,9 @@ export default function DailyReportsPage() {
                         <thead>
                           <tr className="bg-surface/60 border-b border-line text-[11px] font-semibold text-muted uppercase tracking-wider">
                             <th className="py-3 px-4 w-16 text-center">Rank</th>
-                            <th className="py-3 px-4 min-w-[180px]">Team Member</th>
-                            <th className="py-3 px-4 w-32 text-center">AI Score</th>
+                            <th className="py-3 px-4 min-w-[170px]">Team Member</th>
+                            <th className="py-3 px-4 w-36 text-center text-emerald-700 dark:text-emerald-400">Daily Attendance</th>
+                            <th className="py-3 px-4 w-28 text-center">AI Score</th>
                             <th className="py-3 px-4 min-w-[160px]">AI Recognition Badge</th>
                             <th className="py-3 px-4 min-w-[220px]">Key Accomplishments</th>
                             <th className="py-3 px-4 w-28 text-center">Actions</th>
@@ -1431,6 +1448,13 @@ export default function DailyReportsPage() {
                               <td className="py-3.5 px-4">
                                 <div className="font-semibold text-ink text-[13px]">{item.name}</div>
                                 <div className="text-[11px] text-muted capitalize">{item.role}</div>
+                              </td>
+
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-200/70 dark:border-emerald-500/20 shadow-2xs">
+                                  <CalendarCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <span>{item.daily_attendance_days ?? item.reports_submitted ?? 0} days</span>
+                                </span>
                               </td>
 
                               <td className="py-3.5 px-4 text-center">
@@ -1606,11 +1630,17 @@ export default function DailyReportsPage() {
                     {selectedPerformer?.score} <span className="text-xs text-muted font-normal">/ 100</span>
                   </div>
                 </div>
-                {selectedPerformer?.badge && (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm">
-                    {selectedPerformer.badge}
+                <div className="text-right">
+                  {selectedPerformer?.badge && (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm block mb-1">
+                      {selectedPerformer.badge}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    <CalendarCheck className="w-3.5 h-3.5" />
+                    {selectedPerformer?.daily_attendance_days ?? selectedPerformer?.reports_submitted ?? 0} days present
                   </span>
-                )}
+                </div>
               </div>
 
               {selectedPerformer?.highlights && selectedPerformer.highlights.length > 0 && (

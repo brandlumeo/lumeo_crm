@@ -1234,6 +1234,7 @@ export interface PerformerRanking {
   highlights?: string[];
   strengths?: string[];
   feedback?: string;
+  daily_attendance_days?: number;
   reports_submitted?: number;
 }
 

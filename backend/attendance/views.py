@@ -1616,6 +1616,9 @@ class AIMonthlyPerformanceView(APIView):
         start_date = date(year, month, 1)
         end_date = date(year, month, num_days)
 
+        import zoneinfo
+        company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
+
         from accounts.models import User
         from crm.models import Task
         employees = User.objects.filter(company=company, is_active=True).exclude(role=User.Role.CUSTOMER)
@@ -1627,6 +1630,25 @@ class AIMonthlyPerformanceView(APIView):
                 date__gte=start_date,
                 date__lte=end_date
             ).order_by('date')
+
+            # Actual daily work attendance (TimeLog shifts clocked in)
+            time_logs = TimeLog.objects.filter(
+                company=company,
+                user=emp,
+                clock_in__date__gte=start_date,
+                clock_in__date__lte=end_date
+            )
+            attended_dates = set()
+            total_shift_seconds = 0
+            for tl in time_logs:
+                if tl.clock_in:
+                    local_dt = tl.clock_in.astimezone(company_tz) if timezone.is_aware(tl.clock_in) else tl.clock_in
+                    attended_dates.add(local_dt.date())
+                if tl.clock_in and tl.clock_out:
+                    total_shift_seconds += max(0, (tl.clock_out - tl.clock_in).total_seconds())
+
+            daily_attendance_days = len(attended_dates)
+            total_hours_worked = round(total_shift_seconds / 3600.0, 1)
 
             completed_tasks = Task.objects.filter(
                 company=company,
@@ -1684,6 +1706,8 @@ class AIMonthlyPerformanceView(APIView):
                 "name": emp.get_full_name() or emp.username,
                 "role": emp.role,
                 "designation": emp.designation or emp.role,
+                "daily_attendance_days": daily_attendance_days,
+                "total_hours_worked": total_hours_worked,
                 "reports_submitted": reports.count(),
                 "effective_days_covered": effective_days_covered,
                 "catch_up_days_credited": catch_up_days_credited,
@@ -1699,41 +1723,45 @@ class AIMonthlyPerformanceView(APIView):
             return Response({"detail": "No active employees found to analyze."}, status=status.HTTP_400_BAD_REQUEST)
 
         system_instructions = (
-            "You are an elite, objective Chief Operating Officer & Senior HR Performance Evaluation AI. "
-            f"Perform a rigorous, deep qualitative assessment of work output for each team member at {company.name} for the period {month}/{year}.\n\n"
+            "You are an elite Chief Operating Officer & Senior HR Performance Evaluation AI. "
+            f"Perform a rigorous performance assessment and rank the best performers at {company.name} for {month}/{year}.\n\n"
+            "CRITICAL MANDATORY INSTRUCTION - DAILY WORK ATTENDANCE FIRST:\n"
+            "- You MUST prioritize and heavily credit employees who have the MOST DAILY WORK ATTENDANCE (`daily_attendance_days`) for the month.\n"
+            "- Notice: Daily work attendance means the actual days an employee showed up to work and clocked in (`daily_attendance_days`), NOT their daily report submissions.\n"
+            "- The employee with the highest daily attendance of the month who consistently shows up to work must be strongly credited and favored for the top rankings (#1, #2, #3).\n\n"
             "EVALUATION CRITERIA & WEIGHTING:\n"
-            "1. QUALITATIVE WORK COMPLEXITY & TECHNICAL/CREATIVE IMPACT (45% Weight):\n"
-            "   - Read each employee's submitted work logs thoroughly.\n"
-            "   - Evaluate the depth, difficulty, and business impact of what was delivered (e.g., full-stack software development, Next.js migrations, system architecture, designing high-converting marketing campaigns, producing and editing video reels, influencer outreach and client handling vs simple routine updates).\n"
-            "   - Value high-difficulty, impactful problem solving much higher than simple repetitive tasks.\n\n"
-            "2. PROJECT BREADTH & TANGIBLE DELIVERABLES (25% Weight):\n"
-            "   - Evaluate actual client and internal projects advanced (e.g., Bestflowers.ae, EyeTrack Solutions, Edufix, Infinity International, BrandLumeo, etc.).\n"
-            "   - Track volume and completion rate of tangible milestones delivered across the entire month.\n\n"
-            "3. REPORTING INTEGRITY, DISCIPLINE & CATCH-UP RESPONSIBILITY (20% Weight):\n"
-            "   - Value consistent daily reporting.\n"
-            "   - Multi-day catch-up rule: If an employee forgot to report on a given day and responsibly documented that day's work in their next day's report (e.g., 'October 28: ... October 29: ...'), give them FULL credit for their output, responsibility, and catch-up effort.\n"
-            "   - Approved leave rule: Approved leaves are official and excused. DO NOT penalize employees for approved leaves; evaluate their score based on their active working days.\n\n"
-            "4. INITIATIVE & AUTONOMY (10% Weight):\n"
-            "   - Proactive troubleshooting, leadership, mentoring, and cross-functional coordination.\n\n"
+            "1. DAILY WORK ATTENDANCE & SHIFT RELIABILITY (40% Weight):\n"
+            "   - Reward the employees with the highest `daily_attendance_days` and shift hours.\n"
+            "   - Consistent daily presence at work is the primary pillar of team value.\n"
+            "   - Approved leaves are excused and should not penalize an employee.\n\n"
+            "2. QUALITATIVE WORK COMPLEXITY & TECHNICAL/CREATIVE IMPACT (30% Weight):\n"
+            "   - Read their submitted daily work logs thoroughly.\n"
+            "   - Evaluate the depth, difficulty, and business impact of what was delivered (e.g. software engineering, Next.js migrations, system architecture, marketing ad campaign setups, video editing/shoots, influencer coordination, client deliverables vs routine updates).\n\n"
+            "3. PROJECT BREADTH & DELIVERABLES (20% Weight):\n"
+            "   - Tangible milestones completed across actual projects (e.g. Bestflowers.ae, EyeTrack Solutions, Edufix, Infinity, BrandLumeo, etc.).\n\n"
+            "4. INITIATIVE, PROBLEM SOLVING & REPORTING INTEGRITY (10% Weight):\n"
+            "   - Proactive troubleshooting, leadership, and multi-day catch-up reporting.\n\n"
             "SCORING & DIFFERENTIATION RULES:\n"
-            "- CRITICAL: Do NOT assign identical generic scores (e.g. 85 to everyone). Distribute scores accurately between 60 and 98 reflecting real, measurable differences in their qualitative accomplishments, technical/creative complexity, and output velocity.\n"
-            "- In the highlights array, cite 3 specific achievements naming the real projects, tools, or client deliverables they worked on.\n"
-            "- Provide personalized, constructive professional feedback tailored to each individual's role and month's output.\n\n"
+            "- Top performers must have superior daily attendance (`daily_attendance_days`) combined with strong qualitative output.\n"
+            "- Do NOT give identical generic scores. Distribute scores accurately between 60 and 98 reflecting real, measurable differences in their daily attendance, accomplishments, and deliverable complexity.\n"
+            "- In the highlights array, ALWAYS explicitly state their daily attendance (e.g., 'Achieved peak daily attendance with 25 days present') and cite 2-3 specific project achievements.\n"
+            "- Include `daily_attendance_days` in every ranking item.\n\n"
             "OUTPUT FORMAT:\n"
             "Return a strictly valid JSON object matching this schema:\n"
             "{\n"
-            '  "executive_summary": "3-4 sentence high-level executive brief summarizing the team accomplishments, standout performers, and key projects delivered.",\n'
+            '  "executive_summary": "3-4 sentence high-level executive brief summarizing the team accomplishments, standout performers with top daily attendance, and key projects delivered.",\n'
             '  "rankings": [\n'
             '    {\n'
             '      "rank": 1,\n'
             '      "user_id": "string",\n'
             '      "name": "string",\n'
             '      "role": "string",\n'
-            '      "score": 95,\n'
-            '      "badge": "Strategic Impact Leader",\n'
-            '      "highlights": ["3-4 concrete bullets citing real projects and achievements"],\n'
-            '      "strengths": ["Key professional strengths demonstrated"],\n'
+            '      "score": 96,\n'
+            '      "badge": "🏆 Top Performer of the Month",\n'
+            '      "highlights": ["Achieved highest daily attendance with 25 days present", "Delivered Project XYZ", "Accomplished ABC"],\n'
+            '      "strengths": ["Flawless Daily Attendance", "Execution Depth"],\n'
             '      "feedback": "Actionable, role-specific growth recommendation",\n'
+            '      "daily_attendance_days": 25,\n'
             '      "reports_submitted": 20\n'
             '    }\n'
             '  ]\n'
@@ -1805,35 +1833,41 @@ class AIMonthlyPerformanceView(APIView):
                 rankings = parsed_result.get("rankings", [])
                 exec_summary = parsed_result.get("executive_summary", "")
             else:
-                logger.info("Using intelligent qualitative performance analysis engine fallback")
+                logger.info("Using intelligent performance analysis engine fallback")
                 scored_employees = []
                 for emp_data in employee_data_list:
+                    attendance_days = emp_data["daily_attendance_days"]
                     rep_count = emp_data["reports_submitted"]
                     task_count = emp_data["completed_tasks_count"]
                     leave_count = emp_data["approved_leaves_count"]
                     content_length = emp_data["total_work_log_chars"]
                     distinct_projects = len(emp_data["distinct_projects_detected"])
 
-                    # 1. Qualitative Depth Score (up to 40 pts)
+                    # 1. Daily Work Attendance Score (up to 40 pts) - Top priority as requested
+                    working_days_in_month = max(1, num_days - leave_count)
+                    if attendance_days > 0:
+                        attendance_score = min(40, int((attendance_days / working_days_in_month) * 40))
+                    else:
+                        # Fallback if timelogs not used, use effective report coverage
+                        attendance_score = min(30, int((emp_data["effective_days_covered"] / working_days_in_month) * 30))
+
+                    # 2. Qualitative Depth & Complexity Score (up to 30 pts)
                     avg_chars_per_report = (content_length / rep_count) if rep_count > 0 else 0
-                    depth_score = min(25, int(avg_chars_per_report / 15))
-                    project_breadth_score = min(15, distinct_projects * 4)
+                    depth_score = min(20, int(avg_chars_per_report / 20))
+                    project_breadth_score = min(10, distinct_projects * 3)
                     qualitative_score = depth_score + project_breadth_score
 
-                    # 2. Output & Deliverables Score (up to 25 pts)
-                    task_score = min(25, task_count * 5 + min(15, rep_count))
+                    # 3. Output & Deliverables Score (up to 20 pts)
+                    task_score = min(20, task_count * 5 + min(10, rep_count))
 
-                    # 3. Consistency & Discipline (up to 25 pts, excusing leaves)
-                    expected_days = max(1, num_days - leave_count)
-                    effective_days = emp_data["effective_days_covered"]
-                    consistency_score = min(25, int((effective_days / expected_days) * 25))
-
-                    # Base (10 pts) -> Total score between 65 and 98
-                    base_score = 10 + qualitative_score + task_score + consistency_score
-                    score = min(98, max(65, base_score))
+                    # Base (10 pts) -> Total score between 60 and 98
+                    base_score = 10 + attendance_score + qualitative_score + task_score
+                    score = min(98, max(60, base_score))
 
                     # Extract real project highlights from daily reports
                     highlights = []
+                    if attendance_days > 0:
+                        highlights.append(f"Recorded {attendance_days} days of daily work attendance ({emp_data['total_hours_worked']} hrs logged)")
                     for line in emp_data["monthly_work_logs"]:
                         clean_line = re.sub(r"^\[\d{4}-\d{2}-\d{2}\]\s*", "", line).strip()
                         if len(clean_line) > 20 and not clean_line.startswith("No reports"):
@@ -1849,16 +1883,16 @@ class AIMonthlyPerformanceView(APIView):
                         if not highlights:
                             highlights.append("Active contributor across assigned workspace deliverables")
 
-                    strengths = ["Execution Depth", "Team Discipline"]
+                    strengths = ["Daily Shift Attendance", "Team Discipline"]
                     if distinct_projects >= 2:
                         strengths.append("Cross-Project Versatility")
-                    if rep_count >= 15:
-                        strengths.append("Disciplined Documentation")
+                    if attendance_days >= 20:
+                        strengths.append("Peak Attendance Consistency")
                     if task_count >= 2:
                         strengths.append("High Output Velocity")
 
                     feedback = (
-                        "Continue maintaining deep qualitative documentation and proactive ownership. Expand cross-functional velocity and key deliverable impact."
+                        "Maintain outstanding daily shift attendance and documentation discipline. Expand leadership in cross-project velocity."
                     )
 
                     scored_employees.append({
@@ -1866,6 +1900,7 @@ class AIMonthlyPerformanceView(APIView):
                         "name": emp_data["name"],
                         "role": emp_data["designation"] or emp_data["role"],
                         "score": score,
+                        "attendance_days": attendance_days,
                         "rep_count": rep_count,
                         "task_count": task_count,
                         "content_length": content_length,
@@ -1874,13 +1909,13 @@ class AIMonthlyPerformanceView(APIView):
                         "feedback": feedback,
                     })
 
-                # Sort by score, then content depth, then tasks, then reports
-                scored_employees.sort(key=lambda x: (x["score"], x["content_length"], x["task_count"], x["rep_count"]), reverse=True)
+                # Sort by score, then attendance days (top priority), then content depth, then tasks
+                scored_employees.sort(key=lambda x: (x["score"], x["attendance_days"], x["content_length"], x["task_count"]), reverse=True)
 
                 badges_pool = [
-                    "🏆 Strategic Impact Leader",
+                    "🏆 Top Performer of the Month",
                     "⚡ High Velocity Champion",
-                    "🎯 Technical & Focus Excellence",
+                    "🎯 Consistency & Focus Award",
                     "🚀 Sprint Accelerator",
                     "🌟 Reliable Contributor",
                     "💼 Operational Excellence",
@@ -1899,6 +1934,7 @@ class AIMonthlyPerformanceView(APIView):
                         "highlights": emp["highlights"],
                         "strengths": emp["strengths"],
                         "feedback": emp["feedback"],
+                        "daily_attendance_days": emp["attendance_days"],
                         "reports_submitted": emp["rep_count"],
                     })
 
