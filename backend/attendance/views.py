@@ -1235,6 +1235,37 @@ class DailyReportDetailView(APIView):
 
 
 
+
+def _detect_covered_dates(content, year, month, num_days):
+    """
+    Extracts dates mentioned in report content where employees caught up on missed daily reports
+    (e.g., 'October 28', 'Oct 28', '28th', '28/10', or 'yesterday').
+    """
+    if not content:
+        return set()
+    import re
+    month_names = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+    full_month_names = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+    m_short = month_names[month - 1]
+    m_full = full_month_names[month - 1]
+
+    found_days = set()
+    patterns = [
+        rf'(?:{m_full}|{m_short})\s*(\d{{1,2}})(?:st|nd|rd|th)?',
+        rf'(\d{{1,2}})(?:st|nd|rd|th)?\s*(?:{m_full}|{m_short})',
+        rf'(\d{{1,2}})[/-]{month:02d}[/-](?:{year}|\d{{2}})?',
+        rf'(\d{{1,2}})[/-]{month}[/-](?:{year}|\d{{2}})?',
+    ]
+    for pat in patterns:
+        for match in re.finditer(pat, content, re.IGNORECASE):
+            try:
+                day_num = int(match.group(1))
+                if 1 <= day_num <= num_days:
+                    found_days.add(day_num)
+            except (ValueError, TypeError):
+                pass
+    return found_days
+
 class DailyReportMatrixView(APIView):
     """
     GET /api/v1/attendance/reports/monthly-matrix/?month=10&year=2026
@@ -1314,6 +1345,20 @@ class DailyReportMatrixView(APIView):
             reports_by_date = {r.date: r for r in getattr(user, 'month_daily_reports', [])}
             worked_dates = {tl.clock_in.astimezone(company_tz).date() for tl in getattr(user, 'month_timelogs', []) if tl.clock_in}
             
+            # Detect retroactive/consolidated covered dates (e.g. employee missed day X and included it in day X+1)
+            consolidated_coverage = {}
+            for r in getattr(user, 'month_daily_reports', []):
+                r_content = r.content or ""
+                covered_day_nums = _detect_covered_dates(r_content, year, month, num_days)
+                if 'yesterday' in r_content.lower():
+                    y_date = r.date - timedelta(days=1)
+                    if start_date <= y_date <= end_date:
+                        covered_day_nums.add(y_date.day)
+                for d_num in covered_day_nums:
+                    d_date = date(year, month, d_num)
+                    if d_date != r.date and d_date not in consolidated_coverage:
+                        consolidated_coverage[d_date] = (r, f"Covered in {r.date.strftime('%b %d')} wrap-up")
+
             # Map leave dates
             leave_dates = set()
             for l in getattr(user, 'month_leaves', []):
@@ -1388,6 +1433,21 @@ class DailyReportMatrixView(APIView):
                         "status": "day_off",
                         "date": current_date.isoformat(),
                         "label": "Day Off",
+                    }
+                elif current_date in consolidated_coverage:
+                    # Retroactively covered in a subsequent daily report!
+                    cov_report, cov_label = consolidated_coverage[current_date]
+                    counts["submitted"] += 1
+                    if not is_holiday and not is_day_off:
+                        counts["expected_working_days"] += 1
+                    user_days[day_str] = {
+                        "status": "covered",
+                        "report_id": str(cov_report.id),
+                        "date": current_date.isoformat(),
+                        "sentiment": cov_report.sentiment or "Great",
+                        "label": cov_label,
+                        "covered_in_date": cov_report.date.isoformat(),
+                        "snippet": f"[{cov_label}] {(cov_report.content or '')[:140]}",
                     }
                 else:
                     # Regular working day (or clocked in on weekend) and missed daily report
@@ -1544,12 +1604,29 @@ class AIMonthlyPerformanceView(APIView):
                 text_clean = (r.content or "").replace("\n", " ")[:200]
                 report_samples.append(f"[{r.date}] {text_clean}")
 
+            # Calculate unique days covered (direct reports + retroactive catch-up reports)
+            covered_days_set = {r.date for r in reports}
+            for r in reports:
+                r_content = r.content or ""
+                extra_days = _detect_covered_dates(r_content, year, month, num_days)
+                if 'yesterday' in r_content.lower():
+                    y_date = r.date - timedelta(days=1)
+                    if start_date <= y_date <= end_date:
+                        extra_days.add(y_date.day)
+                for ed in extra_days:
+                    covered_days_set.add(date(year, month, ed))
+
+            effective_days_covered = len(covered_days_set)
+            catch_up_days_credited = max(0, effective_days_covered - reports.count())
+
             employee_data_list.append({
                 "user_id": str(emp.id),
                 "name": emp.get_full_name() or emp.username,
                 "role": emp.role,
                 "designation": emp.designation or emp.role,
                 "reports_submitted": reports.count(),
+                "effective_days_covered": effective_days_covered,
+                "catch_up_days_credited": catch_up_days_credited,
                 "completed_tasks_count": completed_tasks.count(),
                 "approved_leaves_count": approved_leaves.count(),
                 "reports_preview": "\n".join(report_samples) if report_samples else "No reports submitted."
@@ -1566,6 +1643,7 @@ class AIMonthlyPerformanceView(APIView):
             "2. Consistency & Discipline (daily reports submitted, steady output)\n"
             "3. Initiative & Problem Solving\n"
             "Important rule: Approved leaves are excused and should NOT penalize an employee's score.\n"
+            "Catch-Up & Multi-Day Reports Rule: Staff members often forget to submit on the exact day and include that missed day's work retroactively in their next day's report (e.g. writing 'October 28: ... October 29: ...', or 'Yesterday's tasks...'). You MUST recognize, credit, and fully value multi-day consolidated reports! Count and evaluate the full scope of accomplishments across all covered days so the employee receives full credit for their output, responsibility, and catch-up effort.\n"
             "Return a strictly valid JSON object matching this schema:\n"
             "{\n"
             '  "executive_summary": "2-3 sentence executive summary of company productivity and highlights.",\n'

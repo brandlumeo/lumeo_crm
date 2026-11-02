@@ -485,3 +485,37 @@ class AttendanceAPITests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data["has_analysis"])
+
+    def test_daily_report_matrix_catchup_crediting(self):
+        """Verify report on Oct 29 mentioning Oct 28 credits Oct 28 as covered instead of missed."""
+        from datetime import date
+        from attendance.models import DailyReport
+
+        # Submit multi-day consolidated report on 2026-10-29
+        content = (
+            "October 28\n"
+            "- Coordinated influencer marketing\n"
+            "- Completed video edit\n\n"
+            "October 29\n"
+            "- Client onboarding and team check-in\n"
+        )
+        DailyReport.objects.create(
+            user=self.user,
+            company=self.company,
+            date=date(2026, 10, 29),
+            content=content
+        )
+
+        url = reverse("attendance:report_monthly_matrix") + "?month=10&year=2026"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        matrix = response.data["matrix"]
+        user_row = next((u for u in matrix if u["id"] == str(self.user.id)), None)
+        self.assertIsNotNone(user_row)
+
+        days = user_row["days"]
+        # Oct 29 is submitted
+        self.assertEqual(days["29"]["status"], "submitted")
+        # Oct 28 was credited as covered!
+        self.assertEqual(days["28"]["status"], "covered")
+        self.assertIn("Covered in", days["28"]["label"])

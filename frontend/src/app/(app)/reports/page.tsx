@@ -67,6 +67,7 @@ export default function DailyReportsPage() {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
   // Submit wrap-up state
+  const [reportDate, setReportDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [content, setContent] = useState("");
   const [sentiment, setSentiment] = useState<string>("Great");
   const [blockers, setBlockers] = useState("");
@@ -161,6 +162,7 @@ export default function DailyReportsPage() {
       queryClient.invalidateQueries({ queryKey: ["daily-reports", "today"] });
       queryClient.invalidateQueries({ queryKey: ["daily-reports-matrix"] });
       setIsSubmitModalOpen(false);
+      setReportDate(format(new Date(), "yyyy-MM-dd"));
       setContent("");
       setBlockers("");
       setNextDayPlan("");
@@ -211,6 +213,7 @@ export default function DailyReportsPage() {
       return;
     }
     submitMutation.mutate({
+      date: reportDate,
       content,
       sentiment,
       blockers,
@@ -326,6 +329,25 @@ export default function DailyReportsPage() {
             className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-emerald-400 transition-all cursor-pointer"
           >
             <Check className="w-4 h-4 stroke-[3]" />
+          </button>
+        );
+      case "covered":
+        return (
+          <button 
+            type="button"
+            onClick={() => setSelectedMatrixCell({
+              userName: item.userName || "Team Member",
+              userRole: item.userRole || "",
+              date: item.date,
+              status: item.status,
+              sentiment: item.sentiment,
+              snippet: item.snippet,
+              label: item.label || "Covered in subsequent wrap-up",
+            })}
+            title={item.label || "Covered in next report (Credited)"}
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-teal-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer"
+          >
+            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
           </button>
         );
       case "leave":
@@ -501,6 +523,20 @@ export default function DailyReportsPage() {
 
               <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-5">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[13px] font-medium text-ink">Report Date</label>
+                      <span className="text-[11px] text-muted font-normal">Forgot yesterday? Pick an earlier date</span>
+                    </div>
+                    <input 
+                      type="date"
+                      max={format(new Date(), "yyyy-MM-dd")}
+                      value={reportDate}
+                      onChange={(e) => setReportDate(e.target.value)}
+                      className="input w-full h-10"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-[13px] font-medium text-ink mb-1.5">How was your day?</label>
                     <select 
@@ -758,6 +794,12 @@ export default function DailyReportsPage() {
                 <Check className="w-3 h-3 stroke-[3]" />
               </div>
               <span>Submitted</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded-full bg-teal-500 text-white flex items-center justify-center">
+                <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
+              </div>
+              <span>Covered in Next Report (Credited)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 rounded-full bg-[#378ADD] text-white flex items-center justify-center">
@@ -1293,6 +1335,11 @@ export default function DailyReportsPage() {
                 {selectedMatrixCell?.status === "submitted" && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <Check className="w-3.5 h-3.5" /> Submitted
+                  </span>
+                )}
+                {selectedMatrixCell?.status === "covered" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-400 dark:border-teal-500/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Catch-Up Credited (In Next Report)
                   </span>
                 )}
                 {selectedMatrixCell?.status === "leave" && (

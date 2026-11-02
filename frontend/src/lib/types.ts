@@ -1183,7 +1183,8 @@ export interface DailyReportInput {
 }
 
 export interface DailyReportMatrixDayItem {
-  status: 'submitted' | 'missed' | 'leave' | 'day_off' | 'holiday' | 'future';
+  status: 'submitted' | 'covered' | 'missed' | 'leave' | 'day_off' | 'holiday' | 'future';
+  covered_in_date?: string;
   date: string;
   report_id?: string;
   sentiment?: string;
