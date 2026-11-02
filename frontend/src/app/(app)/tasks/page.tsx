@@ -35,6 +35,8 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
   
   // Drawer states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -58,14 +60,17 @@ export default function TasksPage() {
     enabled: !!me,
   });
 
-  // Fetch max items for Kanban
+  // Fetch tasks with pagination for list view, full board for kanban
   const { data, isLoading } = useTaskPage({
-    page: 1,
-    limit: 100, // Load up to 100 tasks for board view seamlessly
+    page: viewMode === "kanban" ? 1 : page,
+    limit: viewMode === "kanban" ? 100 : PAGE_SIZE,
     search,
     status: status || undefined,
     ordering: viewMode === "kanban" ? "row_order,due_date" : "-created_at",
   });
+
+  const totalTasks = data?.count || 0;
+  const totalPages = Math.max(1, Math.ceil(totalTasks / PAGE_SIZE));
 
   // Mutations
   const createMutation = useMutation({
@@ -173,14 +178,20 @@ export default function TasksPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="input w-full pl-9"
                 placeholder="Search tasks..."
               />
             </div>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
               className="select w-[140px]"
             >
               <option value="">All Statuses</option>
@@ -302,6 +313,34 @@ export default function TasksPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {!isLoading && rows.length > 0 && totalTasks > PAGE_SIZE && (
+              <div className="px-5 py-3.5 border-t border-line bg-surface-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+                <div className="text-muted text-xs">
+                  Showing <span className="font-medium text-ink">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-ink">{Math.min(page * PAGE_SIZE, totalTasks)}</span> of <span className="font-medium text-ink">{totalTasks}</span> tasks
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={page <= 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    className="btn btn-secondary !py-1 !px-3 !text-xs disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-muted px-2 font-medium">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(p => p + 1)}
+                    className="btn btn-secondary !py-1 !px-3 !text-xs disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <TaskBoard tasks={rows} onEditTask={openEditDrawer} />

@@ -230,10 +230,16 @@ def check_task_deadlines(self):
         from crm.models import Task
         from notifications.models import Notification
         from django.utils import timezone
+        from datetime import timedelta
 
         today = timezone.now().date()
+        # Only check tasks due today or overdue within the last 7 days.
+        # Older tasks are considered stale backlogs and should not trigger daily email alerts.
+        earliest_due_date = today - timedelta(days=7)
+
         tasks = Task.objects.filter(
             status__in=['todo', 'in_progress'],
+            due_date__gte=earliest_due_date,
             due_date__lte=today,
             assigned_to__isnull=False,
             assigned_to__is_active=True,
@@ -250,15 +256,20 @@ def check_task_deadlines(self):
             title = f'Task {time_str}: {task.title}'
             body = f'Your task {task.title} is {time_str} ({task.due_date}). Please complete it or update the deadline.'
 
-            Notification.objects.create(
+            # Prevent duplicate notifications sent to the same user on the same day for this task
+            already_notified = Notification.objects.filter(
                 user=user,
                 notification_type=Notification.Type.TASK_DUE,
                 title=title,
-                body=body,
-            )
+                created_at__date=today,
+            ).exists()
+            if already_notified:
+                continue
 
-            send_notification_email.delay(
-                to_email=user.email,
+            # Notification creation automatically dispatches email via post_save signal
+            Notification.objects.create(
+                user=user,
+                notification_type=Notification.Type.TASK_DUE,
                 title=title,
                 body=body,
             )
