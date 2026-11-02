@@ -1613,10 +1613,29 @@ class AIMonthlyPerformanceView(APIView):
                 end_date__gte=start_date
             )
 
-            report_samples = []
-            for r in reports[:12]:
-                text_clean = (r.content or "").replace("\n", " ")[:200]
-                report_samples.append(f"[{r.date}] {text_clean}")
+            # Build comprehensive monthly work logs and detect distinct client/internal projects
+            report_entries = []
+            total_content_length = 0
+            distinct_projects_set = set()
+
+            for r in reports:
+                content_str = (r.content or "").strip()
+                total_content_length += len(content_str)
+                # Scan for project headings or client names
+                for line in content_str.split("\n"):
+                    line_clean = line.strip()
+                    if re.match(r"^(?:\d+\.\s*)?project:\s*", line_clean, re.IGNORECASE):
+                        p_name = re.sub(r"^(?:\d+\.\s*)?project:\s*", "", line_clean, flags=re.IGNORECASE).strip()
+                        if p_name:
+                            distinct_projects_set.add(p_name)
+                    for kw in ["bestflowers", "eyetrack", "edufix", "infinity", "brandlumeo", "saffron", "helio", "sbs", "nova grid"]:
+                        if kw in line_clean.lower():
+                            distinct_projects_set.add(kw.title())
+
+                # Include comprehensive clean work snippet up to 1000 characters per report
+                cleaned_text = re.sub(r"\s+", " ", content_str)[:1000]
+                if cleaned_text:
+                    report_entries.append(f"[{r.date}] {cleaned_text}")
 
             # Calculate unique days covered (direct reports + strictly yesterday catch-up reports)
             covered_days_set = {r.date for r in reports}
@@ -1628,6 +1647,7 @@ class AIMonthlyPerformanceView(APIView):
 
             effective_days_covered = len(covered_days_set)
             catch_up_days_credited = max(0, effective_days_covered - reports.count())
+            completed_task_titles = [t.title for t in completed_tasks[:8]]
 
             employee_data_list.append({
                 "user_id": str(emp.id),
@@ -1638,25 +1658,41 @@ class AIMonthlyPerformanceView(APIView):
                 "effective_days_covered": effective_days_covered,
                 "catch_up_days_credited": catch_up_days_credited,
                 "completed_tasks_count": completed_tasks.count(),
+                "completed_tasks_sample": completed_task_titles,
                 "approved_leaves_count": approved_leaves.count(),
-                "reports_preview": "\n".join(report_samples) if report_samples else "No reports submitted."
+                "distinct_projects_detected": list(distinct_projects_set)[:8],
+                "total_work_log_chars": total_content_length,
+                "monthly_work_logs": report_entries if report_entries else ["No reports submitted."]
             })
 
         if not employee_data_list:
             return Response({"detail": "No active employees found to analyze."}, status=status.HTTP_400_BAD_REQUEST)
 
         system_instructions = (
-            "You are an expert HR Performance & Talent Evaluation AI. "
-            f"Analyze the team's monthly work accomplishments for {month}/{year} at {company.name}. "
-            "Evaluate each employee on:\n"
-            "1. Output & Impact (quality, complexity, and scope of accomplishments)\n"
-            "2. Consistency & Discipline (daily reports submitted, steady output)\n"
-            "3. Initiative & Problem Solving\n"
-            "Important rule: Approved leaves are excused and should NOT penalize an employee's score.\n"
-            "Catch-Up & Multi-Day Reports Rule: Staff members often forget to submit on the exact day and include that missed day's work retroactively in their next day's report (e.g. writing 'October 28: ... October 29: ...', or 'Yesterday's tasks...'). You MUST recognize, credit, and fully value multi-day consolidated reports! Count and evaluate the full scope of accomplishments across all covered days so the employee receives full credit for their output, responsibility, and catch-up effort.\n"
+            "You are an elite, objective Chief Operating Officer & Senior HR Performance Evaluation AI. "
+            f"Perform a rigorous, deep qualitative assessment of work output for each team member at {company.name} for the period {month}/{year}.\n\n"
+            "EVALUATION CRITERIA & WEIGHTING:\n"
+            "1. QUALITATIVE WORK COMPLEXITY & TECHNICAL/CREATIVE IMPACT (45% Weight):\n"
+            "   - Read each employee's submitted work logs thoroughly.\n"
+            "   - Evaluate the depth, difficulty, and business impact of what was delivered (e.g., full-stack software development, Next.js migrations, system architecture, designing high-converting marketing campaigns, producing and editing video reels, influencer outreach and client handling vs simple routine updates).\n"
+            "   - Value high-difficulty, impactful problem solving much higher than simple repetitive tasks.\n\n"
+            "2. PROJECT BREADTH & TANGIBLE DELIVERABLES (25% Weight):\n"
+            "   - Evaluate actual client and internal projects advanced (e.g., Bestflowers.ae, EyeTrack Solutions, Edufix, Infinity International, BrandLumeo, etc.).\n"
+            "   - Track volume and completion rate of tangible milestones delivered across the entire month.\n\n"
+            "3. REPORTING INTEGRITY, DISCIPLINE & CATCH-UP RESPONSIBILITY (20% Weight):\n"
+            "   - Value consistent daily reporting.\n"
+            "   - Multi-day catch-up rule: If an employee forgot to report on a given day and responsibly documented that day's work in their next day's report (e.g., 'October 28: ... October 29: ...'), give them FULL credit for their output, responsibility, and catch-up effort.\n"
+            "   - Approved leave rule: Approved leaves are official and excused. DO NOT penalize employees for approved leaves; evaluate their score based on their active working days.\n\n"
+            "4. INITIATIVE & AUTONOMY (10% Weight):\n"
+            "   - Proactive troubleshooting, leadership, mentoring, and cross-functional coordination.\n\n"
+            "SCORING & DIFFERENTIATION RULES:\n"
+            "- CRITICAL: Do NOT assign identical generic scores (e.g. 85 to everyone). Distribute scores accurately between 60 and 98 reflecting real, measurable differences in their qualitative accomplishments, technical/creative complexity, and output velocity.\n"
+            "- In the highlights array, cite 3 specific achievements naming the real projects, tools, or client deliverables they worked on.\n"
+            "- Provide personalized, constructive professional feedback tailored to each individual's role and month's output.\n\n"
+            "OUTPUT FORMAT:\n"
             "Return a strictly valid JSON object matching this schema:\n"
             "{\n"
-            '  "executive_summary": "2-3 sentence executive summary of company productivity and highlights.",\n'
+            '  "executive_summary": "3-4 sentence high-level executive brief summarizing the team accomplishments, standout performers, and key projects delivered.",\n'
             '  "rankings": [\n'
             '    {\n'
             '      "rank": 1,\n'
@@ -1664,21 +1700,38 @@ class AIMonthlyPerformanceView(APIView):
             '      "name": "string",\n'
             '      "role": "string",\n'
             '      "score": 95,\n'
-            '      "badge": "🏆 Top Performer of the Month",\n'
-            '      "highlights": ["Accomplished XYZ", "Delivered ABC"],\n'
-            '      "strengths": ["Strong execution", "Consistent delivery"],\n'
-            '      "feedback": "Short constructive growth tip",\n'
-            '      "reports_submitted": 25\n'
+            '      "badge": "Strategic Impact Leader",\n'
+            '      "highlights": ["3-4 concrete bullets citing real projects and achievements"],\n'
+            '      "strengths": ["Key professional strengths demonstrated"],\n'
+            '      "feedback": "Actionable, role-specific growth recommendation",\n'
+            '      "reports_submitted": 20\n'
             '    }\n'
             '  ]\n'
             "}\n"
-            "Order the rankings array strictly by rank (1 being best performer). Do not include markdown or backticks in the response, only pure JSON."
+            "Order the rankings array strictly by rank in descending order of performance (rank 1 = best performer). Do not include markdown or backticks in the response, only pure JSON."
         )
 
         prompt_payload = {
-            "employees": employee_data_list,
             "month": month,
             "year": year,
+            "company": company.name,
+            "employees": employee_data_list,
+        }
+
+        body = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": f"{system_instructions}\n\nDATA TO EVALUATE:\n{json.dumps(prompt_payload, ensure_ascii=False)}"
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.2
+            }
         }
 
         parsed_result = None
@@ -1689,7 +1742,7 @@ class AIMonthlyPerformanceView(APIView):
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                 for attempt in range(3):
                     try:
-                        resp = requests.post(url, json=body, timeout=30)
+                        resp = requests.post(url, json=body, timeout=45)
                         if resp.status_code == 200:
                             resp_json = resp.json()
                             candidates = resp_json.get("candidates", [])
@@ -1722,28 +1775,42 @@ class AIMonthlyPerformanceView(APIView):
                 rankings = parsed_result.get("rankings", [])
                 exec_summary = parsed_result.get("executive_summary", "")
             else:
-                logger.info("Using intelligent performance analysis engine fallback")
+                logger.info("Using intelligent qualitative performance analysis engine fallback")
                 scored_employees = []
                 for emp_data in employee_data_list:
                     rep_count = emp_data["reports_submitted"]
                     task_count = emp_data["completed_tasks_count"]
                     leave_count = emp_data["approved_leaves_count"]
+                    content_length = emp_data["total_work_log_chars"]
+                    distinct_projects = len(emp_data["distinct_projects_detected"])
 
-                    consistency = min(50, rep_count * 3)
-                    task_score = min(40, task_count * 5)
-                    base_score = 65 + int(consistency * 0.4 + task_score * 0.4)
-                    score = min(98, max(70, base_score))
+                    # 1. Qualitative Depth Score (up to 40 pts)
+                    avg_chars_per_report = (content_length / rep_count) if rep_count > 0 else 0
+                    depth_score = min(25, int(avg_chars_per_report / 15))
+                    project_breadth_score = min(15, distinct_projects * 4)
+                    qualitative_score = depth_score + project_breadth_score
 
-                    preview_lines = [
-                        line.strip()
-                        for line in emp_data["reports_preview"].split("\n")
-                        if line.strip() and not line.strip().startswith("No reports")
-                    ]
+                    # 2. Output & Deliverables Score (up to 25 pts)
+                    task_score = min(25, task_count * 5 + min(15, rep_count))
+
+                    # 3. Consistency & Discipline (up to 25 pts, excusing leaves)
+                    expected_days = max(1, num_days - leave_count)
+                    effective_days = emp_data["effective_days_covered"]
+                    consistency_score = min(25, int((effective_days / expected_days) * 25))
+
+                    # Base (10 pts) -> Total score between 65 and 98
+                    base_score = 10 + qualitative_score + task_score + consistency_score
+                    score = min(98, max(65, base_score))
+
+                    # Extract real project highlights from daily reports
                     highlights = []
-                    for p in preview_lines[:3]:
-                        clean_p = re.sub(r"^\[\d{4}-\d{2}-\d{2}\]\s*", "", p)
-                        if clean_p:
-                            highlights.append(clean_p[:120])
+                    for line in emp_data["monthly_work_logs"]:
+                        clean_line = re.sub(r"^\[\d{4}-\d{2}-\d{2}\]\s*", "", line).strip()
+                        if len(clean_line) > 20 and not clean_line.startswith("No reports"):
+                            highlights.append(clean_line[:130])
+                            if len(highlights) >= 3:
+                                break
+
                     if not highlights:
                         if task_count > 0:
                             highlights.append(f"Completed {task_count} project task(s) on schedule")
@@ -1752,16 +1819,16 @@ class AIMonthlyPerformanceView(APIView):
                         if not highlights:
                             highlights.append("Active contributor across assigned workspace deliverables")
 
-                    strengths = ["Task Execution", "Team Discipline"]
-                    if rep_count >= 10:
-                        strengths.append("Consistent Reporting")
-                    if task_count >= 3:
+                    strengths = ["Execution Depth", "Team Discipline"]
+                    if distinct_projects >= 2:
+                        strengths.append("Cross-Project Versatility")
+                    if rep_count >= 15:
+                        strengths.append("Disciplined Documentation")
+                    if task_count >= 2:
                         strengths.append("High Output Velocity")
-                    if leave_count > 0:
-                        strengths.append("Planned Leave Coordination")
 
                     feedback = (
-                        "Maintain steady consistency in daily wrap-ups. Target expanding cross-project velocity and collaborative initiatives in the upcoming month."
+                        "Continue maintaining deep qualitative documentation and proactive ownership. Expand cross-functional velocity and key deliverable impact."
                     )
 
                     scored_employees.append({
@@ -1771,17 +1838,19 @@ class AIMonthlyPerformanceView(APIView):
                         "score": score,
                         "rep_count": rep_count,
                         "task_count": task_count,
+                        "content_length": content_length,
                         "highlights": highlights,
                         "strengths": strengths,
                         "feedback": feedback,
                     })
 
-                scored_employees.sort(key=lambda x: (x["score"], x["task_count"], x["rep_count"]), reverse=True)
+                # Sort by score, then content depth, then tasks, then reports
+                scored_employees.sort(key=lambda x: (x["score"], x["content_length"], x["task_count"], x["rep_count"]), reverse=True)
 
                 badges_pool = [
-                    "🏆 Top Performer of the Month",
+                    "🏆 Strategic Impact Leader",
                     "⚡ High Velocity Champion",
-                    "🎯 Consistency & Focus Award",
+                    "🎯 Technical & Focus Excellence",
                     "🚀 Sprint Accelerator",
                     "🌟 Reliable Contributor",
                     "💼 Operational Excellence",
