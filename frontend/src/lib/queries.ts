@@ -1757,11 +1757,11 @@ export function useReportMonthlyMatrix(month: number, year: number) {
   });
 }
 
-export function useAIMonthlyAnalysis(month: number, year: number) {
+export function useAIMonthlyAnalysis(month: number, year: number, enabled: boolean = true) {
   return useQuery<AIMonthlyPerformanceResponse>({
     queryKey: ["ai-monthly-performance", month, year],
     queryFn: () => getAIMonthlyAnalysis(month, year),
-    enabled: authenticated(),
+    enabled: authenticated() && enabled,
   });
 }
 

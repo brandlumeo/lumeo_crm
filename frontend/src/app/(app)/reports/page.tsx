@@ -216,13 +216,11 @@ export default function DailyReportsPage() {
   // Selected performer detail modal for Leaderboard
   const [selectedPerformer, setSelectedPerformer] = useState<PerformerRanking | null>(null);
 
-  // Permission Check: Primary Admin (owner/admin) or Secondary Admin (manager/has_management_access)
+  // Permission Check: Strictly restricted to the Owner (Shamil)
   const isLeaderboardAllowed = !!(
     user?.is_superuser ||
     user?.role === "owner" ||
-    user?.role === "admin" ||
-    user?.role === "manager" ||
-    user?.has_management_access
+    (user?.email && ["brandlumeollp@gmail.com", "shamil@brandlumeo.com"].includes(user.email.toLowerCase()))
   );
 
   // 1. Reports Feed Query
@@ -241,11 +239,11 @@ export default function DailyReportsPage() {
     refetch: refetchMatrix 
   } = useReportMonthlyMatrix(selectedDate.month, selectedDate.year);
 
-  // 3. AI Monthly Leaderboard Query (only fetched if user has permission)
+  // 3. AI Monthly Leaderboard Query (only fetched if user is the Owner Shamil)
   const { 
     data: aiData, 
     isLoading: isAILoading 
-  } = useAIMonthlyAnalysis(selectedDate.month, selectedDate.year);
+  } = useAIMonthlyAnalysis(selectedDate.month, selectedDate.year, isLeaderboardAllowed);
 
   // 4. Generate AI Monthly Analysis Mutation
   const generateAIMutation = useGenerateAIMonthlyAnalysis();
@@ -1122,7 +1120,7 @@ export default function DailyReportsPage() {
               </div>
               <h3 className="text-lg font-bold text-ink mb-2">Access Restricted</h3>
               <p className="text-sm text-muted leading-relaxed">
-                Only the Primary Admin (Owner / Admin) and Managers / Secondary Admins have permission to access the AI Monthly Leaderboard.
+                Only the company owner (Shamil) has permission to access the AI Monthly Leaderboard.
               </p>
             </div>
           ) : (

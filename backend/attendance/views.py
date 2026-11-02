@@ -1538,17 +1538,17 @@ class AIMonthlyPerformanceView(APIView):
 
     def _check_permission(self, user):
         from accounts.models import User
-        # Primary admin (owner, admin) or Secondary admin (manager)
+        # Strictly restricted to the Owner Shamil
         return (
             user.is_superuser
-            or user.role in [User.Role.OWNER, User.Role.ADMIN, User.Role.MANAGER]
-            or getattr(user, 'has_management_access', False)
+            or user.role == User.Role.OWNER
+            or (user.email and user.email.lower() in ["brandlumeollp@gmail.com", "shamil@brandlumeo.com"])
         )
 
     def get(self, request):
         if not self._check_permission(request.user):
             return Response(
-                {"detail": "Permission denied. Only primary admin, manager, and secondary admin can access the AI monthly leaderboard."},
+                {"detail": "Permission denied. Only the company owner (Shamil) can access the AI monthly leaderboard."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -1586,7 +1586,7 @@ class AIMonthlyPerformanceView(APIView):
     def post(self, request):
         if not self._check_permission(request.user):
             return Response(
-                {"detail": "Permission denied. Only primary admin, manager, and secondary admin can access the AI monthly leaderboard."},
+                {"detail": "Permission denied. Only the company owner (Shamil) can access the AI monthly leaderboard."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -1804,7 +1804,7 @@ class AIMonthlyPerformanceView(APIView):
         }
 
         parsed_result = None
-        gemini_models = ["gemini-2.5-flash", "gemini-flash-latest"]
+        gemini_models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-flash"]
 
         try:
             for model_name in gemini_models:

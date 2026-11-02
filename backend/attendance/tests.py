@@ -465,7 +465,7 @@ class AttendanceAPITests(APITestCase):
         self.assertEqual(days["5"]["status"], "leave")
 
     def test_ai_monthly_performance_access_control(self):
-        """Verify only primary admin, manager, and secondary admin can access AI monthly leaderboard."""
+        """Verify only owner (Shamil) can access AI monthly leaderboard."""
         url = reverse("attendance:report_ai_monthly_analysis") + "?month=10&year=2026"
 
         # Regular staff should be forbidden (403)
@@ -473,7 +473,7 @@ class AttendanceAPITests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Manager should have access (200)
+        # Manager should also be forbidden (403)
         manager = User.objects.create_user(
             username="mgr_evaluator",
             email="mgr_eval@lumeo.local",
@@ -482,6 +482,18 @@ class AttendanceAPITests(APITestCase):
             role="manager"
         )
         self.client.force_authenticate(user=manager)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Owner should have access (200)
+        owner = User.objects.create_user(
+            username="owner_user",
+            email="brandlumeollp@gmail.com",
+            password="SecurePassword123#",
+            company=self.company,
+            role="owner"
+        )
+        self.client.force_authenticate(user=owner)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data["has_analysis"])
