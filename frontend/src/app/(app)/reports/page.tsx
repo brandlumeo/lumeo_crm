@@ -83,6 +83,13 @@ export default function DailyReportsPage() {
   // Delete state
   const [deletingReport, setDeletingReport] = useState<DailyReport | null>(null);
 
+  // Allowed submission dates: strictly Today or Yesterday only
+  const todayObj = new Date();
+  const yesterdayObj = new Date();
+  yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+  const todayStr = format(todayObj, "yyyy-MM-dd");
+  const yesterdayStr = format(yesterdayObj, "yyyy-MM-dd");
+
   // Month navigation for Matrix & AI Leaderboard
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date();
@@ -524,17 +531,47 @@ export default function DailyReportsPage() {
               <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-5">
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-[13px] font-medium text-ink">Report Date</label>
-                      <span className="text-[11px] text-muted font-normal">Forgot yesterday? Pick an earlier date</span>
+                    <label className="block text-[13px] font-medium text-ink mb-2">
+                      Report Submission Date
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setReportDate(todayStr)}
+                        className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                          reportDate === todayStr
+                            ? "bg-primary/10 border-primary text-primary shadow-sm ring-1 ring-primary/30"
+                            : "bg-surface/50 border-line text-muted hover:border-line hover:text-ink"
+                        }`}
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                          Today
+                        </span>
+                        <span className="text-sm font-bold text-ink mt-0.5">
+                          {format(todayObj, "EEE, MMM d")}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setReportDate(yesterdayStr)}
+                        className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                          reportDate === yesterdayStr
+                            ? "bg-primary/10 border-primary text-primary shadow-sm ring-1 ring-primary/30"
+                            : "bg-surface/50 border-line text-muted hover:border-line hover:text-ink"
+                        }`}
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                          Yesterday (Catch-Up)
+                        </span>
+                        <span className="text-sm font-bold text-ink mt-0.5">
+                          {format(yesterdayObj, "EEE, MMM d")}
+                        </span>
+                      </button>
                     </div>
-                    <input 
-                      type="date"
-                      max={format(new Date(), "yyyy-MM-dd")}
-                      value={reportDate}
-                      onChange={(e) => setReportDate(e.target.value)}
-                      className="input w-full h-10"
-                    />
+                    <p className="text-[11.5px] text-muted mt-2">
+                      Missed yesterday's wrap-up? You can only pick <strong>yesterday's</strong> date. Older dates cannot be backdated.
+                    </p>
                   </div>
 
                   <div>

@@ -1143,17 +1143,31 @@ class DailyReportListCreateView(APIView):
         if not company:
             return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
             
-        import zoneinfo
+        import datetime, zoneinfo
         tz = zoneinfo.ZoneInfo(company.timezone or "UTC")
         local_date = timezone.now().astimezone(tz).date()
+        yesterday_date = local_date - datetime.timedelta(days=1)
         
-        date_str = request.data.get("date", local_date.isoformat())
+        date_str = request.data.get("date")
+        if date_str:
+            try:
+                target_date = datetime.date.fromisoformat(date_str)
+                # Strictly enforce that only today or yesterday can be submitted
+                if target_date not in [local_date, yesterday_date]:
+                    return Response(
+                        {"detail": "Daily reports can only be submitted for today or yesterday."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except (ValueError, TypeError):
+                target_date = local_date
+        else:
+            target_date = local_date
         
         # Optional: Auto-calculate stats here based on tasks/deals modified today by user
         automated_stats = request.data.get("automated_stats", {})
         
         data = request.data.copy()
-        data["date"] = date_str
+        data["date"] = target_date.isoformat()
         
         serializer = DailyReportSerializer(data=data)
         if serializer.is_valid():
@@ -1236,35 +1250,39 @@ class DailyReportDetailView(APIView):
 
 
 
-def _detect_covered_dates(content, year, month, num_days):
+def _detect_covered_dates(content, report_date, year, month):
     """
-    Extracts dates mentioned in report content where employees caught up on missed daily reports
-    (e.g., 'October 28', 'Oct 28', '28th', '28/10', or 'yesterday').
+    Extracts dates mentioned in report content where employees caught up on missed daily reports.
+    Strictly limited to yesterday relative to report_date (report_date - 1 day) to prevent
+    unintended matches from project milestones or past reference dates in report text.
     """
-    if not content:
+    if not content or not report_date:
         return set()
     import re
+    from datetime import timedelta
+    yesterday = report_date - timedelta(days=1)
+    if yesterday.year != year or yesterday.month != month:
+        return set()
+
     month_names = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
     full_month_names = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
-    m_short = month_names[month - 1]
-    m_full = full_month_names[month - 1]
+    m_short = month_names[yesterday.month - 1]
+    m_full = full_month_names[yesterday.month - 1]
+    d_num = yesterday.day
 
-    found_days = set()
     patterns = [
-        rf'(?:{m_full}|{m_short})\s*(\d{{1,2}})(?:st|nd|rd|th)?',
-        rf'(\d{{1,2}})(?:st|nd|rd|th)?\s*(?:{m_full}|{m_short})',
-        rf'(\d{{1,2}})[/-]{month:02d}[/-](?:{year}|\d{{2}})?',
-        rf'(\d{{1,2}})[/-]{month}[/-](?:{year}|\d{{2}})?',
+        rf'\byesterday\b',
+        rf'(?:{m_full}|{m_short})\s*{d_num}(?:st|nd|rd|th)?\b',
+        rf'\b{d_num}(?:st|nd|rd|th)?\s*(?:{m_full}|{m_short})\b',
+        rf'\b{d_num}[/-]{yesterday.month:02d}[/-](?:{yesterday.year}|\d{{2}})?\b',
+        rf'\b{d_num}[/-]{yesterday.month}[/-](?:{yesterday.year}|\d{{2}})?\b',
     ]
+
     for pat in patterns:
-        for match in re.finditer(pat, content, re.IGNORECASE):
-            try:
-                day_num = int(match.group(1))
-                if 1 <= day_num <= num_days:
-                    found_days.add(day_num)
-            except (ValueError, TypeError):
-                pass
-    return found_days
+        if re.search(pat, content, re.IGNORECASE):
+            return {d_num}
+
+    return set()
 
 class DailyReportMatrixView(APIView):
     """
@@ -1345,19 +1363,15 @@ class DailyReportMatrixView(APIView):
             reports_by_date = {r.date: r for r in getattr(user, 'month_daily_reports', [])}
             worked_dates = {tl.clock_in.astimezone(company_tz).date() for tl in getattr(user, 'month_timelogs', []) if tl.clock_in}
             
-            # Detect retroactive/consolidated covered dates (e.g. employee missed day X and included it in day X+1)
+            # Detect retroactive/consolidated covered dates (strictly yesterday relative to each report)
             consolidated_coverage = {}
             for r in getattr(user, 'month_daily_reports', []):
                 r_content = r.content or ""
-                covered_day_nums = _detect_covered_dates(r_content, year, month, num_days)
-                if 'yesterday' in r_content.lower():
-                    y_date = r.date - timedelta(days=1)
-                    if start_date <= y_date <= end_date:
-                        covered_day_nums.add(y_date.day)
+                covered_day_nums = _detect_covered_dates(r_content, r.date, year, month)
                 for d_num in covered_day_nums:
                     d_date = date(year, month, d_num)
                     if d_date != r.date and d_date not in consolidated_coverage:
-                        consolidated_coverage[d_date] = (r, f"Covered in {r.date.strftime('%b %d')} wrap-up")
+                        consolidated_coverage[d_date] = (r, f"Covered in {r.date.strftime('%b %d')} wrap-up (Yesterday)")
 
             # Map leave dates
             leave_dates = set()
@@ -1604,15 +1618,11 @@ class AIMonthlyPerformanceView(APIView):
                 text_clean = (r.content or "").replace("\n", " ")[:200]
                 report_samples.append(f"[{r.date}] {text_clean}")
 
-            # Calculate unique days covered (direct reports + retroactive catch-up reports)
+            # Calculate unique days covered (direct reports + strictly yesterday catch-up reports)
             covered_days_set = {r.date for r in reports}
             for r in reports:
                 r_content = r.content or ""
-                extra_days = _detect_covered_dates(r_content, year, month, num_days)
-                if 'yesterday' in r_content.lower():
-                    y_date = r.date - timedelta(days=1)
-                    if start_date <= y_date <= end_date:
-                        extra_days.add(y_date.day)
+                extra_days = _detect_covered_dates(r_content, r.date, year, month)
                 for ed in extra_days:
                     covered_days_set.add(date(year, month, ed))
 
