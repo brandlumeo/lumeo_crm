@@ -531,3 +531,40 @@ class AttendanceAPITests(APITestCase):
         # Oct 28 was credited as covered!
         self.assertEqual(days["28"]["status"], "covered")
         self.assertIn("Covered in", days["28"]["label"])
+
+    def test_daily_report_matrix_yesterday_only_crediting(self):
+        """Verify report on Nov 3 credits Nov 2 (yesterday) but strictly ignores dates before yesterday (Nov 1)."""
+        from datetime import date
+        from attendance.models import DailyReport
+
+        # Submit report on Nov 3 referencing Nov 2 and Nov 1 (spaced format like Shamir ek's report)
+        content = (
+            "01 -11- 2026\n"
+            "- Old task from 2 days ago\n\n"
+            "02 -11- 2026\n"
+            "Created a funny and engaging video for social media\n\n"
+            "3-11-26\n"
+            "1. Script Planning for production project\n"
+        )
+        DailyReport.objects.create(
+            user=self.user,
+            company=self.company,
+            date=date(2026, 11, 3),
+            content=content
+        )
+
+        url = reverse("attendance:report_monthly_matrix") + "?month=11&year=2026"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        matrix = response.data["matrix"]
+        user_row = next((u for u in matrix if u["id"] == str(self.user.id)), None)
+        self.assertIsNotNone(user_row)
+
+        days = user_row["days"]
+        # Nov 3 is submitted
+        self.assertEqual(days["3"]["status"], "submitted")
+        # Nov 2 (yesterday) was credited as covered with tickmark!
+        self.assertEqual(days["2"]["status"], "covered")
+        # Nov 1 (day before yesterday) must NOT be credited (remains missed or holiday/day_off)
+        self.assertNotEqual(days["1"]["status"], "covered")
+        self.assertNotEqual(days["1"]["status"], "submitted")

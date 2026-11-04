@@ -1255,6 +1255,8 @@ def _detect_covered_dates(content, report_date, year, month):
     Extracts dates mentioned in report content where employees caught up on missed daily reports.
     Strictly limited to yesterday relative to report_date (report_date - 1 day) to prevent
     unintended matches from project milestones or past reference dates in report text.
+    Only today's and yesterday's dates can show a tickmark in the report attendance; dates before
+    yesterday are strictly ignored.
     """
     if not content or not report_date:
         return set()
@@ -1268,19 +1270,37 @@ def _detect_covered_dates(content, report_date, year, month):
     full_month_names = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
     m_short = month_names[yesterday.month - 1]
     m_full = full_month_names[yesterday.month - 1]
-    d_num = yesterday.day
+    d = yesterday.day
+    d_pad = f"{d:02d}"
+    m_num = yesterday.month
+    m_pad = f"{m_num:02d}"
+    y_full = str(yesterday.year)
+    y_short = y_full[-2:]
+
+    # Permissive separators allowing optional whitespace around -, /, .
+    # Matches: '02 -11- 2026', '02 - 11 - 2026', '2-11-2026', '2/11/26', '02.11.2026', '02-11'
+    sep = r'\s*[-/.]\s*'
+    day_pat = rf'(?:0?{d}|{d_pad})(?:st|nd|rd|th)?'
+    month_num_pat = rf'(?:0?{m_num}|{m_pad})'
+    month_name_pat = rf'(?:{m_full}|{m_short})'
+    year_pat = rf'(?:{y_full}|{y_short})'
 
     patterns = [
-        rf'\byesterday\b',
-        rf'(?:{m_full}|{m_short})\s*{d_num}(?:st|nd|rd|th)?\b',
-        rf'\b{d_num}(?:st|nd|rd|th)?\s*(?:{m_full}|{m_short})\b',
-        rf'\b{d_num}[/-]{yesterday.month:02d}[/-](?:{yesterday.year}|\d{{2}})?\b',
-        rf'\b{d_num}[/-]{yesterday.month}[/-](?:{yesterday.year}|\d{{2}})?\b',
+        # 1. Literal 'yesterday', 'yesterdays', 'yesterday\'s'
+        r'\byesterdays?\b|\byesterday\'s\b',
+        # 2. Day-Month-Year or Day-Month (e.g. '02 -11- 2026', '02 - 11 - 2026', '2-11-2026', '2/11/26', '02.11.2026', '02-11')
+        rf'(?<!\d){day_pat}{sep}{month_num_pat}(?:{sep}{year_pat})?(?!\d)',
+        # 3. Year-Month-Day (e.g. '2026-11-02', '2026 - 11 - 02', '2026/11/02', '26-11-02')
+        rf'(?<!\d){year_pat}{sep}{month_num_pat}{sep}{day_pat}(?!\d)',
+        # 4. Day Month (e.g. '2 Nov', '02 Nov', '2nd November', '02 - Nov', '2nd-Nov-2026')
+        rf'(?<!\w){day_pat}(?:{sep}|\s+){month_name_pat}(?:(?:{sep}|\s+){year_pat})?\b',
+        # 5. Month Day (e.g. 'Nov 2', 'Nov 02', 'November 2nd', 'Nov-02', 'Nov. 2, 2026')
+        rf'\b{month_name_pat}(?:{sep}|\s+){day_pat}(?:(?:{sep}|\s+){year_pat})?\b',
     ]
 
     for pat in patterns:
         if re.search(pat, content, re.IGNORECASE):
-            return {d_num}
+            return {d}
 
     return set()
 
@@ -1326,7 +1346,7 @@ class DailyReportMatrixView(APIView):
                 queryset=DailyReport.objects.filter(
                     company=company,
                     date__gte=start_date,
-                    date__lte=end_date
+                    date__lte=end_date + timedelta(days=1)
                 ).order_by('created_at'),
                 to_attr='month_daily_reports'
             ),

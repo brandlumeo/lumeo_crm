@@ -451,12 +451,12 @@ export default function DailyReportsPage() {
               status: item.status,
               sentiment: item.sentiment,
               snippet: item.snippet,
-              label: item.label || "Covered in subsequent wrap-up",
+              label: item.label || "Covered in subsequent wrap-up (Yesterday)",
             })}
             title={item.label || "Covered in next report (Credited)"}
-            className="flex items-center justify-center w-7 h-7 rounded-full bg-teal-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer"
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-emerald-400 transition-all cursor-pointer"
           >
-            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+            <Check className="w-4 h-4 stroke-[3]" />
           </button>
         );
       case "half_day_submitted":
@@ -493,9 +493,9 @@ export default function DailyReportsPage() {
               label: item.label || "Covered in subsequent wrap-up (Half Day)",
             })}
             title={item.label || "Covered in next report (Half Day)"}
-            className="flex items-center justify-center w-7 h-7 rounded-full bg-teal-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer relative"
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 text-white shadow-sm hover:scale-110 hover:ring-2 hover:ring-emerald-400 transition-all cursor-pointer relative"
           >
-            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+            <Check className="w-4 h-4 stroke-[3]" />
             <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border border-white dark:border-black" title="Half Day Shift" />
           </button>
         );
@@ -946,13 +946,7 @@ export default function DailyReportsPage() {
               <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
                 <Check className="w-3 h-3 stroke-[3]" />
               </div>
-              <span>Submitted</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-teal-500 text-white flex items-center justify-center">
-                <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
-              </div>
-              <span>Covered in Next Report (Credited)</span>
+              <span>Submitted / Covered (Yesterday)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 text-white flex items-center justify-center shadow-xs">
@@ -1549,8 +1543,8 @@ export default function DailyReportsPage() {
                   </span>
                 )}
                 {selectedMatrixCell?.status === "covered" && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-400 dark:border-teal-500/20">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Catch-Up Credited (In Next Report)
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                    <Check className="w-3.5 h-3.5" /> Catch-Up Credited (Yesterday's Report)
                   </span>
                 )}
                 {selectedMatrixCell?.status === "leave" && (
