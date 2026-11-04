@@ -21,23 +21,49 @@ def _get_client_ip(request):
 
 
 def _auto_close_stale_shifts():
-    """Fallback self-healing utility to close shifts from previous days."""
+    """Fallback self-healing utility to close shifts from previous days using company's auto_clock_out_time."""
     try:
+        import zoneinfo
         now = timezone.now()
         today_local = timezone.localtime(now).date()
         today_start_utc = timezone.make_aware(datetime.datetime.combine(today_local, datetime.time.min))
         
-        open_logs = TimeLog.objects.filter(clock_out__isnull=True, clock_in__lt=today_start_utc)
+        open_logs = TimeLog.objects.filter(clock_out__isnull=True, clock_in__lt=today_start_utc).select_related('company')
         for log in open_logs:
+            company = log.company
+            company_tz = zoneinfo.ZoneInfo(company.timezone or "UTC") if company else zoneinfo.ZoneInfo("UTC")
+            log_local_dt = log.clock_in.astimezone(company_tz) if timezone.is_aware(log.clock_in) else log.clock_in
+            log_date = log_local_dt.date()
+
+            # Determine auto clock-out time from company settings
+            target_time = None
+            if company:
+                target_time = _parse_time(getattr(company, 'auto_clock_out_time', None))
+                if not target_time:
+                    target_time = _parse_time(company.office_end_time)
+
+            if not target_time:
+                target_time = datetime.time(18, 0, 0)
+
+            # Combine shift date with the target auto-clock-out time
+            auto_out_dt = datetime.datetime.combine(log_date, target_time)
+            auto_out_aware = timezone.make_aware(auto_out_dt, company_tz)
+
+            # Safety guard: ensure clock_out is strictly after clock_in
+            if auto_out_aware <= log.clock_in:
+                auto_out_aware = log.clock_in + datetime.timedelta(hours=8)
+
             active_break = BreakLog.objects.filter(time_log=log, end_time__isnull=True).first()
             if active_break:
-                active_break.end_time = now
+                active_break.end_time = min(now, auto_out_aware)
                 active_break.save()
-            log.clock_out = now
+
+            log.clock_out = auto_out_aware
             log.is_auto_closed = True
             log.save()
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error in _auto_close_stale_shifts: {e}")
 
 
 def _parse_time(t):

@@ -111,6 +111,7 @@ export interface CompanyDetail extends CompanySummary {
   project_categories: { id: string; name: string }[];
   office_start_time: string;
   office_end_time: string;
+  auto_clock_out_time?: string | null;
   late_mark_after_minutes: number;
   half_day_start_time?: string;
   half_day_late_mark_after_minutes?: number;

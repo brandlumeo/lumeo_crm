@@ -292,6 +292,7 @@ function AttendanceRulesForm() {
   const [formData, setFormData] = useState({
     office_start_time: "09:00:00",
     office_end_time: "18:00:00",
+    auto_clock_out_time: "18:00:00",
     late_mark_after_minutes: 15,
     half_day_start_time: "14:00:00",
     half_day_late_mark_after_minutes: 15,
@@ -303,6 +304,7 @@ function AttendanceRulesForm() {
       setFormData({
         office_start_time: company.office_start_time || "09:00:00",
         office_end_time: company.office_end_time || "18:00:00",
+        auto_clock_out_time: company.auto_clock_out_time || company.office_end_time || "18:00:00",
         late_mark_after_minutes: company.late_mark_after_minutes ?? 15,
         half_day_start_time: company.half_day_start_time || "14:00:00",
         half_day_late_mark_after_minutes: company.half_day_late_mark_after_minutes ?? 15,
@@ -324,7 +326,7 @@ function AttendanceRulesForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div>
           <label className="block text-[13px] font-medium text-ink mb-1.5 flex items-center gap-2">
             <Clock className="w-4 h-4 text-muted" /> Shift Start Time
@@ -352,7 +354,21 @@ function AttendanceRulesForm() {
           />
         </div>
         <div>
-          <label className="block text-[13px] font-medium text-ink mb-1.5">Late Grace Period (Minutes)</label>
+          <label className="block text-[13px] font-medium text-ink mb-1.5 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-rose-500" /> Auto Clock-Out Time
+          </label>
+          <input
+            type="time"
+            step="60"
+            required
+            value={formData.auto_clock_out_time.substring(0, 5)}
+            onChange={e => setFormData({ ...formData, auto_clock_out_time: e.target.value + ":00" })}
+            className="input w-full bg-bone-2"
+          />
+          <p className="text-[11px] text-muted mt-1">Clocks out staff automatically if forgotten.</p>
+        </div>
+        <div>
+          <label className="block text-[13px] font-medium text-ink mb-1.5">Late Grace Period (Min)</label>
           <input
             type="number"
             min="0"

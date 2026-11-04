@@ -568,3 +568,35 @@ class AttendanceAPITests(APITestCase):
         # Nov 1 (day before yesterday) must NOT be credited (remains missed or holiday/day_off)
         self.assertNotEqual(days["1"]["status"], "covered")
         self.assertNotEqual(days["1"]["status"], "submitted")
+
+    def test_auto_close_stale_shifts_with_configured_time(self):
+        """Verify stale unclosed shifts are auto-closed at the company's configured auto_clock_out_time."""
+        import zoneinfo, datetime
+        from django.utils import timezone
+        from attendance.models import TimeLog
+        from attendance.views import _auto_close_stale_shifts
+
+        company_tz = zoneinfo.ZoneInfo(self.company.timezone or "UTC")
+        self.company.auto_clock_out_time = "18:30:00"
+        self.company.save()
+
+        # Shift started 2 days ago at 09:00 AM local time
+        past_date = timezone.now().astimezone(company_tz).date() - datetime.timedelta(days=2)
+        clock_in_dt = timezone.make_aware(datetime.datetime.combine(past_date, datetime.time(9, 0, 0)), company_tz)
+
+        stale_log = TimeLog.objects.create(
+            user=self.user,
+            company=self.company,
+            clock_in=clock_in_dt,
+            clock_out=None
+        )
+
+        _auto_close_stale_shifts()
+
+        stale_log.refresh_from_db()
+        self.assertIsNotNone(stale_log.clock_out)
+        self.assertTrue(stale_log.is_auto_closed)
+
+        # Expected clock-out should be past_date at 18:30:00 local time
+        expected_out = timezone.make_aware(datetime.datetime.combine(past_date, datetime.time(18, 30, 0)), company_tz)
+        self.assertEqual(stale_log.clock_out, expected_out)

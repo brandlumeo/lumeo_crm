@@ -68,6 +68,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "project_categories",
             "office_start_time",
             "office_end_time",
+            "auto_clock_out_time",
             "late_mark_after_minutes",
             "half_day_start_time",
             "half_day_late_mark_after_minutes",
