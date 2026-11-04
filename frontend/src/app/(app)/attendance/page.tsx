@@ -24,7 +24,10 @@ import {
   ExternalLink,
   Timer,
   CalendarDays,
+  Trash2,
 } from "lucide-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 const WORK_LOCATION_OPTIONS = [
   {
@@ -111,6 +114,21 @@ export default function AttendancePage() {
   const punchOutMutation = usePunchOut();
   const startBreakMutation = useStartBreak();
   const endBreakMutation = useEndBreak();
+  const queryClient = useQueryClient();
+
+  const deleteShiftMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/attendance/admin/timelogs/${id}/`);
+    },
+    onSuccess: () => {
+      toast.success("Shift log removed");
+      queryClient.invalidateQueries({ queryKey: ["attendance-history"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-status"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.detail || "Failed to remove shift log");
+    },
+  });
 
   // Component states
   const [mounted, setMounted] = useState(false);
@@ -716,7 +734,7 @@ export default function AttendancePage() {
                 const dateStr = dateObj.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
                 return (
-                  <div key={log.id} className="flex items-center justify-between p-5 hover:bg-bone transition-colors">
+                  <div key={log.id} className="group flex items-center justify-between p-5 hover:bg-bone transition-colors">
                     <div className="flex flex-col gap-1.5">
                       <div className="text-[12.5px] font-semibold text-ink">{dateStr}</div>
                       <div className="flex items-center gap-3 text-[11px] text-muted">
@@ -733,7 +751,7 @@ export default function AttendancePage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex items-center gap-3 justify-end">
                       {log.clock_out ? (
                         <span className={cn(
                           "text-[12px] font-bold flex items-center gap-1.5",
@@ -747,6 +765,21 @@ export default function AttendancePage() {
                           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                           Live Shift
                         </span>
+                      )}
+                      {isManager && log.clock_out && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to remove this shift entry?")) {
+                              deleteShiftMutation.mutate(log.id);
+                            }
+                          }}
+                          disabled={deleteShiftMutation.isPending}
+                          title="Delete shift log"
+                          className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1.5 text-muted hover:text-rose-600 rounded-md hover:bg-rose-50 transition-all cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       )}
                     </div>
                   </div>
