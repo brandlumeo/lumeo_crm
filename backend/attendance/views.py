@@ -912,7 +912,7 @@ class PayrollBoardRecipientsView(APIView):
                 or email_lower in board_emails
             )
 
-            role_label = u.designation or u.get_role_display()
+            role_label = u.designation or (u.role.title() if getattr(u, "role", None) else "Staff")
             if u.role == User.Role.OWNER or email_lower in ["brandlumeollp@gmail.com"]:
                 role_label = "Company Owner"
             elif "ceo" in desig_lower:
@@ -1027,7 +1027,7 @@ class PayrollNotifyBoardView(APIView):
         table_rows_text = ""
         for idx, p in enumerate(payrolls, start=1):
             emp_name = p.user.get_full_name() or p.user.username
-            emp_role = getattr(p.user, "designation", "") or p.user.get_role_display()
+            emp_role = getattr(p.user, "designation", "") or (p.user.role.title() if getattr(p.user, "role", None) else "Employee")
             net_str = format_inr(p.net_salary)
             paid_d = p.paid_days
 
