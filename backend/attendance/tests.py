@@ -600,3 +600,56 @@ class AttendanceAPITests(APITestCase):
         # Expected clock-out should be past_date at 18:30:00 local time
         expected_out = timezone.make_aware(datetime.datetime.combine(past_date, datetime.time(18, 30, 0)), company_tz)
         self.assertEqual(stale_log.clock_out, expected_out)
+
+    def test_payroll_board_recipients_and_notify(self):
+        """Verify payroll board recipients endpoint and notification email dispatch."""
+        from attendance.models import Payroll
+        from django.core import mail
+
+        # Make user owner
+        self.user.role = "owner"
+        self.user.save()
+
+        # Add a board admin
+        admin_user = User.objects.create_user(
+            username="coo_midhun",
+            email="midhun@brandlumeo.com",
+            password="SecurePassword123#",
+            company=self.company,
+            role="admin",
+            designation="COO / Founder",
+        )
+
+        recipients_url = reverse("attendance:payroll_board_recipients")
+        response = self.client.get(recipients_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        recipients = response.data
+        self.assertTrue(any(r["email"] == "midhun@brandlumeo.com" for r in recipients))
+        self.assertTrue(any(r["email"] == self.user.email for r in recipients))
+
+        # Create sample payroll
+        Payroll.objects.create(
+            company=self.company,
+            user=admin_user,
+            month=10,
+            year=2026,
+            basic_salary=50000.00,
+            net_salary=50000.00,
+            paid_days=22,
+            status="published"
+        )
+
+        notify_url = reverse("attendance:payroll_notify_board")
+        payload = {
+            "month": 10,
+            "year": 2026,
+            "recipient_emails": ["midhun@brandlumeo.com", "board@brandlumeo.com"],
+            "custom_message": "Please review October 2026 payroll."
+        }
+        res = self.client.post(notify_url, payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data["success"])
+        self.assertEqual(res.data["staff_count"], 1)
+        self.assertEqual(len(res.data["sent_recipients"]), 2)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("October 2026 Payroll", mail.outbox[0].subject)

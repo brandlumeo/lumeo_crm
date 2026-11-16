@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FileText,
   Receipt,
@@ -11,6 +11,16 @@ import {
   Download,
   Edit2,
   ArrowLeft,
+  Mail,
+  Send,
+  Check,
+  X,
+  Users,
+  Building2,
+  AlertCircle,
+  Sparkles,
+  Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import {
   usePayrolls, useCurrentCompany,
@@ -19,6 +29,9 @@ import {
   useDeletePayroll,
   useCurrentUser,
   useTeam,
+  usePayrollBoardRecipients,
+  useNotifyBoardPayroll,
+  BoardRecipient,
 } from "@/lib/queries";
 import { cn, formatINR, formatCompactINR } from "@/lib/utils";
 import { toast } from "sonner";
@@ -43,6 +56,7 @@ export default function PayrollPage() {
 
   // Generator State
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isNotifyBoardOpen, setIsNotifyBoardOpen] = useState(false);
   
   // Form State
   const [employeeId, setEmployeeId] = useState("");
@@ -396,9 +410,17 @@ export default function PayrollPage() {
       </div>
 
       {isManager && (
-        <div className="flex justify-start">
+        <div className="flex flex-wrap items-center gap-3">
            <button onClick={() => setIsGenerating(true)} className="btn btn-primary shadow-sm px-5 py-2.5">
              <Plus className="w-4 h-4 mr-1" /> Generate New Payslip
+           </button>
+           <button
+             type="button"
+             onClick={() => setIsNotifyBoardOpen(true)}
+             className="btn bg-white hover:bg-bone-1 border border-line text-ink font-medium shadow-sm px-5 py-2.5 flex items-center gap-2 transition-all hover:border-ink/30"
+           >
+             <Mail className="w-4 h-4 text-accent" />
+             Notify Board Members
            </button>
         </div>
       )}
@@ -492,6 +514,424 @@ export default function PayrollPage() {
         )}
       </div>
     </div>
+
+    {/* Executive Board Notification Modal */}
+    <NotifyBoardModal
+      isOpen={isNotifyBoardOpen}
+      onClose={() => setIsNotifyBoardOpen(false)}
+      payrolls={payrolls}
+    />
     </>
+  );
+}
+
+function NotifyBoardModal({
+  isOpen,
+  onClose,
+  payrolls,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  payrolls: any[];
+}) {
+  const { data: boardRecipients = [], isLoading: isLoadingRecipients } = usePayrollBoardRecipients();
+  const notifyMutation = useNotifyBoardPayroll();
+
+  // Find latest payroll month/year if available, else current date
+  const latestPayroll = payrolls && payrolls.length > 0 ? payrolls[0] : null;
+  const initialMonth = latestPayroll?.month || (new Date().getMonth() + 1);
+  const initialYear = latestPayroll?.year || new Date().getFullYear();
+
+  const [month, setMonth] = useState<number>(initialMonth);
+  const [year, setYear] = useState<number>(initialYear);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [customEmails, setCustomEmails] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState("");
+  const [note, setNote] = useState("");
+
+  // Sync defaults when recipients load or modal opens
+  useEffect(() => {
+    if (isOpen && boardRecipients.length > 0) {
+      const defaults = boardRecipients
+        .filter((r) => r.default_selected)
+        .map((r) => r.email.toLowerCase());
+      setSelectedEmails(defaults);
+    }
+  }, [isOpen, boardRecipients]);
+
+  const monthName = useMemo(() => {
+    return new Date(year, month - 1).toLocaleString("default", { month: "long" });
+  }, [month, year]);
+
+  // Set default note when month/year changes
+  useEffect(() => {
+    setNote(
+      `${monthName} ${year} payroll has been compiled and published. Please review the financial breakdown and authorize bank transfer disbursement.`
+    );
+  }, [monthName, year]);
+
+  const matchingPayrolls = useMemo(() => {
+    return payrolls.filter((p: any) => Number(p.month) === Number(month) && Number(p.year) === Number(year));
+  }, [payrolls, month, year]);
+
+  const totalNet = useMemo(() => {
+    return matchingPayrolls.reduce((sum: number, p: any) => sum + (parseFloat(p.net_salary) || 0), 0);
+  }, [matchingPayrolls]);
+
+  const staffCount = matchingPayrolls.length;
+
+  if (!isOpen) return null;
+
+  const toggleRecipient = (email: string) => {
+    const norm = email.toLowerCase();
+    setSelectedEmails((prev) =>
+      prev.includes(norm) ? prev.filter((e) => e !== norm) : [...prev, norm]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedEmails.length === boardRecipients.length) {
+      setSelectedEmails([]);
+    } else {
+      setSelectedEmails(boardRecipients.map((r) => r.email.toLowerCase()));
+    }
+  };
+
+  const handleAddCustomEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = customInput.trim().toLowerCase();
+    if (!clean) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clean)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (selectedEmails.includes(clean) || customEmails.includes(clean)) {
+      toast.info("This email is already added to recipients.");
+      setCustomInput("");
+      return;
+    }
+    setCustomEmails((prev) => [...prev, clean]);
+    setCustomInput("");
+  };
+
+  const removeCustomEmail = (email: string) => {
+    setCustomEmails((prev) => prev.filter((e) => e !== email));
+  };
+
+  const allRecipients = Array.from(new Set([...selectedEmails, ...customEmails]));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (allRecipients.length === 0) {
+      toast.error("Please select at least one recipient.");
+      return;
+    }
+    if (matchingPayrolls.length === 0) {
+      toast.error(`No payroll records found for ${monthName} ${year}.`);
+      return;
+    }
+
+    try {
+      const res = await notifyMutation.mutateAsync({
+        month,
+        year,
+        recipient_emails: allRecipients,
+        custom_message: note.trim(),
+      });
+      toast.success(
+        `Executive payroll summary dispatched to ${res.sent_count} board member${res.sent_count === 1 ? "" : "s"}!`
+      );
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || "Failed to send notification email.";
+      toast.error(msg);
+    }
+  };
+
+  const monthOptions = [
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" },
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear - 1, currentYear, currentYear + 1];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in">
+      <div
+        className="bg-white rounded-2xl border border-line shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-rise"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="p-6 border-b border-line flex items-start justify-between bg-[#FAF7F2]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 text-accent">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-serif text-2xl text-ink font-semibold">Notify Board Members</h2>
+              <p className="text-xs text-muted mt-0.5">
+                Send an executive salary summary and approval reminder directly to leadership.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-bone-2 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          {/* Pay Period & Payout Summary Card */}
+          <div className="bg-[#FAF7F2] border border-[#EAE3D2] rounded-xl p-4.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#EAE3D2]/70">
+              <div>
+                <label className="text-[11px] font-semibold text-muted uppercase tracking-wider block mb-1.5">
+                  Select Pay Period
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={month}
+                    onChange={(e) => setMonth(Number(e.target.value))}
+                    className="input-field bg-white py-1.5 px-3 text-sm font-medium border border-line rounded-lg"
+                  >
+                    {monthOptions.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={year}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    className="input-field bg-white py-1.5 px-3 text-sm font-medium border border-line rounded-lg"
+                  >
+                    {yearOptions.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="text-left sm:text-right">
+                <span className="text-[11px] font-semibold text-muted uppercase tracking-wider block mb-1">
+                  Disbursement Status
+                </span>
+                {staffCount > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    Ready for Payout
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                    No payslips in this period
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 gap-4 pt-3.5">
+              <div>
+                <div className="text-[11px] font-medium text-muted uppercase tracking-wider">Total Net Payout</div>
+                <div className="font-serif text-2xl font-bold text-ink mt-0.5">
+                  {formatINR(totalNet)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-medium text-muted uppercase tracking-wider">Staff Count</div>
+                <div className="font-serif text-2xl font-bold text-ink mt-0.5">
+                  {staffCount} {staffCount === 1 ? "Employee" : "Employees"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recipients Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-accent" />
+                Select Recipients ({allRecipients.length} selected)
+              </label>
+              {boardRecipients.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-xs text-accent hover:underline font-medium"
+                >
+                  {selectedEmails.length === boardRecipients.length ? "Deselect All" : "Select All"}
+                </button>
+              )}
+            </div>
+
+            {/* Interactive Recipient Checklist */}
+            <div className="max-h-52 overflow-y-auto space-y-2 border border-line/70 rounded-xl p-2 bg-[#FCFAF7]">
+              {isLoadingRecipients ? (
+                <div className="py-8 text-center text-xs text-muted flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-accent" /> Loading leadership directory...
+                </div>
+              ) : boardRecipients.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted">
+                  No board members or administrators found.
+                </div>
+              ) : (
+                boardRecipients.map((rec) => {
+                  const isChecked = selectedEmails.includes(rec.email.toLowerCase());
+                  return (
+                    <div
+                      key={rec.id}
+                      onClick={() => toggleRecipient(rec.email)}
+                      className={cn(
+                        "flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none",
+                        isChecked
+                          ? "bg-white border-accent/40 shadow-xs"
+                          : "bg-white/50 border-transparent hover:bg-white hover:border-line/60"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0",
+                            isChecked
+                              ? "bg-accent border-accent text-white"
+                              : "border-line bg-white"
+                          )}
+                        >
+                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-bone-2 flex items-center justify-center font-bold text-xs text-ink shrink-0">
+                          {rec.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-ink leading-tight flex items-center gap-2 truncate">
+                            <span>{rec.name}</span>
+                            {rec.role === "owner" && (
+                              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
+                                Owner
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted truncate">{rec.email}</div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 ml-2">
+                        <span className="text-[11px] font-medium text-muted bg-bone-1 border border-line/40 px-2 py-0.5 rounded-full">
+                          {rec.role_display}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Custom Recipient Adder */}
+            <div className="pt-1">
+              <form onSubmit={handleAddCustomEmail} className="flex gap-2">
+                <input
+                  type="email"
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  placeholder="Add custom email (e.g. board@brandlumeo.com)..."
+                  className="input-field bg-paper text-xs flex-1 py-1.5 px-3 rounded-lg border border-line"
+                />
+                <button
+                  type="submit"
+                  className="btn bg-white hover:bg-bone-1 border border-line text-ink text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0"
+                >
+                  + Add
+                </button>
+              </form>
+
+              {customEmails.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {customEmails.map((email) => (
+                    <span
+                      key={email}
+                      className="inline-flex items-center gap-1.5 text-xs bg-white border border-line px-2.5 py-1 rounded-full text-ink shadow-2xs"
+                    >
+                      <span>{email}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomEmail(email)}
+                        className="text-muted hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Executive Note Textarea */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-ink uppercase tracking-wider block">
+              Executive Message Note
+            </label>
+            <textarea
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add personal notes or instructions for the board..."
+              className="w-full input-field bg-paper text-sm p-3 rounded-xl border border-line focus:ring-1 focus:ring-accent resize-none"
+            />
+            <p className="text-[11px] text-muted">
+              This note will be prominently highlighted in the executive email sent to the board.
+            </p>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 border-t border-line flex items-center justify-between bg-[#FAF7F2]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn bg-white hover:bg-bone-1 border border-line text-sm font-medium px-4 py-2 rounded-lg"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={notifyMutation.isPending || allRecipients.length === 0 || matchingPayrolls.length === 0}
+            className="btn btn-primary text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {notifyMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Dispatching Emails...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Send to {allRecipients.length} Recipient{allRecipients.length === 1 ? "" : "s"}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

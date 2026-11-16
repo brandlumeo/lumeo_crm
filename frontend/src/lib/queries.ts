@@ -1394,6 +1394,41 @@ export function useDeletePayroll() {
   });
 }
 
+export interface BoardRecipient {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  designation: string;
+  role_display: string;
+  is_board: boolean;
+  default_selected: boolean;
+}
+
+export function usePayrollBoardRecipients() {
+  return useQuery<BoardRecipient[]>({
+    queryKey: ["payroll-board-recipients"],
+    queryFn: async () => {
+      const res = await api.get("/attendance/payrolls/board-recipients/");
+      return res.data;
+    },
+  });
+}
+
+export function useNotifyBoardPayroll() {
+  return useMutation({
+    mutationFn: async (payload: {
+      month: number;
+      year: number;
+      recipient_emails: string[];
+      custom_message?: string;
+    }) => {
+      const res = await api.post("/attendance/payrolls/notify-board/", payload);
+      return res.data;
+    },
+  });
+}
+
 // ----------------------------------------------------------------------
 // Holiday API Hooks
 // ----------------------------------------------------------------------

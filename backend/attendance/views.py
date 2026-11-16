@@ -870,6 +870,302 @@ class PayrollDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class PayrollBoardRecipientsView(APIView):
+    """
+    GET /api/v1/attendance/payrolls/board-recipients/
+    Returns list of company board members, founders, and administrators.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+
+        from accounts.models import User
+        is_admin_or_manager = (
+            request.user.is_superuser
+            or request.user.role in [User.Role.OWNER, User.Role.ADMIN, User.Role.MANAGER]
+            or getattr(request.user, "has_management_access", False)
+            or getattr(request.user, "can_manage_team", False)
+        )
+        if not is_admin_or_manager:
+            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        users = User.objects.filter(company=company, is_active=True).exclude(role=User.Role.CUSTOMER)
+
+        board_keywords = ["ceo", "coo", "cfo", "cto", "founder", "owner", "director", "partner", "board", "admin", "manager", "head"]
+        board_emails = ["brandlumeollp@gmail.com", "shamil@brandlumeo.com", "midhun@brandlumeo.com"]
+
+        recipients = []
+        for u in users:
+            desig_lower = (u.designation or "").lower()
+            role_lower = (u.role or "").lower()
+            email_lower = (u.email or "").lower()
+
+            is_board = (
+                u.is_superuser
+                or u.role in [User.Role.OWNER, User.Role.ADMIN, User.Role.MANAGER]
+                or getattr(u, "has_management_access", False)
+                or any(kw in desig_lower for kw in board_keywords)
+                or any(kw in role_lower for kw in board_keywords)
+                or email_lower in board_emails
+            )
+
+            role_label = u.designation or u.get_role_display()
+            if u.role == User.Role.OWNER or email_lower in ["brandlumeollp@gmail.com"]:
+                role_label = "Company Owner"
+            elif "ceo" in desig_lower:
+                role_label = "Chief Executive Officer (CEO)"
+            elif "coo" in desig_lower:
+                role_label = "Chief Operating Officer (COO)"
+            elif u.role == User.Role.MANAGER or getattr(u, "has_management_access", False):
+                role_label = u.designation or "Secondary Admin / Manager"
+
+            recipients.append({
+                "id": str(u.id),
+                "name": u.get_full_name() or u.username,
+                "email": u.email,
+                "role": u.role,
+                "designation": u.designation or "",
+                "role_display": role_label,
+                "is_board": is_board,
+                "default_selected": is_board,
+            })
+
+        def sort_key(item):
+            priority = 4
+            r = item["role"]
+            email = item["email"].lower()
+            desig = item["designation"].lower()
+            if r == "owner" or "brandlumeollp" in email or "shamil" in email:
+                priority = 0
+            elif "ceo" in desig or "coo" in desig or r == "admin":
+                priority = 1
+            elif item["is_board"]:
+                priority = 2
+            else:
+                priority = 3
+            return (priority, item["name"].lower())
+
+        recipients.sort(key=sort_key)
+        return Response(recipients)
+
+
+class PayrollNotifyBoardView(APIView):
+    """
+    POST /api/v1/attendance/payrolls/notify-board/
+    Sends an executive monthly payroll summary and approval reminder to selected board members & admins.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"detail": "User has no company"}, status=status.HTTP_400_BAD_REQUEST)
+
+        from accounts.models import User
+        is_admin_or_manager = (
+            request.user.is_superuser
+            or request.user.role in [User.Role.OWNER, User.Role.ADMIN, User.Role.MANAGER]
+            or getattr(request.user, "has_management_access", False)
+            or getattr(request.user, "can_manage_team", False)
+        )
+        if not is_admin_or_manager:
+            return Response({"detail": "Permission denied. Only admins or managers can notify the board."}, status=status.HTTP_403_FORBIDDEN)
+
+        month = request.data.get("month")
+        year = request.data.get("year")
+        recipient_emails = request.data.get("recipient_emails", [])
+        custom_message = request.data.get("custom_message", "").strip()
+
+        if not month or not year:
+            return Response({"detail": "Month and year are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            month = int(month)
+            year = int(year)
+        except (ValueError, TypeError):
+            return Response({"detail": "Invalid month or year."}, status=status.HTTP_400_BAD_REQUEST)
+
+        valid_recipients = []
+        import re
+        email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+        for email in recipient_emails:
+            clean_email = str(email).strip().lower()
+            if clean_email and re.match(email_regex, clean_email) and clean_email not in valid_recipients:
+                valid_recipients.append(clean_email)
+
+        if not valid_recipients:
+            return Response({"detail": "Please select or provide at least one valid recipient email address."}, status=status.HTTP_400_BAD_REQUEST)
+
+        payrolls = Payroll.objects.filter(
+            company=company,
+            month=month,
+            year=year
+        ).select_related("user").order_by("user__first_name", "user__username")
+
+        if not payrolls.exists():
+            return Response({
+                "detail": f"No payroll records found for {month}/{year} to notify."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        import calendar, datetime
+        month_name = calendar.month_name[month]
+        total_net = sum(float(p.net_salary or 0) for p in payrolls)
+        total_basic = sum(float(p.basic_salary or 0) for p in payrolls)
+        total_deductions = sum(float(p.total_deductions or 0) for p in payrolls)
+        staff_count = payrolls.count()
+
+        def format_inr(amount):
+            s = f"{amount:,.2f}"
+            return f"₹{s}"
+
+        sender_name = request.user.get_full_name() or request.user.username
+
+        table_rows_html = ""
+        table_rows_text = ""
+        for idx, p in enumerate(payrolls, start=1):
+            emp_name = p.user.get_full_name() or p.user.username
+            emp_role = getattr(p.user, "designation", "") or p.user.get_role_display()
+            net_str = format_inr(p.net_salary)
+            paid_d = p.paid_days
+
+            row_bg = "#FFFFFF" if idx % 2 == 1 else "#FDFBF7"
+            table_rows_html += f"""
+              <tr style="background:{row_bg};border-bottom:1px solid #EAE3D2;">
+                <td style="padding:12px 14px;font-family:system-ui,sans-serif;font-size:13.5px;font-weight:600;color:#1A1714;">{emp_name}</td>
+                <td style="padding:12px 14px;font-family:system-ui,sans-serif;font-size:12.5px;color:#706A62;">{emp_role}</td>
+                <td style="padding:12px 14px;font-family:system-ui,sans-serif;font-size:12.5px;text-align:center;color:#4A4540;">{paid_d}</td>
+                <td style="padding:12px 14px;font-family:system-ui,sans-serif;font-size:14px;font-weight:700;text-align:right;color:#1A1714;">{net_str}</td>
+              </tr>
+            """
+            table_rows_text += f"- {emp_name} ({emp_role}): {net_str} [Paid Days: {paid_d}]\n"
+
+        default_note = f"{month_name} {year} payroll has been compiled and published. Please review the financial breakdown below and authorize bank transfer disbursement."
+        note_text = custom_message if custom_message else default_note
+
+        from django.conf import settings
+        frontend_url = getattr(settings, "FRONTEND_URL", "https://lumeo.estgrp.in")
+        payroll_url = f"{frontend_url.rstrip('/')}/payroll"
+
+        body_html = f"""
+            <div style="background:#F6F1E8;border:1px solid #E2D7C3;border-radius:10px;padding:18px 22px;margin-bottom:24px;">
+              <div style="font-size:11px;font-weight:700;color:#8F5310;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Executive Payout Brief</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+                <tr>
+                  <td style="vertical-align:top;width:40%;">
+                    <div style="font-size:11px;color:#7A746B;text-transform:uppercase;letter-spacing:0.05em;">Total Net Payout</div>
+                    <div style="font-family:Georgia,serif;font-size:26px;font-weight:bold;color:#1A1714;margin-top:2px;">{format_inr(total_net)}</div>
+                  </td>
+                  <td style="vertical-align:top;width:30%;">
+                    <div style="font-size:11px;color:#7A746B;text-transform:uppercase;letter-spacing:0.05em;">Employees</div>
+                    <div style="font-family:Georgia,serif;font-size:22px;font-weight:bold;color:#1A1714;margin-top:4px;">{staff_count} Staff</div>
+                  </td>
+                  <td style="vertical-align:top;width:30%;">
+                    <div style="font-size:11px;color:#7A746B;text-transform:uppercase;letter-spacing:0.05em;">Status</div>
+                    <div style="font-family:system-ui,sans-serif;font-size:12px;font-weight:700;color:#2D6A4F;background:#D8F3DC;padding:3px 10px;border-radius:12px;display:inline-block;margin-top:4px;">Ready for Payout</div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <p style="font-size:14px;color:#3D3834;line-height:1.6;margin-bottom:20px;">
+              <strong>Note from {sender_name}:</strong><br/>
+              <em>\"{note_text}\"</em>
+            </p>
+
+            <div style="margin-top:24px;margin-bottom:8px;">
+              <h3 style="font-family:Georgia,serif;font-size:18px;color:#1A1714;margin:0 0 10px;">Monthly Salary Breakdown — {month_name} {year}</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #EAE3D2;border-radius:8px;overflow:hidden;background:#FFFFFF;">
+                <thead>
+                  <tr style="background:#1A1714;color:#F4EFE6;">
+                    <th style="padding:10px 14px;text-align:left;font-size:11.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Staff Member</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Designation</th>
+                    <th style="padding:10px 14px;text-align:center;font-size:11.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Paid Days</th>
+                    <th style="padding:10px 14px;text-align:right;font-size:11.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Net Salary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {table_rows_html}
+                </tbody>
+                <tfoot>
+                  <tr style="background:#F6F1E8;font-weight:bold;border-top:2px solid #D6C7AE;">
+                    <td colspan="3" style="padding:12px 14px;font-size:13px;color:#1A1714;text-transform:uppercase;letter-spacing:0.05em;">Total Net Disbursement</td>
+                    <td style="padding:12px 14px;font-size:16px;text-align:right;color:#1A1714;">{format_inr(total_net)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+        """
+
+        body_text = f"""
+{month_name} {year} Payroll Summary for {company.name}
+
+Total Net Payout: {format_inr(total_net)}
+Total Staff Members: {staff_count}
+Status: Published & Ready for Payout
+
+Note from {sender_name}:
+{note_text}
+
+Employee Breakdown:
+{table_rows_text}
+
+Total: {format_inr(total_net)}
+
+Review and authorize payout in CRM: {payroll_url}
+        """
+
+        from accounts.emails import build_premium_email
+        email_subject = f"[Board Action] {month_name} {year} Payroll Summary & Approval — {company.name}"
+        heading_text = f"{month_name} {year} Payroll Ready for Payout"
+
+        sent_recipients = []
+        failed_recipients = []
+
+        for recipient_email in valid_recipients:
+            try:
+                msg = build_premium_email(
+                    subject=email_subject,
+                    heading=heading_text,
+                    body_text=body_text,
+                    body_html=body_html,
+                    pre_header=f"BOARD PAYROLL DISBURSEMENT — {month_name.upper()} {year}",
+                    action_url=payroll_url,
+                    action_text="Review & Authorize in CRM",
+                    to_email=recipient_email
+                )
+                msg.send(fail_silently=False)
+                sent_recipients.append(recipient_email)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Failed to send payroll reminder email to {recipient_email}: {e}")
+                failed_recipients.append(recipient_email)
+
+        try:
+            from notifications.models import Notification
+            Notification.objects.create(
+                user=request.user,
+                title=f"Board Payroll Reminder Sent ({month_name} {year})",
+                body=f"Payroll reminder dispatched to {len(sent_recipients)} recipient(s): {', '.join(sent_recipients)}",
+                link="/payroll"
+            )
+        except Exception:
+            pass
+
+        return Response({
+            "success": True,
+            "month": month,
+            "year": year,
+            "staff_count": staff_count,
+            "total_net_payout": total_net,
+            "sent_count": len(sent_recipients),
+            "sent_recipients": sent_recipients,
+            "failed_recipients": failed_recipients,
+        }, status=status.HTTP_200_OK)
+
+
 class HolidayListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
