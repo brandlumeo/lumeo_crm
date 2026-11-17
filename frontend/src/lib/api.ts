@@ -1950,6 +1950,16 @@ export async function deleteBillPayment(billId: number, paymentId: number) {
   const { data } = await api.delete<Bill>(`/crm/bills/${billId}/payments/${paymentId}/`);
   return data;
 }
+export async function openBillPdfInNewTab(id: number) {
+  const timestamp = new Date().getTime();
+  const response = await api.get(`/crm/bills/${id}/pdf/?t=${timestamp}`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, "_blank");
+}
+
 export async function downloadBillPdf(id: number, billNumber: string) {
   const timestamp = new Date().getTime();
   const response = await api.get(`/crm/bills/${id}/pdf/?t=${timestamp}`, {
@@ -1962,8 +1972,10 @@ export async function downloadBillPdf(id: number, billNumber: string) {
   link.setAttribute("download", `Bill_${billNumber}.pdf`);
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
+  setTimeout(() => {
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }, 15000);
 }
 
 

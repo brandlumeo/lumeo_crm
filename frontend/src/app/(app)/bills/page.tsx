@@ -23,7 +23,8 @@ import {
   Paperclip,
   X,
   Receipt,
-  Tag
+  Tag,
+  Printer
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 
@@ -41,7 +42,8 @@ import {
   updateBill, 
   deleteBill, 
   updateBillStatus,
-  downloadBillPdf
+  downloadBillPdf,
+  openBillPdfInNewTab
 } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
@@ -406,6 +408,16 @@ export default function BillsPage() {
         onError: () => toast.error("Failed to delete payment"),
       }
     );
+  };
+
+  const handleViewPdf = async (bill: Bill) => {
+    try {
+      toast.loading("Opening voucher preview...", { id: `pdf-view-${bill.id}` });
+      await openBillPdfInNewTab(bill.id);
+      toast.dismiss(`pdf-view-${bill.id}`);
+    } catch {
+      toast.error("Failed to open PDF voucher", { id: `pdf-view-${bill.id}` });
+    }
   };
 
   const handleDownloadPdf = async (bill: Bill) => {
@@ -815,7 +827,19 @@ export default function BillsPage() {
                               <Eye className="w-3.5 h-3.5" />
                             </button>
 
-                            {/* Printable PDF Voucher */}
+                            {/* View / Print PDF Voucher in browser */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewPdf(bill);
+                              }}
+                              className="p-1.5 text-muted hover:text-ink hover:bg-bone-2 rounded-md transition-colors border border-line bg-paper"
+                              title="Open / Print Voucher (PDF)"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Download PDF Voucher */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1041,12 +1065,19 @@ export default function BillsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => handleViewPdf(detailBill)}
+                  className="px-3 py-1.5 text-xs font-medium text-ink bg-paper border border-line rounded-lg hover:bg-bone transition-colors flex items-center gap-1.5 shadow-2xs"
+                  title="Open / Print Voucher in browser"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>View Voucher</span>
+                </button>
+                <button
                   onClick={() => handleDownloadPdf(detailBill)}
-                  className="px-3 py-1.5 text-xs font-medium text-ink bg-paper border border-line rounded-lg hover:bg-bone transition-colors flex items-center gap-1.5"
+                  className="p-1.5 text-muted hover:text-ink hover:bg-bone rounded-lg border border-line transition-colors"
                   title="Download Voucher PDF"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Voucher PDF</span>
                 </button>
                 <button
                   onClick={() => setDetailBill(null)}
