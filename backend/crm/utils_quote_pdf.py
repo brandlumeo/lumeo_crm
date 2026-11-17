@@ -1,5 +1,6 @@
 import io
 import os
+import html
 import urllib.request
 import urllib.parse
 from datetime import datetime, date
@@ -23,6 +24,11 @@ from reportlab.graphics.shapes import Drawing
 
 FONT_REG = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
+
+def esc(val):
+    if val is None:
+        return ""
+    return html.escape(str(val))
 
 def init_fonts():
     global FONT_REG, FONT_BOLD
@@ -249,30 +255,32 @@ def generate_agency_quote_pdf_response(quote):
 
     # Prepared For vs Meta Information Grid
     # Client Info Resolution
-    client_name = quote.client_name
-    client_address = quote.client_address
-    client_phone = quote.client_phone
+    client_name = quote.client_name or ""
+    client_address = quote.client_address or ""
+    client_phone = quote.client_phone or ""
 
     if not client_name:
         if quote.lead:
-            client_name = quote.lead.name or (quote.lead.company if hasattr(quote.lead, "company") else "")
-            client_phone = client_phone or quote.lead.mobile
+            client_name = quote.lead.name or getattr(quote.lead, "company", "") or ""
+            client_phone = client_phone or quote.lead.mobile or ""
         elif quote.customer:
-            client_name = quote.customer.name or quote.customer.company_name
-            client_address = client_address or quote.customer.address
-            client_phone = client_phone or quote.customer.phone
+            client_name = quote.customer.name or ""
+            custom_data = getattr(quote.customer, "custom_data", {}) or {}
+            cust_addr = custom_data.get("address") if isinstance(custom_data, dict) else ""
+            client_address = client_address or cust_addr or getattr(quote.customer, "email", "") or ""
+            client_phone = client_phone or getattr(quote.customer, "phone", "") or ""
         elif quote.deal:
-            client_name = quote.deal.title
+            client_name = quote.deal.title or ""
 
     client_name = (client_name or "CLIENT / PROSPECT").upper()
     client_address = client_address or "Calicut, Kerala"
     client_phone = client_phone or ""
 
     prepared_for_html = (
-        f'<font name="Helvetica-Bold" size="7" color="{muted_slate}">PREPARED FOR</font><br/>'
-        f'<font name="Helvetica-Bold" size="9.5" color="{ink_slate}">{client_name}</font><br/>'
-        f'<font size="7.5" color="{body_slate}">{client_address}</font>'
-        + (f'<br/><font size="7.5" color="{body_slate}">{client_phone}</font>' if client_phone else '')
+        f'<font name="{FONT_BOLD}" size="7" color="{muted_slate}">PREPARED FOR</font><br/>'
+        f'<font name="{FONT_BOLD}" size="9.5" color="{ink_slate}">{esc(client_name)}</font><br/>'
+        f'<font size="7.5" color="{body_slate}">{esc(client_address)}</font>'
+        + (f'<br/><font size="7.5" color="{body_slate}">{esc(client_phone)}</font>' if client_phone else '')
     )
 
     created_date_str = quote.created_at.strftime("%d-%m-%Y") if quote.created_at else datetime.now().strftime("%d-%m-%Y")
@@ -316,13 +324,15 @@ def generate_agency_quote_pdf_response(quote):
     overview_text = quote.overview.strip() if quote.overview else ""
     if not overview_text:
         overview_text = (
-            f"This quotation covers our <b>{quote.title or 'Growth Package'}</b> for {client_name.title()} "
+            f"This quotation covers our <b>{esc(quote.title or 'Growth Package')}</b> for {esc(client_name.title())} "
             f"— a dedicated digital marketing and brand visibility programme to establish market presence, "
             f"engage qualified prospective customers, and accelerate business growth through professional execution."
         )
+    else:
+        overview_text = esc(overview_text).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
 
     story.append(Paragraph(
-        f'<font name="Helvetica-Bold" size="8" color="{accent_green}">OVERVIEW</font>',
+        f'<font name="{FONT_BOLD}" size="8" color="{accent_green}">OVERVIEW</font>',
         ps("OverviewHead", fontSize=8, leading=11)
     ))
     story.append(Spacer(1, 3))
@@ -334,7 +344,7 @@ def generate_agency_quote_pdf_response(quote):
 
     # ── Section: SCOPE & PRICING TABLE ────────────────────────────────────────
     story.append(Paragraph(
-        f'<font name="Helvetica-Bold" size="8" color="{accent_green}">SCOPE &amp; PRICING</font>',
+        f'<font name="{FONT_BOLD}" size="8" color="{accent_green}">SCOPE &amp; PRICING</font>',
         ps("ScopeHead", fontSize=8, leading=11)
     ))
     story.append(Spacer(1, 4))
@@ -342,11 +352,11 @@ def generate_agency_quote_pdf_response(quote):
     # Table Header
     items_table_data = [
         [
-            Paragraph(f'<font name="Helvetica-Bold" size="7" color="{muted_slate}">#</font>', ps("TH1", fontSize=7, alignment=0)),
-            Paragraph(f'<font name="Helvetica-Bold" size="7" color="{muted_slate}">DESCRIPTION</font>', ps("TH2", fontSize=7, alignment=0)),
-            Paragraph(f'<font name="Helvetica-Bold" size="7" color="{muted_slate}">QTY</font>', ps("TH3", fontSize=7, alignment=1)),
-            Paragraph(f'<font name="Helvetica-Bold" size="7" color="{muted_slate}">RATE</font>', ps("TH4", fontSize=7, alignment=2)),
-            Paragraph(f'<font name="Helvetica-Bold" size="7" color="{muted_slate}">AMOUNT</font>', ps("TH5", fontSize=7, alignment=2)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="7" color="{muted_slate}">#</font>', ps("TH1", fontSize=7, alignment=0)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="7" color="{muted_slate}">DESCRIPTION</font>', ps("TH2", fontSize=7, alignment=0)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="7" color="{muted_slate}">QTY</font>', ps("TH3", fontSize=7, alignment=1)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="7" color="{muted_slate}">RATE</font>', ps("TH4", fontSize=7, alignment=2)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="7" color="{muted_slate}">AMOUNT</font>', ps("TH5", fontSize=7, alignment=2)),
         ]
     ]
 
@@ -355,11 +365,11 @@ def generate_agency_quote_pdf_response(quote):
     # Fallback sample if quote has no items yet
     if not line_items:
         items_table_data.append([
-            Paragraph(f'<font name="Helvetica-Bold" size="8" color="{ink_slate}">1</font>', ps("TB_N", fontSize=8)),
-            Paragraph(f'<font name="Helvetica-Bold" size="8" color="{ink_slate}">{quote.title or "Growth Package"}</font>', ps("TB_D", fontSize=8)),
-            Paragraph(f'<font name="Helvetica-Bold" size="8" color="{ink_slate}">1</font>', ps("TB_Q", fontSize=8, alignment=1)),
-            Paragraph(f'<font name="Helvetica-Bold" size="8" color="{ink_slate}">{format_currency_inr(quote.total)}</font>', ps("TB_R", fontSize=8, alignment=2)),
-            Paragraph(f'<font name="Helvetica-Bold" size="8" color="{ink_slate}">{format_currency_inr(quote.total)}</font>', ps("TB_A", fontSize=8, alignment=2)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="8" color="{ink_slate}">1</font>', ps("TB_N", fontSize=8)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="8" color="{ink_slate}">{esc(quote.title or "Growth Package")}</font>', ps("TB_D", fontSize=8)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="8" color="{ink_slate}">1</font>', ps("TB_Q", fontSize=8, alignment=1)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="8" color="{ink_slate}">{format_currency_inr(quote.total)}</font>', ps("TB_R", fontSize=8, alignment=2)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="8" color="{ink_slate}">{format_currency_inr(quote.total)}</font>', ps("TB_A", fontSize=8, alignment=2)),
         ])
     else:
         for idx, item in enumerate(line_items, 1):
@@ -377,21 +387,21 @@ def generate_agency_quote_pdf_response(quote):
             if is_inc:
                 # Sub-deliverable under parent
                 desc_html = (
-                    f'<font name="Helvetica-Bold" size="7.5" color="{ink_slate}">{item.name}</font>'
+                    f'<font name="{FONT_BOLD}" size="7.5" color="{ink_slate}">{esc(item.name)}</font>'
                 )
                 if item.description:
-                    desc_html += f'<br/><font size="6.5" color="{muted_slate}">{item.description}</font>'
+                    desc_html += f'<br/><font size="6.5" color="{muted_slate}">{esc(item.description)}</font>'
                 rate_str = ""
                 amt_str = f'<font size="7" color="{muted_slate}"><i>included</i></font>'
-                font_name = "Helvetica"
+                font_name = FONT_REG
             else:
                 # Parent or standalone item
-                desc_html = f'<font name="Helvetica-Bold" size="8" color="{ink_slate}">{item.name}</font>'
+                desc_html = f'<font name="{FONT_BOLD}" size="8" color="{ink_slate}">{esc(item.name)}</font>'
                 if item.description:
-                    desc_html += f'<br/><font size="6.5" color="{muted_slate}">{item.description}</font>'
+                    desc_html += f'<br/><font size="6.5" color="{muted_slate}">{esc(item.description)}</font>'
                 rate_str = format_currency_inr(item.unit_price)
                 amt_str = format_currency_inr(item.subtotal)
-                font_name = "Helvetica-Bold"
+                font_name = FONT_BOLD
 
             items_table_data.append([
                 Paragraph(f'<font name="{font_name}" size="7.5" color="{ink_slate}">{item_num}</font>', ps(f"TN_{idx}", fontSize=7.5)),
@@ -486,8 +496,8 @@ def generate_agency_quote_pdf_response(quote):
         m_label = p.get("milestone", "")
         m_amt = p.get("amount", 0)
         pay_rows.append([
-            Paragraph(f'<font size="7.5" color="{body_slate}">{m_label}</font>', ps("PS1", fontSize=7.5)),
-            Paragraph(f'<font name="Helvetica-Bold" size="7.5" color="{ink_slate}">{format_currency_inr(m_amt)}</font>', ps("PS2", fontSize=7.5, alignment=2))
+            Paragraph(f'<font size="7.5" color="{body_slate}">{esc(m_label)}</font>', ps("PS1", fontSize=7.5)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="7.5" color="{ink_slate}">{format_currency_inr(m_amt)}</font>', ps("PS2", fontSize=7.5, alignment=2))
         ])
 
     pay_table = Table(pay_rows, colWidths=[430, 110])
@@ -503,7 +513,7 @@ def generate_agency_quote_pdf_response(quote):
 
     # ── Section: TIMELINE ─────────────────────────────────────────────────────
     story.append(Paragraph(
-        f'<font name="Helvetica-Bold" size="8" color="{accent_green}">TIMELINE</font>',
+        f'<font name="{FONT_BOLD}" size="8" color="{accent_green}">TIMELINE</font>',
         ps("TimelineHead", fontSize=8, leading=11)
     ))
     story.append(Spacer(1, 4))
@@ -521,8 +531,8 @@ def generate_agency_quote_pdf_response(quote):
         p_name = t.get("phase", "")
         p_desc = t.get("description", "")
         timeline_rows.append([
-            Paragraph(f'<font name="Helvetica-Bold" size="7.5" color="{ink_slate}">{p_name}</font>', ps("TL1", fontSize=7.5)),
-            Paragraph(f'<font size="7.5" color="{body_slate}">{p_desc}</font>', ps("TL2", fontSize=7.5, leading=10))
+            Paragraph(f'<font name="{FONT_BOLD}" size="7.5" color="{ink_slate}">{esc(p_name)}</font>', ps("TL1", fontSize=7.5)),
+            Paragraph(f'<font size="7.5" color="{body_slate}">{esc(p_desc)}</font>', ps("TL2", fontSize=7.5, leading=10))
         ])
 
     timeline_table = Table(timeline_rows, colWidths=[80, 460])
@@ -549,13 +559,13 @@ def generate_agency_quote_pdf_response(quote):
         "Work beyond the stated scope"
     ]
 
-    resp_html = f'<font name="Helvetica-Bold" size="8" color="{accent_green}">CLIENT RESPONSIBILITIES</font><br/>'
+    resp_html = f'<font name="{FONT_BOLD}" size="8" color="{accent_green}">CLIENT RESPONSIBILITIES</font><br/>'
     for r in resp_items:
-        resp_html += f'<font size="7.5" color="{body_slate}">• &nbsp;{r}</font><br/>'
+        resp_html += f'<font size="7.5" color="{body_slate}">• &nbsp;{esc(r)}</font><br/>'
 
-    excl_html = f'<font name="Helvetica-Bold" size="8" color="{accent_green}">EXCLUSIONS</font><br/>'
+    excl_html = f'<font name="{FONT_BOLD}" size="8" color="{accent_green}">EXCLUSIONS</font><br/>'
     for e in excl_items:
-        excl_html += f'<font size="7.5" color="{body_slate}">• &nbsp;{e}</font><br/>'
+        excl_html += f'<font size="7.5" color="{body_slate}">• &nbsp;{esc(e)}</font><br/>'
 
     resp_excl_table = Table([
         [Paragraph(resp_html, ps("RespP", fontSize=7.5, leading=11)),
@@ -581,9 +591,9 @@ def generate_agency_quote_pdf_response(quote):
         "Advertising and social media results depend on platform and market factors and are not guaranteed."
     ]
 
-    terms_html = f'<font name="Helvetica-Bold" size="8" color="{accent_green}">TERMS &amp; CONDITIONS</font><br/>'
+    terms_html = f'<font name="{FONT_BOLD}" size="8" color="{accent_green}">TERMS &amp; CONDITIONS</font><br/>'
     for t in terms:
-        terms_html += f'<font size="7.5" color="{body_slate}">• &nbsp;{t}</font><br/>'
+        terms_html += f'<font size="7.5" color="{body_slate}">• &nbsp;{esc(t)}</font><br/>'
 
     story.append(Paragraph(terms_html, ps("TermsP", fontSize=7.5, leading=11)))
     story.append(Spacer(1, 14))
@@ -596,7 +606,8 @@ def generate_agency_quote_pdf_response(quote):
     upi_id = getattr(settings, "upi_id", None) or "info@brandlumeo.com"
 
     # Generate UPI QR Code
-    upi_payload = f"upi://pay?pa={upi_id}&pn={urllib.parse.quote(company_name)}&am={quote.total:.2f}&cu=INR"
+    tot_val = float(quote.total or 0)
+    upi_payload = f"upi://pay?pa={upi_id}&pn={urllib.parse.quote(company_name)}&am={tot_val:.2f}&cu=INR"
     qr_widget = QrCodeWidget(upi_payload)
     qr_widget.barWidth = 56
     qr_widget.barHeight = 56
@@ -606,13 +617,13 @@ def generate_agency_quote_pdf_response(quote):
 
     bank_details_html = (
         f'<font size="7.5" color="{muted_slate}">Account Name:</font> &nbsp;'
-        f'<font name="Helvetica" size="7.5" color="{ink_slate}">{bank_acc_name}</font><br/>'
+        f'<font name="{FONT_REG}" size="7.5" color="{ink_slate}">{esc(bank_acc_name)}</font><br/>'
         f'<font size="7.5" color="{muted_slate}">Bank:</font> &nbsp;'
-        f'<font name="Helvetica" size="7.5" color="{ink_slate}">{bank_name}</font><br/>'
+        f'<font name="{FONT_REG}" size="7.5" color="{ink_slate}">{esc(bank_name)}</font><br/>'
         f'<font size="7.5" color="{muted_slate}">Account No.:</font> &nbsp;'
-        f'<font name="Helvetica" size="7.5" color="{ink_slate}">{bank_acc_no}</font><br/>'
+        f'<font name="{FONT_REG}" size="7.5" color="{ink_slate}">{esc(bank_acc_no)}</font><br/>'
         f'<font size="7.5" color="{muted_slate}">IFSC:</font> &nbsp;'
-        f'<font name="Helvetica" size="7.5" color="{ink_slate}">{bank_ifsc}</font><br/>'
+        f'<font name="{FONT_REG}" size="7.5" color="{ink_slate}">{esc(bank_ifsc)}</font><br/>'
         f'<font size="7.5" color="{muted_slate}">UPI:</font> &nbsp;'
         f'<font size="7.5" color="{ink_slate}">Scan QR to pay</font>'
     )

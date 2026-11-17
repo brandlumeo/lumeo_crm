@@ -317,8 +317,9 @@ function QuotesPageContent() {
     try {
       setPdfLoadingId(id);
       await openQuotePdfInNewTab(id);
-    } catch (e) {
-      toast.error("Failed to generate PDF");
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.message || "Failed to generate PDF";
+      toast.error(typeof msg === "string" ? msg : "Failed to generate PDF");
     } finally {
       setPdfLoadingId(null);
     }
@@ -330,8 +331,9 @@ function QuotesPageContent() {
       setPdfLoadingId(id);
       await downloadQuotePdf(id, quoteNumber);
       toast.success("Quotation PDF downloaded");
-    } catch (e) {
-      toast.error("Failed to download PDF");
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.message || "Failed to download PDF";
+      toast.error(typeof msg === "string" ? msg : "Failed to download PDF");
     } finally {
       setPdfLoadingId(null);
     }
