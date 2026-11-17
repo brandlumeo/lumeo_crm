@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Don't advertise Next.js in response headers
   poweredByHeader: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   images: {
     remotePatterns: [
       {

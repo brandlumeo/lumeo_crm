@@ -12,15 +12,8 @@ import {
   Building2,
   Users2,
   Receipt,
-  FileSpreadsheet,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
   ShieldAlert,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
   Printer,
   Download,
   Search,
@@ -93,13 +86,88 @@ export default function FinanceDashboardPage() {
   const {
     data: financeData,
     isLoading: isFinanceLoading,
-    error: financeError,
   } = useFinanceDashboard(selectedYear, selectedMonth);
 
   const yearsList = useMemo(() => {
-    const current = now.getFullYear();
+    const current = new Date().getFullYear();
     return [current - 2, current - 1, current, current + 1];
   }, []);
+
+  const kpis = useMemo(() => {
+    return financeData?.kpis || {
+      gross_inflow: 0,
+      total_outflow: 0,
+      net_profit: 0,
+      margin_pct: 0,
+      pending_receivables: 0,
+      pending_payables: 0,
+      payroll_expense: 0,
+      bills_expense: 0,
+      claims_expense: 0,
+    };
+  }, [financeData?.kpis]);
+
+  const expenseBreakdown = useMemo(() => {
+    return financeData?.expense_breakdown || {
+      payroll: { amount: 0, percentage: 0 },
+      bills: { amount: 0, percentage: 0 },
+      claims: { amount: 0, percentage: 0 },
+    };
+  }, [financeData?.expense_breakdown]);
+
+  const annualSummary = useMemo(() => {
+    return financeData?.annual_summary || {
+      inflow: 0,
+      outflow: 0,
+      net_profit: 0,
+      margin_pct: 0,
+    };
+  }, [financeData?.annual_summary]);
+
+  const monthlyTrends = useMemo(() => {
+    return financeData?.monthly_trends || [];
+  }, [financeData?.monthly_trends]);
+
+  const recentTransactions = useMemo(() => {
+    return financeData?.recent_transactions || [];
+  }, [financeData?.recent_transactions]);
+
+  // Chart scaling calculations
+  const maxMonthlyVal = useMemo(() => {
+    return Math.max(
+      1000,
+      ...monthlyTrends.map((m) => Math.max(m.inflow, m.outflow))
+    );
+  }, [monthlyTrends]);
+
+  const txCounts = useMemo(() => {
+    return {
+      all: recentTransactions.length,
+      payroll: recentTransactions.filter((t) => t.type === "payroll").length,
+      inflow: recentTransactions.filter((t) => t.type === "inflow").length,
+      bill: recentTransactions.filter((t) => t.type === "bill").length,
+      claim: recentTransactions.filter((t) => t.type === "claim").length,
+    };
+  }, [recentTransactions]);
+
+  const filteredTransactions = useMemo(() => {
+    let list = recentTransactions;
+    if (txCategory !== "all") {
+      list = list.filter((t) => t.type === txCategory);
+    }
+    if (txSearch.trim()) {
+      const q = txSearch.toLowerCase().trim();
+      list = list.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.category.toLowerCase().includes(q) ||
+          (t.reference && t.reference.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [recentTransactions, txCategory, txSearch]);
+
+  const displayedTransactions = showAllTx ? filteredTransactions : filteredTransactions.slice(0, 15);
 
   const handlePrint = () => {
     if (typeof window !== "undefined") {
@@ -172,69 +240,6 @@ export default function FinanceDashboardPage() {
       </div>
     );
   }
-
-  const kpis = financeData?.kpis || {
-    gross_inflow: 0,
-    total_outflow: 0,
-    net_profit: 0,
-    margin_pct: 0,
-    pending_receivables: 0,
-    pending_payables: 0,
-    payroll_expense: 0,
-    bills_expense: 0,
-    claims_expense: 0,
-  };
-
-  const expenseBreakdown = financeData?.expense_breakdown || {
-    payroll: { amount: 0, percentage: 0 },
-    bills: { amount: 0, percentage: 0 },
-    claims: { amount: 0, percentage: 0 },
-  };
-
-  const annualSummary = financeData?.annual_summary || {
-    inflow: 0,
-    outflow: 0,
-    net_profit: 0,
-    margin_pct: 0,
-  };
-
-  const monthlyTrends = financeData?.monthly_trends || [];
-  const recentTransactions = financeData?.recent_transactions || [];
-
-  // Chart scaling calculations
-  const maxMonthlyVal = Math.max(
-    1000,
-    ...monthlyTrends.map((m) => Math.max(m.inflow, m.outflow))
-  );
-
-  const txCounts = useMemo(() => {
-    return {
-      all: recentTransactions.length,
-      payroll: recentTransactions.filter((t) => t.type === "payroll").length,
-      inflow: recentTransactions.filter((t) => t.type === "inflow").length,
-      bill: recentTransactions.filter((t) => t.type === "bill").length,
-      claim: recentTransactions.filter((t) => t.type === "claim").length,
-    };
-  }, [recentTransactions]);
-
-  const filteredTransactions = useMemo(() => {
-    let list = recentTransactions;
-    if (txCategory !== "all") {
-      list = list.filter((t) => t.type === txCategory);
-    }
-    if (txSearch.trim()) {
-      const q = txSearch.toLowerCase().trim();
-      list = list.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.category.toLowerCase().includes(q) ||
-          (t.reference && t.reference.toLowerCase().includes(q))
-      );
-    }
-    return list;
-  }, [recentTransactions, txCategory, txSearch]);
-
-  const displayedTransactions = showAllTx ? filteredTransactions : filteredTransactions.slice(0, 15);
 
   return (
     <div className="p-6 md:p-8 space-y-8 max-w-[1400px] mx-auto pb-16">
