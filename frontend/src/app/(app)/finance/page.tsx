@@ -23,6 +23,9 @@ import {
   Clock,
   Printer,
   Download,
+  Search,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { useCurrentUser, useCurrentCompany, useFinanceDashboard } from "@/lib/queries";
@@ -76,6 +79,9 @@ export default function FinanceDashboardPage() {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  const [txCategory, setTxCategory] = useState<"all" | "payroll" | "inflow" | "bill" | "claim">("all");
+  const [txSearch, setTxSearch] = useState<string>("");
+  const [showAllTx, setShowAllTx] = useState<boolean>(false);
 
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
   const { data: company, isLoading: isCompanyLoading } = useCurrentCompany();
@@ -200,6 +206,35 @@ export default function FinanceDashboardPage() {
     1000,
     ...monthlyTrends.map((m) => Math.max(m.inflow, m.outflow))
   );
+
+  const txCounts = useMemo(() => {
+    return {
+      all: recentTransactions.length,
+      payroll: recentTransactions.filter((t) => t.type === "payroll").length,
+      inflow: recentTransactions.filter((t) => t.type === "inflow").length,
+      bill: recentTransactions.filter((t) => t.type === "bill").length,
+      claim: recentTransactions.filter((t) => t.type === "claim").length,
+    };
+  }, [recentTransactions]);
+
+  const filteredTransactions = useMemo(() => {
+    let list = recentTransactions;
+    if (txCategory !== "all") {
+      list = list.filter((t) => t.type === txCategory);
+    }
+    if (txSearch.trim()) {
+      const q = txSearch.toLowerCase().trim();
+      list = list.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.category.toLowerCase().includes(q) ||
+          (t.reference && t.reference.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [recentTransactions, txCategory, txSearch]);
+
+  const displayedTransactions = showAllTx ? filteredTransactions : filteredTransactions.slice(0, 15);
 
   return (
     <div className="p-6 md:p-8 space-y-8 max-w-[1400px] mx-auto pb-16">
@@ -732,26 +767,123 @@ export default function FinanceDashboardPage() {
 
           {/* Recent Financial Transactions Stream */}
           <div className="bg-paper border border-line rounded-xl p-6 shadow-2xs">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
               <div>
                 <h3 className="font-serif text-[18px] text-ink font-medium">Recent Financial Transactions</h3>
-                <p className="text-[12.5px] text-muted">Live ledger activity across payments, payrolls, bills, and approved reimbursements.</p>
+                <p className="text-[12.5px] text-muted">Live ledger activity across payments, staff payrolls, bills, and approved reimbursements.</p>
               </div>
               <div className="text-[12px] font-mono text-muted">
-                Latest 10 Activities
+                Showing {displayedTransactions.length} of {filteredTransactions.length} items
               </div>
             </div>
 
-            {recentTransactions.length === 0 ? (
+            {/* Filter Pills & Live Search Bar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-4 border-b border-line/60">
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+                <button
+                  onClick={() => setTxCategory("all")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5 shrink-0",
+                    txCategory === "all"
+                      ? "bg-ink text-paper shadow-xs"
+                      : "bg-bone-1 text-muted hover:text-ink hover:bg-bone-2"
+                  )}
+                >
+                  <span>All</span>
+                  <span className={cn("px-1.5 py-0.2 rounded-full text-[11px] font-mono", txCategory === "all" ? "bg-paper/20 text-paper" : "bg-line text-ink-2")}>
+                    {txCounts.all}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setTxCategory("payroll")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5 shrink-0",
+                    txCategory === "payroll"
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "bg-bone-1 text-muted hover:text-ink hover:bg-bone-2"
+                  )}
+                >
+                  <Users2 className="w-3.5 h-3.5" />
+                  <span>Payroll</span>
+                  <span className={cn("px-1.5 py-0.2 rounded-full text-[11px] font-mono", txCategory === "payroll" ? "bg-white/20 text-white" : "bg-line text-ink-2")}>
+                    {txCounts.payroll}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setTxCategory("inflow")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5 shrink-0",
+                    txCategory === "inflow"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-bone-1 text-muted hover:text-ink hover:bg-bone-2"
+                  )}
+                >
+                  <ArrowDownLeft className="w-3.5 h-3.5" />
+                  <span>Client Inflows</span>
+                  <span className={cn("px-1.5 py-0.2 rounded-full text-[11px] font-mono", txCategory === "inflow" ? "bg-white/20 text-white" : "bg-line text-ink-2")}>
+                    {txCounts.inflow}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setTxCategory("bill")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5 shrink-0",
+                    txCategory === "bill"
+                      ? "bg-amber-600 text-white shadow-xs"
+                      : "bg-bone-1 text-muted hover:text-ink hover:bg-bone-2"
+                  )}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>Vendor Bills</span>
+                  <span className={cn("px-1.5 py-0.2 rounded-full text-[11px] font-mono", txCategory === "bill" ? "bg-white/20 text-white" : "bg-line text-ink-2")}>
+                    {txCounts.bill}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setTxCategory("claim")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5 shrink-0",
+                    txCategory === "claim"
+                      ? "bg-sky-600 text-white shadow-xs"
+                      : "bg-bone-1 text-muted hover:text-ink hover:bg-bone-2"
+                  )}
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                  <span>Claims</span>
+                  <span className={cn("px-1.5 py-0.2 rounded-full text-[11px] font-mono", txCategory === "claim" ? "bg-white/20 text-white" : "bg-line text-ink-2")}>
+                    {txCounts.claim}
+                  </span>
+                </button>
+              </div>
+
+              {/* Live search input */}
+              <div className="relative w-full md:w-64">
+                <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={txSearch}
+                  onChange={(e) => setTxSearch(e.target.value)}
+                  placeholder="Search by name, bill, ref..."
+                  className="w-full bg-paper border border-line rounded-lg pl-9 pr-3 py-1.5 text-[13px] text-ink placeholder:text-muted/70 focus:outline-none focus:ring-1 focus:ring-ink"
+                />
+              </div>
+            </div>
+
+            {filteredTransactions.length === 0 ? (
               <div className="p-8 text-center text-muted text-[13px] font-serif border border-dashed border-line rounded-lg">
-                No recent transactions recorded for this workspace.
+                No matching transactions found {txSearch ? `for "${txSearch}"` : ""}.
               </div>
             ) : (
               <div className="divide-y divide-line/60">
-                {recentTransactions.map((tx) => {
+                {displayedTransactions.map((tx) => {
                   const isInflow = tx.type === "inflow";
                   return (
-                    <div key={tx.id} className="py-3 flex items-center justify-between gap-4">
+                    <div key={tx.id} className="py-3 flex items-center justify-between gap-4 hover:bg-bone-1/50 px-2 rounded-lg transition-colors">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={cn(
                           "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
@@ -809,9 +941,23 @@ export default function FinanceDashboardPage() {
                 })}
               </div>
             )}
+
+            {/* Show All / Show Less Toggle Button */}
+            {filteredTransactions.length > 15 && (
+              <div className="mt-4 pt-3 border-t border-line/60 flex justify-center">
+                <button
+                  onClick={() => setShowAllTx(!showAllTx)}
+                  className="flex items-center gap-1.5 text-[12.5px] font-medium text-ink hover:text-ink/80 py-1.5 px-3 rounded-lg border border-line bg-paper hover:bg-bone-1 transition-all"
+                >
+                  <span>{showAllTx ? "Show Less" : `Show All (${filteredTransactions.length} Transactions)`}</span>
+                  {showAllTx ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
     </div>
   );
 }
+

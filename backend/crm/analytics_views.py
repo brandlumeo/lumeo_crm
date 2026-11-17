@@ -388,11 +388,11 @@ class FinanceDashboardView(APIView):
         annual_net_profit = annual_inflow - annual_outflow
         annual_margin_pct = round((annual_net_profit / annual_inflow * 100), 1) if annual_inflow > 0 else 0.0
 
-        # Recent Financial Transactions (up to 10 latest across all categories)
+        # Recent Financial Transactions (fetch extensive history across all streams)
         recent_tx = []
 
         # 1. Payments received
-        for p in InvoicePayment.objects.filter(invoice__company=company).select_related("invoice", "invoice__customer").order_by("-payment_date", "-id")[:6]:
+        for p in InvoicePayment.objects.filter(invoice__company=company).select_related("invoice", "invoice__customer").order_by("-payment_date", "-id")[:30]:
             cust_name = p.invoice.customer.name if p.invoice and p.invoice.customer else "Client"
             inv_num = p.invoice.invoice_number if p.invoice else ""
             recent_tx.append({
@@ -407,7 +407,7 @@ class FinanceDashboardView(APIView):
             })
 
         # 2. Paid invoices without separate payment record
-        for inv in Invoice.objects.filter(company=company, status="paid").exclude(id__in=paid_invoices_with_payments).select_related("customer").order_by("-updated_at")[:4]:
+        for inv in Invoice.objects.filter(company=company, status="paid").exclude(id__in=paid_invoices_with_payments).select_related("customer").order_by("-issue_date", "-updated_at")[:25]:
             cust_name = inv.customer.name if inv.customer else "Client"
             recent_tx.append({
                 "id": f"inv-{inv.id}",
@@ -420,8 +420,8 @@ class FinanceDashboardView(APIView):
                 "reference": inv.invoice_number
             })
 
-        # 3. Payroll payouts
-        for pay in Payroll.objects.filter(company=company).exclude(status="cancelled").select_related("user").order_by("-created_at")[:6]:
+        # 3. Payroll payouts (ensure all staff payouts are captured without artificial truncations)
+        for pay in Payroll.objects.filter(company=company).exclude(status="cancelled").select_related("user").order_by("-pay_date", "-created_at")[:80]:
             u_name = f"{pay.user.first_name} {pay.user.last_name}".strip() if pay.user else "Employee"
             if not u_name and pay.user:
                 u_name = pay.user.username
@@ -438,7 +438,7 @@ class FinanceDashboardView(APIView):
             })
 
         # 4. Vendor bills
-        for b in Bill.objects.filter(company=company).select_related("vendor").order_by("-bill_date", "-id")[:6]:
+        for b in Bill.objects.filter(company=company).select_related("vendor").order_by("-bill_date", "-id")[:30]:
             v_name = b.vendor.name if b.vendor else "Vendor"
             recent_tx.append({
                 "id": f"bill-{b.id}",
@@ -452,7 +452,7 @@ class FinanceDashboardView(APIView):
             })
 
         # 5. Expense claims
-        for c in ExpenseClaim.objects.filter(company=company, status="approved").select_related("user").order_by("-created_at")[:4]:
+        for c in ExpenseClaim.objects.filter(company=company, status="approved").select_related("user").order_by("-created_at")[:30]:
             u_name = f"{c.user.first_name} {c.user.last_name}".strip() if c.user else "Employee"
             recent_tx.append({
                 "id": f"claim-{c.id}",
@@ -466,7 +466,7 @@ class FinanceDashboardView(APIView):
             })
 
         recent_tx.sort(key=lambda x: x["date"], reverse=True)
-        recent_tx = recent_tx[:10]
+        recent_tx = recent_tx[:80]
 
         response_data = {
             "year": year,
