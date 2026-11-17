@@ -173,6 +173,7 @@ const endpoints = {
   orders: "/crm/orders/",
   events: "/crm/events/",
   notices: "/crm/notices/",
+  income: "/crm/income/",
 } as const;
 
 function isBrowser() {
@@ -1036,6 +1037,67 @@ export async function fetchFinanceDashboard(params?: { year?: number; month?: nu
   const qs = query.toString() ? `?${query.toString()}` : "";
   const { data } = await api.get<FinanceDashboardResponse>(`/crm/finance-dashboard/${qs}`);
   return data;
+}
+
+export interface Income {
+  id: number;
+  company: string;
+  title: string;
+  amount: string | number;
+  date: string;
+  category: string;
+  category_display: string;
+  received_from: string;
+  payment_method: string;
+  reference: string;
+  receipt?: string | null;
+  notes: string;
+  created_by?: string | null;
+  created_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IncomeInput = {
+  title: string;
+  amount: number | string;
+  date?: string;
+  category?: string;
+  received_from?: string;
+  payment_method?: string;
+  reference?: string;
+  notes?: string;
+  receipt?: File | null;
+};
+
+export async function fetchIncomes(params?: ListParams & { category?: string; payment_method?: string; year?: number; month?: number }) {
+  return listPage<Income>(endpoints.income, params);
+}
+
+export async function createIncome(payload: IncomeInput | FormData) {
+  if (payload instanceof FormData) {
+    const { data } = await api.post<Income>(endpoints.income, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  }
+  const { data } = await api.post<Income>(endpoints.income, payload);
+  return data;
+}
+
+export async function updateIncome(id: number, payload: IncomeInput | FormData) {
+  if (payload instanceof FormData) {
+    const { data } = await api.patch<Income>(`${endpoints.income}${id}/`, payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  }
+  const { data } = await api.patch<Income>(`${endpoints.income}${id}/`, payload);
+  return data;
+}
+
+export async function deleteIncome(id: number) {
+  await api.delete(`${endpoints.income}${id}/`);
 }
 
 export async function fetchSMTPConfigs() {

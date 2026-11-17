@@ -7,7 +7,7 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from decimal import Decimal
 import calendar
-from crm.models import Deal, Lead, Customer, Task, Note, Product, DailyRevenue, Invoice, InvoicePayment, Bill
+from crm.models import Deal, Lead, Customer, Task, Note, Product, DailyRevenue, Invoice, InvoicePayment, Bill, Income
 from attendance.models import Payroll, ExpenseClaim
 
 class CrmCountsView(APIView):
@@ -298,6 +298,13 @@ class FinanceDashboardView(APIView):
         ).exclude(id__in=paid_invoices_with_payments).values("issue_date__month").annotate(total=Sum("total"))
         direct_invoices_by_month = {item["issue_date__month"]: Decimal(str(item["total"] or 0)) for item in direct_invoices_qs}
 
+        # Direct recorded incomes (retainers, consulting, grants, investments, other)
+        income_qs = Income.objects.filter(
+            company=company,
+            date__year=year
+        ).values("date__month").annotate(total=Sum("amount"))
+        income_by_month = {item["date__month"]: Decimal(str(item["total"] or 0)) for item in income_qs}
+
         payroll_qs = Payroll.objects.filter(
             company=company,
             year=year
@@ -329,7 +336,7 @@ class FinanceDashboardView(APIView):
         months_data = []
         month_abbrs = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         for m in range(1, 13):
-            inflow_m = payment_by_month.get(m, Decimal("0.00")) + direct_invoices_by_month.get(m, Decimal("0.00"))
+            inflow_m = payment_by_month.get(m, Decimal("0.00")) + direct_invoices_by_month.get(m, Decimal("0.00")) + income_by_month.get(m, Decimal("0.00"))
             payroll_m = payroll_by_month.get(m, Decimal("0.00"))
             bills_m = bills_by_month.get(m, Decimal("0.00"))
             claims_m = claims_by_month.get(m, Decimal("0.00"))
@@ -420,7 +427,20 @@ class FinanceDashboardView(APIView):
                 "reference": inv.invoice_number
             })
 
-        # 3. Payroll payouts (ensure all staff payouts are captured without artificial truncations)
+        # 3. Direct Incomes recorded
+        for inc in Income.objects.filter(company=company).order_by("-date", "-id")[:30]:
+            recent_tx.append({
+                "id": f"income-{inc.id}",
+                "type": "inflow",
+                "category": f"Income ({inc.get_category_display()})",
+                "title": inc.title,
+                "amount": float(inc.amount),
+                "date": inc.date.strftime("%Y-%m-%d"),
+                "status": "Received",
+                "reference": inc.reference or f"INC-{inc.id}"
+            })
+
+        # 4. Payroll payouts (ensure all staff payouts are captured without artificial truncations)
         for pay in Payroll.objects.filter(company=company).exclude(status="cancelled").select_related("user").order_by("-pay_date", "-created_at")[:80]:
             u_name = f"{pay.user.first_name} {pay.user.last_name}".strip() if pay.user else "Employee"
             if not u_name and pay.user:

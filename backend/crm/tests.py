@@ -111,3 +111,48 @@ def test_finance_dashboard_rbac(setup_data):
     res = client.get("/api/v1/crm/finance-dashboard/")
     assert res.status_code == 200
 
+
+@pytest.mark.django_db
+def test_income_crud_and_company_isolation(setup_data):
+    """Test Income creation, listing, and multi-tenant company isolation."""
+    from rest_framework.test import APIClient
+    from crm.models import Income
+
+    user1 = setup_data["user1"]
+    user2 = setup_data["user2"]
+
+    client = APIClient()
+    client.force_authenticate(user=user1)
+
+    # 1. Create income for company 1
+    create_res = client.post("/api/v1/crm/income/", {
+        "title": "Consulting Advance",
+        "amount": "25000.00",
+        "category": "consulting",
+        "received_from": "Acme Corp",
+        "payment_method": "bank_transfer",
+        "reference": "UTR99887766",
+        "notes": "Q4 strategy consulting"
+    })
+    assert create_res.status_code == 201
+    income_id = create_res.data["id"]
+
+    # Verify company and created_by were populated correctly
+    inc = Income.objects.get(id=income_id)
+    assert inc.company == setup_data["company1"]
+    assert inc.created_by == user1
+    assert str(inc.amount) == "25000.00"
+
+    # 2. List incomes for user 1
+    list_res = client.get("/api/v1/crm/income/")
+    assert list_res.status_code == 200
+    results = list_res.data.get("results", list_res.data)
+    assert any(item["id"] == income_id for item in results)
+
+    # 3. User 2 from Company 2 should NOT see Company 1's income
+    client.force_authenticate(user=user2)
+    user2_list = client.get("/api/v1/crm/income/")
+    user2_results = user2_list.data.get("results", user2_list.data)
+    assert not any(item["id"] == income_id for item in user2_results)
+
+

@@ -51,6 +51,12 @@ import {
   patchDeal,
   fetchPremiumAnalytics,
   fetchFinanceDashboard,
+  fetchIncomes,
+  createIncome,
+  updateIncome,
+  deleteIncome,
+  Income,
+  IncomeInput,
   fetchSMTPConfigs,
   createSMTPConfig,
   updateSMTPConfig,
@@ -1821,3 +1827,49 @@ export function useGenerateAIMonthlyAnalysis() {
     },
   });
 }
+
+
+export function useIncomes(params?: ListParams & { category?: string; payment_method?: string; year?: number; month?: number }) {
+  return useQuery({
+    queryKey: ["incomes", params],
+    queryFn: () => fetchIncomes(params),
+    staleTime: 30 * 1000,
+    enabled: authenticated(),
+  });
+}
+
+export function useCreateIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: IncomeInput | FormData) => createIncome(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incomes"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
+    },
+  });
+}
+
+export function useUpdateIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: IncomeInput | FormData }) => updateIncome(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incomes"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
+    },
+  });
+}
+
+export function useDeleteIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteIncome(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incomes"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
+    },
+  });
+}
+
+export type { Income, IncomeInput };
+

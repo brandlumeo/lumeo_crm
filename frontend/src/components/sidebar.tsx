@@ -231,6 +231,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       subItems: [
         ...(mounted && canAccessFinanceDashboard ? [{ label: "Dashboard", href: "/finance" }] : []),
         { label: "Invoices", href: "/invoices" },
+        { label: "Income", href: "/income" },
         { label: "Quotes", href: "/quotes" },
         { label: "Vendors", href: "/vendors" },
         { label: "Purchase Orders", href: "/purchase-orders" },

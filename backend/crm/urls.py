@@ -52,6 +52,7 @@ from .views import (
     PurchaseOrderViewSet,
     BillViewSet,
     WhatsAppMessageViewSet,
+    IncomeViewSet,
 )
 
 from .ai_views import AIChatView, AIEmailDraftView
@@ -99,6 +100,7 @@ router.register("notices", NoticeViewSet, basename="notice")
 router.register("vendors", VendorViewSet, basename="vendor")
 router.register("purchase-orders", PurchaseOrderViewSet, basename="purchase-order")
 router.register("bills", BillViewSet, basename="bill")
+router.register("income", IncomeViewSet, basename="income")
 router.register(r'whatsapp-messages', WhatsAppMessageViewSet, basename='whatsapp-message')
 
 tickets_router = routers.NestedDefaultRouter(router, "tickets", lookup="ticket")

@@ -1593,3 +1593,52 @@ class DailyRevenue(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.total_revenue}"
+
+
+class Income(models.Model):
+    class Category(models.TextChoices):
+        RETAINER = "retainer", "Client Retainer"
+        CONSULTING = "consulting", "Consulting / Service"
+        COMMISSION = "commission", "Commission / Referral"
+        INVESTMENT = "investment", "Investment / Dividends"
+        AFFILIATE = "affiliate", "Affiliate / Ad Revenue"
+        GRANT = "grant", "Grant / Subsidy"
+        INTEREST = "interest", "Bank Interest"
+        REFUND = "refund", "Vendor Refund / Reimbursement"
+        CAPITAL = "capital", "Owner Capital / Equity"
+        OTHER = "other", "Other Miscellaneous Income"
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="incomes",
+    )
+    title = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField(default=timezone.localdate, db_index=True)
+    category = models.CharField(
+        max_length=50,
+        choices=Category.choices,
+        default=Category.OTHER,
+        db_index=True,
+    )
+    received_from = models.CharField(max_length=255, blank=True, default="")
+    payment_method = models.CharField(max_length=50, default="bank_transfer")
+    reference = models.CharField(max_length=100, blank=True, default="")
+    receipt = models.FileField(upload_to="income_receipts/", blank=True, null=True)
+    notes = models.TextField(blank=True, default="")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recorded_incomes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-date", "-created_at")
+
+    def __str__(self):
+        return f"{self.title} - {self.amount}"

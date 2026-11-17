@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, WhatsAppMessage
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, WhatsAppMessage, Income
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -49,6 +49,7 @@ from .serializers import (
     BillSerializer,
     BillItemSerializer,
     WhatsAppMessageSerializer,
+    IncomeSerializer,
 )
 from .emailing import send_crm_email
 
@@ -2555,3 +2556,41 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
     def pdf(self, request, pk=None):
         po = self.get_object()
         return generate_pdf_response(po, doc_type="Purchase Order")
+
+
+class IncomeViewSet(CompanyScopedModelViewSet):
+    serializer_class = IncomeSerializer
+    queryset = Income.objects.select_related("created_by")
+    search_fields = ("title", "received_from", "reference", "notes")
+    ordering_fields = ("date", "amount", "title", "created_at")
+    ordering = ("-date", "-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(
+            company=self.request.user.company,
+            created_by=self.request.user
+        )
+
+    def apply_business_filters(self, queryset):
+        category = self.request.query_params.get("category")
+        payment_method = self.request.query_params.get("payment_method")
+        year = self.request.query_params.get("year")
+        month = self.request.query_params.get("month")
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if payment_method:
+            queryset = queryset.filter(payment_method=payment_method)
+        if year:
+            try:
+                queryset = queryset.filter(date__year=int(year))
+            except (ValueError, TypeError):
+                pass
+        if month:
+            try:
+                queryset = queryset.filter(date__month=int(month))
+            except (ValueError, TypeError):
+                pass
+
+        return queryset
+

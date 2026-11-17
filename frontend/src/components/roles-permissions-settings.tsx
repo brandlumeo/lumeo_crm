@@ -288,6 +288,16 @@ const modulesList = [
     ]
   },
   { 
+    name: "Income", 
+    hasDropdown: true,
+    subPermissions: [
+      "Record Direct Income",
+      "View Income Statements",
+      "Edit Income Records",
+      "Delete Income Records"
+    ]
+  },
+  { 
     name: "Finance Dashboard", 
     hasDropdown: true,
     subPermissions: [
