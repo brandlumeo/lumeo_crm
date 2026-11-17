@@ -693,6 +693,9 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "product",
+            "parent",
+            "item_number",
+            "is_included",
             "name",
             "description",
             "quantity",
@@ -710,6 +713,7 @@ class QuoteSerializer(CompanyScopedSerializer):
     items = QuoteLineItemSerializer(many=True, required=False)
     deal_details = DealSerializer(source='deal', read_only=True)
     customer_details = CustomerSerializer(source='customer', read_only=True)
+    lead_details = LeadSerializer(source='lead', read_only=True)
     settings = serializers.SerializerMethodField()
 
     def get_settings(self, obj):
@@ -732,6 +736,18 @@ class QuoteSerializer(CompanyScopedSerializer):
             "deal_id",
             "customer",
             "customer_id",
+            "lead",
+            "lead_id",
+            "client_name",
+            "client_address",
+            "client_phone",
+            "duration",
+            "overview",
+            "payment_schedule",
+            "timeline",
+            "client_responsibilities",
+            "exclusions",
+            "terms_conditions",
             "quote_number",
             "title",
             "status",
@@ -752,6 +768,7 @@ class QuoteSerializer(CompanyScopedSerializer):
             "updated_at",
             "deal_details",
             "customer_details",
+            "lead_details",
             "settings",
         )
         read_only_fields = ("id", "quote_number", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token")

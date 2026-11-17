@@ -251,4 +251,68 @@ def test_bill_workflow_and_payments(setup_data):
     assert client.get(f"/api/v1/crm/bills/{bill_id}/pdf/").status_code == 404
 
 
+@pytest.mark.django_db
+def test_agency_quote_pdf_and_sow_deliverables():
+    from crm.models import Quote, QuoteLineItem, Lead
+    from rest_framework.test import APIClient
+    company1 = Company.objects.create(name="BrandLumeo Test LLP")
+    user1 = User.objects.create_user(username="admin_bl", email="admin@brandlumeo.test", password="testpassword123", company=company1, role="admin")
+
+    lead = Lead.objects.create(
+        company=company1,
+        name="Edufix Learning",
+        email="edufix@test.com",
+        mobile="+91 70342 87049"
+    )
+
+    quote = Quote.objects.create(
+        company=company1,
+        lead=lead,
+        client_name="EDUFIX LEARNING",
+        client_address="Calicut, Payyoli - 673522",
+        client_phone="+91 70342 87049",
+        title="Growth Package",
+        quote_number="QT-TEST-001056",
+        duration="1 Month",
+        overview="This quotation covers our Growth Package for Edufix Learning...",
+        payment_schedule=[
+            {"milestone": "50% Advance", "amount": 8000},
+            {"milestone": "50% Balance", "amount": 7999}
+        ],
+        timeline=[{"phase": "Week 1", "description": "Onboarding"}],
+        client_responsibilities=["Access to Meta Business Manager"],
+        exclusions=["Ad spend paid directly to Meta"],
+        terms_conditions=["50% advance required"]
+    )
+
+    p = QuoteLineItem.objects.create(
+        quote=quote,
+        item_number="1",
+        name="Growth Package",
+        quantity=1,
+        unit_price=15999,
+        is_included=False
+    )
+    QuoteLineItem.objects.create(
+        quote=quote,
+        parent=p,
+        item_number="1.1",
+        name="Promotional Videos",
+        quantity=4,
+        unit_price=0,
+        is_included=True
+    )
+    quote.calculate_totals()
+
+    assert float(quote.total) == 15999.0
+
+    client = APIClient()
+    client.force_authenticate(user=user1)
+
+    pdf_res = client.get(f"/api/v1/crm/quotes/{quote.id}/pdf/")
+    assert pdf_res.status_code == 200
+    assert pdf_res["Content-Type"] == "application/pdf"
+    assert len(pdf_res.content) > 1000
+
+
 

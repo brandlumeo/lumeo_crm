@@ -1561,22 +1561,29 @@ def generate_pdf_response(instance, doc_type="Invoice"):
 
 class QuoteViewSet(CompanyScopedModelViewSet):
     serializer_class = QuoteSerializer
-    queryset = Quote.objects.select_related("company", "deal").prefetch_related("items")
-    search_fields = ("quote_number", "title")
+    queryset = Quote.objects.select_related("company", "deal", "lead", "customer").prefetch_related("items")
+    search_fields = ("quote_number", "title", "client_name")
     ordering_fields = ("created_at", "updated_at", "status", "total")
     ordering = ("-created_at",)
-    filterset_fields = ("status", "deal")
+    filterset_fields = ("status", "deal", "lead", "customer")
 
     def apply_business_filters(self, queryset):
         deal_id = self.request.query_params.get("deal")
         if deal_id:
             queryset = queryset.filter(deal_id=deal_id)
+        lead_id = self.request.query_params.get("lead")
+        if lead_id:
+            queryset = queryset.filter(lead_id=lead_id)
+        customer_id = self.request.query_params.get("customer")
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
         return queryset
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
         quote = self.get_object()
-        return generate_pdf_response(quote, doc_type="Quote")
+        from .utils_quote_pdf import generate_agency_quote_pdf_response
+        return generate_agency_quote_pdf_response(quote)
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):

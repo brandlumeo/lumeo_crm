@@ -554,6 +554,23 @@ class Quote(models.Model):
         null=True,
         blank=True,
     )
+    lead = models.ForeignKey(
+        "Lead",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="quotes",
+    )
+    client_name = models.CharField(max_length=255, blank=True, default="")
+    client_address = models.TextField(blank=True, default="")
+    client_phone = models.CharField(max_length=50, blank=True, default="")
+    duration = models.CharField(max_length=100, blank=True, default="1 Month")
+    overview = models.TextField(blank=True, default="", help_text="Executive overview paragraph")
+    payment_schedule = models.JSONField(default=list, blank=True, help_text="List of milestones: [{milestone: str, amount: float}]")
+    timeline = models.JSONField(default=list, blank=True, help_text="List of phases: [{phase: str, description: str}]")
+    client_responsibilities = models.JSONField(default=list, blank=True, help_text="List of client requirement strings")
+    exclusions = models.JSONField(default=list, blank=True, help_text="List of exclusion strings")
+    terms_conditions = models.JSONField(default=list, blank=True, help_text="List of contract term strings")
     quote_number = models.CharField(max_length=50, unique=True, db_index=True)
     title = models.CharField(max_length=255)
     status = models.CharField(
@@ -586,8 +603,8 @@ class Quote(models.Model):
 
     def calculate_totals(self):
         items = self.items.all()
-        self.subtotal = sum(item.subtotal for item in items)
-        self.tax_amount = sum(item.tax_amount for item in items)
+        self.subtotal = sum(item.subtotal for item in items if not getattr(item, 'is_included', False))
+        self.tax_amount = sum(item.tax_amount for item in items if not getattr(item, 'is_included', False))
         self.total = self.subtotal + self.tax_amount
         self.save()
 
@@ -604,6 +621,15 @@ class QuoteLineItem(models.Model):
         null=True,
         blank=True,
     )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="sub_items",
+    )
+    item_number = models.CharField(max_length=20, blank=True, default="1")
+    is_included = models.BooleanField(default=False, help_text="If True, marked as included under parent package")
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     quantity = models.PositiveIntegerField(default=1)
@@ -614,10 +640,14 @@ class QuoteLineItem(models.Model):
 
     @property
     def subtotal(self):
+        if self.is_included:
+            return 0
         return self.unit_price * self.quantity
 
     @property
     def tax_amount(self):
+        if self.is_included:
+            return 0
         return self.subtotal * (self.tax_rate / 100)
 
     @property

@@ -542,6 +542,9 @@ export interface Unit {
 export interface QuoteLineItem {
   id?: number;
   product?: number;
+  parent?: number | null;
+  item_number?: string;
+  is_included?: boolean;
   name: string;
   description?: string;
   quantity: number;
@@ -574,6 +577,24 @@ export interface Quote {
       [key: string]: any;
     };
   };
+  lead?: number | null;
+  lead_details?: {
+    id: number;
+    name: string;
+    email?: string;
+    mobile?: string;
+    company?: string;
+  };
+  client_name?: string;
+  client_address?: string;
+  client_phone?: string;
+  duration?: string;
+  overview?: string;
+  payment_schedule?: { milestone: string; amount: number }[];
+  timeline?: { phase: string; description: string }[];
+  client_responsibilities?: string[];
+  exclusions?: string[];
+  terms_conditions?: string[];
   settings?: any;
   quote_number: string;
   title: string;
@@ -595,7 +616,19 @@ export interface Quote {
 }
 
 export interface QuoteInput {
-  deal?: number;
+  deal?: number | null;
+  customer?: number | null;
+  lead?: number | null;
+  client_name?: string;
+  client_address?: string;
+  client_phone?: string;
+  duration?: string;
+  overview?: string;
+  payment_schedule?: { milestone: string; amount: number }[];
+  timeline?: { phase: string; description: string }[];
+  client_responsibilities?: string[];
+  exclusions?: string[];
+  terms_conditions?: string[];
   title: string;
   content?: string;
   currency?: string;

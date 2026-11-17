@@ -1,96 +1,340 @@
 "use client";
 
-import { useState } from "react";
-import { useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, useCustomerPage, useDealPage, useCurrentCompany, useUnits } from "@/lib/queries";
-import { downloadQuotePdf } from "@/lib/api";
-import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, Edit2 } from "lucide-react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { 
+  useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, 
+  useCustomerPage, useDealPage, useLeadPage, useCurrentCompany, useUnits 
+} from "@/lib/queries";
+import { downloadQuotePdf, openQuotePdfInNewTab } from "@/lib/api";
+import { 
+  FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, 
+  Trash2, Edit2, Eye, Sparkles, Building2, User, Calendar, Clock, 
+  Layers, DollarSign, ShieldAlert, CheckCircle2, ChevronRight, X
+} from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
-import dynamic from "next/dynamic";
-const RichTextEditor = dynamic(() => import("@/components/rich-text-editor").then(mod => mod.RichTextEditor), { ssr: false });
+import { toast } from "sonner";
+import type { QuoteLineItem } from "@/lib/types";
 
-export default function QuotesPage() {
+// Standard Agency Presets matching BrandLumeo's executive proposal format
+const AGENCY_GROWTH_PRESET = {
+  title: "Growth Package",
+  duration: "1 Month",
+  overview: "This quotation covers our Growth Package for client — a one-month digital marketing programme to build brand visibility and generate student enquiries through video content, social media management, Google Business Profile optimisation and Meta advertising.",
+  items: [
+    { item_number: "1", name: "Growth Package", description: "Comprehensive 1-month digital marketing & lead generation retainer", quantity: 1, unit_price: 15999, tax_rate: 0, unit: "Month", is_included: false },
+    { item_number: "1.1", name: "Promotional Videos", description: "Concept, scripting, shooting and editing of short-form videos for Reels, Shorts and feeds", quantity: 4, unit_price: 0, tax_rate: 0, unit: "", is_included: true },
+    { item_number: "1.2", name: "Trending Video", description: "Trend-based creative video using current formats to maximise reach", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: true },
+    { item_number: "1.3", name: "Social Media Management", description: "Content calendar, post design, captions, scheduling and page management (Instagram & Facebook)", quantity: 1, unit_price: 0, tax_rate: 0, unit: "Month", is_included: true },
+    { item_number: "1.4", name: "Google Business Profile Optimisation", description: "Profile setup and audit, categories, keywords, photos, services and review strategy", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: true },
+    { item_number: "1.5", name: "Meta Ads Management", description: "Campaign strategy, targeting, ad creatives, setup, monitoring and optimisation", quantity: 1, unit_price: 0, tax_rate: 0, unit: "Month", is_included: true },
+  ],
+  payment_schedule: [
+    { milestone: "50% Advance — on confirmation, to commence the project", amount: 8000 },
+    { milestone: "50% Balance — on completion of the monthly scope", amount: 7999 }
+  ],
+  timeline: [
+    { phase: "Week 1", description: "Onboarding, brand review, content calendar approval, Google Business Profile optimisation, Meta ads setup" },
+    { phase: "Week 2-3", description: "Video production and publishing, trending video, regular posting, ad launch and optimisation" },
+    { phase: "Week 4", description: "Remaining deliverables, campaign optimisation, performance report and recommendations" }
+  ],
+  client_responsibilities: [
+    "Access to Instagram, Facebook, Meta Business Manager and Google Business Profile",
+    "Logo, brand assets and course details",
+    "Availability of premises and staff for video shoots",
+    "Content approvals within 2 working days"
+  ],
+  exclusions: [
+    "Meta ad spend (paid directly by the client to Meta)",
+    "Website development, stock assets, influencer fees",
+    "Work beyond the stated scope"
+  ],
+  terms_conditions: [
+    "A 50% advance payment is required to commence the project; the balance is payable on completion.",
+    "The client must provide all necessary account credentials and materials on time.",
+    "Any work beyond the scope of this quotation will be charged additionally.",
+    "Each deliverable includes up to two rounds of revisions.",
+    "This quotation is valid for 15 days from the date of issue.",
+    "Advertising and social media results depend on platform and market factors and are not guaranteed."
+  ]
+};
+
+function QuotesPageContent() {
+  const searchParams = useSearchParams();
+  const leadParam = searchParams.get("lead_id");
+  const createParam = searchParams.get("create");
+
   const { data: company } = useCurrentCompany();
   const { data, isLoading } = useQuotes();
   const { data: customerData } = useCustomerPage({});
   const { data: dealData } = useDealPage({});
+  const { data: leadData } = useLeadPage({});
   
   const createMutation = useCreateQuote();
   const deleteMutation = useDeleteQuote();
   const updateMutation = useUpdateQuote();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"client" | "scope" | "terms" | "schedule">("client");
   const [editQuoteId, setEditQuoteId] = useState<number | null>(null);
-  const [newQuote, setNewQuote] = useState<{ currency?: string, title: string, content: string, customer_id: number | null, deal_id: number | null, valid_until: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
-    currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
-    title: "",
-    content: "",
-    customer_id: null, 
-    deal_id: null, 
-    valid_until: "",
-    items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
-  });
+  
+  // Studio Form State
+  const [clientType, setClientType] = useState<"lead" | "customer" | "custom">("lead");
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [selectedDealId, setSelectedDealId] = useState<number | null>(null);
+  
+  const [clientName, setClientName] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [title, setTitle] = useState("");
+  const [duration, setDuration] = useState("1 Month");
+  const [validUntil, setValidUntil] = useState("");
+  const [currency, setCurrency] = useState("INR");
+  const [overview, setOverview] = useState("");
+  
+  const [items, setItems] = useState<any[]>([
+    { item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }
+  ]);
+  const [paymentSchedule, setPaymentSchedule] = useState<{ milestone: string; amount: number }[]>([]);
+  const [timeline, setTimeline] = useState<{ phase: string; description: string }[]>([]);
+  const [clientResponsibilities, setClientResponsibilities] = useState<string[]>([]);
+  const [exclusions, setExclusions] = useState<string[]>([]);
+  const [termsConditions, setTermsConditions] = useState<string[]>([]);
+
   const [deleteQuoteId, setDeleteQuoteId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const quotes = data?.results || [];
   const customers = customerData?.results || [];
   const deals = dealData?.results || [];
-  
-  const { data: unitsData } = useUnits();
-  const units = Array.isArray(unitsData) ? unitsData : (unitsData as any)?.results || [];
+  const leads = leadData?.results || [];
 
-  const handleCreate = (e: React.FormEvent) => {
+  // Line item subtotal calculation
+  const computedSubtotal = useMemo(() => {
+    return items.reduce((acc, item) => {
+      if (item.is_included) return acc;
+      return acc + (Number(item.quantity || 1) * Number(item.unit_price || 0));
+    }, 0);
+  }, [items]);
+
+  // Auto split 50/50 payment helper
+  const applyAutoPaymentSplit = () => {
+    const total = computedSubtotal;
+    const half1 = Math.round(total * 0.5);
+    const half2 = total - half1;
+    setPaymentSchedule([
+      { milestone: "50% Advance — on confirmation, to commence the project", amount: half1 },
+      { milestone: "50% Balance — on completion of the monthly scope", amount: half2 }
+    ]);
+    toast.success("Applied 50% Advance / 50% Balance payment split");
+  };
+
+  // Load Preset
+  const handleLoadPreset = () => {
+    setTitle(AGENCY_GROWTH_PRESET.title);
+    setDuration(AGENCY_GROWTH_PRESET.duration);
+    const cName = clientName.trim() || "the client";
+    setOverview(AGENCY_GROWTH_PRESET.overview.replace("client", cName));
+    setItems(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.items)));
+    setPaymentSchedule(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.payment_schedule)));
+    setTimeline(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.timeline)));
+    setClientResponsibilities([...AGENCY_GROWTH_PRESET.client_responsibilities]);
+    setExclusions([...AGENCY_GROWTH_PRESET.exclusions]);
+    setTermsConditions([...AGENCY_GROWTH_PRESET.terms_conditions]);
+    toast.success("Loaded BrandLumeo Growth Package SOW Preset");
+  };
+
+  // Handle URL params for direct lead quotation creation
+  useEffect(() => {
+    if (leadParam && leads.length > 0) {
+      const l = leads.find((x: any) => String(x.id) === String(leadParam));
+      if (l) {
+        setClientType("lead");
+        setSelectedLeadId(l.id);
+        setClientName(l.name || (l as any).company || "");
+        setClientPhone(l.mobile || "");
+        setClientAddress((l as any).address || "Calicut, Kerala");
+        setTitle(`Growth Package - ${l.name}`);
+        if (createParam === "true") {
+          handleLoadPreset();
+          setIsModalOpen(true);
+        }
+      }
+    }
+  }, [leadParam, leads, createParam]);
+
+  // When Lead is selected
+  const handleLeadSelect = (idStr: string) => {
+    const id = parseInt(idStr, 10) || null;
+    setSelectedLeadId(id);
+    if (!id) return;
+    const l = leads.find((x: any) => x.id === id);
+    if (l) {
+      setClientName(l.name || (l as any).company || "");
+      setClientPhone(l.mobile || "");
+      setClientAddress((l as any).address || "Calicut, Kerala");
+      if (!title) setTitle(`Quotation - ${l.name}`);
+    }
+  };
+
+  // When Customer is selected
+  const handleCustomerSelect = (idStr: string) => {
+    const id = parseInt(idStr, 10) || null;
+    setSelectedCustomerId(id);
+    if (!id) return;
+    const c = customers.find((x: any) => x.id === id) as any;
+    if (c) {
+      setClientName(c.name || c.company_name || "");
+      setClientPhone(c.phone || "");
+      setClientAddress(c.address || c.custom_data?.address || "");
+      if (!title) setTitle(`Quotation - ${c.name}`);
+    }
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setEditQuoteId(null);
+    setClientType("lead");
+    setSelectedLeadId(null);
+    setSelectedCustomerId(null);
+    setSelectedDealId(null);
+    setClientName("");
+    setClientAddress("");
+    setClientPhone("");
+    setTitle("");
+    setDuration("1 Month");
+    setValidUntil("");
+    setCurrency(company?.currency || "INR");
+    setOverview("");
+    setItems([{ item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }]);
+    setPaymentSchedule([]);
+    setTimeline([]);
+    setClientResponsibilities([]);
+    setExclusions([]);
+    setTermsConditions([]);
+    setActiveTab("client");
+  };
+
+  // Open edit modal
+  const handleEditClick = (quote: any) => {
+    setEditQuoteId(quote.id);
+    if (quote.lead) {
+      setClientType("lead");
+      setSelectedLeadId(quote.lead);
+    } else if (quote.customer) {
+      setClientType("customer");
+      setSelectedCustomerId(quote.customer);
+    } else {
+      setClientType("custom");
+    }
+    setSelectedDealId(quote.deal || null);
+    setClientName(quote.client_name || quote.customer_details?.name || quote.lead_details?.name || "");
+    setClientAddress(quote.client_address || quote.customer_details?.address || "");
+    setClientPhone(quote.client_phone || quote.customer_details?.phone || quote.lead_details?.mobile || "");
+    setTitle(quote.title || "");
+    setDuration(quote.duration || "1 Month");
+    setValidUntil(quote.valid_until || "");
+    setCurrency(quote.currency || "INR");
+    setOverview(quote.overview || "");
+    
+    setItems(quote.items && quote.items.length > 0 ? quote.items : [
+      { item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }
+    ]);
+    setPaymentSchedule(quote.payment_schedule || []);
+    setTimeline(quote.timeline || []);
+    setClientResponsibilities(quote.client_responsibilities || []);
+    setExclusions(quote.exclusions || []);
+    setTermsConditions(quote.terms_conditions || []);
+    setActiveTab("client");
+    setIsModalOpen(true);
+  };
+
+  // Submit quote
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newQuote.customer_id || !newQuote.title.trim()) return;
-    
-    const validItems = newQuote.items.filter(item => item.name.trim() !== "");
+    if (!title.trim()) {
+      toast.error("Please provide a Quotation Title");
+      return;
+    }
+    const validItems = items.filter(it => it.name.trim() !== "");
+    if (validItems.length === 0) {
+      toast.error("Please add at least one line item deliverable");
+      return;
+    }
 
-    const payload: any = { 
-      title: newQuote.title,
-      content: newQuote.content,
-      customer: newQuote.customer_id, 
+    const payload: any = {
+      title,
+      duration,
+      currency,
+      overview,
+      client_name: clientName,
+      client_address: clientAddress,
+      client_phone: clientPhone,
       items: validItems,
-      currency: newQuote.currency || "INR"
+      payment_schedule: paymentSchedule,
+      timeline,
+      client_responsibilities: clientResponsibilities,
+      exclusions,
+      terms_conditions: termsConditions,
     };
-    if (newQuote.deal_id) payload.deal = newQuote.deal_id;
-    if (newQuote.valid_until) payload.valid_until = newQuote.valid_until;
-    
+
+    if (clientType === "lead" && selectedLeadId) {
+      payload.lead = selectedLeadId;
+    } else if (clientType === "customer" && selectedCustomerId) {
+      payload.customer = selectedCustomerId;
+    }
+    if (selectedDealId) payload.deal = selectedDealId;
+    if (validUntil) payload.valid_until = validUntil;
+
     if (editQuoteId) {
       updateMutation.mutate({ id: editQuoteId, payload }, {
         onSuccess: () => {
+          toast.success("Quotation updated successfully");
           setIsModalOpen(false);
-          setEditQuoteId(null);
-          setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
-        }
+          resetForm();
+        },
+        onError: () => toast.error("Failed to update quotation")
       });
     } else {
       createMutation.mutate(payload, {
         onSuccess: () => {
+          toast.success("Executive Quotation created successfully");
           setIsModalOpen(false);
-          setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
-        }
+          resetForm();
+        },
+        onError: () => toast.error("Failed to create quotation")
       });
     }
   };
 
-  const handleEditClick = (quote: any) => {
-    setEditQuoteId(quote.id);
-    setNewQuote({
-      currency: quote.currency || "INR",
-      title: quote.title,
-      content: quote.content || "",
-      customer_id: quote.customer?.id || null,
-      deal_id: quote.deal || null,
-      valid_until: quote.valid_until || "",
-      items: quote.items?.length > 0 ? quote.items : [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
-    });
-    setIsModalOpen(true);
+  // Handle PDF Preview in new tab
+  const handleOpenPdf = async (id: number) => {
+    try {
+      setPdfLoadingId(id);
+      await openQuotePdfInNewTab(id);
+    } catch (e) {
+      toast.error("Failed to generate PDF");
+    } finally {
+      setPdfLoadingId(null);
+    }
   };
 
-  const handleStatusChange = (id: number, status: string) => {
-    updateMutation.mutate({ id, payload: { status } });
+  // Handle PDF Download
+  const handleDownloadPdf = async (id: number, quoteNumber: string) => {
+    try {
+      setPdfLoadingId(id);
+      await downloadQuotePdf(id, quoteNumber);
+      toast.success("Quotation PDF downloaded");
+    } catch (e) {
+      toast.error("Failed to download PDF");
+    } finally {
+      setPdfLoadingId(null);
+    }
   };
 
   const copyToClipboard = (token: string) => {
@@ -100,419 +344,919 @@ export default function QuotesPage() {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
+  // Filter quotes
+  const filteredQuotes = useMemo(() => {
+    if (!searchQuery.trim()) return quotes;
+    const q = searchQuery.toLowerCase();
+    return quotes.filter((item: any) => 
+      (item.title && item.title.toLowerCase().includes(q)) ||
+      (item.quote_number && item.quote_number.toLowerCase().includes(q)) ||
+      (item.client_name && item.client_name.toLowerCase().includes(q)) ||
+      (item.lead_details?.name && item.lead_details.name.toLowerCase().includes(q)) ||
+      (item.customer_details?.name && item.customer_details.name.toLowerCase().includes(q))
+    );
+  }, [quotes, searchQuery]);
+
   return (
     <>
-      <div className="p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+      <div className="p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+        {/* Page Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">Quotes</h1>
-          <p className="text-muted text-sm mt-1">Create quotes and share them securely with clients for e-signatures.</p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase font-bold tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                Agency Statement of Work (SOW)
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-ink mt-1">Quotations &amp; Proposals</h1>
+            <p className="text-muted text-sm mt-0.5">
+              Draft executive multi-page proposals, link with leads or clients, and render verified 2-page quotation PDFs.
+            </p>
+          </div>
+          <button 
+            onClick={() => {
+              resetForm();
+              handleLoadPreset(); // Default to clean Growth Package preset
+              setIsModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#55B334] hover:bg-[#499e2b] text-white font-medium rounded-lg shadow-sm transition-all shrink-0 w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4" />
+            New Quotation SOW
+          </button>
         </div>
-        <button 
-          onClick={() => {
-            setEditQuoteId(null);
-            setNewQuote({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", title: "", content: "", customer_id: null, deal_id: null, valid_until: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
-            setIsModalOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-ink text-bone font-medium rounded-lg hover:bg-ink/90 transition-colors shrink-0 w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4" />
-          New Quote
-        </button>
+
+        {/* Filter & Search Bar */}
+        <div className="bg-bone border border-line rounded-xl overflow-hidden shadow-sm">
+          <div className="p-4 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-3 bg-bone-2">
+            <div className="relative w-full sm:max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by quote #, title, or client..."
+                className="w-full pl-9 pr-4 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+              />
+            </div>
+            <div className="text-xs text-muted font-medium">
+              Showing {filteredQuotes.length} of {quotes.length} quotations
+            </div>
+          </div>
+
+          {isLoading ? (
+            <SkeletonTable columns={6} rows={6} />
+          ) : filteredQuotes.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="No quotations found"
+              description="Create a statement of work proposal for your leads or clients to send executive quotations."
+            />
+          ) : (
+            <div className="overflow-x-auto max-h-[calc(100vh-280px)] custom-scrollbar">
+              <table className="w-full text-left text-sm whitespace-nowrap relative">
+                <thead className="sticky top-0 z-10 text-muted bg-bone/90 backdrop-blur-md shadow-[0_1px_0_0_var(--color-line)]">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold text-xs uppercase tracking-wider">Quote # &amp; Title</th>
+                    <th className="px-5 py-3 font-semibold text-xs uppercase tracking-wider">Prepared For</th>
+                    <th className="px-5 py-3 font-semibold text-xs uppercase tracking-wider">Duration</th>
+                    <th className="px-5 py-3 font-semibold text-xs uppercase tracking-wider">Status</th>
+                    <th className="px-5 py-3 font-semibold text-xs uppercase tracking-wider text-right">Investment Total</th>
+                    <th className="px-5 py-3 font-semibold text-xs uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {filteredQuotes.map((quote: any) => {
+                    const clientDisp = quote.client_name || quote.lead_details?.name || quote.customer_details?.name || quote.deal_details?.title || "—";
+                    const isLeadSource = !!quote.lead;
+                    
+                    return (
+                      <tr key={quote.id} className="hover:bg-bone-2/60 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="font-semibold text-ink flex items-center gap-1.5">
+                            {quote.title || "Untitled Quote"}
+                          </div>
+                          <div className="text-xs font-mono text-muted mt-0.5">{quote.quote_number}</div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="font-medium text-ink flex items-center gap-1.5">
+                            {isLeadSource ? (
+                              <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 bg-blue-50 text-blue-700 rounded border border-blue-200">LEAD</span>
+                            ) : (
+                              <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 bg-purple-50 text-purple-700 rounded border border-purple-200">CLIENT</span>
+                            )}
+                            <span className="truncate max-w-[180px]">{clientDisp}</span>
+                          </div>
+                          <div className="text-xs text-muted truncate max-w-[200px]">
+                            {quote.client_address || quote.client_phone || quote.customer_details?.email || ""}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-muted">
+                          {quote.duration || "1 Month"}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <select
+                            value={quote.status}
+                            onChange={(e) => updateMutation.mutate({ id: quote.id, payload: { status: e.target.value } })}
+                            className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize outline-none transition-colors border cursor-pointer ${
+                              quote.status === 'accepted' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                              quote.status === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                              quote.status === 'declined' ? 'bg-red-100 text-red-800 border-red-300' :
+                              quote.status === 'expired' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                              'bg-slate-100 text-slate-800 border-slate-300'
+                            }`}
+                          >
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="declined">Declined</option>
+                            <option value="expired">Expired</option>
+                          </select>
+                        </td>
+                        <td className="px-5 py-3.5 font-bold text-ink text-right">
+                          {formatCurrency(parseFloat(quote.total || "0"), quote.currency || company?.currency || "INR")}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* View PDF Button (Opens 2-page Statement of Work in new tab) */}
+                            <button
+                              onClick={() => handleOpenPdf(quote.id)}
+                              disabled={pdfLoadingId === quote.id}
+                              className="px-2.5 py-1.5 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-md transition-colors flex items-center gap-1"
+                              title="View 2-Page Executive SOW PDF in new tab"
+                            >
+                              {pdfLoadingId === quote.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
+                              View PDF
+                            </button>
+
+                            {/* Download PDF Button */}
+                            <button
+                              onClick={() => handleDownloadPdf(quote.id, quote.quote_number)}
+                              disabled={pdfLoadingId === quote.id}
+                              className="p-1.5 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                              title="Download PDF"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+
+                            {/* Edit Button */}
+                            <button
+                              onClick={() => handleEditClick(quote)}
+                              className="p-1.5 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                              title="Edit Quote"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+
+                            {/* Copy Public Link */}
+                            <button
+                              onClick={() => copyToClipboard(quote.public_token)}
+                              className="p-1.5 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
+                              title="Copy E-Signature Link"
+                            >
+                              {copiedLink === quote.public_token ? (
+                                <Check className="w-4 h-4 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+
+                            {/* Delete Button */}
+                            <button
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this quotation?")) {
+                                  deleteMutation.mutate(quote.id);
+                                }
+                              }}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-line"
+                              title="Delete Quote"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="bg-bone border border-line rounded-xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-line flex flex-col sm:flex-row items-center gap-3 bg-bone-2">
-          <div className="relative w-full flex-1 sm:max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              type="text"
-              placeholder="Search quotes..."
-              className="w-full pl-9 pr-4 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-            />
-          </div>
-        </div>
+      {/* ══════════════════════════════════════════════════════════════════════════
+          EXECUTIVE SOW PROPOSAL STUDIO MODAL
+          ══════════════════════════════════════════════════════════════════════════ */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-paper border border-line rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-line flex justify-between items-center bg-bone">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">
+                  BrandLumeo Executive Proposal Studio
+                </span>
+                <h2 className="text-lg font-bold text-ink mt-1">
+                  {editQuoteId ? "Edit Quotation Statement of Work" : "Create New Quotation SOW"}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleLoadPreset}
+                  className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  title="Load digital marketing Growth Package defaults"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Load Growth Package Preset
+                </button>
+                <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="text-muted hover:text-ink text-2xl font-light w-8 h-8 rounded-lg grid place-items-center hover:bg-bone-2 transition-colors"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
 
-        {isLoading ? (
-          <SkeletonTable columns={5} rows={8} />
-        ) : quotes.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="No quotes found"
-            description="Create your first quote to send proposals to your prospective clients."
-          />
-        ) : (
-          <div className="overflow-x-auto max-h-[calc(100vh-280px)] custom-scrollbar">
-            <table className="w-full text-left text-sm whitespace-nowrap relative">
-              <thead className="sticky top-0 z-10 text-muted bg-bone/80 backdrop-blur-md shadow-[0_1px_0_0_var(--color-line)]">
-                <tr>
-                  <th className="px-6 py-3 font-medium">Quote ID / Title</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium">Total</th>
-                  <th className="px-6 py-3 font-medium">Created</th>
-                  <th className="px-6 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {quotes.map((quote: any) => (
-                  <tr key={quote.id} className="hover:bg-bone-2/50 transition-colors">
-                    <td className="px-6 py-3">
-                      <div className="font-medium text-ink">{quote.title || "Untitled Quote"}</div>
-                      <div className="text-xs text-muted mt-1">{quote.quote_number}</div>
-                    </td>
-                    <td className="px-6 py-3">
+            {/* Studio Navigation Tabs */}
+            <div className="flex border-b border-line bg-bone-2 px-6 pt-2 gap-2 overflow-x-auto text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setActiveTab("client")}
+                className={`pb-2.5 px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                  activeTab === "client" ? "border-emerald-600 text-emerald-700 font-bold" : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                1. Client &amp; Meta
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("scope")}
+                className={`pb-2.5 px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                  activeTab === "scope" ? "border-emerald-600 text-emerald-700 font-bold" : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                2. Scope &amp; Pricing ({items.length} items)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("schedule")}
+                className={`pb-2.5 px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                  activeTab === "schedule" ? "border-emerald-600 text-emerald-700 font-bold" : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <DollarSign className="w-3.5 h-3.5" />
+                3. Payment &amp; Timeline
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("terms")}
+                className={`pb-2.5 px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                  activeTab === "terms" ? "border-emerald-600 text-emerald-700 font-bold" : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                4. Responsibilities &amp; Terms
+              </button>
+            </div>
+
+            {/* Modal Body Form */}
+            <form onSubmit={handleSave} id="quote-studio-form" className="p-6 overflow-y-auto flex-1 space-y-6">
+              
+              {/* TAB 1: CLIENT & META */}
+              {activeTab === "client" && (
+                <div className="space-y-5 animate-fade-in">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setClientType("lead")}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        clientType === "lead" ? "border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20" : "border-line bg-bone hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="text-xs font-bold uppercase tracking-wider text-blue-700">Link from Lead</div>
+                      <div className="text-xs text-muted mt-1">Pre-fill contact from qualified lead</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setClientType("customer")}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        clientType === "customer" ? "border-purple-500 bg-purple-50/60 ring-2 ring-purple-500/20" : "border-line bg-bone hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="text-xs font-bold uppercase tracking-wider text-purple-700">Existing Customer</div>
+                      <div className="text-xs text-muted mt-1">Select from registered CRM clients</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setClientType("custom")}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        clientType === "custom" ? "border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20" : "border-line bg-bone hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">Custom Recipient</div>
+                      <div className="text-xs text-muted mt-1">Type custom name, phone &amp; address</div>
+                    </button>
+                  </div>
+
+                  {clientType === "lead" && (
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-ink mb-1.5">Select Lead *</label>
                       <select
-                        value={quote.status}
-                        onChange={(e) => handleStatusChange(quote.id, e.target.value)}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize outline-none transition-colors border cursor-pointer ${
-                          quote.status === 'accepted' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 focus:border-emerald-400' :
-                          quote.status === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-200 focus:border-blue-400' :
-                          quote.status === 'declined' ? 'bg-red-100 text-red-800 border-red-200 focus:border-red-400' :
-                          quote.status === 'expired' ? 'bg-amber-100 text-amber-800 border-amber-200 focus:border-amber-400' :
-                          'bg-slate-100 text-slate-800 border-slate-200 focus:border-slate-400'
-                        }`}
+                        value={selectedLeadId || ""}
+                        onChange={(e) => handleLeadSelect(e.target.value)}
+                        className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
                       >
-                        <option value="draft">Draft</option>
-                        <option value="sent">Sent</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="declined">Declined</option>
-                        <option value="expired">Expired</option>
+                        <option value="">Choose a lead to quote...</option>
+                        {leads.map((l: any) => (
+                          <option key={l.id} value={l.id}>{l.name} {l.company ? `(${l.company})` : ""}</option>
+                        ))}
                       </select>
-                    </td>
-                    <td className="px-6 py-3 font-medium text-ink">
-                      {formatCurrency(parseFloat(quote.total), quote.currency || company?.currency)}
-                    </td>
-                    <td className="px-6 py-3 text-muted">
-                      {new Date(quote.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    </div>
+                  )}
+
+                  {clientType === "customer" && (
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-ink mb-1.5">Select Customer *</label>
+                      <select
+                        value={selectedCustomerId || ""}
+                        onChange={(e) => handleCustomerSelect(e.target.value)}
+                        className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors"
+                      >
+                        <option value="">Choose a customer...</option>
+                        {customers.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name} {c.company_name ? `(${c.company_name})` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Client Snapshot Details */}
+                  <div className="p-4 bg-bone-2 border border-line rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-muted mb-1">Prepared For (Client Name) *</label>
+                      <input
+                        type="text"
+                        required
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder="e.g. EDUFIX LEARNING"
+                        className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted mb-1">Client Address</label>
+                      <input
+                        type="text"
+                        value={clientAddress}
+                        onChange={(e) => setClientAddress(e.target.value)}
+                        placeholder="e.g. Calicut, Payyoli - 673522"
+                        className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted mb-1">Client Phone / Mobile</label>
+                      <input
+                        type="text"
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        placeholder="e.g. +91 70342 87049"
+                        className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Proposal Metadata */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold uppercase text-ink mb-1.5">Quotation / Package Title *</label>
+                      <input
+                        type="text"
+                        required
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. Growth Package"
+                        className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm font-semibold outline-none focus:border-ink"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-ink mb-1.5">Duration</label>
+                      <input
+                        type="text"
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                        placeholder="e.g. 1 Month"
+                        className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-ink mb-1.5">Valid Until</label>
+                      <input
+                        type="date"
+                        value={validUntil}
+                        onChange={(e) => setValidUntil(e.target.value)}
+                        className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: OVERVIEW & SCOPE & PRICING */}
+              {activeTab === "scope" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-emerald-700 mb-1.5 flex items-center justify-between">
+                      <span>Executive Overview Narrative</span>
+                      <span className="text-[11px] font-normal text-muted">Page 1 Executive Summary paragraph</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={overview}
+                      onChange={(e) => setOverview(e.target.value)}
+                      placeholder="This quotation covers our Growth Package for Edufix Learning — a one-month digital marketing programme..."
+                      className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm leading-relaxed outline-none focus:border-ink"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-700">Scope &amp; Pricing Deliverables</h3>
+                        <p className="text-xs text-muted">Add parent packages with monetary pricing, and check 'Included' for sub-deliverables.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleEditClick(quote)}
-                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
-                          title="Edit Quote"
+                          type="button"
+                          onClick={() => {
+                            const nextNum = `${items.length + 1}`;
+                            setItems([...items, { item_number: nextNum, name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }]);
+                          }}
+                          className="px-2.5 py-1 text-xs font-medium bg-bone hover:bg-bone-2 text-ink border border-line rounded-md transition-colors flex items-center gap-1"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Plus className="w-3 h-3" /> Add Package Row
                         </button>
                         <button
-                          onClick={() => setDeleteQuoteId(quote.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors border border-line"
-                          title="Delete Quote"
+                          type="button"
+                          onClick={() => {
+                            const nextNum = `1.${items.length}`;
+                            setItems([...items, { item_number: nextNum, name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: true }]);
+                          }}
+                          className="px-2.5 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-md transition-colors flex items-center gap-1"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => window.open(`/public/quote/${quote.public_token}?print=true`, '_blank')}
-                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
-                          title="Download PDF"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => window.open(`/public/quote/${quote.public_token}`, '_blank')}
-                          className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
-                          title="Open Public Link"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => copyToClipboard(quote.public_token)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-bone-2 text-ink hover:bg-line rounded-md transition-colors"
-                        >
-                          {copiedLink === quote.public_token ? (
-                            <><Check className="w-4 h-4 text-emerald-600" /> Copied</>
-                          ) : (
-                            <><Copy className="w-4 h-4" /> Copy Link</>
-                          )}
+                          <Plus className="w-3 h-3" /> Add Sub-Deliverable (Included)
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-      
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-line flex justify-between items-center bg-bone">
-              <h2 className="text-lg font-semibold text-ink">{editQuoteId ? "Edit Quote" : "New Quote"}</h2>
-              <button onClick={() => { setIsModalOpen(false); setEditQuoteId(null); }} className="text-muted hover:text-ink text-xl font-light">&times;</button>
-            </div>
-            <form onSubmit={handleCreate} id="create-quote-form" className="p-5 overflow-y-auto space-y-6">
-              
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Quote Title *</label>
-                <input
-                  required
-                  type="text"
-                  value={newQuote.title}
-                  onChange={(e) => setNewQuote({ ...newQuote, title: e.target.value })}
-                  placeholder="e.g. Website Redesign"
-                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                />
-              </div>
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Proposal / Contract Content</label>
-                <RichTextEditor
-                  value={newQuote.content}
-                  onChange={(val) => setNewQuote({ ...newQuote, content: val })}
-                  placeholder="Draft your proposal, terms, and contract body here..."
-                />
-              </div>
+                    <div className="space-y-2.5">
+                      {items.map((it, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`p-3 rounded-xl border transition-all ${
+                            it.is_included ? "bg-bone/40 border-dashed border-slate-300 ml-4" : "bg-bone border-line shadow-xs"
+                          }`}
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start">
+                            {/* # number */}
+                            <div className="sm:col-span-1">
+                              <label className="block text-[10px] font-bold text-muted mb-0.5">#</label>
+                              <input
+                                type="text"
+                                value={it.item_number || `${idx + 1}`}
+                                onChange={(e) => {
+                                  const updated = [...items];
+                                  updated[idx].item_number = e.target.value;
+                                  setItems(updated);
+                                }}
+                                className="w-full px-2 py-1 bg-paper border border-line rounded text-xs font-mono font-bold text-center"
+                              />
+                            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1.5">Customer *</label>
-                  <select
-                    required
-                    value={newQuote.customer_id || ""}
-                    onChange={(e) => setNewQuote({ ...newQuote, customer_id: parseInt(e.target.value) || null })}
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                  >
-                    <option value="">Select a customer</option>
-                    {customers.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1.5">Deal (Optional)</label>
-                  <select
-                    value={newQuote.deal_id || ""}
-                    onChange={(e) => setNewQuote({ ...newQuote, deal_id: parseInt(e.target.value) || null })}
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                  >
-                    <option value="">Select a deal</option>
-                    {deals.map((d: any) => (
-                      <option key={d.id} value={d.id}>{d.title}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1.5">Valid Until (Optional)</label>
-                  <input
-                    type="date"
-                    value={newQuote.valid_until}
-                    onChange={(e) => setNewQuote({ ...newQuote, valid_until: e.target.value })}
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                  />
-                </div>
+                            {/* Name & Description */}
+                            <div className="sm:col-span-5">
+                              <label className="block text-[10px] font-bold text-muted mb-0.5">Deliverable Name &amp; Description</label>
+                              <input
+                                type="text"
+                                required
+                                value={it.name}
+                                onChange={(e) => {
+                                  const updated = [...items];
+                                  updated[idx].name = e.target.value;
+                                  setItems(updated);
+                                }}
+                                placeholder="e.g. Promotional Videos"
+                                className="w-full px-2.5 py-1 bg-paper border border-line rounded text-xs font-semibold outline-none focus:border-ink"
+                              />
+                              <input
+                                type="text"
+                                value={it.description || ""}
+                                onChange={(e) => {
+                                  const updated = [...items];
+                                  updated[idx].description = e.target.value;
+                                  setItems(updated);
+                                }}
+                                placeholder="Description (e.g. Concept, scripting, shooting and editing...)"
+                                className="w-full mt-1 px-2.5 py-0.8 bg-paper/60 border border-line/80 rounded text-[11px] text-muted outline-none focus:border-ink"
+                              />
+                            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1.5">Currency</label>
-                  <select
-                    value={newQuote.currency || "INR"}
-                    onChange={(e) => setNewQuote({ ...newQuote, currency: e.target.value })}
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                  >
-                    <option value="INR">INR (₹)</option>
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="AUD">AUD (A$)</option>
-                    <option value="CAD">CAD (C$)</option>
-                    <option value="SGD">SGD (S$)</option>
-                    <option value="AED">AED (د.إ)</option>
-                  </select>
-                </div>
-              </div>
+                            {/* Qty & Unit */}
+                            <div className="sm:col-span-2">
+                              <label className="block text-[10px] font-bold text-muted mb-0.5">Qty / Unit</label>
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={it.quantity}
+                                  onChange={(e) => {
+                                    const updated = [...items];
+                                    updated[idx].quantity = parseInt(e.target.value, 10) || 1;
+                                    setItems(updated);
+                                  }}
+                                  className="w-14 px-1.5 py-1 bg-paper border border-line rounded text-xs text-center"
+                                />
+                                <input
+                                  type="text"
+                                  value={it.unit || ""}
+                                  onChange={(e) => {
+                                    const updated = [...items];
+                                    updated[idx].unit = e.target.value;
+                                    setItems(updated);
+                                  }}
+                                  placeholder="Unit"
+                                  className="w-full px-1.5 py-1 bg-paper border border-line rounded text-xs"
+                                />
+                              </div>
+                            </div>
 
-              {/* Line Items */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-ink">Line Items</h3>
-                  <button
-                    type="button"
-                    onClick={() => setNewQuote({ ...newQuote, items: [...newQuote.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] })}
-                    className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add Item
-                  </button>
-                </div>
-                
-                <div className="space-y-3">
-                  {newQuote.items.map((item, index) => (
-                    <div key={index} className="flex items-start gap-2 sm:gap-3 p-3 bg-bone-2 rounded-lg border border-line/50">
-                      <div className="flex-1 space-y-3">
-                        <input
-                          required
-                          type="text"
-                          placeholder="Item name"
-                          value={item.name}
-                          onChange={(e) => {
-                            const newItems = [...newQuote.items];
-                            newItems[index].name = e.target.value;
-                            setNewQuote({ ...newQuote, items: newItems });
-                          }}
-                          className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Item description (optional)"
-                          value={item.description || ""}
-                          onChange={(e) => {
-                            const newItems = [...newQuote.items];
-                            newItems[index].description = e.target.value;
-                            setNewQuote({ ...newQuote, items: newItems });
-                          }}
-                          className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                        />
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-20">
-                            <input
-                              required
-                              type="number"
-                              min="1"
-                              placeholder="Qty"
-                              value={item.quantity || ""}
-                              onChange={(e) => {
-                                const newItems = [...newQuote.items];
-                                newItems[index].quantity = parseInt(e.target.value) || 0;
-                                setNewQuote({ ...newQuote, items: newItems });
-                              }}
-                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                            />
-                          </div>
-                          <div className="w-24">
-                            <select
-                              value={item.unit || ""}
-                              onChange={(e) => {
-                                const newItems = [...newQuote.items];
-                                newItems[index].unit = e.target.value;
-                                setNewQuote({ ...newQuote, items: newItems });
-                              }}
-                              className="w-full px-2 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                            >
-                              <option value="">None</option>
-                              {units.map((u: any) => (
-                                <option key={u.id} value={u.name}>{u.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="flex-1">
-                            <input
-                              required
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="Price"
-                              value={item.unit_price || ""}
-                              onChange={(e) => {
-                                const newItems = [...newQuote.items];
-                                newItems[index].unit_price = parseFloat(e.target.value) || 0;
-                                setNewQuote({ ...newQuote, items: newItems });
-                              }}
-                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                            />
-                          </div>
-                          <div className="w-20">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="Tax %"
-                              value={item.tax_rate || ""}
-                              onChange={(e) => {
-                                const newItems = [...newQuote.items];
-                                newItems[index].tax_rate = parseFloat(e.target.value) || 0;
-                                setNewQuote({ ...newQuote, items: newItems });
-                              }}
-                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                            />
+                            {/* Rate / Included toggle */}
+                            <div className="sm:col-span-3">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-[10px] font-bold text-muted">Rate (₹)</label>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={it.is_included}
+                                    onChange={(e) => {
+                                      const updated = [...items];
+                                      updated[idx].is_included = e.target.checked;
+                                      if (e.target.checked) updated[idx].unit_price = 0;
+                                      setItems(updated);
+                                    }}
+                                    className="rounded border-line text-emerald-600 focus:ring-0 w-3 h-3 cursor-pointer"
+                                  />
+                                  <span className="text-[10px] font-bold text-emerald-700">Included</span>
+                                </label>
+                              </div>
+                              {it.is_included ? (
+                                <div className="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-xs font-semibold text-center italic">
+                                  included in package
+                                </div>
+                              ) : (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={it.unit_price}
+                                  onChange={(e) => {
+                                    const updated = [...items];
+                                    updated[idx].unit_price = parseFloat(e.target.value) || 0;
+                                    setItems(updated);
+                                  }}
+                                  className="w-full px-2 py-1 bg-paper border border-line rounded text-xs font-semibold text-right"
+                                />
+                              )}
+                            </div>
+
+                            {/* Delete item button */}
+                            <div className="sm:col-span-1 pt-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                                disabled={items.length <= 1}
+                                className="text-muted hover:text-red-600 p-1 rounded transition-colors disabled:opacity-30"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Total summary bar */}
+                    <div className="mt-4 p-4 bg-bone-2 border border-line rounded-xl flex items-center justify-between">
+                      <div className="text-xs text-muted">
+                        Total investment calculated for quotation:
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-muted mr-2">Total Amount:</span>
+                        <span className="text-lg font-bold text-ink">
+                          {formatCurrency(computedSubtotal, currency)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: PAYMENT SCHEDULE & TIMELINE */}
+              {activeTab === "schedule" && (
+                <div className="space-y-6 animate-fade-in">
+                  {/* Payment Schedule */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-700">Payment Milestones</h3>
+                        <p className="text-xs text-muted">Split the total investment into advance and completion milestones.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={applyAutoPaymentSplit}
+                          className="px-2.5 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-md transition-colors"
+                        >
+                          Auto 50% / 50% Split
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentSchedule([...paymentSchedule, { milestone: "", amount: 0 }])}
+                          className="px-2.5 py-1 text-xs font-medium bg-bone hover:bg-bone-2 text-ink border border-line rounded-md transition-colors flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add Milestone
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {paymentSchedule.map((p, idx) => (
+                        <div key={idx} className="flex gap-2 items-center bg-bone p-2.5 rounded-lg border border-line">
+                          <input
+                            type="text"
+                            value={p.milestone}
+                            onChange={(e) => {
+                              const updated = [...paymentSchedule];
+                              updated[idx].milestone = e.target.value;
+                              setPaymentSchedule(updated);
+                            }}
+                            placeholder="e.g. 50% Advance — on confirmation..."
+                            className="flex-1 px-2.5 py-1 bg-paper border border-line rounded text-xs outline-none focus:border-ink"
+                          />
+                          <div className="w-32">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={p.amount}
+                              onChange={(e) => {
+                                const updated = [...paymentSchedule];
+                                updated[idx].amount = parseFloat(e.target.value) || 0;
+                                setPaymentSchedule(updated);
+                              }}
+                              placeholder="Amount (₹)"
+                              className="w-full px-2 py-1 bg-paper border border-line rounded text-xs font-semibold text-right outline-none focus:border-ink"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentSchedule(paymentSchedule.filter((_, i) => i !== idx))}
+                            className="text-muted hover:text-red-600 p-1 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Project Timeline */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-700">Project Delivery Timeline</h3>
+                        <p className="text-xs text-muted">Weekly or phase-based execution deliverables for Page 2.</p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          const newItems = newQuote.items.filter((_, i) => i !== index);
-                          setNewQuote({ ...newQuote, items: newItems });
-                        }}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors mt-1"
-                        disabled={newQuote.items.length === 1}
+                        onClick={() => setTimeline([...timeline, { phase: `Week ${timeline.length + 1}`, description: "" }])}
+                        className="px-2.5 py-1 text-xs font-medium bg-bone hover:bg-bone-2 text-ink border border-line rounded-md transition-colors flex items-center gap-1"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Plus className="w-3 h-3" /> Add Timeline Phase
                       </button>
                     </div>
-                  ))}
+
+                    <div className="space-y-2">
+                      {timeline.map((t, idx) => (
+                        <div key={idx} className="flex gap-2 items-start bg-bone p-2.5 rounded-lg border border-line">
+                          <div className="w-28 shrink-0">
+                            <input
+                              type="text"
+                              value={t.phase}
+                              onChange={(e) => {
+                                const updated = [...timeline];
+                                updated[idx].phase = e.target.value;
+                                setTimeline(updated);
+                              }}
+                              placeholder="Week 1"
+                              className="w-full px-2 py-1 bg-paper border border-line rounded text-xs font-bold outline-none focus:border-ink"
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={t.description}
+                            onChange={(e) => {
+                              const updated = [...timeline];
+                              updated[idx].description = e.target.value;
+                              setTimeline(updated);
+                            }}
+                            placeholder="Deliverables for this phase..."
+                            className="flex-1 px-2.5 py-1 bg-paper border border-line rounded text-xs outline-none focus:border-ink"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))}
+                            className="text-muted hover:text-red-600 p-1 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: RESPONSIBILITIES, EXCLUSIONS & TERMS */}
+              {activeTab === "terms" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Client Responsibilities */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-emerald-700">Client Responsibilities</label>
+                        <button
+                          type="button"
+                          onClick={() => setClientResponsibilities([...clientResponsibilities, ""])}
+                          className="text-[11px] text-emerald-700 hover:underline flex items-center gap-0.5"
+                        >
+                          <Plus className="w-3 h-3" /> Add Item
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {clientResponsibilities.map((r, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5">
+                            <span className="text-muted text-xs">•</span>
+                            <input
+                              type="text"
+                              value={r}
+                              onChange={(e) => {
+                                const updated = [...clientResponsibilities];
+                                updated[idx] = e.target.value;
+                                setClientResponsibilities(updated);
+                              }}
+                              placeholder="e.g. Access to Instagram / Meta Business Manager..."
+                              className="flex-1 px-2 py-1 bg-bone border border-line rounded text-xs outline-none focus:border-ink"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setClientResponsibilities(clientResponsibilities.filter((_, i) => i !== idx))}
+                              className="text-muted hover:text-red-600 p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Exclusions */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-emerald-700">Scope Exclusions</label>
+                        <button
+                          type="button"
+                          onClick={() => setExclusions([...exclusions, ""])}
+                          className="text-[11px] text-emerald-700 hover:underline flex items-center gap-0.5"
+                        >
+                          <Plus className="w-3 h-3" /> Add Item
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {exclusions.map((e, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5">
+                            <span className="text-muted text-xs">•</span>
+                            <input
+                              type="text"
+                              value={e}
+                              onChange={(e) => {
+                                const updated = [...exclusions];
+                                updated[idx] = e.target.value;
+                                setExclusions(updated);
+                              }}
+                              placeholder="e.g. Meta ad spend (paid directly to Meta)..."
+                              className="flex-1 px-2 py-1 bg-bone border border-line rounded text-xs outline-none focus:border-ink"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setExclusions(exclusions.filter((_, i) => i !== idx))}
+                              className="text-muted hover:text-red-600 p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Terms & Conditions */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-emerald-700">Contract Terms &amp; Conditions</label>
+                      <button
+                        type="button"
+                        onClick={() => setTermsConditions([...termsConditions, ""])}
+                        className="text-[11px] text-emerald-700 hover:underline flex items-center gap-0.5"
+                      >
+                        <Plus className="w-3 h-3" /> Add Term
+                      </button>
+                    </div>
+                    <div className="space-y-1.5">
+                      {termsConditions.map((tc, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5">
+                          <span className="text-muted text-xs">•</span>
+                          <input
+                            type="text"
+                            value={tc}
+                            onChange={(e) => {
+                              const updated = [...termsConditions];
+                              updated[idx] = e.target.value;
+                              setTermsConditions(updated);
+                            }}
+                            placeholder="e.g. A 50% advance payment is required to commence..."
+                            className="flex-1 px-2.5 py-1 bg-bone border border-line rounded text-xs outline-none focus:border-ink"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setTermsConditions(termsConditions.filter((_, i) => i !== idx))}
+                            className="text-muted hover:text-red-600 p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer Controls */}
+              <div className="pt-4 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-xs text-muted">
+                  {editQuoteId ? "Editing existing SOW" : "New proposal document"}
+                </div>
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 border border-line rounded-lg text-xs font-semibold text-muted hover:text-ink hover:bg-bone transition-colors w-full sm:w-auto"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                    className="px-5 py-2 bg-[#55B334] hover:bg-[#499e2b] text-white rounded-lg text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto disabled:opacity-50"
+                  >
+                    {(createMutation.isPending || updateMutation.isPending) && (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    )}
+                    {editQuoteId ? "Save Quotation Changes" : "Generate & Save SOW Quotation"}
+                  </button>
                 </div>
               </div>
             </form>
-            <div className="p-5 border-t border-line bg-bone flex justify-between items-center mt-auto">
-              <div className="text-sm font-medium text-ink">
-                Total: {formatCurrency(newQuote.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), company?.currency)}
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => { setIsModalOpen(false); setEditQuoteId(null); }} 
-                  className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  form="create-quote-form"
-                  type="submit" 
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex items-center justify-center min-w-[120px] px-4 py-2 bg-ink text-bone text-sm font-medium rounded-lg hover:bg-ink/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {createMutation.isPending || updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editQuoteId ? "Update Quote" : "Create Quote"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deleteQuoteId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-paper border border-line rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-ink">Delete Quote</h2>
-              <p className="text-muted mt-2 text-sm">
-                Are you sure you want to delete this quote? This action cannot be undone and will remove the quote from all records.
-              </p>
-            </div>
-            <div className="p-4 border-t border-line bg-bone flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleteQuoteId(null)}
-                className="px-4 py-2 text-sm font-medium text-ink hover:bg-bone-2 rounded-md transition-colors"
-                disabled={deleteMutation.isPending}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (deleteQuoteId !== null) {
-                    deleteMutation.mutate(deleteQuoteId, {
-                      onSuccess: () => setDeleteQuoteId(null),
-                      onError: (err) => {
-                        console.error("Delete failed:", err);
-                        alert("Failed to delete quote. Check console for details.");
-                        setDeleteQuoteId(null);
-                      }
-                    });
-                  }
-                }}
-                disabled={deleteMutation.isPending}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete Quote"}
-              </button>
-            </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+export default function QuotesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-muted text-sm">Loading quotations...</div>}>
+      <QuotesPageContent />
+    </Suspense>
   );
 }

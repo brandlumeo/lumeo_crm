@@ -2,7 +2,7 @@
 
 import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X, Layers } from "lucide-react";
+import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X, Layers, FileText } from "lucide-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
@@ -454,6 +454,14 @@ export function LeadDetailsSlideover({ leadId, open, onOpenChange }: { leadId: n
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-serif text-ink tracking-tight">{lead.name}</h2>
             <div className="flex items-center gap-3">
+              <Link
+                href={`/quotes?lead_id=${lead.id}&create=true`}
+                onClick={() => onOpenChange(false)}
+                className="btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 py-1.5 px-3 flex items-center gap-1.5 font-medium shadow-xs"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                Create SOW
+              </Link>
               <button 
                 onClick={() => setShowEditModal(true)}
                 className="btn btn-secondary py-1.5 px-3 flex items-center gap-2"

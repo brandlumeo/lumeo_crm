@@ -2,12 +2,12 @@
 
 import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X } from "lucide-react";
+import { ArrowLeft, UserCircle2, Mail, Phone, Globe, Calendar, Briefcase, MapPin, Zap, Loader2, Clock, Check, Edit2, X, FileText, Download, Eye, Plus } from "lucide-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
-import { createTask, updateLead, fetchTeam } from "@/lib/api";
-import { useLead, useScoreLead, useCurrentCompany } from "@/lib/queries";
+import { createTask, updateLead, fetchTeam, openQuotePdfInNewTab, downloadQuotePdf } from "@/lib/api";
+import { useLead, useScoreLead, useCurrentCompany, useQuotes } from "@/lib/queries";
 import { Lead } from "@/lib/types";
 import { PageShell } from "@/components/page-shell";
 import { ActivityTimeline } from "@/components/activity-timeline";
@@ -15,7 +15,7 @@ import { DocumentLibrary } from "@/components/document-library";
 import { CustomFieldsDisplay } from "@/components/custom-fields-display";
 import { LeadTasks } from "@/components/lead-tasks";
 import { LeadJourney } from "@/components/lead-journey";
-import { formatDateTime, getDisplayName } from "@/lib/utils";
+import { formatDateTime, getDisplayName, formatCurrency } from "@/lib/utils";
 
 const statusTone: Record<string, string> = {
   new: "chip chip-neutral",
@@ -313,6 +313,110 @@ function EditLeadModal({ lead, open, onOpenChange }: { lead: Lead, open: boolean
   );
 }
 
+function LeadQuotations({ leadId }: { leadId: number }) {
+  const { data, isLoading } = useQuotes({ lead: leadId } as any);
+  const { data: company } = useCurrentCompany();
+  const [openingId, setOpeningId] = useState<number | null>(null);
+
+  const quotes = data?.results || [];
+
+  const handleOpenPdf = async (id: number) => {
+    try {
+      setOpeningId(id);
+      await openQuotePdfInNewTab(id);
+    } catch {
+      toast.error("Failed to generate PDF");
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
+  return (
+    <div className="card p-6 space-y-4">
+      <div className="flex items-center justify-between border-b border-line pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-ink">Quotations &amp; Proposals</h3>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              SOW
+            </span>
+          </div>
+          <p className="text-xs text-muted mt-0.5">Commercial proposals and Statements of Work drafted for this lead.</p>
+        </div>
+        <Link
+          href={`/quotes?lead_id=${leadId}&create=true`}
+          className="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-1.5 px-3 flex items-center gap-1.5 rounded-lg shadow-sm"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Draft SOW
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <div className="py-4 text-xs text-muted flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading quotations...
+        </div>
+      ) : quotes.length === 0 ? (
+        <div className="py-6 text-center text-xs text-muted border border-dashed border-line rounded-xl bg-bone-2/50">
+          <FileText className="w-8 h-8 text-muted/60 mx-auto mb-2" />
+          <p className="font-medium text-ink">No quotations created yet</p>
+          <p className="mt-0.5">Generate a professional 2-page agency proposal for this lead.</p>
+          <Link
+            href={`/quotes?lead_id=${leadId}&create=true`}
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+          >
+            Create Quotation SOW &rarr;
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {quotes.map((q: any) => (
+            <div key={q.id} className="p-3 bg-bone border border-line rounded-xl flex items-center justify-between hover:border-slate-300 transition-all">
+              <div>
+                <div className="font-semibold text-xs text-ink">{q.title || "Untitled Quotation"}</div>
+                <div className="text-[11px] text-muted flex items-center gap-2 mt-0.5">
+                  <span className="font-mono">{q.quote_number}</span>
+                  <span>•</span>
+                  <span>{q.duration || "1 Month"}</span>
+                  <span>•</span>
+                  <span className="font-bold text-ink">
+                    {formatCurrency(parseFloat(q.total || "0"), q.currency || company?.currency || "INR")}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  q.status === 'accepted' ? 'bg-emerald-100 text-emerald-800' :
+                  q.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                  'bg-slate-100 text-slate-800'
+                }`}>
+                  {q.status}
+                </span>
+                <button
+                  onClick={() => handleOpenPdf(q.id)}
+                  disabled={openingId === q.id}
+                  className="px-2.5 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-md transition-colors flex items-center gap-1"
+                  title="View PDF"
+                >
+                  {openingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                  View PDF
+                </button>
+                <button
+                  onClick={() => downloadQuotePdf(q.id, q.quote_number)}
+                  className="p-1 text-muted hover:text-ink border border-line rounded-md transition-colors"
+                  title="Download PDF"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const leadId = parseInt(id, 10);
@@ -336,6 +440,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           Back to leads
         </Link>
         <div className="flex items-center gap-3">
+          <Link
+            href={`/quotes?lead_id=${lead.id}&create=true`}
+            className="btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 py-1.5 px-3 flex items-center gap-1.5 font-medium shadow-xs"
+          >
+            <FileText className="w-3.5 h-3.5 text-emerald-700" />
+            Create Quotation SOW
+          </Link>
           <button 
             onClick={() => setShowEditModal(true)}
             className="btn bg-white hover:bg-bone border border-line text-ink py-1.5 px-3 flex items-center gap-2"
@@ -399,6 +510,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
         <div className="animate-rise space-y-6" style={{ animationDelay: "50ms" }}>
           <LeadTasks leadId={lead.id} />
+          <LeadQuotations leadId={lead.id} />
           <ActivityTimeline entityId={lead.id} entityType="lead" />
           <DocumentLibrary entityId={lead.id} entityType="lead" />
         </div>

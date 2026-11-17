@@ -837,6 +837,17 @@ export async function createInvoice(payload: InvoiceInput) {
   return data;
 }
 
+export async function openQuotePdfInNewTab(id: number) {
+  const timestamp = new Date().getTime();
+  const response = await api.get(`${endpoints.quotes}${id}/pdf/?t=${timestamp}`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+}
+
 export async function downloadQuotePdf(id: number, quoteNumber: string) {
   const timestamp = new Date().getTime();
   const response = await api.get(`${endpoints.quotes}${id}/pdf/?t=${timestamp}`, {
@@ -850,6 +861,7 @@ export async function downloadQuotePdf(id: number, quoteNumber: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
 }
 
 export async function downloadInvoicePdf(id: number, invoiceNumber: string) {
