@@ -7,7 +7,7 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from decimal import Decimal
 import calendar
-from crm.models import Deal, Lead, Customer, Task, Note, Product, DailyRevenue, Invoice, InvoicePayment, Bill, Income
+from crm.models import Deal, Lead, Customer, Task, Note, Product, DailyRevenue, Invoice, InvoicePayment, Bill, BillPayment, Income
 from attendance.models import Payroll, ExpenseClaim
 
 class CrmCountsView(APIView):
@@ -311,19 +311,28 @@ class FinanceDashboardView(APIView):
         ).exclude(status="cancelled").values("month").annotate(total=Sum("net_salary"))
         payroll_by_month = {item["month"]: Decimal(str(item["total"] or 0)) for item in payroll_qs}
 
-        bills_qs = Bill.objects.filter(
+        # Check actual bill payments logged via BillPayment
+        bill_payments_qs = BillPayment.objects.filter(
+            bill__company=company,
+            payment_date__year=year
+        ).values("payment_date__month").annotate(total=Sum("amount"))
+        bill_payments_by_month = {item["payment_date__month"]: Decimal(str(item["total"] or 0)) for item in bill_payments_qs}
+
+        # For bills marked as paid without individual BillPayment records, fallback to bill_date
+        legacy_bills_qs = Bill.objects.filter(
             company=company,
-            bill_date__year=year
+            bill_date__year=year,
+            payments__isnull=True
         ).values("bill_date__month").annotate(
             total_paid=Sum("amount_paid"),
             total_full_paid=Sum("total_amount", filter=Q(status="paid", amount_paid=Decimal("0.00")))
         )
-        bills_by_month = {}
-        for item in bills_qs:
+        bills_by_month = {m: bill_payments_by_month.get(m, Decimal("0.00")) for m in range(1, 13)}
+        for item in legacy_bills_qs:
             m = item["bill_date__month"]
             paid = Decimal(str(item["total_paid"] or 0))
             full_paid = Decimal(str(item["total_full_paid"] or 0))
-            bills_by_month[m] = paid + full_paid
+            bills_by_month[m] = bills_by_month.get(m, Decimal("0.00")) + paid + full_paid
 
         claims_qs = ExpenseClaim.objects.filter(
             company=company,
@@ -457,7 +466,20 @@ class FinanceDashboardView(APIView):
                 "reference": f"PAY-{pay.year}-{pay.month:02d}"
             })
 
-        # 4. Vendor bills
+        # 4. Vendor bills & bill payments
+        for bp in BillPayment.objects.filter(bill__company=company).select_related("bill", "bill__vendor").order_by("-payment_date", "-id")[:30]:
+            v_name = bp.bill.vendor.name if bp.bill and bp.bill.vendor else "Vendor"
+            recent_tx.append({
+                "id": f"bill-pay-{bp.id}",
+                "type": "bill",
+                "category": f"Vendor Payment: {v_name}",
+                "title": f"Payment for {bp.bill.bill_number}",
+                "amount": float(bp.amount),
+                "date": bp.payment_date.strftime("%Y-%m-%d"),
+                "status": "Disbursed",
+                "reference": bp.transaction_id or bp.bill.bill_number
+            })
+
         for b in Bill.objects.filter(company=company).select_related("vendor").order_by("-bill_date", "-id")[:30]:
             v_name = b.vendor.name if b.vendor else "Vendor"
             recent_tx.append({

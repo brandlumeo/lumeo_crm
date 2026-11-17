@@ -1731,7 +1731,24 @@ export function useDeleteTimesheet() {
   });
 }
 
-import { fetchVendors, fetchPurchaseOrders, convertPurchaseOrderToBill, getBills, createBill, updateBill, deleteBill } from "@/lib/api";
+import { 
+  fetchVendors, 
+  fetchPurchaseOrders, 
+  convertPurchaseOrderToBill, 
+  getBills, 
+  getBillKPIs,
+  recordBillPayment,
+  deleteBillPayment,
+  createBill, 
+  updateBill, 
+  deleteBill,
+  type Bill,
+  type BillItem,
+  type BillPayment,
+  type BillKPIs,
+} from "@/lib/api";
+
+export type { Bill, BillItem, BillPayment, BillKPIs };
 
 export function useVendorPage(params: ListParams) {
   return useQuery({
@@ -1761,10 +1778,18 @@ export function useConvertPurchaseOrderToBill() {
 }
 
 // Bills
-export function useBillPage(params: ListParams) {
+export function useBillPage(params: ListParams & { status?: string; vendor?: string | number; category?: string; search?: string }) {
   return useQuery({
     queryKey: ["bills", params],
     queryFn: () => getBills(params),
+  });
+}
+
+export function useBillKPIs() {
+  return useQuery<BillKPIs>({
+    queryKey: ["bills", "kpis"],
+    queryFn: () => getBillKPIs(),
+    staleTime: 1000 * 30,
   });
 }
 
@@ -1795,6 +1820,28 @@ export function useDeleteBill() {
     mutationFn: (id: number) => deleteBill(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}
+
+export function useRecordBillPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: FormData | Record<string, any> }) => recordBillPayment(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
+    },
+  });
+}
+
+export function useDeleteBillPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ billId, paymentId }: { billId: number; paymentId: number }) => deleteBillPayment(billId, paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
     },
   });
 }

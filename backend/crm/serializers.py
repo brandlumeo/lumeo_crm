@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem, WhatsAppMessage, Income
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem, BillPayment, WhatsAppMessage, Income
 
 
 
@@ -1812,6 +1812,34 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
         return purchase_order
 
 
+class BillPaymentSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+    payment_method_display = serializers.CharField(source="get_payment_method_display", read_only=True)
+
+    class Meta:
+        model = BillPayment
+        fields = (
+            "id",
+            "bill",
+            "amount",
+            "payment_date",
+            "payment_method",
+            "payment_method_display",
+            "transaction_id",
+            "receipt",
+            "notes",
+            "created_by",
+            "created_by_name",
+            "created_at",
+        )
+        read_only_fields = ("created_by", "created_at")
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.email
+        return "System"
+
+
 class BillItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = BillItem
@@ -1820,14 +1848,43 @@ class BillItemSerializer(serializers.ModelSerializer):
 
 class BillSerializer(serializers.ModelSerializer):
     items = BillItemSerializer(many=True, required=False)
+    payments = BillPaymentSerializer(many=True, read_only=True)
     vendor_details = VendorSerializer(source="vendor", read_only=True)
     purchase_order_details = PurchaseOrderSerializer(source="purchase_order", read_only=True)
+    category_display = serializers.CharField(source="get_category_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    is_overdue = serializers.SerializerMethodField()
+    days_overdue = serializers.SerializerMethodField()
 
     class Meta:
         model = Bill
         fields = "__all__"
-        read_only_fields = ("company", "created_at", "updated_at", "bill_number")
+        read_only_fields = ("company", "created_at", "updated_at", "bill_number", "amount_paid", "amount_due")
         
+    def to_internal_value(self, data):
+        import json
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        if 'items' in data and isinstance(data['items'], str):
+            try:
+                data['items'] = json.loads(data['items'])
+            except Exception:
+                pass
+        return super().to_internal_value(data)
+
+    def get_is_overdue(self, obj):
+        from django.utils import timezone
+        if obj.due_date and obj.status not in [Bill.Status.PAID, Bill.Status.CANCELLED]:
+            return obj.due_date < timezone.localdate()
+        return False
+
+    def get_days_overdue(self, obj):
+        from django.utils import timezone
+        if obj.due_date and obj.status not in [Bill.Status.PAID, Bill.Status.CANCELLED]:
+            delta = (timezone.localdate() - obj.due_date).days
+            return max(0, delta)
+        return 0
+
     def create(self, validated_data):
         import uuid
         items_data = validated_data.pop("items", [])

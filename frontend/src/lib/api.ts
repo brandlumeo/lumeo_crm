@@ -1833,27 +1833,137 @@ export async function downloadPurchaseOrderPdf(id: number, poNumber: string) {
 }
 
 // Bills
-export async function getBills(params?: any) {
-  return listPage<any>("/crm/bills/", params);
+export interface BillItem {
+  id?: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  total?: number;
 }
-export async function createBill(payload: any) {
-  const { data } = await api.post<any>("/crm/bills/", payload);
+
+export interface BillPayment {
+  id: number;
+  bill: number;
+  amount: string | number;
+  payment_date: string;
+  payment_method: string;
+  payment_method_display: string;
+  transaction_id: string;
+  receipt?: string | null;
+  notes: string;
+  created_by?: number | null;
+  created_by_name?: string;
+  created_at: string;
+}
+
+export interface Bill {
+  id: number;
+  bill_number: string;
+  vendor: number;
+  vendor_details?: {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    company_name?: string;
+  };
+  purchase_order?: number | null;
+  purchase_order_details?: {
+    id: number;
+    po_number: string;
+  } | null;
+  bill_date: string;
+  due_date: string | null;
+  category: string;
+  category_display?: string;
+  payment_terms: string;
+  attachment?: string | null;
+  status: "draft" | "open" | "partial" | "paid" | "cancelled";
+  status_display?: string;
+  subtotal: string | number;
+  tax_amount: string | number;
+  total_amount: string | number;
+  amount_paid: string | number;
+  amount_due: string | number;
+  notes?: string;
+  items: BillItem[];
+  payments: BillPayment[];
+  is_overdue?: boolean;
+  days_overdue?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BillKPIs {
+  total_outstanding: number;
+  overdue_amount: number;
+  overdue_count: number;
+  due_next_7_days: number;
+  paid_this_month: number;
+  counts: {
+    all: number;
+    draft: number;
+    open: number;
+    partial: number;
+    paid: number;
+    cancelled: number;
+    overdue: number;
+  };
+}
+
+export async function getBills(params?: any) {
+  return listPage<Bill>("/crm/bills/", params);
+}
+export async function getBillKPIs() {
+  const { data } = await api.get<BillKPIs>("/crm/bills/kpis/");
   return data;
 }
-export async function updateBill(id: number, payload: any) {
-  const { data } = await api.patch<any>(`/crm/bills/${id}/`, payload);
+export async function createBill(payload: FormData | any) {
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined;
+  const { data } = await api.post<Bill>("/crm/bills/", payload, { headers });
+  return data;
+}
+export async function updateBill(id: number, payload: FormData | any) {
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined;
+  const { data } = await api.patch<Bill>(`/crm/bills/${id}/`, payload, { headers });
   return data;
 }
 export async function deleteBill(id: number) {
   await api.delete(`/crm/bills/${id}/`);
 }
 export async function getBill(id: number) {
-  const { data } = await api.get<any>(`/crm/bills/${id}/`);
+  const { data } = await api.get<Bill>(`/crm/bills/${id}/`);
   return data;
 }
 export async function updateBillStatus(id: number, status: string) {
   const { data } = await api.post<any>(`/crm/bills/${id}/change_status/`, { status });
   return data;
+}
+export async function recordBillPayment(id: number, payload: FormData | Record<string, any>) {
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined;
+  const { data } = await api.post<Bill>(`/crm/bills/${id}/record-payment/`, payload, { headers });
+  return data;
+}
+export async function deleteBillPayment(billId: number, paymentId: number) {
+  const { data } = await api.delete<Bill>(`/crm/bills/${billId}/payments/${paymentId}/`);
+  return data;
+}
+export async function downloadBillPdf(id: number, billNumber: string) {
+  const timestamp = new Date().getTime();
+  const response = await api.get(`/crm/bills/${id}/pdf/?t=${timestamp}`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `Bill_${billNumber}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }
 
 

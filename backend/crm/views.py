@@ -10,10 +10,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, WhatsAppMessage, Income
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, BillPayment, WhatsAppMessage, Income
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -488,21 +489,140 @@ class LeadViewSet(CompanyScopedModelViewSet):
 
 class BillViewSet(CompanyScopedModelViewSet):
     serializer_class = BillSerializer
-    queryset = Bill.objects.select_related("vendor", "purchase_order").prefetch_related("items")
-    search_fields = ("bill_number", "vendor__name")
-    ordering_fields = ("bill_date", "bill_number", "total_amount")
+    queryset = Bill.objects.select_related("vendor", "purchase_order").prefetch_related("items", "payments", "payments__created_by")
+    search_fields = ("bill_number", "vendor__name", "notes", "category")
+    ordering_fields = ("bill_date", "due_date", "bill_number", "total_amount", "amount_due", "amount_paid")
     ordering = ("-bill_date",)
     
     def apply_business_filters(self, queryset):
+        from django.utils import timezone
         status = self.request.query_params.get("status")
         vendor_id = self.request.query_params.get("vendor") or self.request.query_params.get("vendor_id")
+        category = self.request.query_params.get("category")
+        is_overdue = self.request.query_params.get("is_overdue")
         
         if status:
-            queryset = queryset.filter(status=status)
+            if status == "overdue":
+                queryset = queryset.filter(due_date__lt=timezone.localdate()).exclude(status__in=[Bill.Status.PAID, Bill.Status.CANCELLED])
+            else:
+                queryset = queryset.filter(status=status)
+        elif is_overdue == "true":
+            queryset = queryset.filter(due_date__lt=timezone.localdate()).exclude(status__in=[Bill.Status.PAID, Bill.Status.CANCELLED])
+
         if vendor_id:
             queryset = queryset.filter(vendor_id=vendor_id)
+        if category:
+            queryset = queryset.filter(category=category)
             
         return queryset
+
+    @action(detail=False, methods=["get"], url_path="kpis")
+    def kpis(self, request):
+        company = request.user.company
+        if not company:
+            return Response({"error": "No company assigned"}, status=status.HTTP_400_BAD_REQUEST)
+        from django.utils import timezone
+        from django.db.models import Sum, Count, Q
+        from datetime import timedelta
+        today = timezone.localdate()
+        next_7_days = today + timedelta(days=7)
+        
+        bills = Bill.objects.filter(company=company)
+        unpaid_bills = bills.exclude(status__in=[Bill.Status.PAID, Bill.Status.CANCELLED])
+        
+        total_outstanding = unpaid_bills.aggregate(total=Sum('amount_due'))['total'] or 0
+        
+        overdue_qs = unpaid_bills.filter(due_date__lt=today)
+        overdue_agg = overdue_qs.aggregate(total=Sum('amount_due'), count=Count('id'))
+        overdue_amount = overdue_agg['total'] or 0
+        overdue_count = overdue_agg['count'] or 0
+        
+        due_7_days = unpaid_bills.filter(due_date__gte=today, due_date__lte=next_7_days).aggregate(total=Sum('amount_due'))['total'] or 0
+        
+        month_start = today.replace(day=1)
+        paid_this_month = BillPayment.objects.filter(
+            bill__company=company,
+            payment_date__gte=month_start,
+            payment_date__lte=today
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        counts = bills.aggregate(
+            total=Count('id'),
+            draft=Count('id', filter=Q(status=Bill.Status.DRAFT)),
+            open=Count('id', filter=Q(status=Bill.Status.OPEN)),
+            partial=Count('id', filter=Q(status=Bill.Status.PARTIAL)),
+            paid=Count('id', filter=Q(status=Bill.Status.PAID)),
+            cancelled=Count('id', filter=Q(status=Bill.Status.CANCELLED)),
+        )
+        
+        return Response({
+            "total_outstanding": float(total_outstanding),
+            "overdue_amount": float(overdue_amount),
+            "overdue_count": overdue_count,
+            "due_next_7_days": float(due_7_days),
+            "paid_this_month": float(paid_this_month),
+            "counts": {
+                "all": counts['total'] or 0,
+                "draft": counts['draft'] or 0,
+                "open": counts['open'] or 0,
+                "partial": counts['partial'] or 0,
+                "paid": counts['paid'] or 0,
+                "cancelled": counts['cancelled'] or 0,
+                "overdue": overdue_count,
+            }
+        })
+
+    @action(detail=True, methods=["post"], url_path="record-payment")
+    def record_payment(self, request, pk=None):
+        bill = self.get_object()
+        amount = request.data.get("amount")
+        if not amount:
+            return Response({"error": "Payment amount is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            from decimal import Decimal
+            amount_dec = Decimal(str(amount))
+            if amount_dec <= 0:
+                return Response({"error": "Payment amount must be greater than zero."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"Invalid amount: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.utils import timezone
+        payment_date = request.data.get("payment_date") or timezone.localdate()
+        payment_method = request.data.get("payment_method") or BillPayment.PaymentMethod.BANK_TRANSFER
+        transaction_id = request.data.get("transaction_id", "")
+        notes = request.data.get("notes", "")
+
+        payment = BillPayment(
+            bill=bill,
+            amount=amount_dec,
+            payment_date=payment_date,
+            payment_method=payment_method,
+            transaction_id=transaction_id,
+            notes=notes,
+            created_by=request.user if request.user.is_authenticated else None,
+        )
+        if "receipt" in request.FILES:
+            payment.receipt = request.FILES["receipt"]
+        payment.save()
+
+        bill.refresh_from_db()
+        return Response(BillSerializer(bill).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["delete"], url_path=r"payments/(?P<payment_id>\d+)")
+    def delete_payment(self, request, pk=None, payment_id=None):
+        bill = self.get_object()
+        try:
+            payment = bill.payments.get(id=payment_id)
+            payment.delete()
+            bill.refresh_from_db()
+            return Response(BillSerializer(bill).data)
+        except BillPayment.DoesNotExist:
+            return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=["get"], url_path="pdf")
+    def pdf(self, request, pk=None):
+        bill = self.get_object()
+        return generate_pdf_response(bill, doc_type="Bill")
 
     @action(detail=True, methods=["post"])
     def change_status(self, request, pk=None):
@@ -1146,7 +1266,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     bold_style = ParagraphStyle('BoldText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14)
     
     # Header Section
-    doc_number = getattr(instance, 'po_number', getattr(instance, 'quote_number', getattr(instance, 'invoice_number', '')))
+    doc_number = getattr(instance, 'bill_number', getattr(instance, 'po_number', getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))))
     
     left_p = None
     logo_url = get_setting("invoice_logo")
@@ -1180,6 +1300,16 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         due_date = getattr(instance, 'due_date', None)
         if issue_date: meta_info += f"<font size=9 color='#6B7280'>Issue Date:</font> <font size=9 color='#111827'>{issue_date}</font><br/>"
         if due_date: meta_info += f"<font size=9 color='#6B7280'>Due Date:</font> <font size=9 color='#111827'>{due_date}</font><br/>"
+    elif doc_type == "Bill":
+        issue_date = getattr(instance, 'bill_date', None)
+        due_date = getattr(instance, 'due_date', None)
+        if issue_date: meta_info += f"<font size=9 color='#6B7280'>Bill Date:</font> <font size=9 color='#111827'>{issue_date}</font><br/>"
+        if due_date: meta_info += f"<font size=9 color='#6B7280'>Due Date:</font> <font size=9 color='#111827'>{due_date}</font><br/>"
+        if getattr(instance, 'payment_terms', None):
+            meta_info += f"<font size=9 color='#6B7280'>Terms:</font> <font size=9 color='#111827'>{instance.payment_terms}</font><br/>"
+        if getattr(instance, 'category', None):
+            category_label = getattr(instance, 'get_category_display', lambda: instance.category)()
+            meta_info += f"<font size=9 color='#6B7280'>Category:</font> <font size=9 color='#111827'>{category_label}</font><br/>"
     elif doc_type == "Purchase Order":
         issue_date = getattr(instance, 'issue_date', None)
         expected_delivery = getattr(instance, 'expected_delivery_date', None)
@@ -1214,7 +1344,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if not customer_obj and getattr(instance, 'deal', None):
         customer_obj = getattr(instance.deal, 'customer', getattr(instance.deal, 'lead', None))
     
-    if doc_type == "Purchase Order":
+    if doc_type in ["Purchase Order", "Bill"]:
         vendor_obj = getattr(instance, 'vendor', None)
         if vendor_obj:
             cust_name = f"<b>{getattr(vendor_obj, 'name', '')}</b><br/>"
@@ -1247,18 +1377,26 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if comp.tax_id and get_setting("show_sender_tax_number", default=False):
         sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
         
-    from_label = "BILLED FROM" if doc_type == "Invoice" else "PREPARED BY"
-    if doc_type == "Invoice":
-        to_label = "BILLED TO"
-    elif doc_type == "Purchase Order":
-        to_label = "VENDOR"
+    if doc_type == "Bill":
+        from_label = "BILL FROM (VENDOR)"
+        to_label = "BILLED TO (COMPANY)"
+        billing_data = [
+            [Paragraph(f"<b>{from_label}</b>", meta_label_style), Paragraph(f"<b>{to_label}</b>", meta_label_style)],
+            [Paragraph(recipient_text, meta_value_style), Paragraph(sender_text, meta_value_style)]
+        ]
     else:
-        to_label = "PREPARED FOR"
-    
-    billing_data = [
-        [Paragraph(f"<b>{from_label}</b>", meta_label_style), Paragraph(f"<b>{to_label}</b>", meta_label_style)],
-        [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
-    ]
+        from_label = "BILLED FROM" if doc_type == "Invoice" else "PREPARED BY"
+        if doc_type == "Invoice":
+            to_label = "BILLED TO"
+        elif doc_type == "Purchase Order":
+            to_label = "VENDOR"
+        else:
+            to_label = "PREPARED FOR"
+        
+        billing_data = [
+            [Paragraph(f"<b>{from_label}</b>", meta_label_style), Paragraph(f"<b>{to_label}</b>", meta_label_style)],
+            [Paragraph(sender_text, meta_value_style), Paragraph(recipient_text, meta_value_style)]
+        ]
     
     billing_table = Table(billing_data, colWidths=[250, 250])
     billing_table.setStyle(TableStyle([
@@ -1332,7 +1470,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         [Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{getattr(instance, 'total_amount', getattr(instance, 'total', 0)):,.2f}</b>", right_total)]
     ]
     
-    if doc_type in ["Invoice", "Receipt"] and hasattr(instance, "amount_paid"):
+    if doc_type in ["Invoice", "Receipt", "Bill"] and hasattr(instance, "amount_paid"):
         paid_style = ParagraphStyle('RightPaid', parent=right_normal, textColor=colors.HexColor("#059669"))
         due_style = ParagraphStyle('RightDue', parent=right_total, textColor=colors.HexColor("#DC2626"))
         
@@ -1356,6 +1494,10 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         instance_terms = getattr(instance, 'terms_conditions', None)
         terms_text = instance_terms if instance_terms else get_setting("purchase_order_terms", default="Standard purchase order terms apply.")
         terms_label = "Purchase Order Terms"
+    elif doc_type == "Bill":
+        instance_terms = getattr(instance, 'notes', None)
+        terms_text = instance_terms if instance_terms else "Standard Accounts Payable Voucher."
+        terms_label = "Bill Notes & Payment Instructions"
     elif doc_type == "Invoice":
         instance_terms = getattr(instance, 'terms', None)
         terms_text = instance_terms if instance_terms else get_setting("invoice_terms", default="Thank you for your business.")

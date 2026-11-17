@@ -1502,6 +1502,18 @@ class Bill(models.Model):
         PAID = "paid", "Paid"
         CANCELLED = "cancelled", "Cancelled"
 
+    class Category(models.TextChoices):
+        SOFTWARE = "software", "Software & Cloud"
+        OFFICE = "office", "Office & Rent"
+        RAW_MATERIALS = "raw_materials", "Raw Materials & Supplies"
+        EQUIPMENT = "equipment", "Equipment & Hardware"
+        MARKETING = "marketing", "Marketing & Advertising"
+        LEGAL = "legal", "Legal & Professional Services"
+        LOGISTICS = "logistics", "Logistics & Shipping"
+        MAINTENANCE = "maintenance", "Repairs & Maintenance"
+        UTILITIES = "utilities", "Utilities & Internet"
+        OTHER = "other", "Other Expenses"
+
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="bills")
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="bills")
     purchase_order = models.ForeignKey(PurchaseOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="bills")
@@ -1509,6 +1521,9 @@ class Bill(models.Model):
     bill_number = models.CharField(max_length=50, db_index=True)
     bill_date = models.DateField(default=timezone.now, db_index=True)
     due_date = models.DateField(null=True, blank=True)
+    category = models.CharField(max_length=50, choices=Category.choices, default=Category.OTHER, db_index=True)
+    payment_terms = models.CharField(max_length=100, blank=True, default="Net 30")
+    attachment = models.FileField(upload_to="bills/vendor_invoices/", blank=True, null=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
     
@@ -1531,6 +1546,60 @@ class Bill(models.Model):
         from decimal import Decimal
         self.amount_due = Decimal(str(self.total_amount or 0)) - Decimal(str(self.amount_paid or 0))
         super().save(*args, **kwargs)
+
+
+class BillPayment(models.Model):
+    class PaymentMethod(models.TextChoices):
+        BANK_TRANSFER = "bank_transfer", "Bank Transfer (NEFT/RTGS/IMPS)"
+        UPI = "upi", "UPI / QR"
+        CHEQUE = "cheque", "Cheque"
+        CREDIT_CARD = "credit_card", "Corporate Credit Card"
+        DEBIT_CARD = "debit_card", "Debit Card"
+        CASH = "cash", "Cash"
+        OTHER = "other", "Other"
+
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name="payments")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_date = models.DateField(default=timezone.localdate)
+    payment_method = models.CharField(max_length=50, choices=PaymentMethod.choices, default=PaymentMethod.BANK_TRANSFER)
+    transaction_id = models.CharField(max_length=255, blank=True, default="", help_text="UTR, Cheque #, or Ref ID")
+    receipt = models.FileField(upload_to="bills/payment_receipts/", blank=True, null=True)
+    notes = models.TextField(blank=True, default="")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-payment_date", "-id")
+
+    def __str__(self):
+        return f"Payment of {self.amount} for {self.bill.bill_number}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.recalculate_bill()
+
+    def delete(self, *args, **kwargs):
+        bill = self.bill
+        super().delete(*args, **kwargs)
+        BillPayment.recalculate_bill_totals(bill)
+
+    def recalculate_bill(self):
+        BillPayment.recalculate_bill_totals(self.bill)
+
+    @classmethod
+    def recalculate_bill_totals(cls, bill):
+        from django.db.models import Sum
+        from decimal import Decimal
+        paid = bill.payments.aggregate(total=Sum('amount'))['total'] or 0
+        bill.amount_paid = Decimal(str(paid))
+        bill.amount_due = max(Decimal(str(bill.total_amount or 0)) - bill.amount_paid, Decimal('0'))
+        if bill.total_amount > 0 and bill.amount_due == 0:
+            bill.status = Bill.Status.PAID
+        elif bill.amount_paid > 0:
+            bill.status = Bill.Status.PARTIAL
+        elif bill.status in [Bill.Status.PAID, Bill.Status.PARTIAL]:
+            bill.status = Bill.Status.OPEN
+        bill.save(update_fields=['amount_paid', 'amount_due', 'status'])
 
 
 class BillItem(models.Model):
