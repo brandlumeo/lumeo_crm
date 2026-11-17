@@ -127,7 +127,10 @@ import {
   getInvoiceSettings,
   updateInvoiceSettings,
   fetchExpenseClaims,
+  ExpenseClaimFilters,
   createExpenseClaim,
+  updateExpenseClaim,
+  deleteExpenseClaim,
   approveExpenseClaim,
   fetchOfficeAssets,
   createOfficeAsset,
@@ -1166,10 +1169,10 @@ export function useVerifyPaypalPublicInvoicePayment() {
 
 // ── HR: Expenses ─────────────────────────────────────────────────────────────
 
-export function useExpenseClaims(all = false) {
+export function useExpenseClaims(filters?: boolean | ExpenseClaimFilters) {
   return useQuery({
-    queryKey: ["attendance", "expenses", { all }],
-    queryFn: () => fetchExpenseClaims(all),
+    queryKey: ["attendance", "expenses", filters],
+    queryFn: () => fetchExpenseClaims(filters),
     enabled: authenticated(),
   });
 }
@@ -1180,6 +1183,30 @@ export function useCreateExpenseClaim() {
     mutationFn: createExpenseClaim,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["attendance", "expenses"] });
+      void queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
+    },
+  });
+}
+
+export function useUpdateExpenseClaim() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: FormData | any }) =>
+      updateExpenseClaim(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "expenses"] });
+      void queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
+    },
+  });
+}
+
+export function useDeleteExpenseClaim() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteExpenseClaim(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "expenses"] });
+      void queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
     },
   });
 }
@@ -1187,10 +1214,21 @@ export function useCreateExpenseClaim() {
 export function useApproveExpenseClaim() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { status: "approved" | "rejected"; manager_notes?: string } }) =>
-      approveExpenseClaim(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        status: "approved" | "rejected" | "settled";
+        manager_notes?: string;
+        settled_at?: string;
+        settlement_reference?: string;
+      };
+    }) => approveExpenseClaim(id, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["attendance", "expenses"] });
+      void queryClient.invalidateQueries({ queryKey: ["finance-dashboard"] });
     },
   });
 }

@@ -14,6 +14,7 @@ urlpatterns = [
     path("leaves/", views.LeaveRequestListCreateView.as_view(), name="leave_list_create"),
     path("leaves/<uuid:pk>/approve/", views.LeaveApprovalView.as_view(), name="leave_approve"),
     path("expenses/", views.ExpenseClaimListCreateView.as_view(), name="expense_list_create"),
+    path("expenses/<uuid:pk>/", views.ExpenseClaimDetailView.as_view(), name="expense_detail"),
     path("expenses/<uuid:pk>/approve/", views.ExpenseClaimApprovalView.as_view(), name="expense_approve"),
     path("assets/", views.OfficeAssetListCreateView.as_view(), name="asset_list_create"),
     path("assets/<uuid:pk>/", views.OfficeAssetDetailView.as_view(), name="asset_detail"),

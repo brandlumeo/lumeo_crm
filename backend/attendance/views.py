@@ -577,33 +577,95 @@ class ExpenseClaimListCreateView(APIView):
     GET/POST /api/v1/attendance/expenses/
     Employees can submit expenses and view their claims.
     Managers can view all expenses in the company by passing ?all=true.
-    Supports file uploads for receipts.
+    Supports filtering by status, category, expense_type, date, search, and file uploads for receipts.
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         _auto_close_stale_shifts()
-        from accounts.models import User
         is_manager = request.user.has_management_access
-        view_all = request.query_params.get("all") == "true"
+        view_all = request.query_params.get("all") == "true" or is_manager
 
         if is_manager and view_all:
             expenses = ExpenseClaim.objects.filter(company=request.user.company)
         else:
             expenses = ExpenseClaim.objects.filter(user=request.user)
 
-        serializer = ExpenseClaimSerializer(expenses, many=True, context={'request': request})
+        # Status filter
+        status_filter = request.query_params.get("status")
+        if status_filter and status_filter != "all":
+            expenses = expenses.filter(status=status_filter)
+
+        # Category filter
+        category_filter = request.query_params.get("category")
+        if category_filter and category_filter != "all":
+            expenses = expenses.filter(category=category_filter)
+
+        # Expense type filter
+        expense_type_filter = request.query_params.get("expense_type")
+        if expense_type_filter and expense_type_filter != "all":
+            expenses = expenses.filter(expense_type=expense_type_filter)
+
+        # Year & Month filters
+        year = request.query_params.get("year")
+        if year:
+            try:
+                expenses = expenses.filter(expense_date__year=int(year))
+            except ValueError:
+                pass
+
+        month = request.query_params.get("month")
+        if month:
+            try:
+                expenses = expenses.filter(expense_date__month=int(month))
+            except ValueError:
+                pass
+
+        # Billable filter
+        is_billable = request.query_params.get("is_billable")
+        if is_billable in ["true", "1"]:
+            expenses = expenses.filter(is_billable=True)
+        elif is_billable in ["false", "0"]:
+            expenses = expenses.filter(is_billable=False)
+
+        # Search filter
+        search = request.query_params.get("search", "").strip()
+        if search:
+            from django.db.models import Q
+            expenses = expenses.filter(
+                Q(title__icontains=search) |
+                Q(merchant__icontains=search) |
+                Q(description__icontains=search) |
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(deal__title__icontains=search)
+            )
+
+        serializer = ExpenseClaimSerializer(expenses.select_related("user", "deal", "approved_by"), many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
         serializer = ExpenseClaimSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(
+            exp_type = serializer.validated_data.get("expense_type", ExpenseClaim.ExpenseType.REIMBURSEMENT)
+            initial_status = ExpenseClaim.Status.PENDING
+
+            # If manager logging a direct company-paid expense, auto-settle
+            if request.user.has_management_access and exp_type == ExpenseClaim.ExpenseType.COMPANY_PAID:
+                initial_status = ExpenseClaim.Status.SETTLED
+
+            expense = serializer.save(
                 user=request.user,
                 company=request.user.company,
-                status=ExpenseClaim.Status.PENDING,
+                status=initial_status,
             )
+            if initial_status == ExpenseClaim.Status.SETTLED:
+                expense.approved_by = request.user
+                expense.approved_at = timezone.now()
+                expense.settled_at = expense.expense_date
+                expense.save()
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -611,14 +673,13 @@ class ExpenseClaimListCreateView(APIView):
 class ExpenseClaimApprovalView(APIView):
     """
     PATCH /api/v1/attendance/expenses/<uuid:pk>/approve/
-    Body: { "status": "approved"/"rejected", "manager_notes": string }
-    Restricted to Owners and Admins to approve/reject expense claims.
+    Body: { "status": "approved"/"rejected"/"settled", "manager_notes": string, "settled_at": date, "settlement_reference": string }
+    Restricted to Owners and Admins to approve/reject/settle expense claims.
     """
 
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
-        from accounts.models import User
         if not request.user.has_management_access:
             return Response(
                 {"detail": "Permission denied. Only owners/admins can review expenses."},
@@ -634,21 +695,83 @@ class ExpenseClaimApprovalView(APIView):
             )
 
         new_status = request.data.get("status")
-        if new_status not in [ExpenseClaim.Status.APPROVED, ExpenseClaim.Status.REJECTED]:
+        valid_statuses = [ExpenseClaim.Status.APPROVED, ExpenseClaim.Status.REJECTED, ExpenseClaim.Status.SETTLED]
+        if new_status not in valid_statuses:
             return Response(
-                {"detail": "Invalid status. Must be 'approved' or 'rejected'."},
+                {"detail": f"Invalid status. Must be one of {[s.value for s in valid_statuses]}."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         manager_notes = request.data.get("manager_notes", "")
+        if manager_notes:
+            expense.manager_notes = manager_notes
 
         expense.status = new_status
-        expense.manager_notes = manager_notes
-        expense.approved_by = request.user
+        if new_status == ExpenseClaim.Status.APPROVED:
+            expense.approved_by = request.user
+            expense.approved_at = timezone.now()
+        elif new_status == ExpenseClaim.Status.SETTLED:
+            if not expense.approved_by:
+                expense.approved_by = request.user
+                expense.approved_at = timezone.now()
+            expense.settled_at = request.data.get("settled_at") or timezone.now().date()
+            expense.settlement_reference = request.data.get("settlement_reference", "")
+        elif new_status == ExpenseClaim.Status.REJECTED:
+            expense.approved_by = request.user
+
         expense.save()
 
         serializer = ExpenseClaimSerializer(expense, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ExpenseClaimDetailView(APIView):
+    """
+    GET/PUT/PATCH/DELETE /api/v1/attendance/expenses/<uuid:pk>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            if request.user.has_management_access:
+                expense = ExpenseClaim.objects.get(pk=pk, company=request.user.company)
+            else:
+                expense = ExpenseClaim.objects.get(pk=pk, user=request.user)
+        except ExpenseClaim.DoesNotExist:
+            return Response({"detail": "Expense not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ExpenseClaimSerializer(expense, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        return self.patch(request, pk)
+
+    def patch(self, request, pk):
+        try:
+            if request.user.has_management_access:
+                expense = ExpenseClaim.objects.get(pk=pk, company=request.user.company)
+            else:
+                expense = ExpenseClaim.objects.get(pk=pk, user=request.user, status=ExpenseClaim.Status.PENDING)
+        except ExpenseClaim.DoesNotExist:
+            return Response({"detail": "Expense not found or cannot be modified."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ExpenseClaimSerializer(expense, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        try:
+            if request.user.has_management_access:
+                expense = ExpenseClaim.objects.get(pk=pk, company=request.user.company)
+            else:
+                expense = ExpenseClaim.objects.get(pk=pk, user=request.user, status=ExpenseClaim.Status.PENDING)
+        except ExpenseClaim.DoesNotExist:
+            return Response({"detail": "Expense not found or cannot be deleted."}, status=status.HTTP_404_NOT_FOUND)
+
+        expense.delete()
+        return Response({"detail": "Expense deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
 class OfficeAssetListCreateView(APIView):

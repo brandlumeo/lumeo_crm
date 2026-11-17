@@ -332,6 +332,100 @@ class AttendanceAPITests(APITestCase):
             response.data["detail"], "Permission denied. Only owners/admins can review expenses."
         )
 
+    def test_expense_claim_settlement_workflow(self):
+        """Verify manager can mark an approved claim as settled with settlement metadata."""
+        manager = User.objects.create_user(
+            username="manager_settle",
+            email="manager_settle@lumeo.local",
+            password="SecurePassword123#",
+            company=self.company,
+            role="owner",
+        )
+        expense = ExpenseClaim.objects.create(
+            user=self.user,
+            company=self.company,
+            title="Kochi Client Meeting Hotel",
+            merchant="Marriott Kochi",
+            category="travel",
+            amount=8500.00,
+            status=ExpenseClaim.Status.APPROVED,
+        )
+
+        self.client.force_authenticate(user=manager)
+        approve_url = reverse("attendance:expense_approve", kwargs={"pk": expense.pk})
+        payload = {
+            "status": "settled",
+            "settled_at": "2026-11-17",
+            "settlement_reference": "HDFC-IMPS-9382104",
+            "manager_notes": "Disbursed via bank transfer.",
+        }
+        res = self.client.patch(approve_url, data=payload)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["status"], "settled")
+        self.assertEqual(res.data["settlement_reference"], "HDFC-IMPS-9382104")
+        self.assertEqual(str(res.data["settled_at"]), "2026-11-17")
+
+    def test_expense_claim_direct_company_paid_auto_settle(self):
+        """Verify manager logging direct company expenditure is automatically settled."""
+        manager = User.objects.create_user(
+            username="manager_corp",
+            email="manager_corp@lumeo.local",
+            password="SecurePassword123#",
+            company=self.company,
+            role="admin",
+        )
+        self.client.force_authenticate(user=manager)
+        payload = {
+            "title": "Figma Enterprise Renewal",
+            "merchant": "Figma Inc",
+            "category": "software",
+            "expense_type": "company_paid",
+            "payment_method": "company_card",
+            "amount": 14500.00,
+            "tax_amount": 2610.00,
+            "expense_date": "2026-11-15",
+            "is_billable": False,
+        }
+        res = self.client.post(self.expense_list_create_url, data=payload)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data["status"], "settled")
+        self.assertEqual(res.data["expense_type"], "company_paid")
+        self.assertEqual(res.data["category"], "software")
+        self.assertEqual(float(res.data["tax_amount"]), 2610.00)
+
+    def test_expense_claim_filters_and_search(self):
+        """Verify querying expense claims with category, status, and search filters."""
+        ExpenseClaim.objects.create(
+            user=self.user,
+            company=self.company,
+            title="Indigo Flight tickets",
+            merchant="Indigo Airlines",
+            category="travel",
+            amount=5400.00,
+            status=ExpenseClaim.Status.PENDING,
+        )
+        ExpenseClaim.objects.create(
+            user=self.user,
+            company=self.company,
+            title="Team Lunch at Taj",
+            merchant="Taj Gateway",
+            category="meals",
+            amount=3200.00,
+            status=ExpenseClaim.Status.APPROVED,
+        )
+
+        # 1. Filter by category=travel
+        res = self.client.get(f"{self.expense_list_create_url}?category=travel")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["category"], "travel")
+
+        # 2. Filter by search=Taj
+        res_search = self.client.get(f"{self.expense_list_create_url}?search=Taj")
+        self.assertEqual(res_search.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_search.data), 1)
+        self.assertEqual(res_search.data[0]["merchant"], "Taj Gateway")
+
     def test_asset_create_by_manager(self):
         """Verify manager can successfully log new company assets."""
         # 1. Create a manager user (role: admin)

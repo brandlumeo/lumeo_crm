@@ -1,3 +1,4 @@
+import datetime
 from rest_framework import serializers
 from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, Payroll, Holiday, DailyReport
 
@@ -89,6 +90,10 @@ class ExpenseClaimSerializer(serializers.ModelSerializer):
     user_full_name = serializers.CharField(source="user.get_full_name", read_only=True)
     approved_by_name = serializers.CharField(source="approved_by.get_full_name", read_only=True)
     deal_name = serializers.CharField(source="deal.title", read_only=True)
+    category_display = serializers.CharField(source="get_category_display", read_only=True)
+    expense_type_display = serializers.CharField(source="get_expense_type_display", read_only=True)
+    payment_method_display = serializers.CharField(source="get_payment_method_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = ExpenseClaim
@@ -101,21 +106,43 @@ class ExpenseClaimSerializer(serializers.ModelSerializer):
             "deal",
             "deal_name",
             "title",
+            "expense_type",
+            "expense_type_display",
+            "category",
+            "category_display",
+            "merchant",
             "amount",
+            "tax_amount",
+            "expense_date",
+            "payment_method",
+            "payment_method_display",
+            "is_billable",
             "receipt",
             "description",
             "status",
+            "status_display",
             "approved_by",
             "approved_by_name",
+            "approved_at",
             "manager_notes",
+            "settled_at",
+            "settlement_reference",
             "created_at",
+            "updated_at",
         )
-        read_only_fields = ("id", "user", "company", "status", "approved_by", "created_at")
+        read_only_fields = ("id", "user", "company", "status", "approved_by", "approved_at", "created_at", "updated_at")
 
     def validate_amount(self, value):
         if value <= 0:
             raise serializers.ValidationError("Expense amount must be greater than zero.")
         return value
+
+    def to_representation(self, instance):
+        if hasattr(instance, "expense_date") and isinstance(instance.expense_date, datetime.datetime):
+            instance.expense_date = instance.expense_date.date()
+        if hasattr(instance, "settled_at") and isinstance(instance.settled_at, datetime.datetime):
+            instance.settled_at = instance.settled_at.date()
+        return super().to_representation(instance)
 
 
 class OfficeAssetSerializer(serializers.ModelSerializer):

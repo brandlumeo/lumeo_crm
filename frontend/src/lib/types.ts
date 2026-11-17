@@ -918,14 +918,29 @@ export interface ExpenseClaim {
   deal: number | null;
   deal_name: string | null;
   title: string;
+  expense_type: "reimbursement" | "company_paid";
+  expense_type_display?: string;
+  category: "travel" | "meals" | "software" | "office" | "marketing" | "utilities" | "logistics" | "professional" | "misc";
+  category_display?: string;
+  merchant: string;
   amount: string;
+  tax_amount?: string;
+  expense_date: string;
+  payment_method: "personal_card" | "company_card" | "company_netbanking" | "cash";
+  payment_method_display?: string;
+  is_billable: boolean;
   receipt: string | null;
   description: string | null;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "settled";
+  status_display?: string;
   approved_by: number | null;
   approved_by_name: string | null;
+  approved_at?: string | null;
   manager_notes: string | null;
+  settled_at?: string | null;
+  settlement_reference?: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface OfficeAsset {

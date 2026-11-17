@@ -336,10 +336,9 @@ class FinanceDashboardView(APIView):
 
         claims_qs = ExpenseClaim.objects.filter(
             company=company,
-            status="approved",
-            created_at__year=year
-        ).values("created_at__month").annotate(total=Sum("amount"))
-        claims_by_month = {item["created_at__month"]: Decimal(str(item["total"] or 0)) for item in claims_qs}
+            status__in=["approved", "settled"],
+        ).filter(Q(expense_date__year=year) | Q(expense_date__isnull=True, created_at__year=year)).values("expense_date__month").annotate(total=Sum("amount"))
+        claims_by_month = {item["expense_date__month"]: Decimal(str(item["total"] or 0)) for item in claims_qs if item["expense_date__month"]}
 
         # Build 12-Month Array
         months_data = []
@@ -531,20 +530,26 @@ class FinanceDashboardView(APIView):
             })
 
         # 6. Expense claims
-        claim_qs = ExpenseClaim.objects.filter(company=company, status="approved")
+        claim_qs = ExpenseClaim.objects.filter(company=company, status__in=["approved", "settled"])
         if tx_scope == "month":
-            claim_qs = claim_qs.filter(created_at__year=year, created_at__month=month)
-        for c in claim_qs.select_related("user").order_by("-created_at")[:60]:
+            claim_qs = claim_qs.filter(
+                Q(expense_date__year=year, expense_date__month=month) |
+                Q(expense_date__isnull=True, created_at__year=year, created_at__month=month)
+            )
+        for c in claim_qs.select_related("user").order_by("-expense_date", "-created_at")[:60]:
             u_name = f"{c.user.first_name} {c.user.last_name}".strip() if c.user else "Employee"
+            c_date = c.expense_date.strftime("%Y-%m-%d") if getattr(c, "expense_date", None) else c.created_at.strftime("%Y-%m-%d")
+            c_cat = f"Expense ({c.get_category_display()})" if hasattr(c, "get_category_display") else "Employee Claim"
+            c_status = "Reimbursed" if c.status == "settled" else "Approved"
             recent_tx.append({
                 "id": f"claim-{c.id}",
                 "type": "claim",
-                "category": "Employee Claim",
-                "title": f"Claim: {c.title} ({u_name})",
+                "category": c_cat,
+                "title": f"{c.title} ({u_name})",
                 "amount": float(c.amount),
-                "date": c.created_at.strftime("%Y-%m-%d"),
-                "status": "Approved",
-                "reference": "CLAIM"
+                "date": c_date,
+                "status": c_status,
+                "reference": c.merchant or "CLAIM"
             })
 
         recent_tx.sort(key=lambda x: x["date"], reverse=True)

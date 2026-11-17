@@ -1524,9 +1524,34 @@ export async function verifyPaypalPublicInvoicePayment(token: string, payload: {
 
 // ── HR: Expenses ─────────────────────────────────────────────────────────────
 
-export async function fetchExpenseClaims(all = false) {
+export interface ExpenseClaimFilters {
+  all?: boolean;
+  status?: string;
+  category?: string;
+  expense_type?: string;
+  year?: number;
+  month?: number;
+  is_billable?: boolean;
+  search?: string;
+}
+
+export async function fetchExpenseClaims(params?: boolean | ExpenseClaimFilters) {
+  const query = new URLSearchParams();
+  if (typeof params === "boolean") {
+    if (params) query.set("all", "true");
+  } else if (params) {
+    if (params.all) query.set("all", "true");
+    if (params.status) query.set("status", params.status);
+    if (params.category) query.set("category", params.category);
+    if (params.expense_type) query.set("expense_type", params.expense_type);
+    if (params.year) query.set("year", params.year.toString());
+    if (params.month) query.set("month", params.month.toString());
+    if (params.is_billable !== undefined) query.set("is_billable", params.is_billable.toString());
+    if (params.search) query.set("search", params.search);
+  }
+  const qs = query.toString() ? `?${query.toString()}` : "";
   const { data } = await api.get<ExpenseClaim[]>(
-    `${endpoints.attendanceExpenses}${all ? "?all=true" : ""}`
+    `${endpoints.attendanceExpenses}${qs}`
   );
   return data;
 }
@@ -1536,7 +1561,25 @@ export async function createExpenseClaim(payload: FormData) {
   return data;
 }
 
-export async function approveExpenseClaim(id: string, payload: { status: "approved" | "rejected"; manager_notes?: string }) {
+export async function updateExpenseClaim(id: string, payload: FormData | Partial<ExpenseClaim>) {
+  const { data } = await api.patch<ExpenseClaim>(`${endpoints.attendanceExpenses}${id}/`, payload);
+  return data;
+}
+
+export async function deleteExpenseClaim(id: string) {
+  const { data } = await api.delete(`${endpoints.attendanceExpenses}${id}/`);
+  return data;
+}
+
+export async function approveExpenseClaim(
+  id: string,
+  payload: {
+    status: "approved" | "rejected" | "settled";
+    manager_notes?: string;
+    settled_at?: string;
+    settlement_reference?: string;
+  }
+) {
   const { data } = await api.patch<ExpenseClaim>(`${endpoints.attendanceExpenses}${id}/approve/`, payload);
   return data;
 }

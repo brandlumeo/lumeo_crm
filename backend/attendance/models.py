@@ -1,6 +1,8 @@
 import uuid
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from companies.models import Company
 
 
@@ -156,6 +158,28 @@ class ExpenseClaim(models.Model):
         PENDING = "pending", "Pending Approval"
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
+        SETTLED = "settled", "Reimbursed / Settled"
+
+    class ExpenseType(models.TextChoices):
+        REIMBURSEMENT = "reimbursement", "Employee Out-of-Pocket Claim"
+        COMPANY_PAID = "company_paid", "Direct Company Expenditure"
+
+    class Category(models.TextChoices):
+        TRAVEL = "travel", "Travel & Lodging"
+        MEALS = "meals", "Meals & Entertainment"
+        SOFTWARE = "software", "Software & SaaS Subscriptions"
+        OFFICE = "office", "Office Supplies & Equipment"
+        MARKETING = "marketing", "Advertising & Marketing"
+        UTILITIES = "utilities", "Utilities & Rent"
+        LOGISTICS = "logistics", "Logistics & Courier"
+        PROFESSIONAL = "professional", "Professional & Legal Fees"
+        MISC = "misc", "Miscellaneous"
+
+    class PaymentMethod(models.TextChoices):
+        PERSONAL_CARD = "personal_card", "Personal Card / UPI (Reimbursement)"
+        COMPANY_CARD = "company_card", "Corporate Credit/Debit Card"
+        COMPANY_NETBANKING = "company_netbanking", "Company NetBanking / Transfer"
+        CASH = "cash", "Petty Cash"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -177,7 +201,27 @@ class ExpenseClaim(models.Model):
         help_text="Optional CRM Deal associated with this cost.",
     )
     title = models.CharField(max_length=255)
+    expense_type = models.CharField(
+        max_length=30,
+        choices=ExpenseType.choices,
+        default=ExpenseType.REIMBURSEMENT,
+    )
+    category = models.CharField(
+        max_length=40,
+        choices=Category.choices,
+        default=Category.MISC,
+    )
+    merchant = models.CharField(max_length=255, blank=True, default="")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    expense_date = models.DateField(default=timezone.localdate)
+    payment_method = models.CharField(
+        max_length=40,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.PERSONAL_CARD,
+    )
+    is_billable = models.BooleanField(default=False)
+
     receipt = models.FileField(upload_to="receipts/", null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(
@@ -186,7 +230,7 @@ class ExpenseClaim(models.Model):
         default=Status.PENDING,
         db_index=True,
     )
-    
+
     # Manager review
     approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -195,11 +239,18 @@ class ExpenseClaim(models.Model):
         on_delete=models.SET_NULL,
         related_name="approved_expenses",
     )
+    approved_at = models.DateTimeField(null=True, blank=True)
     manager_notes = models.TextField(blank=True, null=True)
+
+    # Settlement / Reimbursement Payout
+    settled_at = models.DateField(null=True, blank=True)
+    settlement_reference = models.CharField(max_length=100, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("-created_at",)
+        ordering = ("-expense_date", "-created_at")
 
     def __str__(self):
         user_id = self.user.email or self.user.username
