@@ -404,11 +404,21 @@ class FinanceDashboardView(APIView):
         annual_net_profit = annual_inflow - annual_outflow
         annual_margin_pct = round((annual_net_profit / annual_inflow * 100), 1) if annual_inflow > 0 else 0.0
 
-        # Recent Financial Transactions (fetch extensive history across all streams)
+        # Recent Financial Transactions (scoped to selected month/year by default, or all-time if requested)
+        tx_scope = request.query_params.get("tx_scope", "month").lower()
+        if tx_scope not in ["month", "all"]:
+            tx_scope = "month"
+
         recent_tx = []
 
         # 1. Payments received
-        for p in InvoicePayment.objects.filter(invoice__company=company).select_related("invoice", "invoice__customer").order_by("-payment_date", "-id")[:30]:
+        pay_qs = InvoicePayment.objects.filter(invoice__company=company)
+        if tx_scope == "month":
+            pay_qs = pay_qs.filter(
+                Q(payment_date__year=year, payment_date__month=month) |
+                Q(payment_date__isnull=True, created_at__year=year, created_at__month=month)
+            )
+        for p in pay_qs.select_related("invoice", "invoice__customer").order_by("-payment_date", "-id")[:60]:
             cust_name = p.invoice.customer.name if p.invoice and p.invoice.customer else "Client"
             inv_num = p.invoice.invoice_number if p.invoice else ""
             recent_tx.append({
@@ -423,7 +433,13 @@ class FinanceDashboardView(APIView):
             })
 
         # 2. Paid invoices without separate payment record
-        for inv in Invoice.objects.filter(company=company, status="paid").exclude(id__in=paid_invoices_with_payments).select_related("customer").order_by("-issue_date", "-updated_at")[:25]:
+        inv_qs = Invoice.objects.filter(company=company, status="paid").exclude(id__in=paid_invoices_with_payments)
+        if tx_scope == "month":
+            inv_qs = inv_qs.filter(
+                Q(issue_date__year=year, issue_date__month=month) |
+                Q(issue_date__isnull=True, updated_at__year=year, updated_at__month=month)
+            )
+        for inv in inv_qs.select_related("customer").order_by("-issue_date", "-updated_at")[:60]:
             cust_name = inv.customer.name if inv.customer else "Client"
             recent_tx.append({
                 "id": f"inv-{inv.id}",
@@ -437,20 +453,29 @@ class FinanceDashboardView(APIView):
             })
 
         # 3. Direct Incomes recorded
-        for inc in Income.objects.filter(company=company).order_by("-date", "-id")[:30]:
+        inc_qs = Income.objects.filter(company=company)
+        if tx_scope == "month":
+            inc_qs = inc_qs.filter(
+                Q(date__year=year, date__month=month) |
+                Q(date__isnull=True, created_at__year=year, created_at__month=month)
+            )
+        for inc in inc_qs.order_by("-date", "-id")[:60]:
             recent_tx.append({
                 "id": f"income-{inc.id}",
                 "type": "inflow",
                 "category": f"Income ({inc.get_category_display()})",
                 "title": inc.title,
                 "amount": float(inc.amount),
-                "date": inc.date.strftime("%Y-%m-%d"),
+                "date": inc.date.strftime("%Y-%m-%d") if inc.date else str(inc.created_at.date()),
                 "status": "Received",
                 "reference": inc.reference or f"INC-{inc.id}"
             })
 
-        # 4. Payroll payouts (ensure all staff payouts are captured without artificial truncations)
-        for pay in Payroll.objects.filter(company=company).exclude(status="cancelled").select_related("user").order_by("-pay_date", "-created_at")[:80]:
+        # 4. Payroll payouts (strictly isolate to designated payroll year & month when scoped to month)
+        payroll_tx_qs = Payroll.objects.filter(company=company).exclude(status="cancelled")
+        if tx_scope == "month":
+            payroll_tx_qs = payroll_tx_qs.filter(year=year, month=month)
+        for pay in payroll_tx_qs.select_related("user").order_by("-pay_date", "-created_at")[:120]:
             u_name = f"{pay.user.first_name} {pay.user.last_name}".strip() if pay.user else "Employee"
             if not u_name and pay.user:
                 u_name = pay.user.username
@@ -466,8 +491,14 @@ class FinanceDashboardView(APIView):
                 "reference": f"PAY-{pay.year}-{pay.month:02d}"
             })
 
-        # 4. Vendor bills & bill payments
-        for bp in BillPayment.objects.filter(bill__company=company).select_related("bill", "bill__vendor").order_by("-payment_date", "-id")[:30]:
+        # 5. Vendor bills & bill payments
+        bp_qs = BillPayment.objects.filter(bill__company=company)
+        if tx_scope == "month":
+            bp_qs = bp_qs.filter(
+                Q(payment_date__year=year, payment_date__month=month) |
+                Q(payment_date__isnull=True, created_at__year=year, created_at__month=month)
+            )
+        for bp in bp_qs.select_related("bill", "bill__vendor").order_by("-payment_date", "-id")[:60]:
             v_name = bp.bill.vendor.name if bp.bill and bp.bill.vendor else "Vendor"
             recent_tx.append({
                 "id": f"bill-pay-{bp.id}",
@@ -475,12 +506,18 @@ class FinanceDashboardView(APIView):
                 "category": f"Vendor Payment: {v_name}",
                 "title": f"Payment for {bp.bill.bill_number}",
                 "amount": float(bp.amount),
-                "date": bp.payment_date.strftime("%Y-%m-%d"),
+                "date": bp.payment_date.strftime("%Y-%m-%d") if bp.payment_date else str(bp.created_at.date()),
                 "status": "Disbursed",
                 "reference": bp.transaction_id or bp.bill.bill_number
             })
 
-        for b in Bill.objects.filter(company=company).select_related("vendor").order_by("-bill_date", "-id")[:30]:
+        bill_qs = Bill.objects.filter(company=company)
+        if tx_scope == "month":
+            bill_qs = bill_qs.filter(
+                Q(bill_date__year=year, bill_date__month=month) |
+                Q(bill_date__isnull=True, due_date__year=year, due_date__month=month)
+            )
+        for b in bill_qs.select_related("vendor").order_by("-bill_date", "-id")[:60]:
             v_name = b.vendor.name if b.vendor else "Vendor"
             recent_tx.append({
                 "id": f"bill-{b.id}",
@@ -488,13 +525,16 @@ class FinanceDashboardView(APIView):
                 "category": "Vendor Bill",
                 "title": f"Bill #{b.bill_number} - {v_name}",
                 "amount": float(b.total_amount),
-                "date": b.bill_date.strftime("%Y-%m-%d") if b.bill_date else str(b.due_date),
+                "date": b.bill_date.strftime("%Y-%m-%d") if b.bill_date else (str(b.due_date) if b.due_date else str(b.id)),
                 "status": b.status.title(),
                 "reference": b.bill_number
             })
 
-        # 5. Expense claims
-        for c in ExpenseClaim.objects.filter(company=company, status="approved").select_related("user").order_by("-created_at")[:30]:
+        # 6. Expense claims
+        claim_qs = ExpenseClaim.objects.filter(company=company, status="approved")
+        if tx_scope == "month":
+            claim_qs = claim_qs.filter(created_at__year=year, created_at__month=month)
+        for c in claim_qs.select_related("user").order_by("-created_at")[:60]:
             u_name = f"{c.user.first_name} {c.user.last_name}".strip() if c.user else "Employee"
             recent_tx.append({
                 "id": f"claim-{c.id}",
@@ -508,12 +548,13 @@ class FinanceDashboardView(APIView):
             })
 
         recent_tx.sort(key=lambda x: x["date"], reverse=True)
-        recent_tx = recent_tx[:80]
+        recent_tx = recent_tx[:250]
 
         response_data = {
             "year": year,
             "month": month,
             "month_name": calendar.month_name[month],
+            "tx_scope": tx_scope,
             "kpis": {
                 "gross_inflow": gross_inflow,
                 "total_outflow": total_outflow,

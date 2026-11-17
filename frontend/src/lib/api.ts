@@ -1040,12 +1040,14 @@ export interface FinanceDashboardResponse {
   };
   monthly_trends: FinanceDashboardMonthData[];
   recent_transactions: FinanceDashboardTransaction[];
+  tx_scope?: string;
 }
 
-export async function fetchFinanceDashboard(params?: { year?: number; month?: number }) {
+export async function fetchFinanceDashboard(params?: { year?: number; month?: number; tx_scope?: string }) {
   const query = new URLSearchParams();
   if (params?.year) query.set("year", params.year.toString());
   if (params?.month) query.set("month", params.month.toString());
+  if (params?.tx_scope) query.set("tx_scope", params.tx_scope);
   const qs = query.toString() ? `?${query.toString()}` : "";
   const { data } = await api.get<FinanceDashboardResponse>(`/crm/finance-dashboard/${qs}`);
   return data;

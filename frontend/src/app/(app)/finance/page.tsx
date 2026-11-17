@@ -72,6 +72,7 @@ export default function FinanceDashboardPage() {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  const [txScope, setTxScope] = useState<"month" | "all">("month");
   const [txCategory, setTxCategory] = useState<"all" | "payroll" | "inflow" | "bill" | "claim">("all");
   const [txSearch, setTxSearch] = useState<string>("");
   const [showAllTx, setShowAllTx] = useState<boolean>(false);
@@ -86,7 +87,7 @@ export default function FinanceDashboardPage() {
   const {
     data: financeData,
     isLoading: isFinanceLoading,
-  } = useFinanceDashboard(selectedYear, selectedMonth);
+  } = useFinanceDashboard(selectedYear, selectedMonth, txScope);
 
   const yearsList = useMemo(() => {
     const current = new Date().getFullYear();
@@ -774,11 +775,52 @@ export default function FinanceDashboardPage() {
           <div className="bg-paper border border-line rounded-xl p-6 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
               <div>
-                <h3 className="font-serif text-[18px] text-ink font-medium">Recent Financial Transactions</h3>
-                <p className="text-[12.5px] text-muted">Live ledger activity across payments, staff payrolls, bills, and approved reimbursements.</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif text-[18px] text-ink font-medium">
+                    {txScope === "month"
+                      ? `Financial Ledger — ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`
+                      : "All-Time Financial Ledger"}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {txScope === "month" ? `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}` : "All History"}
+                  </span>
+                </div>
+                <p className="text-[12.5px] text-muted mt-0.5">
+                  {txScope === "month"
+                    ? `Live ledger activity strictly scoped to ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}.`
+                    : "Complete live ledger activity across all recorded transactions."}
+                </p>
               </div>
-              <div className="text-[12px] font-mono text-muted">
-                Showing {displayedTransactions.length} of {filteredTransactions.length} items
+
+              {/* Scope toggle button & items count */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-bone-1 border border-line rounded-lg p-0.5 text-[12px]">
+                  <button
+                    onClick={() => setTxScope("month")}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md font-medium transition-all",
+                      txScope === "month"
+                        ? "bg-paper text-ink shadow-2xs border border-line font-semibold"
+                        : "text-muted hover:text-ink"
+                    )}
+                  >
+                    {MONTH_NAMES[selectedMonth - 1].slice(0, 3)} Only
+                  </button>
+                  <button
+                    onClick={() => setTxScope("all")}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md font-medium transition-all",
+                      txScope === "all"
+                        ? "bg-paper text-ink shadow-2xs border border-line font-semibold"
+                        : "text-muted hover:text-ink"
+                    )}
+                  >
+                    All History
+                  </button>
+                </div>
+                <div className="text-[12px] font-mono text-muted shrink-0">
+                  Showing {displayedTransactions.length} of {filteredTransactions.length} items
+                </div>
               </div>
             </div>
 
@@ -881,7 +923,11 @@ export default function FinanceDashboardPage() {
 
             {filteredTransactions.length === 0 ? (
               <div className="p-8 text-center text-muted text-[13px] font-serif border border-dashed border-line rounded-lg">
-                No matching transactions found {txSearch ? `for "${txSearch}"` : ""}.
+                {txSearch
+                  ? `No matching transactions found for "${txSearch}".`
+                  : txScope === "month"
+                  ? `No financial transactions recorded for ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}.`
+                  : "No financial transactions found."}
               </div>
             ) : (
               <div className="divide-y divide-line/60">

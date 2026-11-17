@@ -501,10 +501,10 @@ export function usePremiumAnalytics() {
     enabled: authenticated(),
   });
 }
-export function useFinanceDashboard(year?: number, month?: number) {
+export function useFinanceDashboard(year?: number, month?: number, tx_scope?: string) {
   return useQuery({
-    queryKey: ["finance-dashboard", year, month],
-    queryFn: () => fetchFinanceDashboard({ year, month }),
+    queryKey: ["finance-dashboard", year, month, tx_scope],
+    queryFn: () => fetchFinanceDashboard({ year, month, tx_scope }),
     staleTime: 60 * 1000,
     enabled: authenticated(),
   });
