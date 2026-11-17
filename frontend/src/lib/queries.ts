@@ -50,6 +50,7 @@ import {
   reorderDeals,
   patchDeal,
   fetchPremiumAnalytics,
+  fetchFinanceDashboard,
   fetchSMTPConfigs,
   createSMTPConfig,
   updateSMTPConfig,
@@ -494,6 +495,15 @@ export function usePremiumAnalytics() {
     enabled: authenticated(),
   });
 }
+export function useFinanceDashboard(year?: number, month?: number) {
+  return useQuery({
+    queryKey: ["finance-dashboard", year, month],
+    queryFn: () => fetchFinanceDashboard({ year, month }),
+    staleTime: 60 * 1000,
+    enabled: authenticated(),
+  });
+}
+
 
 export function useReorderDeals() {
   const queryClient = useQueryClient();

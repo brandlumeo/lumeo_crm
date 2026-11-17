@@ -974,6 +974,70 @@ export async function fetchPremiumAnalytics() {
   return data;
 }
 
+export interface FinanceDashboardMonthData {
+  month: number;
+  name: string;
+  full_name: string;
+  inflow: number;
+  payroll: number;
+  bills: number;
+  claims: number;
+  outflow: number;
+  net_profit: number;
+  margin_pct: number;
+  is_selected: boolean;
+}
+
+export interface FinanceDashboardTransaction {
+  id: string;
+  type: "inflow" | "payroll" | "bill" | "claim";
+  category: string;
+  title: string;
+  amount: number;
+  date: string;
+  status: string;
+  reference: string;
+}
+
+export interface FinanceDashboardResponse {
+  year: number;
+  month: number;
+  month_name: string;
+  kpis: {
+    gross_inflow: number;
+    total_outflow: number;
+    net_profit: number;
+    margin_pct: number;
+    pending_receivables: number;
+    pending_payables: number;
+    payroll_expense: number;
+    bills_expense: number;
+    claims_expense: number;
+  };
+  expense_breakdown: {
+    payroll: { amount: number; percentage: number };
+    bills: { amount: number; percentage: number };
+    claims: { amount: number; percentage: number };
+  };
+  annual_summary: {
+    inflow: number;
+    outflow: number;
+    net_profit: number;
+    margin_pct: number;
+  };
+  monthly_trends: FinanceDashboardMonthData[];
+  recent_transactions: FinanceDashboardTransaction[];
+}
+
+export async function fetchFinanceDashboard(params?: { year?: number; month?: number }) {
+  const query = new URLSearchParams();
+  if (params?.year) query.set("year", params.year.toString());
+  if (params?.month) query.set("month", params.month.toString());
+  const qs = query.toString() ? `?${query.toString()}` : "";
+  const { data } = await api.get<FinanceDashboardResponse>(`/crm/finance-dashboard/${qs}`);
+  return data;
+}
+
 export async function fetchSMTPConfigs() {
   return fetchAllPages<SMTPConfig>(endpoints.smtpConfig);
 }

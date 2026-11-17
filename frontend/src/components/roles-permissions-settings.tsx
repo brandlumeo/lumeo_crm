@@ -288,6 +288,16 @@ const modulesList = [
     ]
   },
   { 
+    name: "Finance Dashboard", 
+    hasDropdown: true,
+    subPermissions: [
+      "View Income & Expense Trends",
+      "View Monthly P&L Ledger",
+      "View Working Capital & Receivables",
+      "Export Financial Statements"
+    ]
+  },
+  { 
     name: "Dashboards", 
     hasDropdown: false,
     subPermissions: [

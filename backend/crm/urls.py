@@ -104,13 +104,14 @@ router.register(r'whatsapp-messages', WhatsAppMessageViewSet, basename='whatsapp
 tickets_router = routers.NestedDefaultRouter(router, "tickets", lookup="ticket")
 tickets_router.register("comments", TicketCommentViewSet, basename="ticket-comments")
 
-from .analytics_views import PremiumAnalyticsView, CrmCountsView
+from .analytics_views import PremiumAnalyticsView, CrmCountsView, FinanceDashboardView
 from .webhooks import WhatsAppWebhookView, MetaLeadAdsWebhookView
 
 urlpatterns = [
     path('search/', GlobalSearchView.as_view(), name='global_search'),
     path('counts/', CrmCountsView.as_view(), name='crm_counts'),
     path('analytics/', PremiumAnalyticsView.as_view(), name='premium_analytics'),
+    path('finance-dashboard/', FinanceDashboardView.as_view(), name='finance_dashboard'),
     path('emails/send/', EmailSendView.as_view(), name='email_send'),
     path('ai/assistant/', AIAssistantView.as_view(), name='ai_assistant'),
     path('ai-chat/', AIChatView.as_view(), name='ai-chat'),

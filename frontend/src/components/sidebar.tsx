@@ -179,6 +179,22 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
   const isOwnerOrAdmin = user?.role === "owner" || user?.role === "admin";
   const isManagerOrAbove = isOwnerOrAdmin || user?.role === "manager" || user?.has_management_access;
+  const isAccountant = user?.role === "accountant" || user?.role === "accounts" || ["account", "finance", "cfo", "controller", "bookkeeper", "auditor"].some(kw => (user?.designation || "").toLowerCase().includes(kw));
+
+  const hasFinanceRolePermission = Boolean(
+    company?.roles?.some((r: any) => {
+      const roleId = user?.role === "staff" ? "employee" : user?.role;
+      if (r.id === roleId || r.name?.toLowerCase() === user?.role?.toLowerCase()) {
+        if (r.isAdmin) return true;
+        const p = r.permissions || {};
+        if (p["Finance Dashboard"]?.View && p["Finance Dashboard"]?.View !== "None") return true;
+        if (p["Dashboards"]?.sub?.["View Finance Dashboard"] && p["Dashboards"]?.sub?.["View Finance Dashboard"] !== "None") return true;
+      }
+      return false;
+    })
+  );
+
+  const canAccessFinanceDashboard = isOwnerOrAdmin || isManagerOrAbove || isAccountant || hasFinanceRolePermission;
 
   const mainNav = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -213,6 +229,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       label: "Finance", 
       icon: CircleDollarSign,
       subItems: [
+        ...(mounted && canAccessFinanceDashboard ? [{ label: "Dashboard", href: "/finance" }] : []),
         { label: "Invoices", href: "/invoices" },
         { label: "Quotes", href: "/quotes" },
         { label: "Vendors", href: "/vendors" },
