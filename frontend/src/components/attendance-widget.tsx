@@ -8,11 +8,13 @@ import {
   useAttendanceStatus,
   usePunchIn,
   usePunchOut,
+  useCurrentCompany,
 } from "@/lib/queries";
 
 export function AttendanceWidget() {
   const router = useRouter();
   const { data: status, isLoading } = useAttendanceStatus();
+  const { data: company } = useCurrentCompany();
   const { mutate: punchInMutation, isPending: isPunchingIn } = usePunchIn();
   const punchOutMutation = usePunchOut();
 
@@ -25,6 +27,8 @@ export function AttendanceWidget() {
       <div className="w-[100px] h-8 bg-bone-2 border border-line rounded-md animate-pulse" />
     );
   }
+
+  const isGeofenceRequired = workLocation === "office" && Boolean(company?.clock_in_location_radius_check);
 
   const handlePunchIn = () => {
     const executePunch = (coords?: { latitude: number; longitude: number }) => {
@@ -52,7 +56,7 @@ export function AttendanceWidget() {
       navigator.geolocation.getCurrentPosition(
         (pos) => executePunch({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
         (err) => {
-          if (workLocation === "office") {
+          if (isGeofenceRequired) {
             toast.error("Location access is required to clock in from the office. Please allow location permissions in your browser.");
           } else {
             executePunch();
@@ -61,7 +65,7 @@ export function AttendanceWidget() {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      if (workLocation === "office") {
+      if (isGeofenceRequired) {
         toast.error("Geolocation is not supported by your browser.");
       } else {
         executePunch();
