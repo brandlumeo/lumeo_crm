@@ -125,6 +125,7 @@ class Customer(models.Model):
     email = models.EmailField(db_index=True)
     phone = models.CharField(max_length=20)
     currency = models.CharField(max_length=3, blank=True, default="", help_text="Preferred currency for quotes and invoices")
+    tax_id = models.CharField(max_length=30, blank=True, default="", help_text="Client GSTIN (India), TRN (UAE) or other tax number")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     custom_data = models.JSONField(default=dict, blank=True)
@@ -528,7 +529,67 @@ class Product(models.Model):
         return f"{self.name} ({self.price})"
 
 
-class Quote(models.Model):
+TAX_REGIME_CHOICES = [("in_gst", "India GST"), ("ae_vat", "UAE VAT"), ("generic", "Generic tax")]
+SUPPLY_TYPE_CHOICES = [("intra", "Intra-state (CGST + SGST)"), ("inter", "Inter-state (IGST)")]
+TAX_CATEGORY_CHOICES = [("standard", "Standard"), ("zero", "Zero-rated / Nil"), ("exempt", "Exempt")]
+
+
+class SalesTaxMixin(models.Model):
+    """Regime-aware tax for documents we issue to clients (quotes, invoices).
+
+    Mirrors the bill tax setup: India GST (CGST+SGST or IGST), UAE VAT, or a
+    generic single tax, with optional reverse charge (the client accounts for
+    the tax, so it is shown but not charged).
+    """
+
+    tax_regime = models.CharField(max_length=10, choices=TAX_REGIME_CHOICES, default="generic")
+    customer_tax_id = models.CharField(max_length=30, blank=True, default="", help_text="Client GSTIN (India), TRN (UAE) or other tax number")
+    place_of_supply = models.CharField(max_length=100, blank=True, default="")
+    supply_type = models.CharField(max_length=10, choices=SUPPLY_TYPE_CHOICES, default="intra")
+    reverse_charge = models.BooleanField(default=False, help_text="Client self-accounts the tax; it is not charged on this document")
+    reverse_charge_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    cgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    sgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    igst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    class Meta:
+        abstract = True
+
+    def apply_tax_totals(self, items):
+        """Set subtotal, tax split, reverse charge and total from line items."""
+        from decimal import Decimal, ROUND_HALF_UP
+        two = Decimal("0.01")
+        zero = Decimal("0")
+        subtotal = zero
+        tax = zero
+        for item in items:
+            if getattr(item, "is_included", False):
+                continue
+            line = Decimal(str(item.quantity or 0)) * Decimal(str(item.unit_price or 0))
+            subtotal += line
+            if getattr(item, "tax_category", "") not in ("zero", "exempt"):
+                tax += line * Decimal(str(item.tax_rate or 0)) / 100
+        subtotal = subtotal.quantize(two, ROUND_HALF_UP)
+        tax = tax.quantize(two, ROUND_HALF_UP)
+
+        self.subtotal = subtotal
+        self.cgst_amount = self.sgst_amount = self.igst_amount = zero
+        if self.reverse_charge:
+            self.reverse_charge_amount = tax
+            self.tax_amount = zero
+        else:
+            self.reverse_charge_amount = zero
+            self.tax_amount = tax
+            if self.tax_regime == "in_gst":
+                if self.supply_type == "inter":
+                    self.igst_amount = tax
+                else:
+                    half = (tax / 2).quantize(two, ROUND_HALF_UP)
+                    self.cgst_amount, self.sgst_amount = half, tax - half
+        self.total = self.subtotal + self.tax_amount
+
+
+class Quote(SalesTaxMixin, models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         SENT = "sent", "Sent"
@@ -604,10 +665,7 @@ class Quote(models.Model):
         return f"{self.quote_number} - {self.title}"
 
     def calculate_totals(self):
-        items = self.items.all()
-        self.subtotal = sum(item.subtotal for item in items if not getattr(item, 'is_included', False))
-        self.tax_amount = sum(item.tax_amount for item in items if not getattr(item, 'is_included', False))
-        self.total = self.subtotal + self.tax_amount
+        self.apply_tax_totals(self.items.all())
         self.save()
 
 
@@ -639,6 +697,7 @@ class QuoteLineItem(models.Model):
     hsn_sac_code = models.CharField(max_length=50, blank=True, null=True)
     unit = models.CharField(max_length=50, blank=True, null=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    tax_category = models.CharField(max_length=10, choices=TAX_CATEGORY_CHOICES, blank=True, default="")
 
     @property
     def subtotal(self):
@@ -648,7 +707,7 @@ class QuoteLineItem(models.Model):
 
     @property
     def tax_amount(self):
-        if self.is_included:
+        if self.is_included or self.tax_category in ("zero", "exempt"):
             return 0
         return self.subtotal * (self.tax_rate / 100)
 
@@ -689,7 +748,7 @@ class QuoteTemplate(models.Model):
         return f"{self.company.name} - {self.name}"
 
 
-class Invoice(models.Model):
+class Invoice(SalesTaxMixin, models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         SENT = "sent", "Sent"
@@ -748,10 +807,7 @@ class Invoice(models.Model):
         return f"{self.invoice_number} ({self.total})"
 
     def calculate_totals(self):
-        items = self.items.all()
-        self.subtotal = sum(item.subtotal for item in items)
-        self.tax_amount = sum(item.tax_amount for item in items)
-        self.total = self.subtotal + self.tax_amount
+        self.apply_tax_totals(self.items.all())
         self.save()
 
     @property
@@ -782,6 +838,7 @@ class InvoiceLineItem(models.Model):
     hsn_sac_code = models.CharField(max_length=50, blank=True, null=True)
     unit = models.CharField(max_length=50, blank=True, null=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    tax_category = models.CharField(max_length=10, choices=TAX_CATEGORY_CHOICES, blank=True, default="")
 
     @property
     def subtotal(self):
@@ -789,6 +846,8 @@ class InvoiceLineItem(models.Model):
 
     @property
     def tax_amount(self):
+        if self.tax_category in ("zero", "exempt"):
+            return 0
         return self.subtotal * (self.tax_rate / 100)
 
     @property

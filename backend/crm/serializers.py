@@ -304,6 +304,7 @@ class CustomerSerializer(CompanyScopedSerializer):
             "email",
             "phone",
             "currency",
+            "tax_id",
             "custom_data",
             "has_portal_access",
             "created_at",
@@ -685,7 +686,87 @@ class ProductSerializer(CompanyScopedSerializer):
         read_only_fields = ("id", "created_at", "updated_at")
 
 
-class QuoteLineItemSerializer(serializers.ModelSerializer):
+GSTIN_RE = r"\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]"
+TRN_RE = r"\d{15}"
+TAX_ID_MESSAGES = {
+    "in_gst": "Enter a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5).",
+    "ae_vat": "Enter a valid 15-digit TRN (e.g. 100123456700003).",
+}
+
+
+def normalize_tax_id(value):
+    return re.sub(r"[\s-]", "", value or "").upper()
+
+
+def tax_id_is_valid(regime, value):
+    if not value:
+        return True
+    if regime == "in_gst":
+        return bool(re.fullmatch(GSTIN_RE, value))
+    if regime == "ae_vat":
+        return bool(re.fullmatch(TRN_RE, value))
+    return len(value) <= 30
+
+
+class LineTaxCategoryMixin:
+    """Zero-rated and exempt lines never carry a tax rate."""
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if attrs.get("tax_category") in ("zero", "exempt"):
+            attrs["tax_rate"] = 0
+        return attrs
+
+
+class SalesTaxSerializerMixin:
+    """Tax system + client tax number for quotes and invoices (see SalesTaxMixin)."""
+
+    SALES_TAX_FIELDS = (
+        "tax_regime",
+        "customer_tax_id",
+        "place_of_supply",
+        "supply_type",
+        "reverse_charge",
+        "reverse_charge_amount",
+        "cgst_amount",
+        "sgst_amount",
+        "igst_amount",
+    )
+    SALES_TAX_READ_ONLY = ("reverse_charge_amount", "cgst_amount", "sgst_amount", "igst_amount")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if self.instance is None and "tax_regime" not in attrs:
+            from .models import Bill
+            currency = (attrs.get("currency") or "").upper()
+            request = self.context.get("request")
+            company = getattr(getattr(request, "user", None), "company", None)
+            attrs["tax_regime"] = {"INR": "in_gst", "AED": "ae_vat"}.get(currency) or Bill.default_tax_regime(company)
+        regime = attrs.get("tax_regime", getattr(self.instance, "tax_regime", "generic"))
+
+        if "customer_tax_id" in attrs:
+            value = normalize_tax_id(attrs["customer_tax_id"])
+            if not tax_id_is_valid(regime, value):
+                raise serializers.ValidationError({"customer_tax_id": TAX_ID_MESSAGES.get(regime, "Tax number is too long.")})
+            attrs["customer_tax_id"] = value
+        elif "tax_regime" in attrs and self.instance is not None:
+            # Switching tax system invalidates a tax number in the old format.
+            if not tax_id_is_valid(regime, self.instance.customer_tax_id):
+                attrs["customer_tax_id"] = ""
+        if regime != "in_gst" and ("tax_regime" in attrs or "supply_type" in attrs):
+            attrs["supply_type"] = "intra"
+        return attrs
+
+    @staticmethod
+    def fill_customer_tax_defaults(doc):
+        customer = getattr(doc, "customer", None)
+        if not doc.customer_tax_id and customer is not None and getattr(customer, "tax_id", ""):
+            candidate = normalize_tax_id(customer.tax_id)
+            if tax_id_is_valid(doc.tax_regime, candidate):
+                doc.customer_tax_id = candidate
+
+
+class QuoteLineItemSerializer(LineTaxCategoryMixin, serializers.ModelSerializer):
     subtotal = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     tax_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
@@ -703,6 +784,7 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "tax_rate",
+            "tax_category",
             "hsn_sac_code",
             "unit",
             "subtotal",
@@ -771,7 +853,7 @@ class DocumentCurrencyMixin:
         return attrs
 
 
-class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
+class QuoteSerializer(SalesTaxSerializerMixin, DocumentCurrencyMixin, CompanyScopedSerializer):
     items = QuoteLineItemSerializer(many=True, required=False)
     deal_details = DealSerializer(source='deal', read_only=True)
     customer_details = CustomerSerializer(source='customer', read_only=True)
@@ -818,6 +900,7 @@ class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             "is_locked",
             "currency",
             "exchange_rate",
+            *SalesTaxSerializerMixin.SALES_TAX_FIELDS,
             "subtotal",
             "tax_amount",
             "total",
@@ -834,7 +917,7 @@ class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             "lead_details",
             "settings",
         )
-        read_only_fields = ("id", "quote_number", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token")
+        read_only_fields = ("id", "quote_number", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token", *SalesTaxSerializerMixin.SALES_TAX_READ_ONLY)
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
@@ -873,7 +956,8 @@ class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
         
         for item_data in items_data:
             QuoteLineItem.objects.create(quote=quote, **item_data)
-            
+
+        self.fill_customer_tax_defaults(quote)
         quote.calculate_totals()
         
         if quote.status == Quote.Status.SENT:
@@ -903,7 +987,8 @@ class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             instance.items.all().delete()
             for item_data in items_data:
                 QuoteLineItem.objects.create(quote=instance, **item_data)
-                
+
+        self.fill_customer_tax_defaults(quote)
         quote.calculate_totals()
         
         if quote.status == Quote.Status.SENT and getattr(instance, '_old_status', None) != Quote.Status.SENT:
@@ -937,7 +1022,7 @@ class QuoteTemplateSerializer(CompanyScopedSerializer):
         read_only_fields = ("id", "company", "created_at", "updated_at")
 
 
-class InvoiceLineItemSerializer(serializers.ModelSerializer):
+class InvoiceLineItemSerializer(LineTaxCategoryMixin, serializers.ModelSerializer):
     subtotal = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     tax_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
@@ -952,6 +1037,7 @@ class InvoiceLineItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "tax_rate",
+            "tax_category",
             "hsn_sac_code",
             "unit",
             "subtotal",
@@ -985,7 +1071,7 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 
 from companies.serializers import PublicInvoiceSettingsSerializer
 
-class InvoiceSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
+class InvoiceSerializer(SalesTaxSerializerMixin, DocumentCurrencyMixin, CompanyScopedSerializer):
     items = InvoiceLineItemSerializer(many=True, required=False)
     payments = InvoicePaymentSerializer(many=True, read_only=True)
     deal_details = DealSerializer(source='deal', read_only=True)
@@ -1030,6 +1116,7 @@ class InvoiceSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             "terms",
             "currency",
             "exchange_rate",
+            *SalesTaxSerializerMixin.SALES_TAX_FIELDS,
             "subtotal",
             "tax_amount",
             "total",
@@ -1047,7 +1134,7 @@ class InvoiceSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "invoice_number", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token", "amount_paid", "amount_due")
+        read_only_fields = ("id", "invoice_number", "subtotal", "tax_amount", "total", "created_at", "updated_at", "public_token", "amount_paid", "amount_due", *SalesTaxSerializerMixin.SALES_TAX_READ_ONLY)
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
@@ -1101,7 +1188,8 @@ class InvoiceSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
         
         for item_data in items_data:
             InvoiceLineItem.objects.create(invoice=invoice, **item_data)
-            
+
+        self.fill_customer_tax_defaults(invoice)
         invoice.calculate_totals()
         
         if invoice.status == Invoice.Status.SENT:
@@ -1120,7 +1208,8 @@ class InvoiceSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             instance.items.all().delete()
             for item_data in items_data:
                 InvoiceLineItem.objects.create(invoice=instance, **item_data)
-                
+
+        self.fill_customer_tax_defaults(invoice)
         invoice.calculate_totals()
         
         if invoice.status == Invoice.Status.SENT and old_status != Invoice.Status.SENT:

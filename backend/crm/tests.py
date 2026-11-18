@@ -547,3 +547,78 @@ def test_document_currencies_and_base_conversion(setup_data, monkeypatch):
     from crm.utils_quote_pdf import amount_to_words, format_currency_inr
     assert format_currency_inr(1500, "AED") == "AED 1,500.00"
     assert amount_to_words(1250000, "AED") == "UAE Dirhams One Million Two Hundred Fifty Thousand Only"
+
+
+@pytest.mark.django_db
+def test_invoice_and_quote_sales_tax_regimes(setup_data, monkeypatch):
+    """Invoices/quotes support GST split, UAE VAT, zero-rated lines, reverse charge and client tax ids."""
+    from decimal import Decimal
+    from rest_framework.test import APIClient
+    from crm import currency as fx
+    from crm.models import Customer
+
+    monkeypatch.setattr(fx, "fetch_rate", lambda src, dst: Decimal("22.75"))
+    user = setup_data["user1"]
+    user.role = "admin"
+    user.save()
+    company = setup_data["company1"]
+    company.currency = "INR"
+    company.country = "India"
+    company.state = "Kerala"
+    company.save()
+
+    kochi = Customer.objects.create(company=company, name="Kochi Foods", email="a@kochi.example", phone="1", tax_id="32abcde1234f1z5")
+    dubai = Customer.objects.create(company=company, name="Dubai Mall Co", email="a@dubai.example", phone="2", currency="AED")
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    # India GST intra-state: CGST + SGST split, client GSTIN copied from the customer
+    res = client.post("/api/v1/crm/invoices/", {
+        "customer": kochi.id, "place_of_supply": "Kerala", "supply_type": "intra",
+        "items": [
+            {"name": "Design", "quantity": 2, "unit_price": 1000, "tax_rate": 18, "tax_category": "standard", "hsn_sac_code": "998314"},
+            {"name": "Export pack", "quantity": 1, "unit_price": 500, "tax_rate": 18, "tax_category": "exempt"},
+        ],
+    }, format="json")
+    assert res.status_code == 201, res.data
+    d = res.data
+    assert d["tax_regime"] == "in_gst" and d["customer_tax_id"] == "32ABCDE1234F1Z5"
+    assert Decimal(d["subtotal"]) == 2500 and Decimal(d["tax_amount"]) == 360
+    assert Decimal(d["cgst_amount"]) == 180 and Decimal(d["sgst_amount"]) == 180 and Decimal(d["igst_amount"]) == 0
+    assert Decimal(d["total"]) == 2860
+    assert Decimal(d["items"][1]["tax_rate"]) == 0  # exempt line carries no rate
+
+    # Switching to inter-state moves the tax to IGST
+    res = client.patch(f"/api/v1/crm/invoices/{d['id']}/", {"supply_type": "inter", "place_of_supply": "Karnataka"}, format="json")
+    assert res.status_code == 200, res.data
+    inv = client.get(f"/api/v1/crm/invoices/{d['id']}/").data
+    assert Decimal(inv["igst_amount"]) == 360 and Decimal(inv["cgst_amount"]) == 0
+
+    # Invalid GSTIN rejected
+    res = client.post("/api/v1/crm/invoices/", {"customer": kochi.id, "customer_tax_id": "NOTAGSTIN", "items": []}, format="json")
+    assert res.status_code == 400 and "customer_tax_id" in res.data
+
+    # AED invoice defaults to UAE VAT; reverse charge shows tax but does not charge it
+    res = client.post("/api/v1/crm/invoices/", {
+        "customer": dubai.id, "customer_tax_id": "100123456700003", "reverse_charge": True,
+        "items": [{"name": "Campaign", "quantity": 1, "unit_price": 1000, "tax_rate": 5, "tax_category": "standard"}],
+    }, format="json")
+    assert res.status_code == 201, res.data
+    d = res.data
+    assert d["currency"] == "AED" and d["tax_regime"] == "ae_vat"
+    assert Decimal(d["tax_amount"]) == 0 and Decimal(d["reverse_charge_amount"]) == 50 and Decimal(d["total"]) == 1000
+    assert Decimal(d["cgst_amount"]) == 0
+
+    # Quote: VAT on billable lines only (included sub-items are free), PDFs render
+    res = client.post("/api/v1/crm/quotes/", {
+        "title": "Dubai retainer", "customer": dubai.id, "tax_regime": "ae_vat",
+        "items": [
+            {"name": "Package", "quantity": 1, "unit_price": 2000, "tax_rate": 5, "tax_category": "standard"},
+            {"name": "Reels", "quantity": 4, "unit_price": 0, "tax_rate": 5, "is_included": True},
+        ],
+    }, format="json")
+    assert res.status_code == 201, res.data
+    q = res.data
+    assert Decimal(q["tax_amount"]) == 100 and Decimal(q["total"]) == 2100 and Decimal(q["cgst_amount"]) == 0
+    assert client.get(f"/api/v1/crm/quotes/{q['id']}/pdf/").status_code == 200
+    assert client.get(f"/api/v1/crm/invoices/{inv['id']}/pdf/").status_code == 200

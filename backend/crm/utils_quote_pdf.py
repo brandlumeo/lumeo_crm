@@ -350,6 +350,14 @@ def _build_quote_story(quote, is_compact=False):
         f'<font size="{"7" if is_compact else "7.5"}" color="{body_slate}">{esc(client_address)}</font>'
         + (f'<br/><font size="{"7" if is_compact else "7.5"}" color="{body_slate}">{esc(client_phone)}</font>' if client_phone else '')
     )
+    quote_regime = getattr(quote, "tax_regime", "generic")
+    client_tax_id = getattr(quote, "customer_tax_id", "") or ""
+    if client_tax_id:
+        tax_id_label = {"in_gst": "GSTIN", "ae_vat": "TRN"}.get(quote_regime, "Tax ID")
+        prepared_for_html += f'<br/><font size="{"7" if is_compact else "7.5"}" color="{body_slate}">{tax_id_label}: {esc(client_tax_id)}</font>'
+    if quote_regime == "in_gst" and getattr(quote, "place_of_supply", ""):
+        prepared_for_html += f'<br/><font size="{"7" if is_compact else "7.5"}" color="{body_slate}">Place of Supply: {esc(quote.place_of_supply)}</font>'
+
 
     created_date_str = quote.created_at.strftime("%d-%m-%Y") if quote.created_at else datetime.now().strftime("%d-%m-%Y")
     valid_until_str = quote.valid_until.strftime("%d-%m-%Y") if quote.valid_until else "15 Days"
@@ -486,11 +494,22 @@ def _build_quote_story(quote, is_compact=False):
         "", "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{subtotal_str}</font>', ps("ST2", fontSize=7 if is_compact else 7.5, alignment=2))
     ])
 
-    if quote.tax_amount and quote.tax_amount > 0:
-        tax_str = format_currency_inr(quote.tax_amount, qcur)
+    # Tax rows: CGST + SGST / IGST (India), VAT (UAE) or a single tax line.
+    tax_name = {"in_gst": "GST", "ae_vat": "VAT"}.get(quote_regime, "Tax")
+    rates = sorted({float(i.tax_rate or 0) for i in line_items if not getattr(i, "is_included", False) and (i.tax_rate or 0) > 0 and getattr(i, "tax_category", "") not in ("zero", "exempt")})
+    one_rate = rates[0] if len(rates) == 1 else None
+    tax_rows = []
+    if getattr(quote, "igst_amount", 0):
+        tax_rows.append((f"IGST @ {one_rate:g}%" if one_rate else "IGST", quote.igst_amount))
+    elif getattr(quote, "cgst_amount", 0) or getattr(quote, "sgst_amount", 0):
+        tax_rows.append((f"CGST @ {one_rate / 2:g}%" if one_rate else "CGST", quote.cgst_amount))
+        tax_rows.append((f"SGST @ {one_rate / 2:g}%" if one_rate else "SGST", quote.sgst_amount))
+    elif quote.tax_amount and quote.tax_amount > 0:
+        tax_rows.append((f"{tax_name} @ {one_rate:g}%" if one_rate else tax_name, quote.tax_amount))
+    for n, (label, amount) in enumerate(tax_rows):
         items_table_data.append([
-            "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Tax</font>', ps("TX1", fontSize=7 if is_compact else 7.5, alignment=2)),
-            "", "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{tax_str}</font>', ps("TX2", fontSize=7 if is_compact else 7.5, alignment=2))
+            "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{label}</font>', ps(f"TX1_{n}", fontSize=7 if is_compact else 7.5, alignment=2)),
+            "", "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{format_currency_inr(amount, qcur)}</font>', ps(f"TX2_{n}", fontSize=7 if is_compact else 7.5, alignment=2))
         ])
 
     items_table_data.append([
@@ -501,7 +520,7 @@ def _build_quote_story(quote, is_compact=False):
     scope_table = Table(items_table_data, colWidths=[28, 272, 60, 90, 90])
     
     total_row_idx = len(items_table_data) - 1
-    subtotal_row_idx = total_row_idx - (1 if not (quote.tax_amount and quote.tax_amount > 0) else 2)
+    subtotal_row_idx = total_row_idx - 1 - len(tax_rows)
 
     table_styles = [
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -519,6 +538,13 @@ def _build_quote_story(quote, is_compact=False):
     scope_table.setStyle(TableStyle(table_styles))
     story.append(scope_table)
     story.append(Spacer(1, 4 if is_compact else 12))
+
+    if getattr(quote, "reverse_charge", False):
+        story.append(Paragraph(
+            f'<font name="Helvetica-Bold" size="{"6.5" if is_compact else "7"}" color="#B45309">Reverse charge applies: </font>'
+            f'<font size="{"6.5" if is_compact else "7"}" color="{ink_slate}">{tax_name} of {format_currency_inr(quote.reverse_charge_amount, qcur)} is payable by the recipient and is not included above.</font>',
+            ps("RCNote", fontSize=6.5 if is_compact else 7, leading=8.5 if is_compact else 9)
+        ))
 
     # Amount in words
     amount_words = amount_to_words(quote.total, qcur)

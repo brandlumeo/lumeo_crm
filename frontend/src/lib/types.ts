@@ -259,6 +259,7 @@ export interface Customer {
   email: string;
   phone: string;
   currency?: string;
+  tax_id?: string;
   custom_data: Record<string, any>;
   has_portal_access?: boolean;
   created_at: string;
@@ -338,6 +339,7 @@ export interface CustomerInput {
   email: string;
   phone: string;
   currency?: string;
+  tax_id?: string;
   custom_data?: Record<string, any>;
 }
 

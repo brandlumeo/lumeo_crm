@@ -18,7 +18,19 @@ import {
   downloadInvoicePdf,
 } from "@/lib/api";
 import { formatDateTime, formatINR, toNumber } from "@/lib/utils";
-import { useInvoiceSettings, useUnits } from "@/lib/queries";
+import { useCurrentCompany, useInvoiceSettings, useUnits } from "@/lib/queries";
+import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
+import {
+  SALES_TAX_REGIMES,
+  applyTaxPatch,
+  computeDocTax,
+  initialTaxSettings,
+  lineTaxFields,
+  normalizeTaxId,
+  regimeForCurrency,
+  taxPayload,
+  type DocTaxSettings,
+} from "@/lib/tax";
 import type { Quote, Invoice } from "@/lib/types";
 
 interface QuotesInvoicesProps {
@@ -48,10 +60,25 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
       quantity: number;
       unit_price: string;
       tax_rate: string;
+      tax_category?: string;
       hsn_sac_code?: string;
       unit?: string;
     }[]
   >([]);
+  const { data: company } = useCurrentCompany();
+  const [taxSettings, setTaxSettings] = useState<DocTaxSettings>(() => initialTaxSettings(null));
+  const taxCfg = SALES_TAX_REGIMES[taxSettings.tax_regime];
+  const hsnVisible = Boolean(invoiceSettings?.show_hsn_sac_code) || (taxSettings.taxApplicable && taxCfg.showHsn);
+  const patchTax = (patch: Partial<DocTaxSettings>) => {
+    const next = applyTaxPatch(taxSettings, patch, items, company);
+    setTaxSettings(next.settings);
+    setItems(next.items.map((i) => ({ ...i, tax_rate: String(i.tax_rate) })));
+  };
+  const openBuilder = (type: "quote" | "invoice") => {
+    setBuilderType(type);
+    setTaxSettings(initialTaxSettings(company, currency));
+    setIsBuilderOpen(true);
+  };
 
   // Fetch Quotes & Invoices
   const { data: quotesData, isLoading: quotesLoading } = useQuery({
@@ -126,11 +153,16 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         description: selectedProd.description || "",
         unit_price: selectedProd.price,
         tax_rate: selectedProd.tax_rate,
+        tax_category: toNumber(selectedProd.tax_rate) > 0 ? "standard" : "",
         hsn_sac_code: selectedProd.hsn_sac_code || "",
         unit: selectedProd.unit || "",
       };
       return updated;
     });
+    // A taxed catalogue product switches tax on (keeping the product's own rate).
+    if (toNumber(selectedProd.tax_rate) > 0 && !taxSettings.taxApplicable) {
+      setTaxSettings((prev) => ({ ...prev, taxApplicable: true }));
+    }
   };
 
   const updateItemField = (index: number, field: string, value: any) => {
@@ -152,7 +184,14 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         description: "", 
         quantity: 1, 
         unit_price: "0", 
-        tax_rate: invoiceSettings?.default_tax_rate?.toString() || "0",
+        tax_rate: String(
+          !taxSettings.taxApplicable
+            ? 0
+            : taxSettings.tax_regime === "generic"
+              ? toNumber(invoiceSettings?.default_tax_rate ?? 0)
+              : taxCfg.defaultRate
+        ),
+        tax_category: taxSettings.taxApplicable ? "standard" : "",
         hsn_sac_code: "",
         unit: ""
       },
@@ -164,15 +203,8 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
   };
 
   // Live Calculations
-  const subtotal = items.reduce(
-    (acc, item) => acc + toNumber(item.unit_price) * item.quantity,
-    0
-  );
-  const taxAmount = items.reduce((acc, item) => {
-    const itemSub = toNumber(item.unit_price) * item.quantity;
-    return acc + itemSub * (toNumber(item.tax_rate) / 100);
-  }, 0);
-  const grandTotal = subtotal + taxAmount;
+  const totals = computeDocTax(items, taxSettings);
+  const payloadItems = () => items.map((item) => ({ ...item, ...lineTaxFields(item, taxSettings) }));
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -186,8 +218,9 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         deal: dealId,
         title,
         currency,
-        items,
-      });
+        items: payloadItems(),
+        ...taxPayload(taxSettings),
+      } as any);
     } else {
       if (!selectedCustomer) {
         toast.error("Please select a customer for the invoice.");
@@ -199,8 +232,9 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         currency,
         due_date: dueDate || undefined,
         terms,
-        items,
-      });
+        items: payloadItems(),
+        ...taxPayload(taxSettings),
+      } as any);
     }
   };
 
@@ -213,19 +247,13 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button
-            onClick={() => {
-              setBuilderType("quote");
-              setIsBuilderOpen(true);
-            }}
+            onClick={() => openBuilder("quote")}
             className="btn btn-primary text-[12px] py-1.5 px-3"
           >
             <Plus className="w-3.5 h-3.5 mr-1" /> Quote
           </button>
           <button
-            onClick={() => {
-              setBuilderType("invoice");
-              setIsBuilderOpen(true);
-            }}
+            onClick={() => openBuilder("invoice")}
             className="btn btn-secondary text-[12px] py-1.5 px-3"
           >
             <Plus className="w-3.5 h-3.5 mr-1" /> Invoice
@@ -384,7 +412,18 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                         required
                         className="input"
                         value={selectedCustomer}
-                        onChange={(e) => setSelectedCustomer(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedCustomer(e.target.value);
+                          const c: any = customers.find((x) => String(x.id) === e.target.value);
+                          const taxPatch: Partial<DocTaxSettings> = {};
+                          const clientCurrency = (c?.currency || "").toUpperCase();
+                          if (clientCurrency && clientCurrency !== currency) {
+                            setCurrency(clientCurrency);
+                            taxPatch.tax_regime = regimeForCurrency(clientCurrency, company);
+                          }
+                          if (c?.tax_id) taxPatch.customer_tax_id = normalizeTaxId(c.tax_id);
+                          if (Object.keys(taxPatch).length) patchTax(taxPatch);
+                        }}
                       >
                         <option value="">-- Choose Customer --</option>
                         {customers.map((c) => (
@@ -411,7 +450,10 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   <select
                     className="input"
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value !== currency) patchTax({ tax_regime: regimeForCurrency(e.target.value, company) });
+                      setCurrency(e.target.value);
+                    }}
                   >
                     {CURRENCIES.map((c) => (
                       <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
@@ -419,6 +461,8 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   </select>
                 </label>
               </div>
+
+              <DocTaxPanel value={taxSettings} onChange={patchTax} docLabel={builderType} />
 
               {/* Items Section */}
               <div className="space-y-4">
@@ -439,7 +483,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   {items.map((item, idx) => (
                     <div
                       key={idx}
-                      className={`grid grid-cols-1 md:grid-cols-[1.5fr_1fr_80px_100px_120px_100px_40px] gap-3 p-3 bg-bone-2 border border-line rounded-lg items-end ${invoiceSettings?.show_hsn_sac_code ? "md:grid-cols-[1.5fr_1fr_80px_100px_80px_120px_100px_40px]" : ""}`}
+                      className={`grid grid-cols-1 md:grid-cols-[1.5fr_1fr_80px_100px_120px_100px_40px] gap-3 p-3 bg-bone-2 border border-line rounded-lg items-end ${hsnVisible ? "md:grid-cols-[1.5fr_1fr_80px_100px_80px_120px_100px_40px]" : ""}`}
                     >
                       <label className="block">
                         <span className="label-meta text-[11px]">Product Auto-fill</span>
@@ -497,7 +541,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                       </label>
 
                       <label className="block">
-                        <span className="label-meta text-[11px]">Unit Price (INR)</span>
+                        <span className="label-meta text-[11px]">Unit Price ({currency})</span>
                         <input
                           required
                           type="number"
@@ -509,18 +553,24 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                       </label>
 
                       <label className="block">
-                        <span className="label-meta text-[11px]">Tax Rate (%)</span>
-                        <input
-                          required
-                          type="number"
-                          step="0.01"
-                          className="input"
-                          value={item.tax_rate}
-                          onChange={(e) => updateItemField(idx, "tax_rate", e.target.value)}
-                        />
+                        <span className="label-meta text-[11px]">{taxCfg.taxName}</span>
+                        {taxSettings.taxApplicable ? (
+                          <LineTaxRate
+                            regime={taxSettings.tax_regime}
+                            rate={item.tax_rate}
+                            category={item.tax_category}
+                            onChange={(rate, category) => {
+                              updateItemField(idx, "tax_rate", String(rate));
+                              updateItemField(idx, "tax_category", category);
+                            }}
+                            className="input"
+                          />
+                        ) : (
+                          <div className="input text-muted">—</div>
+                        )}
                       </label>
 
-                      {invoiceSettings?.show_hsn_sac_code && (
+                      {hsnVisible && (
                         <label className="block">
                           <span className="label-meta text-[11px]">HSN/SAC</span>
                           <input
@@ -550,15 +600,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
 
               {/* Running Totals Block */}
               <div className="border-t border-line pt-4 flex flex-col items-end gap-2 text-right">
-                <div className="text-[13px] text-muted">
-                  Subtotal: <span className="font-serif font-medium text-ink ml-2">{formatINR(subtotal, currency)}</span>
-                </div>
-                <div className="text-[13px] text-muted">
-                  Tax: <span className="font-serif font-medium text-ink ml-2">{formatINR(taxAmount, currency)}</span>
-                </div>
-                <div className="text-[16px] text-ink font-serif font-semibold border-t border-line pt-2">
-                  Total: <span className="ml-2 text-accent">{formatINR(grandTotal, currency)}</span>
-                </div>
+                <DocTaxTotals className="min-w-[240px] text-left" totals={totals} settings={taxSettings} currency={currency} />
               </div>
 
               {builderType === "invoice" && (

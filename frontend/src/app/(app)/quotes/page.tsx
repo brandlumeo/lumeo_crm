@@ -18,6 +18,19 @@ import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
 import { CurrencyPicker } from "@/components/currency-picker";
+import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
+import {
+  SALES_TAX_REGIMES,
+  applyTaxPatch,
+  computeDocTax,
+  initialTaxSettings,
+  lineTaxFields,
+  normalizeTaxId,
+  regimeForCurrency,
+  taxPayload,
+  taxSettingsFromDoc,
+  type DocTaxSettings,
+} from "@/lib/tax";
 import { toast } from "sonner";
 import type { QuoteLineItem, QuoteTemplate } from "@/lib/types";
 
@@ -113,6 +126,20 @@ function QuotesPageContent() {
   const [items, setItems] = useState<any[]>([
     { item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }
   ]);
+  const [taxSettings, setTaxSettings] = useState<DocTaxSettings>(() => initialTaxSettings(null));
+  const taxCfg = SALES_TAX_REGIMES[taxSettings.tax_regime];
+  const showHsn = taxSettings.taxApplicable && taxCfg.showHsn;
+  const patchTax = (patch: Partial<DocTaxSettings>) => {
+    const next = applyTaxPatch(taxSettings, patch, items, company);
+    setTaxSettings(next.settings);
+    setItems(next.items);
+  };
+  /** Template/preset rows arrive without tax; give billable rows the default rate when tax is on. */
+  const withDefaultTax = (list: any[]) => {
+    if (!taxSettings.taxApplicable) return list;
+    const rate = taxCfg.defaultRate;
+    return list.map((it) => (it.is_included ? it : { ...it, tax_rate: rate, tax_category: rate > 0 ? "standard" : "" }));
+  };
   const [paymentSchedule, setPaymentSchedule] = useState<{ milestone: string; amount: number }[]>([]);
   const [timeline, setTimeline] = useState<{ phase: string; description: string }[]>([]);
   const [clientResponsibilities, setClientResponsibilities] = useState<string[]>([]);
@@ -129,13 +156,9 @@ function QuotesPageContent() {
   const deals = dealData?.results || [];
   const leads = leadData?.results || [];
 
-  // Line item subtotal calculation
-  const computedSubtotal = useMemo(() => {
-    return items.reduce((acc, item) => {
-      if (item.is_included) return acc;
-      return acc + (Number(item.quantity || 1) * Number(item.unit_price || 0));
-    }, 0);
-  }, [items]);
+  // Line item totals (subtotal, GST/VAT split, total)
+  const quoteTotals = useMemo(() => computeDocTax(items, taxSettings), [items, taxSettings]);
+  const computedSubtotal = quoteTotals.total;
 
   // Auto split 50/50 payment helper
   const applyAutoPaymentSplit = () => {
@@ -160,7 +183,7 @@ function QuotesPageContent() {
       setOverview(t.overview.replace(/client/gi, (match) => match === "Client" ? cName : cName.toLowerCase()));
     }
     if (t.items && t.items.length > 0) {
-      setItems(JSON.parse(JSON.stringify(t.items)));
+      setItems(withDefaultTax(JSON.parse(JSON.stringify(t.items))));
     }
     if (t.payment_schedule && t.payment_schedule.length > 0) {
       setPaymentSchedule(JSON.parse(JSON.stringify(t.payment_schedule)));
@@ -187,7 +210,7 @@ function QuotesPageContent() {
     setDuration(AGENCY_GROWTH_PRESET.duration);
     const cName = clientName.trim() || "the client";
     setOverview(AGENCY_GROWTH_PRESET.overview.replace("client", cName));
-    setItems(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.items)));
+    setItems(withDefaultTax(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.items))));
     setPaymentSchedule(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.payment_schedule)));
     setTimeline(JSON.parse(JSON.stringify(AGENCY_GROWTH_PRESET.timeline)));
     setClientResponsibilities([...AGENCY_GROWTH_PRESET.client_responsibilities]);
@@ -292,10 +315,14 @@ function QuotesPageContent() {
     if (!id) return;
     const c = customers.find((x: any) => x.id === id) as any;
     if (c) {
+      const taxPatch: Partial<DocTaxSettings> = {};
       if (c.currency && c.currency !== currency) {
         setCurrency(c.currency);
         setExchangeRate(1);
+        taxPatch.tax_regime = regimeForCurrency(c.currency, company);
       }
+      if (c.tax_id) taxPatch.customer_tax_id = normalizeTaxId(c.tax_id);
+      if (Object.keys(taxPatch).length) patchTax(taxPatch);
       setClientName(c.name || c.company_name || "");
       setClientPhone(c.phone || "");
       setClientAddress(c.address || c.custom_data?.address || "");
@@ -320,6 +347,7 @@ function QuotesPageContent() {
     setExchangeRate(1);
     setOverview("");
     setItems([{ item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }]);
+    setTaxSettings(initialTaxSettings(company));
     setPaymentSchedule([]);
     setTimeline([]);
     setClientResponsibilities([]);
@@ -354,6 +382,7 @@ function QuotesPageContent() {
     setItems(quote.items && quote.items.length > 0 ? quote.items : [
       { item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }
     ]);
+    setTaxSettings(taxSettingsFromDoc(quote, company));
     setPaymentSchedule(quote.payment_schedule || []);
     setTimeline(quote.timeline || []);
     setClientResponsibilities(quote.client_responsibilities || []);
@@ -385,7 +414,8 @@ function QuotesPageContent() {
       client_name: clientName,
       client_address: clientAddress,
       client_phone: clientPhone,
-      items: validItems,
+      items: validItems.map((it) => ({ ...it, ...lineTaxFields(it, taxSettings) })),
+      ...taxPayload(taxSettings),
       payment_schedule: paymentSchedule,
       timeline,
       client_responsibilities: clientResponsibilities,
@@ -989,6 +1019,7 @@ function QuotesPageContent() {
                       rate={exchangeRate}
                       baseCurrency={baseCurrency}
                       onChange={(code, rate) => {
+                        if (code !== currency) patchTax({ tax_regime: regimeForCurrency(code, company) });
                         setCurrency(code);
                         setExchangeRate(rate);
                       }}
@@ -1014,6 +1045,8 @@ function QuotesPageContent() {
                     />
                   </div>
 
+                  <DocTaxPanel value={taxSettings} onChange={patchTax} docLabel="quote" />
+
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div>
@@ -1025,7 +1058,8 @@ function QuotesPageContent() {
                           type="button"
                           onClick={() => {
                             const nextNum = `${items.length + 1}`;
-                            setItems([...items, { item_number: nextNum, name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }]);
+                            const rate = taxSettings.taxApplicable ? taxCfg.defaultRate : 0;
+                            setItems([...items, { item_number: nextNum, name: "", description: "", quantity: 1, unit_price: 0, tax_rate: rate, tax_category: rate > 0 ? "standard" : "", unit: "", is_included: false }]);
                           }}
                           className="px-2.5 py-1 text-xs font-medium bg-bone hover:bg-bone-2 text-ink border border-line rounded-md transition-colors flex items-center gap-1"
                         >
@@ -1175,21 +1209,54 @@ function QuotesPageContent() {
                               </button>
                             </div>
                           </div>
+                          {!it.is_included && taxSettings.taxApplicable && (
+                            <div className="mt-2 flex flex-wrap items-center gap-3 sm:pl-[8.33%]">
+                              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted">
+                                {taxCfg.taxName}
+                                <span className="w-32 font-normal">
+                                  <LineTaxRate
+                                    regime={taxSettings.tax_regime}
+                                    rate={it.tax_rate}
+                                    category={it.tax_category}
+                                    onChange={(rate, category) => {
+                                      const updated = [...items];
+                                      updated[idx] = { ...updated[idx], tax_rate: rate, tax_category: category };
+                                      setItems(updated);
+                                    }}
+                                    className="w-full px-2 py-1 bg-paper border border-line rounded text-xs"
+                                  />
+                                </span>
+                              </label>
+                              {showHsn && (
+                                <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted">
+                                  HSN/SAC
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={8}
+                                    placeholder="e.g. 998361"
+                                    value={it.hsn_sac_code || ""}
+                                    onChange={(e) => {
+                                      const updated = [...items];
+                                      updated[idx] = { ...updated[idx], hsn_sac_code: e.target.value.replace(/\D/g, "") };
+                                      setItems(updated);
+                                    }}
+                                    className="w-28 px-2 py-1 bg-paper border border-line rounded text-xs font-mono font-normal"
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
 
                     {/* Total summary bar */}
-                    <div className="mt-4 p-4 bg-bone-2 border border-line rounded-xl flex items-center justify-between">
+                    <div className="mt-4 p-4 bg-bone-2 border border-line rounded-xl flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="text-xs text-muted">
                         Total investment calculated for quotation:
                       </div>
-                      <div className="text-right">
-                        <span className="text-xs text-muted mr-2">Total Amount:</span>
-                        <span className="text-lg font-bold text-ink">
-                          {formatCurrency(computedSubtotal, currency)}
-                        </span>
-                      </div>
+                      <DocTaxTotals className="sm:min-w-[260px]" totals={quoteTotals} settings={taxSettings} currency={currency} />
                     </div>
                   </div>
                 </div>

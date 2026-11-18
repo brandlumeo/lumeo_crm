@@ -7,6 +7,19 @@ import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, T
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { CurrencyPicker } from "@/components/currency-picker";
+import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
+import {
+  SALES_TAX_REGIMES,
+  applyTaxPatch,
+  computeDocTax,
+  initialTaxSettings,
+  lineTaxFields,
+  normalizeTaxId,
+  regimeForCurrency,
+  taxPayload,
+  taxSettingsFromDoc,
+  type DocTaxSettings,
+} from "@/lib/tax";
 
 export default function InvoicesPage() {
   const { data: company } = useCurrentCompany();
@@ -22,13 +35,21 @@ export default function InvoicesPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editInvoiceId, setEditInvoiceId] = useState<number | null>(null);
-  const [newInvoice, setNewInvoice] = useState<{ currency?: string, exchange_rate: number, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
+  const [newInvoice, setNewInvoice] = useState<{ currency?: string, exchange_rate: number, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, tax_category?: string, hsn_sac_code?: string, unit?: string }[] }>({ 
     currency: "", exchange_rate: 1,
     customer_id: null, 
     deal_id: null, 
     due_date: "",
     items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
   });
+  const [taxSettings, setTaxSettings] = useState<DocTaxSettings>(() => initialTaxSettings(null));
+  const taxCfg = SALES_TAX_REGIMES[taxSettings.tax_regime];
+  const showHsn = taxSettings.taxApplicable && taxCfg.showHsn;
+  const patchTax = (patch: Partial<DocTaxSettings>) => {
+    const { settings, items } = applyTaxPatch(taxSettings, patch, newInvoice.items, company);
+    setTaxSettings(settings);
+    setNewInvoice((prev) => ({ ...prev, items }));
+  };
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
@@ -57,9 +78,12 @@ export default function InvoicesPage() {
         quantity: parseFloat(item.quantity),
         unit_price: parseFloat(item.unit_price),
         tax_rate: parseFloat(item.tax_rate),
+        tax_category: item.tax_category || "",
+        hsn_sac_code: item.hsn_sac_code || "",
         unit: item.unit
       }))
     });
+    setTaxSettings(taxSettingsFromDoc(invoice, company));
     setIsModalOpen(true);
   };
 
@@ -68,10 +92,12 @@ export default function InvoicesPage() {
     if (!newInvoice.customer_id) return;
     
     // Filter out items without a name
-    const validItems = newInvoice.items.filter(item => item.name.trim() !== "");
+    const validItems = newInvoice.items
+      .filter(item => item.name.trim() !== "")
+      .map(item => ({ ...item, ...lineTaxFields(item, taxSettings), hsn_sac_code: item.hsn_sac_code || "" }));
 
     const currency = newInvoice.currency || baseCurrency;
-    const payload: any = { customer: newInvoice.customer_id, items: validItems, currency };
+    const payload: any = { customer: newInvoice.customer_id, items: validItems, currency, ...taxPayload(taxSettings) };
     if (currency !== baseCurrency && newInvoice.exchange_rate > 0 && newInvoice.exchange_rate !== 1) {
       payload.exchange_rate = newInvoice.exchange_rate;
     }
@@ -132,6 +158,7 @@ export default function InvoicesPage() {
           onClick={() => {
             setEditInvoiceId(null);
             setNewInvoice({ currency: "", exchange_rate: 1, customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+            setTaxSettings(initialTaxSettings(company));
             setIsModalOpen(true);
           }}
           className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
@@ -288,11 +315,16 @@ export default function InvoicesPage() {
                     const customerId = parseInt(e.target.value) || null;
                     const c: any = customers.find((x: any) => x.id === customerId);
                     const clientCurrency = (c?.currency || "").toUpperCase();
+                    const currencyChanges = Boolean(clientCurrency) && clientCurrency !== (newInvoice.currency || baseCurrency);
                     setNewInvoice({
                       ...newInvoice,
                       customer_id: customerId,
-                      ...(clientCurrency && clientCurrency !== newInvoice.currency ? { currency: clientCurrency, exchange_rate: 1 } : {}),
+                      ...(currencyChanges ? { currency: clientCurrency, exchange_rate: 1 } : {}),
                     });
+                    const taxPatch: Partial<DocTaxSettings> = {};
+                    if (currencyChanges) taxPatch.tax_regime = regimeForCurrency(clientCurrency, company);
+                    if (c?.tax_id) taxPatch.customer_tax_id = normalizeTaxId(c.tax_id);
+                    if (Object.keys(taxPatch).length) patchTax(taxPatch);
                   }}
                   className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                 >
@@ -321,10 +353,16 @@ export default function InvoicesPage() {
                 currency={newInvoice.currency || baseCurrency}
                 rate={newInvoice.exchange_rate}
                 baseCurrency={baseCurrency}
-                onChange={(currency, exchange_rate) => setNewInvoice((prev) => ({ ...prev, currency, exchange_rate }))}
+                onChange={(currency, exchange_rate) => {
+                  const changed = currency !== (newInvoice.currency || baseCurrency);
+                  setNewInvoice((prev) => ({ ...prev, currency, exchange_rate }));
+                  if (changed) patchTax({ tax_regime: regimeForCurrency(currency, company) });
+                }}
               />
 
               </div>
+
+              <DocTaxPanel value={taxSettings} onChange={patchTax} docLabel="invoice" />
 
               {/* Line Items */}
               <div>
@@ -332,7 +370,10 @@ export default function InvoicesPage() {
                   <h3 className="text-sm font-medium text-ink">Line Items</h3>
                   <button
                     type="button"
-                    onClick={() => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] })}
+                    onClick={() => {
+                      const rate = taxSettings.taxApplicable ? taxCfg.defaultRate : 0;
+                      setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: rate, tax_category: rate > 0 ? "standard" : "", unit: "" }] });
+                    }}
                     className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
@@ -414,21 +455,39 @@ export default function InvoicesPage() {
                               className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                             />
                           </div>
-                          <div className="w-20">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="Tax %"
-                              value={item.tax_rate || ""}
-                              onChange={(e) => {
-                                const newItems = [...newInvoice.items];
-                                newItems[index].tax_rate = parseFloat(e.target.value) || 0;
-                                setNewInvoice({ ...newInvoice, items: newItems });
-                              }}
-                              className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                            />
-                          </div>
+                          {showHsn && (
+                            <div className="w-28">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={8}
+                                placeholder="HSN/SAC"
+                                aria-label="HSN/SAC code"
+                                value={item.hsn_sac_code || ""}
+                                onChange={(e) => {
+                                  const newItems = [...newInvoice.items];
+                                  newItems[index] = { ...newItems[index], hsn_sac_code: e.target.value.replace(/\D/g, "") };
+                                  setNewInvoice({ ...newInvoice, items: newItems });
+                                }}
+                                className="w-full px-2 py-1.5 bg-bone border border-line rounded-md text-sm font-mono outline-none focus:border-ink transition-colors"
+                              />
+                            </div>
+                          )}
+                          {taxSettings.taxApplicable && (
+                            <div className="w-28">
+                              <LineTaxRate
+                                regime={taxSettings.tax_regime}
+                                rate={item.tax_rate}
+                                category={item.tax_category}
+                                onChange={(rate, category) => {
+                                  const newItems = [...newInvoice.items];
+                                  newItems[index] = { ...newItems[index], tax_rate: rate, tax_category: category };
+                                  setNewInvoice({ ...newInvoice, items: newItems });
+                                }}
+                                className="w-full px-2 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                       <button
@@ -448,9 +507,12 @@ export default function InvoicesPage() {
               </div>
             </form>
             <div className="p-5 border-t border-line bg-bone flex justify-between items-center mt-auto">
-              <div className="text-sm font-medium text-ink">
-                Total: {formatCurrency(newInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), newInvoice.currency || baseCurrency)}
-              </div>
+              <DocTaxTotals
+                className="min-w-[220px]"
+                totals={computeDocTax(newInvoice.items, taxSettings)}
+                settings={taxSettings}
+                currency={newInvoice.currency || baseCurrency}
+              />
               <div className="flex gap-3">
                 <button
                   type="button"

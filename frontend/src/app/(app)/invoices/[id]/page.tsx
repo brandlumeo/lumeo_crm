@@ -6,6 +6,17 @@ import { useInvoice, useUpdateInvoice, useCustomerPage, useDealPage, useCurrentC
 import { Loader2, ArrowLeft, Plus, Trash2, Save, FileText } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
+import {
+  SALES_TAX_REGIMES,
+  applyTaxPatch,
+  computeDocTax,
+  lineTaxFields,
+  normalizeTaxId,
+  taxPayload,
+  taxSettingsFromDoc,
+  type DocTaxSettings,
+} from "@/lib/tax";
 
 export default function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -40,11 +51,14 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           quantity: item.quantity || 1,
           unit_price: parseFloat(item.unit_price) || 0,
           tax_rate: parseFloat(item.tax_rate) || 0,
+          tax_category: item.tax_category || "",
+          hsn_sac_code: item.hsn_sac_code || "",
           unit: item.unit || "",
-        })) : [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
+        })) : [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }],
+        tax: taxSettingsFromDoc(invoice, company),
       });
     }
-  }, [invoice]);
+  }, [invoice, company]);
 
   if (isInvoiceLoading || !formData) {
     return (
@@ -60,10 +74,19 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     setFormData({ ...formData, items: newItems });
   };
 
+  const tax: DocTaxSettings = formData.tax;
+  const taxCfg = SALES_TAX_REGIMES[tax.tax_regime];
+  const showHsn = tax.taxApplicable && taxCfg.showHsn;
+  const patchTax = (patch: Partial<DocTaxSettings>) => {
+    const next = applyTaxPatch(tax, patch, formData.items, company);
+    setFormData({ ...formData, tax: next.settings, items: next.items });
+  };
+
   const addItem = () => {
+    const rate = tax.taxApplicable ? taxCfg.defaultRate : 0;
     setFormData({
       ...formData,
-      items: [...formData.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }]
+      items: [...formData.items, { name: "", description: "", quantity: 1, unit_price: 0, tax_rate: rate, tax_category: rate > 0 ? "standard" : "", unit: "" }]
     });
   };
 
@@ -73,20 +96,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     setFormData({ ...formData, items: newItems });
   };
 
-  const calculateSubtotal = () => {
-    return formData.items.reduce((sum: number, item: any) => sum + (item.quantity * item.unit_price), 0);
-  };
-  
-  const calculateTax = () => {
-    return formData.items.reduce((sum: number, item: any) => {
-      const lineTotal = item.quantity * item.unit_price;
-      return sum + (lineTotal * (item.tax_rate / 100));
-    }, 0);
-  };
-  
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
-  };
+  const totals = computeDocTax(formData.items, tax);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +105,9 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
       return;
     }
     
-    const validItems = formData.items.filter((item: any) => item.name.trim() !== "");
+    const validItems = formData.items
+      .filter((item: any) => item.name.trim() !== "")
+      .map((item: any) => ({ ...item, ...lineTaxFields(item, tax) }));
     if (validItems.length === 0) {
       toast.error("At least one valid line item is required");
       return;
@@ -107,7 +119,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
       status: formData.status,
       issue_date: formData.issue_date || null,
       due_date: formData.due_date || null,
-      items: validItems
+      items: validItems,
+      ...taxPayload(tax),
     };
 
     if (formData.deal_id) {
@@ -157,7 +170,11 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
               <select
                 required
                 value={formData.customer_id}
-                onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                onChange={(e) => {
+                  const c: any = customers.find((x: any) => String(x.id) === e.target.value);
+                  const next = c?.tax_id ? applyTaxPatch(tax, { customer_tax_id: normalizeTaxId(c.tax_id) }, formData.items, company) : null;
+                  setFormData({ ...formData, customer_id: e.target.value, ...(next ? { tax: next.settings, items: next.items } : {}) });
+                }}
                 className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
               >
                 <option value="">Select a customer</option>
@@ -230,6 +247,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
+        <DocTaxPanel value={tax} onChange={patchTax} docLabel="invoice" />
+
         {/* Line Items */}
         <div className="bg-paper border border-line rounded-xl shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
@@ -297,18 +316,38 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Tax Rate (%)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={item.tax_rate}
-                        onChange={(e) => handleItemChange(i, "tax_rate", parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                      />
+                      <label className="block text-xs font-medium text-muted mb-1">{taxCfg.taxName}</label>
+                      {tax.taxApplicable ? (
+                        <LineTaxRate
+                          regime={tax.tax_regime}
+                          rate={item.tax_rate}
+                          category={item.tax_category}
+                          onChange={(rate, category) => {
+                            const newItems = [...formData.items];
+                            newItems[i] = { ...newItems[i], tax_rate: rate, tax_category: category };
+                            setFormData({ ...formData, items: newItems });
+                          }}
+                          className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                        />
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-muted border border-dashed border-line rounded-md">Not charged</div>
+                      )}
                     </div>
                   </div>
+                  {showHsn && (
+                    <div className="max-w-[200px]">
+                      <label className="block text-xs font-medium text-muted mb-1">HSN / SAC</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={8}
+                        placeholder="e.g. 998314"
+                        value={item.hsn_sac_code || ""}
+                        onChange={(e) => handleItemChange(i, "hsn_sac_code", e.target.value.replace(/\D/g, ""))}
+                        className="w-full px-3 py-2 bg-paper border border-line rounded-md text-sm font-mono outline-none focus:border-ink transition-colors"
+                      />
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -323,19 +362,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="mt-8 flex justify-end">
-            <div className="w-full max-w-sm space-y-3 bg-bone-2 p-5 rounded-lg border border-line">
-              <div className="flex justify-between text-sm text-muted">
-                <span>Subtotal</span>
-                <span>{curr}{calculateSubtotal().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-muted">
-                <span>Tax</span>
-                <span>{curr}{calculateTax().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-semibold text-ink pt-3 border-t border-line/50">
-                <span>Total</span>
-                <span>{curr}{calculateTotal().toFixed(2)}</span>
-              </div>
+            <div className="w-full max-w-sm bg-bone-2 p-5 rounded-lg border border-line">
+              <DocTaxTotals totals={totals} settings={tax} currency={docCurrency} />
             </div>
           </div>
         </div>

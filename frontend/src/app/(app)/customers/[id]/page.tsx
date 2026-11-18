@@ -171,6 +171,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     email: "",
     phone: "",
     currency: "",
+    tax_id: "",
     custom_data: {} as Record<string, any>,
   });
 
@@ -214,6 +215,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
       email: customer.email,
       phone: customer.phone || "",
       currency: (customer as any).currency || "",
+      tax_id: (customer as any).tax_id || "",
       custom_data: customer.custom_data || {},
     });
     setIsEditing(true);
@@ -406,6 +408,17 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                     <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
                   ))}
                   </select>
+                </div>
+                <div>
+                  <label className="label">Tax ID (GSTIN / TRN)</label>
+                  <input
+                    type="text"
+                    className="input font-mono uppercase"
+                    maxLength={30}
+                    placeholder="e.g. 29ABCDE1234F1Z5"
+                    value={formData.tax_id}
+                    onChange={(e) => setFormData({ ...formData, tax_id: e.target.value.toUpperCase().replace(/[\s-]/g, "") })}
+                  />
                 </div>
               </div>
 

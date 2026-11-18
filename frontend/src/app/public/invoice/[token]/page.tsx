@@ -11,6 +11,7 @@ const SignatureCanvas = dynamic(() => import("react-signature-canvas"), { ssr: f
 import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-react";
 import { InvoiceLineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
+import { DocTaxBreakdown, docTaxIdLabel, invoiceTitle } from "@/components/tax-panel";
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -342,7 +343,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   {invoice.settings?.invoice_logo ? (
                     <img src={invoice.settings.invoice_logo} alt="Company Logo" className="max-h-24 max-w-[250px] w-auto object-contain object-left mb-4 self-start" style={tpl === 'template3' ? { filter: 'brightness(0) invert(1)' } : {}} />
                   ) : (
-                    <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">INVOICE</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">{invoiceTitle(invoice)}</h1>
                   )}
                   <p className={`text-sm md:text-base uppercase tracking-wider font-semibold ${tpl === 'template3' ? 'opacity-90' : 'text-muted'}`}>{invoice.invoice_number}</p>
                 </div>
@@ -380,7 +381,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
             {tpl === 'template4' && (
               <div className="flex justify-between items-start border-b border-line/50 pb-8 mb-8 print:pb-4 print:mb-4">
                 <div>
-                  <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-ink">INVOICE</h1>
+                  <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-ink">{invoiceTitle(invoice)}</h1>
                   <p className="text-sm md:text-base uppercase tracking-wider font-semibold text-muted">{invoice.invoice_number}</p>
                   {invoice.settings?.show_status_on_invoice && (
                     <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
@@ -418,6 +419,12 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 {invoice.settings?.show_client_address && invoice.customer_details?.custom_data?.address && (
                   <div className="text-muted text-sm mt-1 whitespace-pre-wrap leading-relaxed">{invoice.customer_details.custom_data.address}</div>
                 )}
+                {(invoice as any).customer_tax_id && (
+                  <div className="text-muted text-sm mt-1">{docTaxIdLabel((invoice as any).tax_regime)}: <span className="font-mono text-ink">{(invoice as any).customer_tax_id}</span></div>
+                )}
+                {(invoice as any).tax_regime === "in_gst" && (invoice as any).place_of_supply && (
+                  <div className="text-muted text-sm">Place of Supply: <span className="text-ink">{(invoice as any).place_of_supply}</span></div>
+                )}
               </div>
             </div>
 
@@ -426,7 +433,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                 <thead>
                   <tr className="border-b-2 border-line bg-bone/40">
                     <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted">Item</th>
-                    {invoice.settings?.show_hsn_sac_code && (
+                    {(invoice.settings?.show_hsn_sac_code || invoice.items?.some((i: any) => i.hsn_sac_code)) && (
                       <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted text-right whitespace-nowrap">HSN/SAC</th>
                     )}
                     <th className="py-4 px-4 font-bold text-[11px] uppercase tracking-widest text-muted text-right whitespace-nowrap">Qty</th>
@@ -441,7 +448,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                         <div className="font-bold text-ink text-base tracking-tight">{item.name}</div>
                         {item.description && <div className="text-sm text-muted mt-1.5 leading-relaxed">{item.description}</div>}
                       </td>
-                      {invoice.settings?.show_hsn_sac_code && (
+                      {(invoice.settings?.show_hsn_sac_code || invoice.items?.some((i: any) => i.hsn_sac_code)) && (
                         <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
                       )}
                       <td className="py-4 px-4 text-right text-ink whitespace-nowrap">
@@ -521,10 +528,11 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   <span>Subtotal</span>
                   <span className="text-ink">{formatCurrency(parseFloat(invoice.subtotal), invoice.currency || invoice.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-muted text-sm font-medium">
-                  <span>Tax</span>
-                  <span className="text-ink">{formatCurrency(parseFloat(invoice.tax_amount), invoice.currency || invoice.company?.currency)}</span>
-                </div>
+                <DocTaxBreakdown
+                  doc={invoice}
+                  currency={invoice.currency || invoice.company?.currency}
+                  rowClassName="flex justify-between text-muted text-sm font-medium [&>span:last-child]:text-ink"
+                />
                 <div className="flex justify-between text-lg font-bold text-ink pt-4 border-t border-line/60">
                   <span>Total</span>
                   <span>{formatCurrency(parseFloat(invoice.total), invoice.currency || invoice.company?.currency)}</span>

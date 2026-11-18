@@ -1300,7 +1300,11 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if not left_p:
         left_p = Paragraph(f"<b>{comp.name}</b>", title_style)
     
-    meta_info = f"<font size=16 color='#111827'><b>{doc_type.upper()}</b></font><br/>"
+    from xml.sax.saxutils import escape as _esc
+    sales_regime = getattr(instance, 'tax_regime', '') if doc_type in ("Invoice", "Quote") else ''
+    sales_taxed = bool(sales_regime in ("in_gst", "ae_vat") and ((getattr(instance, 'tax_amount', 0) or 0) > 0 or getattr(instance, 'reverse_charge', False)))
+    title_text = "TAX INVOICE" if (doc_type == "Invoice" and sales_taxed) else doc_type.upper()
+    meta_info = f"<font size=16 color='#111827'><b>{title_text}</b></font><br/>"
     meta_info += f"<font size=10 color='#6B7280'>#{doc_number}</font><br/><br/>"
 
     if get_setting("show_status_on_invoice", default=True) and getattr(instance, 'status', None):
@@ -1338,12 +1342,18 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             meta_info += f"<font size=9 color='#6B7280'>Place of Supply:</font> <font size=9 color='#111827'>{_xml_escape(instance.place_of_supply)}</font><br/>"
         if getattr(instance, 'purchase_order', None):
             meta_info += f"<font size=9 color='#6B7280'>PO Ref:</font> <font size=9 color='#111827'>{_xml_escape(instance.purchase_order.po_number)}</font><br/>"
-    elif doc_type == "Purchase Order":
+    if doc_type in ("Invoice", "Quote"):
+        if sales_regime == "in_gst" and getattr(instance, 'place_of_supply', ''):
+            meta_info += f"<font size=9 color='#6B7280'>Place of Supply:</font> <font size=9 color='#111827'>{_esc(instance.place_of_supply)}</font><br/>"
+        if getattr(instance, 'reverse_charge', False):
+            meta_info += "<font size=9 color='#B45309'><b>REVERSE CHARGE APPLIES</b></font><br/>"
+
+    if doc_type == "Purchase Order":
         issue_date = getattr(instance, 'issue_date', None)
         expected_delivery = getattr(instance, 'expected_delivery_date', None)
         if issue_date: meta_info += f"<font size=9 color='#6B7280'>Issue Date:</font> <font size=9 color='#111827'>{issue_date}</font><br/>"
         if expected_delivery: meta_info += f"<font size=9 color='#6B7280'>Expected Delivery:</font> <font size=9 color='#111827'>{expected_delivery}</font><br/>"
-    else:
+    elif doc_type not in ("Invoice", "Bill"):
         created_at = getattr(instance, 'created_at', None)
         valid_until = getattr(instance, 'valid_until', None)
         if created_at: meta_info += f"<font size=9 color='#6B7280'>Date:</font> <font size=9 color='#111827'>{created_at.strftime('%Y-%m-%d')}</font><br/>"
@@ -1392,6 +1402,10 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             if get_setting("show_client_email", default=True): cust_email = f"{getattr(customer_obj, 'email', '')}<br/>"
             if get_setting("show_client_phone", default=True) and hasattr(customer_obj, 'phone'): cust_phone = f"{customer_obj.phone}<br/>"
             if get_setting("show_client_address", default=True) and getattr(customer_obj, 'custom_data', {}).get('address'): cust_address = f"{customer_obj.custom_data.get('address')}<br/>"
+            client_tax_id = getattr(instance, 'customer_tax_id', '')
+            if client_tax_id:
+                client_tax_label = {"in_gst": "GSTIN", "ae_vat": "TRN"}.get(sales_regime, "Tax ID")
+                cust_address += f"{client_tax_label}: {_esc(client_tax_id)}<br/>"
         else:
             cust_name = "<b>Customer Record</b>"
         
@@ -1406,8 +1420,9 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     if address_parts:
         sender_text += f"<br/>{', '.join(address_parts)}"
 
-    if comp.tax_id and get_setting("show_sender_tax_number", default=False):
-        sender_text += f"<br/>{comp.tax_id_label or 'Tax ID'}: {comp.tax_id}"
+    if comp.tax_id and (get_setting("show_sender_tax_number", default=False) or sales_taxed):
+        sender_label = comp.tax_id_label or {"in_gst": "GSTIN", "ae_vat": "TRN"}.get(sales_regime, "Tax ID")
+        sender_text += f"<br/>{_esc(sender_label)}: {_esc(comp.tax_id)}"
         
     if doc_type == "Bill":
         from_label = "BILL FROM (VENDOR)"
@@ -1443,7 +1458,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     left_label = ParagraphStyle('LeftLabel', parent=meta_label_style, alignment=0, fontName='Helvetica-Bold')
     
     show_hsn = get_setting("show_hsn_sac_code", default=False)
-    if doc_type == "Bill" and any(getattr(i, "hsn_sac_code", "") for i in instance.items.all()):
+    if doc_type in ("Bill", "Invoice", "Quote") and any(getattr(i, "hsn_sac_code", "") for i in instance.items.all()):
         show_hsn = True
     
     header_row = [Paragraph("<b>Item & Description</b>", left_label)]
@@ -1531,6 +1546,30 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             muted = ParagraphStyle('RightMuted', parent=right_normal, textColor=colors.HexColor("#6B7280"), fontSize=8)
             totals_data.append([
                 Paragraph(f"{tax_name} payable under reverse charge (self-accounted, not payable to vendor):", muted),
+                Paragraph(f"{curr}{instance.reverse_charge_amount:,.2f}", muted),
+            ])
+
+    if doc_type in ("Invoice", "Quote") and hasattr(instance, "cgst_amount"):
+        def _srow(label, value, style=right_normal):
+            return [Paragraph(label, style), Paragraph(f"{curr}{value:,.2f}", style)]
+
+        tax_name = {"in_gst": "GST", "ae_vat": "VAT"}.get(sales_regime, "Tax")
+        rates = sorted({float(i.tax_rate or 0) for i in instance.items.all() if (i.tax_rate or 0) > 0 and getattr(i, "tax_category", "") not in ("zero", "exempt")})
+        rate_suffix = f" @ {rates[0]:g}%" if len(rates) == 1 else ""
+        half_suffix = f" @ {rates[0] / 2:g}%" if len(rates) == 1 else ""
+        totals_data = [_srow("Subtotal:", instance.subtotal)]
+        if instance.igst_amount:
+            totals_data.append(_srow(f"IGST{rate_suffix}:", instance.igst_amount))
+        elif instance.cgst_amount or instance.sgst_amount:
+            totals_data.append(_srow(f"CGST{half_suffix}:", instance.cgst_amount))
+            totals_data.append(_srow(f"SGST{half_suffix}:", instance.sgst_amount))
+        elif instance.tax_amount:
+            totals_data.append(_srow(f"{tax_name}{rate_suffix}:", instance.tax_amount))
+        totals_data.append([Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{instance.total:,.2f}</b>", right_total)])
+        if instance.reverse_charge:
+            muted = ParagraphStyle('RightMutedRC', parent=right_normal, textColor=colors.HexColor("#6B7280"), fontSize=8)
+            totals_data.append([
+                Paragraph(f"{tax_name} payable by the recipient under reverse charge:", muted),
                 Paragraph(f"{curr}{instance.reverse_charge_amount:,.2f}", muted),
             ])
 

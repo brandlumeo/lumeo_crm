@@ -49,7 +49,7 @@ export default function CustomersPage() {
   const mutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: () => {
-      setForm({ name: "", email: "", phone: "", currency: "", custom_data: {} });
+      setForm({ name: "", email: "", phone: "", currency: "", tax_id: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
       void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
@@ -306,6 +306,16 @@ export default function CustomersPage() {
                     <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
                   ))}
               </select>
+            </label>
+            <label>
+              <span className="label">Tax ID (GSTIN / TRN)</span>
+              <input
+                className="input font-mono uppercase"
+                maxLength={30}
+                placeholder="e.g. 29ABCDE1234F1Z5 or 100123456700003"
+                value={form.tax_id || ""}
+                onChange={(event) => setForm((current) => ({ ...current, tax_id: event.target.value.toUpperCase().replace(/[\s-]/g, "") }))}
+              />
             </label>
 
             <CustomFieldsFormInputs

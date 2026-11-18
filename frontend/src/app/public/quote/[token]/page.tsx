@@ -11,6 +11,7 @@ const SignatureCanvas = dynamic(() => import("react-signature-canvas"), { ssr: f
 import { Loader2, CheckCircle2, FileText, Download } from "lucide-react";
 import { QuoteLineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
+import { DocTaxBreakdown, docTaxIdLabel } from "@/components/tax-panel";
 
 export default function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
@@ -286,6 +287,12 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               {settings?.show_client_address && quote.customer_details?.custom_data?.address && (
                 <div className="text-muted mt-1 whitespace-pre-wrap">{quote.customer_details.custom_data.address}</div>
               )}
+              {(quote as any).customer_tax_id && (
+                <div className="text-muted mt-1">{docTaxIdLabel((quote as any).tax_regime)}: <span className="font-mono text-ink">{(quote as any).customer_tax_id}</span></div>
+              )}
+              {(quote as any).tax_regime === "in_gst" && (quote as any).place_of_supply && (
+                <div className="text-muted">Place of Supply: {(quote as any).place_of_supply}</div>
+              )}
             </div>
 
             {quote.content && (
@@ -300,7 +307,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                 <thead>
                   <tr className="border-b border-line bg-bone/30" style={tpl === 'template1' ? { borderBottom: `2px solid ${accentColor}` } : {}}>
                     <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted" style={{ color: accentColor }}>Item</th>
-                    {settings?.show_hsn_sac_code && (
+                    {(settings?.show_hsn_sac_code || quote.items?.some((i: any) => i.hsn_sac_code)) && (
                       <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>HSN/SAC</th>
                     )}
                     <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wider text-muted text-right whitespace-nowrap" style={{ color: accentColor }}>Qty</th>
@@ -315,7 +322,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                         <div className="font-semibold text-ink">{item.name}</div>
                         {item.description && <div className="text-sm text-muted mt-1">{item.description}</div>}
                       </td>
-                      {settings?.show_hsn_sac_code && (
+                      {(settings?.show_hsn_sac_code || quote.items?.some((i: any) => i.hsn_sac_code)) && (
                         <td className="py-4 px-4 text-right text-ink whitespace-nowrap">{item.hsn_sac_code || '-'}</td>
                       )}
                       <td className="py-4 px-4 text-right text-ink whitespace-nowrap">
@@ -383,10 +390,7 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
                   <span>Subtotal</span>
                   <span>{formatCurrency(parseFloat(quote.subtotal), quote.currency || quote.company?.currency)}</span>
                 </div>
-                <div className="flex justify-between text-muted">
-                  <span>Tax</span>
-                  <span>{formatCurrency(parseFloat(quote.tax_amount), quote.currency || quote.company?.currency)}</span>
-                </div>
+                <DocTaxBreakdown doc={quote} currency={quote.currency || quote.company?.currency} rowClassName="flex justify-between text-muted" />
                 <div className="flex justify-between text-xl font-bold text-ink pt-4 border-t-2 border-line"
                      style={tpl === 'template3' ? { backgroundColor: accentColor, color: 'white', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem', border: 'none' } : {}}
                 >
