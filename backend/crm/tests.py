@@ -622,3 +622,69 @@ def test_invoice_and_quote_sales_tax_regimes(setup_data, monkeypatch):
     assert Decimal(q["tax_amount"]) == 100 and Decimal(q["total"]) == 2100 and Decimal(q["cgst_amount"]) == 0
     assert client.get(f"/api/v1/crm/quotes/{q['id']}/pdf/").status_code == 200
     assert client.get(f"/api/v1/crm/invoices/{inv['id']}/pdf/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_payment_qr_settings_on_documents(setup_data, monkeypatch, tmp_path, settings):
+    """Payment QR: per-document-type and currency rules; UPI and uploaded-image modes render in PDFs."""
+    import io
+    from decimal import Decimal
+    from django.core.files.base import ContentFile
+    from django.core.files.storage import default_storage
+    from rest_framework.test import APIClient
+    from companies.models import InvoiceSettings
+    from crm import currency as fx
+    from crm.models import Customer
+    from crm.payment_qr import payment_qr_flowable, upi_payload
+
+    settings.MEDIA_ROOT = str(tmp_path)
+    monkeypatch.setattr(fx, "fetch_rate", lambda src, dst: Decimal("22.75"))
+    user = setup_data["user1"]
+    user.role = "admin"
+    user.save()
+    company = setup_data["company1"]
+    company.currency = "INR"
+    company.country = "India"
+    company.save()
+    s, _ = InvoiceSettings.objects.get_or_create(company=company)
+
+    # UPI mode: amount + payee encoded; hidden for AED and when switched off for quotes
+    s.payment_qr_mode, s.upi_id, s.payment_qr_currency = "upi", "vyapar.123@hdfcbank", "INR"
+    s.save()
+    assert s.payment_qr_for("invoice", "INR") == ("upi", "vyapar.123@hdfcbank")
+    assert s.payment_qr_for("invoice", "AED") is None
+    s.payment_qr_on_quotes = False
+    assert s.payment_qr_for("quote", "INR") is None
+    s.payment_qr_on_quotes = True
+    s.save()
+    payload = upi_payload("vyapar.123@hdfcbank", "Brand Co", Decimal("1180"), "INV-1")
+    assert "pa=vyapar.123@hdfcbank" in payload and "am=1180.00" in payload and "pn=Brand%20Co" in payload
+    flow, caption = payment_qr_flowable(company, "invoice", "INR", Decimal("100"), 80)
+    assert flow is not None and "vyapar.123@hdfcbank" in caption
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    cust = Customer.objects.create(company=company, name="Kochi Foods", email="a@kochi.example", phone="1")
+    inv = client.post("/api/v1/crm/invoices/", {"customer": cust.id, "items": [{"name": "Work", "quantity": 1, "unit_price": 1000}]}, format="json").data
+    quote = client.post("/api/v1/crm/quotes/", {"title": "Retainer", "customer": cust.id, "items": [{"name": "Work", "quantity": 1, "unit_price": 1000}]}, format="json").data
+    assert client.get(f"/api/v1/crm/invoices/{inv['id']}/pdf/").status_code == 200
+    assert client.get(f"/api/v1/crm/quotes/{quote['id']}/pdf/").status_code == 200
+
+    # Uploaded image mode (stored in media) renders; a broken image never breaks the PDF
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
+    from reportlab.graphics import renderPM
+    d = Drawing(60, 60)
+    d.add(QrCodeWidget("hello"))
+    png = io.BytesIO()
+    renderPM.drawToFile(d, png, fmt="PNG")
+    name = default_storage.save("qr/test_qr.png", ContentFile(png.getvalue()))
+    s.payment_qr_mode, s.payment_qr_image = "image", settings.MEDIA_URL + name
+    s.save()
+    flow, caption = payment_qr_flowable(company, "quote", "INR", Decimal("100"), 80)
+    assert flow is not None and caption == "Scan to pay"
+    assert client.get(f"/api/v1/crm/quotes/{quote['id']}/pdf/").status_code == 200
+    s.payment_qr_image = "/media/missing.png"
+    s.save()
+    assert payment_qr_flowable(company, "quote", "INR", Decimal("100"), 80) == (None, "")
+    assert client.get(f"/api/v1/crm/invoices/{inv['id']}/pdf/").status_code == 200

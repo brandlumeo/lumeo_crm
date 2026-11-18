@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useCurrentCompany, useCurrentUser, useInvoiceSettings, useUpdateInvoiceSettings, usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod, useUpdateCompany, useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/api";
+import { PaymentQrSettings } from "@/components/payment-qr-settings";
 import { cn } from "@/lib/utils";
 
 export function FinanceSettingsForm() {
@@ -1035,6 +1036,7 @@ export function FinanceSettingsForm() {
         {/* TAB: INVOICE PAYMENT DETAILS */}
         {activeTab === "payment" && (
           <div className="space-y-6">
+            <PaymentQrSettings isAdmin={isAdmin} />
             <div className="bg-paper border border-line rounded-2xl shadow-sm p-6 md:p-8 animate-fade-in">
                 <h4 className="text-[16px] font-semibold text-ink mb-6 pb-4 border-b border-line/50">Payment Gateways</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

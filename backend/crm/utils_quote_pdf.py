@@ -697,7 +697,7 @@ def _build_quote_story(quote, is_compact=False):
         bank_acc_name = raw_bank_acc_name or company_name
         bank_acc_no = raw_bank_acc_no or "50200109172854"
         bank_ifsc = raw_bank_ifsc or "HDFC0008363"
-        upi_id = raw_upi_id or "info@brandlumeo.com"
+        upi_id = raw_upi_id or ""
     else:
         bank_name = raw_bank_name or ""
         bank_acc_name = raw_bank_acc_name or company_name
@@ -708,19 +708,12 @@ def _build_quote_story(quote, is_compact=False):
     is_inr = qcur == "INR"
     has_bank_info = bool(bank_acc_no)
 
-    if has_bank_info:
-        qr_size = 44 if is_compact else 56
-        qr_drawing = None
+    # Payment QR from Finance settings (uploaded scanner image or a UPI QR with the amount)
+    from .payment_qr import payment_qr_flowable
+    qr_size = 44 if is_compact else 56
+    qr_drawing, qr_caption = payment_qr_flowable(quote.company, "quote", qcur, quote.total, qr_size, note=quote.quote_number)
 
-        if is_inr and upi_id:
-            tot_val = float(quote.total or 0)
-            upi_payload = f"upi://pay?pa={upi_id}&pn={urllib.parse.quote(company_name)}&am={tot_val:.2f}&cu=INR"
-            qr_widget = QrCodeWidget(upi_payload)
-            qr_widget.barWidth = qr_size
-            qr_widget.barHeight = qr_size
-            qr_widget.qrVersion = 1
-            qr_drawing = Drawing(qr_size, qr_size)
-            qr_drawing.add(qr_widget)
+    if has_bank_info:
 
         bank_lines = []
         if bank_acc_name:
@@ -730,8 +723,8 @@ def _build_quote_story(quote, is_compact=False):
         bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Account No.:</font> &nbsp;<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_acc_no)}</font>')
         if bank_ifsc:
             bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">{"IFSC" if is_inr else "SWIFT / Routing"}:</font> &nbsp;<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_ifsc)}</font>')
-        if is_inr and qr_drawing:
-            bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">UPI:</font> &nbsp;<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Scan QR to pay</font>')
+        if qr_drawing:
+            bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(qr_caption)}</font>')
 
         bank_details_html = "<br/>".join(bank_lines)
         bank_para = Paragraph(bank_details_html, ps("BankP", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))
@@ -751,6 +744,21 @@ def _build_quote_story(quote, is_compact=False):
             Paragraph(f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8"}" color="{accent_green}">BANK DETAILS</font>', ps("BankHead", fontSize=7.5 if is_compact else 8, leading=9 if is_compact else 10)),
             Spacer(1, 2 if is_compact else 3),
             bank_inner_table
+        ]
+    elif qr_drawing:
+        qr_text = Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(qr_caption)}</font>', ps("QrCap", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))
+        qr_table = Table([[qr_drawing, qr_text]], colWidths=[qr_size + 8, 260 - (qr_size + 8)])
+        qr_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        bank_block = [
+            Paragraph(f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8"}" color="{accent_green}">PAYMENT</font>', ps("PayHead", fontSize=7.5 if is_compact else 8, leading=9 if is_compact else 10)),
+            Spacer(1, 2 if is_compact else 3),
+            qr_table,
         ]
     else:
         bank_block = [

@@ -12,6 +12,7 @@ import { Loader2, CheckCircle2, FileText, Download } from "lucide-react";
 import { QuoteLineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { DocTaxBreakdown, docTaxIdLabel } from "@/components/tax-panel";
+import { PaymentQrCard } from "@/components/payment-qr-card";
 
 export default function PublicQuotePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
@@ -400,6 +401,16 @@ export default function PublicQuotePage({ params }: { params: Promise<{ token: s
               </div>
             </div>
             
+            <PaymentQrCard
+              className="mt-8 max-w-md clear-both"
+              settings={settings}
+              kind="quote"
+              currency={(quote.currency || quote.company?.currency || "").toUpperCase()}
+              amount={parseFloat(quote.total) || 0}
+              payee={quote.company?.name || ""}
+              reference={quote.quote_number}
+            />
+
             <div className="mt-12 pt-8 print:mt-2 print:pt-2 border-t-2 border-line text-center flex flex-col items-center clear-both w-full" style={{ pageBreakBefore: 'auto' }}>
               {settings?.footer_text && (
                 <p className="text-sm font-medium text-muted italic mb-4 print:mb-2">{settings.footer_text}</p>

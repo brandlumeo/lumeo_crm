@@ -1589,6 +1589,23 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     ]))
     story.append(totals_table)
     story.append(Spacer(1, 40))
+
+    # Payment QR (Finance settings): uploaded scanner image or a UPI QR with the amount due
+    if doc_type in ("Invoice", "Quote"):
+        from decimal import Decimal as _D
+        from .payment_qr import payment_qr_flowable
+        qr_amount = _D(str(instance.amount_due if doc_type == "Invoice" else instance.total or 0))
+        if qr_amount > 0:
+            qr_flow, qr_caption = payment_qr_flowable(comp, doc_type.lower(), doc_currency, qr_amount, 90, note=str(doc_number))
+            if qr_flow is not None:
+                qr_text = Paragraph(
+                    f"<b>{_esc(qr_caption)}</b><br/><font size=9 color='#6B7280'>Amount: {curr}{qr_amount:,.2f} &nbsp;·&nbsp; Ref: {_esc(str(doc_number))}</font>",
+                    meta_value_style,
+                )
+                qr_table = Table([[qr_flow, qr_text]], colWidths=[105, 395])
+                qr_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))
+                story.append(qr_table)
+                story.append(Spacer(1, 24))
     
     # Terms & Signature
     terms_p = []

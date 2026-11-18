@@ -12,6 +12,7 @@ import { Loader2, CheckCircle2, FileText, Download, CreditCard } from "lucide-re
 import { InvoiceLineItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { DocTaxBreakdown, docTaxIdLabel, invoiceTitle } from "@/components/tax-panel";
+import { PaymentQrCard } from "@/components/payment-qr-card";
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -475,6 +476,15 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ token:
                   </div>
                 )}
                 
+                <PaymentQrCard
+                  settings={invoice.settings as any}
+                  kind="invoice"
+                  currency={(invoice.currency || invoice.company?.currency || "").toUpperCase()}
+                  amount={parseFloat(invoice.amount_due ?? invoice.total) || 0}
+                  payee={invoice.company?.name || ""}
+                  reference={invoice.invoice_number}
+                />
+
                 {/* Bank Details & QR Codes */}
                 {(invoice.settings?.bank_name || invoice.settings?.invoice_other_information || (invoice.payment_methods && invoice.payment_methods.length > 0)) && (
                   <div className="print:break-inside-avoid">

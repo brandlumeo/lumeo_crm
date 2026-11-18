@@ -596,7 +596,37 @@ class InvoiceSettings(models.Model):
     bank_account_name = models.CharField(max_length=255, blank=True, null=True)
     bank_account_number = models.CharField(max_length=100, blank=True, null=True)
     bank_routing_number = models.CharField(max_length=100, blank=True, null=True, help_text="Routing / Sort Code / SWIFT")
-    
+
+    # Payment QR printed on quotes / invoices
+    PAYMENT_QR_MODES = [
+        ("off", "Don't show a payment QR"),
+        ("image", "Show my uploaded QR code (scanner image)"),
+        ("upi", "Generate a UPI QR with the exact amount"),
+    ]
+    payment_qr_mode = models.CharField(max_length=10, choices=PAYMENT_QR_MODES, default="upi", help_text="'upi' only shows when a UPI ID is set")
+    payment_qr_image = models.URLField(max_length=512, blank=True, default="", help_text="Uploaded QR / scanner image")
+    upi_id = models.CharField(max_length=100, blank=True, default="", help_text="UPI ID (VPA), e.g. name@hdfcbank")
+    payment_qr_label = models.CharField(max_length=100, blank=True, default="Scan to pay")
+    payment_qr_on_quotes = models.BooleanField(default=True)
+    payment_qr_on_invoices = models.BooleanField(default=True)
+    payment_qr_currency = models.CharField(max_length=3, blank=True, default="INR", help_text="Only show on documents in this currency (blank = all)")
+
+    def payment_qr_for(self, doc_kind, currency):
+        """('image', url) | ('upi', upi_id) | None for a quote/invoice in `currency`."""
+        if doc_kind == "quote" and not self.payment_qr_on_quotes:
+            return None
+        if doc_kind == "invoice" and not self.payment_qr_on_invoices:
+            return None
+        wanted = (self.payment_qr_currency or "").upper()
+        currency = (currency or "").upper()
+        if wanted and currency and currency != wanted:
+            return None
+        if self.payment_qr_mode == "image" and self.payment_qr_image:
+            return ("image", self.payment_qr_image)
+        if self.payment_qr_mode == "upi" and self.upi_id and currency in ("", "INR"):
+            return ("upi", self.upi_id.strip())
+        return None
+
     template_accent_color = models.CharField(max_length=20, default="#4F46E5", help_text="Hex code for template accent")
     template_font_family = models.CharField(max_length=50, default="Inter", help_text="Primary font family")
     template_scale = models.CharField(max_length=20, default="Standard", help_text="Font scaling: Small, Standard, Large")
