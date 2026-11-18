@@ -164,7 +164,7 @@ export default function ExpensesPage() {
   const { data: myExpenses = [], isLoading: myLoading } = useExpenseClaims(false);
   const { data: companyExpenses = [], isLoading: companyLoading } = useExpenseClaims(true);
   const { data: deals = [], isLoading: dealsLoading } = useAllDealsBoard();
-  const { data: teamUsers = [] } = useTeam();
+  const { data: teamUsers = [], isLoading: teamLoading } = useTeam();
 
   // Mutations
   const createMutation = useCreateExpenseClaim();
@@ -1361,8 +1361,11 @@ export default function ExpensesPage() {
                   <select
                     value={formUserId}
                     onChange={(e) => setFormUserId(e.target.value)}
-                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium"
+                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium cursor-pointer transition-colors hover:border-ink/50"
                   >
+                    {teamLoading && teamUsers.length === 0 && (
+                      <option value="" disabled>Loading team members...</option>
+                    )}
                     {teamUsers.map((member: any) => {
                       const fullName = [member.first_name, member.last_name].filter(Boolean).join(" ").trim() || member.name || member.username;
                       const label = fullName ? `${fullName} (${member.email})` : member.email;
@@ -1372,7 +1375,7 @@ export default function ExpensesPage() {
                         </option>
                       );
                     })}
-                    {teamUsers.length === 0 && (
+                    {!teamLoading && teamUsers.length === 0 && (
                       <option value={user?.id || ""}>
                         👤 {[user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() || user?.email || "Current User"} • You
                       </option>
