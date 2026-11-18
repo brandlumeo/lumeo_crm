@@ -607,6 +607,11 @@ class ExpenseClaimListCreateView(APIView):
         if expense_type_filter and expense_type_filter != "all":
             expenses = expenses.filter(expense_type=expense_type_filter)
 
+        # Employee / User filter
+        user_filter = request.query_params.get("user") or request.query_params.get("user_id")
+        if user_filter and user_filter != "all" and is_manager:
+            expenses = expenses.filter(user_id=user_filter)
+
         # Year & Month filters
         year = request.query_params.get("year")
         if year:
@@ -651,12 +656,22 @@ class ExpenseClaimListCreateView(APIView):
             exp_type = serializer.validated_data.get("expense_type", ExpenseClaim.ExpenseType.REIMBURSEMENT)
             initial_status = ExpenseClaim.Status.PENDING
 
+            # Determine employee who incurred/spent the money
+            target_user = request.user
+            user_id = request.data.get("user_id") or request.data.get("user")
+            if user_id and request.user.has_management_access:
+                try:
+                    from accounts.models import User
+                    target_user = User.objects.get(id=user_id, company=request.user.company)
+                except (User.DoesNotExist, ValueError):
+                    pass
+
             # If manager logging a direct company-paid expense, auto-settle
             if request.user.has_management_access and exp_type == ExpenseClaim.ExpenseType.COMPANY_PAID:
                 initial_status = ExpenseClaim.Status.SETTLED
 
             expense = serializer.save(
-                user=request.user,
+                user=target_user,
                 company=request.user.company,
                 status=initial_status,
             )
@@ -757,7 +772,19 @@ class ExpenseClaimDetailView(APIView):
 
         serializer = ExpenseClaimSerializer(expense, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            expense = serializer.save()
+
+            if request.user.has_management_access:
+                user_id = request.data.get("user_id") or request.data.get("user")
+                if user_id:
+                    try:
+                        from accounts.models import User
+                        chosen_user = User.objects.get(id=user_id, company=request.user.company)
+                        expense.user = chosen_user
+                        expense.save(update_fields=["user", "updated_at"])
+                    except (User.DoesNotExist, ValueError):
+                        pass
+
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

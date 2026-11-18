@@ -41,6 +41,7 @@ import {
   Layers,
   ChevronRight,
   BadgeAlert,
+  User,
 } from "lucide-react";
 import {
   useExpenseClaims,
@@ -51,6 +52,7 @@ import {
   useCurrentUser,
   useCurrentCompany,
   useAllDealsBoard,
+  useTeam,
 } from "@/lib/queries";
 import { formatINR, formatCompactINR, formatShortDate, formatLongDate, toNumber, cn } from "@/lib/utils";
 import type { ExpenseClaim } from "@/lib/types";
@@ -150,6 +152,7 @@ export default function ExpensesPage() {
   const { data: myExpenses = [], isLoading: myLoading } = useExpenseClaims(false);
   const { data: companyExpenses = [], isLoading: companyLoading } = useExpenseClaims(true);
   const { data: deals = [], isLoading: dealsLoading } = useAllDealsBoard();
+  const { data: teamUsers = [] } = useTeam();
 
   // Mutations
   const createMutation = useCreateExpenseClaim();
@@ -163,6 +166,7 @@ export default function ExpensesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [employeeFilter, setEmployeeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modals
@@ -175,6 +179,7 @@ export default function ExpensesPage() {
 
   // Form State
   const [formType, setFormType] = useState<"reimbursement" | "company_paid">("reimbursement");
+  const [formUserId, setFormUserId] = useState<string>("");
   const [formTitle, setFormTitle] = useState("");
   const [formMerchant, setFormMerchant] = useState("");
   const [formCategory, setFormCategory] = useState<ExpenseClaim["category"]>("misc");
@@ -221,6 +226,9 @@ export default function ExpensesPage() {
       // Type Filter
       if (typeFilter !== "all" && item.expense_type !== typeFilter) return false;
 
+      // Employee Filter
+      if (employeeFilter !== "all" && String(item.user) !== String(employeeFilter)) return false;
+
       // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -237,7 +245,7 @@ export default function ExpensesPage() {
 
       return true;
     });
-  }, [activePool, statusFilter, categoryFilter, typeFilter, searchQuery]);
+  }, [activePool, statusFilter, categoryFilter, typeFilter, employeeFilter, searchQuery]);
 
   // Overall Pool Aggregates (KPIs)
   const kpiTotalSpend = useMemo(() => {
@@ -308,6 +316,7 @@ export default function ExpensesPage() {
   const openNewExpenseModal = (defaultType: "reimbursement" | "company_paid" = "reimbursement") => {
     setEditingExpense(null);
     setFormType(defaultType);
+    setFormUserId(String(user?.id || ""));
     setFormTitle("");
     setFormMerchant("");
     setFormCategory("misc");
@@ -328,6 +337,7 @@ export default function ExpensesPage() {
   const openEditExpenseModal = (claim: ExpenseClaim) => {
     setEditingExpense(claim);
     setFormType(claim.expense_type || "reimbursement");
+    setFormUserId(claim.user ? String(claim.user) : String(user?.id || ""));
     setFormTitle(claim.title || "");
     setFormMerchant(claim.merchant || "");
     setFormCategory(claim.category || "misc");
@@ -381,6 +391,9 @@ export default function ExpensesPage() {
     formData.append("expense_date", formExpenseDate);
     formData.append("payment_method", formPaymentMethod);
     formData.append("is_billable", formIsBillable ? "true" : "false");
+    if (formUserId) {
+      formData.append("user_id", formUserId);
+    }
 
     if (formMerchant.trim()) {
       formData.append("merchant", formMerchant.trim());
@@ -861,12 +874,29 @@ export default function ExpensesPage() {
               <option value="company_paid">Direct Company Spend</option>
             </select>
 
-            {(statusFilter !== "all" || categoryFilter !== "all" || typeFilter !== "all" || searchQuery) && (
+            {/* Employee Filter (for managers) */}
+            {isManager && scope === "all" && teamUsers.length > 0 && (
+              <select
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
+                className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium"
+              >
+                <option value="all">All Employees ({teamUsers.length})</option>
+                {teamUsers.map((m: any) => (
+                  <option key={m.id} value={m.id}>
+                    👤 {m.first_name || m.name ? `${m.first_name || m.name}` : m.email}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {(statusFilter !== "all" || categoryFilter !== "all" || typeFilter !== "all" || employeeFilter !== "all" || searchQuery) && (
               <button
                 onClick={() => {
                   setStatusFilter("all");
                   setCategoryFilter("all");
                   setTypeFilter("all");
+                  setEmployeeFilter("all");
                   setSearchQuery("");
                 }}
                 className="flex items-center gap-1 text-[11px] text-muted hover:text-ink font-medium px-2 py-1.5 rounded bg-bone border border-line transition-colors"
@@ -1268,7 +1298,7 @@ export default function ExpensesPage() {
             </div>
 
             <form onSubmit={handleSaveExpense} className="flex flex-col gap-4">
-              {/* Row 1: Title & Merchant */}
+              {/* Row 1: Title & Employee Spender */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
@@ -1285,6 +1315,37 @@ export default function ExpensesPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] uppercase tracking-wider font-semibold text-muted flex items-center justify-between">
+                    <span>Employee / Spender <span className="text-rose-500">*</span></span>
+                    {isManager && (
+                      <span className="text-[10px] text-emerald-700 font-medium lowercase">
+                        {formType === "reimbursement" ? "(claimant)" : "(who spent)"}
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={formUserId}
+                    onChange={(e) => setFormUserId(e.target.value)}
+                    disabled={!isManager}
+                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium disabled:opacity-80 disabled:cursor-not-allowed"
+                  >
+                    {teamUsers.map((member: any) => (
+                      <option key={member.id} value={member.id}>
+                        👤 {member.first_name || member.name ? `${member.first_name || member.name} (${member.email})` : member.email} {member.id === user?.id ? "• You" : ""}
+                      </option>
+                    ))}
+                    {teamUsers.length === 0 && (
+                      <option value={user?.id || ""}>
+                        👤 {user?.first_name || user?.email || "Current User"} • You
+                      </option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Merchant & Category */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
                     Merchant / Vendor Name
                   </label>
@@ -1296,10 +1357,7 @@ export default function ExpensesPage() {
                     className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink"
                   />
                 </div>
-              </div>
 
-              {/* Row 2: Category & Date */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
                     Expense Category
@@ -1316,7 +1374,10 @@ export default function ExpensesPage() {
                     ))}
                   </select>
                 </div>
+              </div>
 
+              {/* Row 3: Date & Payment Method */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
                     Transaction / Expense Date
@@ -1329,9 +1390,26 @@ export default function ExpensesPage() {
                     className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-mono"
                   />
                 </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
+                    Payment Method
+                  </label>
+                  <select
+                    value={formPaymentMethod}
+                    onChange={(e) => setFormPaymentMethod(e.target.value as ExpenseClaim["payment_method"])}
+                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium"
+                  >
+                    {PAYMENT_METHODS.map((method) => (
+                      <option key={method.id} value={method.id}>
+                        {method.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Row 3: Amount & Tax Portion */}
+              {/* Row 4: Amount & Tax Portion */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
@@ -1371,42 +1449,23 @@ export default function ExpensesPage() {
                 </div>
               </div>
 
-              {/* Row 4: Payment Method & CRM Deal */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
-                    Payment Method
-                  </label>
-                  <select
-                    value={formPaymentMethod}
-                    onChange={(e) => setFormPaymentMethod(e.target.value as ExpenseClaim["payment_method"])}
-                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium"
-                  >
-                    {PAYMENT_METHODS.map((method) => (
-                      <option key={method.id} value={method.id}>
-                        {method.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
-                    Associate with CRM Deal <span className="text-muted/60 lowercase font-normal">(optional)</span>
-                  </label>
-                  <select
-                    value={formDealId}
-                    onChange={(e) => setFormDealId(e.target.value)}
-                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium"
-                  >
-                    <option value="">No deal linkage</option>
-                    {deals.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        💼 {d.title} ({formatINR(toNumber(d.amount))})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Row 5: CRM Deal Context */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
+                  Associate with CRM Deal <span className="text-muted/60 lowercase font-normal">(optional)</span>
+                </label>
+                <select
+                  value={formDealId}
+                  onChange={(e) => setFormDealId(e.target.value)}
+                  className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium"
+                >
+                  <option value="">No deal linkage</option>
+                  {deals.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      💼 {d.title} ({formatINR(toNumber(d.amount))})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Billable Toggle */}
