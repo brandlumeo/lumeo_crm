@@ -490,7 +490,7 @@ class LeadViewSet(CompanyScopedModelViewSet):
 class BillViewSet(CompanyScopedModelViewSet):
     serializer_class = BillSerializer
     queryset = Bill.objects.select_related("vendor", "purchase_order").prefetch_related("items", "payments", "payments__created_by")
-    search_fields = ("bill_number", "vendor__name", "notes", "category")
+    search_fields = ("bill_number", "vendor_reference", "vendor__name", "notes", "category")
     ordering_fields = ("bill_date", "due_date", "bill_number", "total_amount", "amount_due", "amount_paid")
     ordering = ("-bill_date",)
     
@@ -1310,6 +1310,13 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         if getattr(instance, 'category', None):
             category_label = getattr(instance, 'get_category_display', lambda: instance.category)()
             meta_info += f"<font size=9 color='#6B7280'>Category:</font> <font size=9 color='#111827'>{category_label}</font><br/>"
+        from xml.sax.saxutils import escape as _xml_escape
+        if getattr(instance, 'vendor_reference', None):
+            meta_info += f"<font size=9 color='#6B7280'>Vendor Invoice #:</font> <font size=9 color='#111827'>{_xml_escape(instance.vendor_reference)}</font><br/>"
+        if getattr(instance, 'place_of_supply', None):
+            meta_info += f"<font size=9 color='#6B7280'>Place of Supply:</font> <font size=9 color='#111827'>{_xml_escape(instance.place_of_supply)}</font><br/>"
+        if getattr(instance, 'purchase_order', None):
+            meta_info += f"<font size=9 color='#6B7280'>PO Ref:</font> <font size=9 color='#111827'>{_xml_escape(instance.purchase_order.po_number)}</font><br/>"
     elif doc_type == "Purchase Order":
         issue_date = getattr(instance, 'issue_date', None)
         expected_delivery = getattr(instance, 'expected_delivery_date', None)
@@ -1351,6 +1358,9 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             if getattr(vendor_obj, 'email', None): cust_email = f"{vendor_obj.email}<br/>"
             if getattr(vendor_obj, 'phone', None): cust_phone = f"{vendor_obj.phone}<br/>"
             if getattr(vendor_obj, 'address', None): cust_address = f"{vendor_obj.address}<br/>"
+            vendor_gstin = getattr(instance, 'vendor_gstin', None)
+            if vendor_gstin:
+                cust_address += f"GSTIN: {vendor_gstin}<br/>"
         else:
             cust_name = "<b>Vendor Record</b>"
     else:
@@ -1411,6 +1421,8 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     left_label = ParagraphStyle('LeftLabel', parent=meta_label_style, alignment=0, fontName='Helvetica-Bold')
     
     show_hsn = get_setting("show_hsn_sac_code", default=False)
+    if doc_type == "Bill" and any(getattr(i, "hsn_sac_code", "") for i in instance.items.all()):
+        show_hsn = True
     
     header_row = [Paragraph("<b>Item & Description</b>", left_label)]
     if show_hsn:
@@ -1469,7 +1481,28 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         [Paragraph("Tax:", right_normal), Paragraph(f"{curr}{instance.tax_amount:,.2f}", right_normal)],
         [Paragraph("<b>Total:</b>", right_total), Paragraph(f"<b>{curr}{getattr(instance, 'total_amount', getattr(instance, 'total', 0)):,.2f}</b>", right_total)]
     ]
-    
+
+    if doc_type == "Bill":
+        def _row(label, value, style=right_normal):
+            return [Paragraph(label, style), Paragraph(f"{curr}{value:,.2f}", style)]
+
+        totals_data = [_row("Subtotal:", instance.subtotal)]
+        if instance.discount_amount:
+            totals_data.append(_row("Discount:", -instance.discount_amount))
+            totals_data.append(_row("Taxable Value:", instance.taxable_amount))
+        if instance.igst_amount:
+            totals_data.append(_row("IGST:", instance.igst_amount))
+        elif instance.cgst_amount or instance.sgst_amount:
+            totals_data.append(_row("CGST:", instance.cgst_amount))
+            totals_data.append(_row("SGST:", instance.sgst_amount))
+        if instance.round_off:
+            totals_data.append(_row("Round Off:", instance.round_off))
+        totals_data.append([Paragraph("<b>Invoice Total:</b>", right_total), Paragraph(f"<b>{curr}{instance.total_amount:,.2f}</b>", right_total)])
+        if instance.tds_amount:
+            section = instance.get_tds_section_display().split(" - ")[0] if instance.tds_section else ""
+            totals_data.append(_row(f"Less TDS {section} @ {instance.tds_rate:g}%:", -instance.tds_amount))
+            totals_data.append([Paragraph("<b>Net Payable:</b>", right_total), Paragraph(f"<b>{curr}{instance.net_payable:,.2f}</b>", right_total)])
+
     if doc_type in ["Invoice", "Receipt", "Bill"] and hasattr(instance, "amount_paid"):
         paid_style = ParagraphStyle('RightPaid', parent=right_normal, textColor=colors.HexColor("#059669"))
         due_style = ParagraphStyle('RightDue', parent=right_total, textColor=colors.HexColor("#DC2626"))
@@ -2669,32 +2702,36 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
         if po.status not in [PurchaseOrder.Status.APPROVED, PurchaseOrder.Status.SENT]:
             return Response({"error": "Only approved or sent purchase orders can be converted to bills."}, status=400)
             
-        bill_number = f"BILL-{po.po_number.split('-')[-1] if '-' in po.po_number else po.po_number}-{get_random_string(4).upper()}"
-        
-        bill = Bill.objects.create(
-            company=po.company,
-            vendor=po.vendor,
-            purchase_order=po,
-            bill_number=bill_number,
-            bill_date=timezone.now().date(),
-            due_date=po.expected_delivery_date,
-            status=Bill.Status.DRAFT,
-            subtotal=po.subtotal,
-            tax_amount=po.tax_amount,
-            total_amount=po.total_amount,
-            amount_due=po.total_amount,
-            notes=f"Converted from Purchase Order {po.po_number}"
-        )
-        
-        for item in po.items.all():
-            BillItem.objects.create(
-                bill=bill,
-                description=item.description,
-                quantity=item.quantity,
-                unit_price=item.unit_price,
-                tax_rate=item.tax_rate,
-                total=item.total
+        from django.db import transaction
+
+        vendor_tax_id = (po.vendor.tax_id or "").strip().upper()
+        with transaction.atomic():
+            bill = Bill.objects.create(
+                company=po.company,
+                vendor=po.vendor,
+                purchase_order=po,
+                bill_number=Bill.next_bill_number(po.company),
+                bill_date=timezone.now().date(),
+                due_date=po.expected_delivery_date,
+                status=Bill.Status.DRAFT,
+                vendor_gstin=vendor_tax_id if len(vendor_tax_id) == 15 else "",
+                place_of_supply=po.company.state or "",
+                payment_terms=po.vendor.payment_terms or "Net 30",
+                notes=f"Converted from Purchase Order {po.po_number}"
             )
+
+            for item in po.items.all():
+                BillItem.objects.create(
+                    bill=bill,
+                    description=item.description,
+                    quantity=item.quantity,
+                    unit_price=item.unit_price,
+                    tax_rate=item.tax_rate,
+                )
+
+            bill.recalculate_totals()
+            bill.save()
+
             
         po.status = PurchaseOrder.Status.BILLED
         po.save()

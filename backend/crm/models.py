@@ -1544,11 +1544,28 @@ class Bill(models.Model):
         UTILITIES = "utilities", "Utilities & Internet"
         OTHER = "other", "Other Expenses"
 
+    class SupplyType(models.TextChoices):
+        INTRA = "intra", "Intra-state (CGST + SGST)"
+        INTER = "inter", "Inter-state (IGST)"
+
+    class TDSSection(models.TextChoices):
+        S194C_IND = "194C_I", "194C - Contractor (Individual/HUF) 1%"
+        S194C_OTH = "194C_O", "194C - Contractor (Others) 2%"
+        S194J_TECH = "194J_T", "194J - Technical services 2%"
+        S194J_PROF = "194J_P", "194J - Professional fees 10%"
+        S194I_PM = "194I_PM", "194I - Rent (Plant & Machinery) 2%"
+        S194I_LB = "194I_LB", "194I - Rent (Land & Building) 10%"
+        S194H = "194H", "194H - Commission/Brokerage 2%"
+        S194Q = "194Q", "194Q - Purchase of goods 0.1%"
+        S194O = "194O", "194O - E-commerce operator 0.1%"
+        OTHER = "other", "Other (custom rate)"
+
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="bills")
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="bills")
     purchase_order = models.ForeignKey(PurchaseOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="bills")
     
     bill_number = models.CharField(max_length=50, db_index=True)
+    vendor_reference = models.CharField(max_length=100, blank=True, default="", db_index=True, help_text="Invoice number printed on the vendor's own invoice")
     bill_date = models.DateField(default=timezone.now, db_index=True)
     due_date = models.DateField(null=True, blank=True)
     category = models.CharField(max_length=50, choices=Category.choices, default=Category.OTHER, db_index=True)
@@ -1556,14 +1573,31 @@ class Bill(models.Model):
     attachment = models.FileField(upload_to="bills/vendor_invoices/", blank=True, null=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
-    
+
+    # GST
+    vendor_gstin = models.CharField(max_length=15, blank=True, default="")
+    place_of_supply = models.CharField(max_length=100, blank=True, default="")
+    supply_type = models.CharField(max_length=10, choices=SupplyType.choices, default=SupplyType.INTRA)
+
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    taxable_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    cgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    sgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    igst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    round_off = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    
+
+    # TDS (deducted at source on the taxable value, excluding GST)
+    tds_section = models.CharField(max_length=10, choices=TDSSection.choices, blank=True, default="")
+    tds_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    tds_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    net_payable = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, help_text="Total minus TDS: the amount actually owed to the vendor")
+
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_due = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    
+
     notes = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -1572,9 +1606,60 @@ class Bill(models.Model):
     def __str__(self):
         return f"{self.bill_number} - {self.vendor.name}"
 
+    @classmethod
+    def next_bill_number(cls, company):
+        """Sequential per-company number: BILL-00001, BILL-00002, ..."""
+        import re
+        highest = 0
+        for number in cls.objects.filter(company=company, bill_number__startswith="BILL-").values_list("bill_number", flat=True):
+            match = re.match(r"^BILL-(\d+)$", number)
+            if match:
+                highest = max(highest, int(match.group(1)))
+        candidate = highest + 1
+        while cls.objects.filter(company=company, bill_number=f"BILL-{candidate:05d}").exists():
+            candidate += 1
+        return f"BILL-{candidate:05d}"
+
+    def recalculate_totals(self, items=None):
+        """Recompute GST, TDS and payable figures from the line items.
+
+        The bill-level discount is applied before tax and spread proportionally
+        across lines. `round_off` is kept as entered (clamped to +/- 1).
+        """
+        from decimal import Decimal, ROUND_HALF_UP
+        two = Decimal("0.01")
+        items = list(items if items is not None else self.items.all())
+
+        subtotal = sum((Decimal(str(i.quantity or 0)) * Decimal(str(i.unit_price or 0)) for i in items), Decimal("0"))
+        discount = min(max(Decimal(str(self.discount_amount or 0)), Decimal("0")), subtotal)
+        ratio = (subtotal - discount) / subtotal if subtotal else Decimal("0")
+
+        gst = sum(
+            (Decimal(str(i.quantity or 0)) * Decimal(str(i.unit_price or 0)) * ratio * Decimal(str(i.tax_rate or 0)) / 100 for i in items),
+            Decimal("0"),
+        ).quantize(two, ROUND_HALF_UP)
+
+        self.subtotal = subtotal.quantize(two, ROUND_HALF_UP)
+        self.discount_amount = discount.quantize(two, ROUND_HALF_UP)
+        self.taxable_amount = (subtotal - discount).quantize(two, ROUND_HALF_UP)
+        if self.supply_type == self.SupplyType.INTER:
+            self.igst_amount, self.cgst_amount, self.sgst_amount = gst, Decimal("0"), Decimal("0")
+        else:
+            half = (gst / 2).quantize(two, ROUND_HALF_UP)
+            self.cgst_amount, self.sgst_amount, self.igst_amount = half, gst - half, Decimal("0")
+        self.tax_amount = gst
+        self.round_off = min(max(Decimal(str(self.round_off or 0)), Decimal("-1")), Decimal("1")).quantize(two)
+        self.total_amount = self.taxable_amount + gst + self.round_off
+
+        if not self.tds_section:
+            self.tds_rate = Decimal("0")
+        self.tds_amount = (self.taxable_amount * Decimal(str(self.tds_rate or 0)) / 100).quantize(two, ROUND_HALF_UP)
+        self.net_payable = self.total_amount - self.tds_amount
+
     def save(self, *args, **kwargs):
         from decimal import Decimal
-        self.amount_due = Decimal(str(self.total_amount or 0)) - Decimal(str(self.amount_paid or 0))
+        payable = Decimal(str(self.net_payable or 0)) or Decimal(str(self.total_amount or 0))
+        self.amount_due = max(payable - Decimal(str(self.amount_paid or 0)), Decimal("0"))
         super().save(*args, **kwargs)
 
 
@@ -1622,8 +1707,9 @@ class BillPayment(models.Model):
         from decimal import Decimal
         paid = bill.payments.aggregate(total=Sum('amount'))['total'] or 0
         bill.amount_paid = Decimal(str(paid))
-        bill.amount_due = max(Decimal(str(bill.total_amount or 0)) - bill.amount_paid, Decimal('0'))
-        if bill.total_amount > 0 and bill.amount_due == 0:
+        payable = Decimal(str(bill.net_payable or 0)) or Decimal(str(bill.total_amount or 0))
+        bill.amount_due = max(payable - bill.amount_paid, Decimal('0'))
+        if payable > 0 and bill.amount_due == 0:
             bill.status = Bill.Status.PAID
         elif bill.amount_paid > 0:
             bill.status = Bill.Status.PARTIAL
@@ -1635,6 +1721,7 @@ class BillPayment(models.Model):
 class BillItem(models.Model):
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name="items")
     description = models.CharField(max_length=500)
+    hsn_sac_code = models.CharField(max_length=20, blank=True, default="")
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)

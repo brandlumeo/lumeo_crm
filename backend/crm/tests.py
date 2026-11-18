@@ -316,3 +316,75 @@ def test_agency_quote_pdf_and_sow_deliverables():
 
 
 
+
+
+@pytest.mark.django_db
+def test_bill_gst_tds_and_numbering(setup_data):
+    """GST split, discount, round-off and TDS are computed server-side; payments settle against net payable."""
+    from decimal import Decimal
+    from rest_framework.test import APIClient
+    from crm.models import Vendor, Bill
+
+    user = setup_data["user1"]
+    user.role = "admin"
+    user.save()
+    company = setup_data["company1"]
+    vendor = Vendor.objects.create(company=company, name="Studio Partners LLP", tax_id="32ABCDE1234F1Z5")
+    other_vendor = Vendor.objects.create(company=setup_data["company2"], name="Other Co")
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    payload = {
+        "vendor": vendor.id,
+        "vendor_reference": "SP/2026/117",
+        "bill_date": "2026-11-18",
+        "status": "open",
+        "supply_type": "intra",
+        "place_of_supply": "Kerala",
+        "discount_amount": "1000",
+        "round_off": "0.40",
+        "tds_section": "194J_P",
+        "tds_rate": "10",
+        "total_amount": "1",  # client-sent totals are ignored
+        "items": [
+            {"description": "Consulting", "hsn_sac_code": "998311", "quantity": 2, "unit_price": 5000, "tax_rate": 18},
+            {"description": "Hosting", "quantity": 1, "unit_price": 2000, "tax_rate": 18},
+        ],
+    }
+    res = client.post("/api/v1/crm/bills/", payload, format="json")
+    assert res.status_code == 201, res.data
+    bill = Bill.objects.get(id=res.data["id"])
+
+    assert bill.bill_number == "BILL-00001"
+    assert bill.vendor_gstin == "32ABCDE1234F1Z5"  # defaulted from vendor tax_id
+    assert bill.taxable_amount == Decimal("11000.00")
+    assert (bill.cgst_amount, bill.sgst_amount, bill.igst_amount) == (Decimal("990.00"), Decimal("990.00"), Decimal("0"))
+    assert bill.total_amount == Decimal("12980.40")
+    assert bill.tds_amount == Decimal("1100.00")
+    assert bill.net_payable == bill.amount_due == Decimal("11880.40")
+    assert bill.items.get(description="Consulting").hsn_sac_code == "998311"
+
+    # Inter-state switches to IGST
+    res = client.patch(f"/api/v1/crm/bills/{bill.id}/", {"supply_type": "inter"}, format="json")
+    assert res.status_code == 200, res.data
+    bill.refresh_from_db()
+    assert bill.igst_amount == Decimal("1980.00") and bill.cgst_amount == 0
+
+    # Paying the net payable (not the gross total) settles the bill
+    res = client.post(f"/api/v1/crm/bills/{bill.id}/record-payment/", {"amount": "11880.40", "payment_method": "upi"})
+    assert res.status_code == 201
+    bill.refresh_from_db()
+    assert bill.status == Bill.Status.PAID and bill.amount_due == 0
+
+    # Sequential numbering, GSTIN validation, PO/vendor tenancy
+    res = client.post("/api/v1/crm/bills/", {**payload, "vendor_reference": "SP/2026/118"}, format="json")
+    assert res.data["bill_number"] == "BILL-00002"
+    res = client.post("/api/v1/crm/bills/", {**payload, "vendor_gstin": "12345"}, format="json")
+    assert res.status_code == 400 and "vendor_gstin" in res.data
+    res = client.post("/api/v1/crm/bills/", {**payload, "vendor": other_vendor.id}, format="json")
+    assert res.status_code == 400
+
+    # Voucher PDF renders with the new breakdown
+    res = client.get(f"/api/v1/crm/bills/{bill.id}/pdf/")
+    assert res.status_code == 200

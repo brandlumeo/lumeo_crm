@@ -1893,6 +1893,7 @@ export async function downloadPurchaseOrderPdf(id: number, poNumber: string) {
 export interface BillItem {
   id?: number;
   description: string;
+  hsn_sac_code?: string;
   quantity: number;
   unit_price: number;
   tax_rate: number;
@@ -1925,8 +1926,15 @@ export interface Bill {
     phone?: string;
     address?: string;
     company_name?: string;
+    tax_id?: string;
+    payment_terms?: string;
   };
   purchase_order?: number | null;
+  vendor_reference?: string;
+  vendor_gstin?: string;
+  place_of_supply?: string;
+  supply_type?: "intra" | "inter";
+  supply_type_display?: string;
   purchase_order_details?: {
     id: number;
     po_number: string;
@@ -1940,8 +1948,19 @@ export interface Bill {
   status: "draft" | "open" | "partial" | "paid" | "cancelled";
   status_display?: string;
   subtotal: string | number;
+  discount_amount?: string | number;
+  taxable_amount?: string | number;
+  cgst_amount?: string | number;
+  sgst_amount?: string | number;
+  igst_amount?: string | number;
   tax_amount: string | number;
+  round_off?: string | number;
   total_amount: string | number;
+  tds_section?: string;
+  tds_section_display?: string;
+  tds_rate?: string | number;
+  tds_amount?: string | number;
+  net_payable?: string | number;
   amount_paid: string | number;
   amount_due: string | number;
   notes?: string;

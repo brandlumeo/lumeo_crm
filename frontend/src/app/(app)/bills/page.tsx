@@ -31,7 +31,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { 
   useBillPage, 
   useBillKPIs, 
-  useVendorPage, 
+  useVendorPage,
+  usePurchaseOrderPage,
   useCurrentCompany,
   useRecordBillPayment,
   useDeleteBillPayment,
@@ -72,6 +73,131 @@ const PAYMENT_METHODS: { value: string; label: string }[] = [
   { value: "cash", label: "Cash" },
   { value: "other", label: "Other" },
 ];
+
+// GST state codes (first two digits of a GSTIN)
+const GST_STATES: Record<string, string> = {
+  "01": "Jammu and Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh",
+  "05": "Uttarakhand", "06": "Haryana", "07": "Delhi", "08": "Rajasthan", "09": "Uttar Pradesh",
+  "10": "Bihar", "11": "Sikkim", "12": "Arunachal Pradesh", "13": "Nagaland", "14": "Manipur",
+  "15": "Mizoram", "16": "Tripura", "17": "Meghalaya", "18": "Assam", "19": "West Bengal",
+  "20": "Jharkhand", "21": "Odisha", "22": "Chhattisgarh", "23": "Madhya Pradesh", "24": "Gujarat",
+  "26": "Dadra and Nagar Haveli and Daman and Diu", "27": "Maharashtra", "29": "Karnataka",
+  "30": "Goa", "31": "Lakshadweep", "32": "Kerala", "33": "Tamil Nadu", "34": "Puducherry",
+  "35": "Andaman and Nicobar Islands", "36": "Telangana", "37": "Andhra Pradesh", "38": "Ladakh",
+  "97": "Other Territory",
+};
+const STATE_NAMES = Object.values(GST_STATES).sort();
+const GSTIN_REGEX = /^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/;
+const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28];
+
+const PAYMENT_TERM_OPTIONS: { label: string; days: number }[] = [
+  { label: "Due on Receipt", days: 0 },
+  { label: "Net 7", days: 7 },
+  { label: "Net 15", days: 15 },
+  { label: "Net 30", days: 30 },
+  { label: "Net 45", days: 45 },
+  { label: "Net 60", days: 60 },
+  { label: "Net 90", days: 90 },
+];
+
+const TDS_SECTIONS: { value: string; label: string; rate: number }[] = [
+  { value: "194C_I", label: "194C – Contractor (Individual/HUF)", rate: 1 },
+  { value: "194C_O", label: "194C – Contractor (Company/Firm)", rate: 2 },
+  { value: "194J_T", label: "194J – Technical services", rate: 2 },
+  { value: "194J_P", label: "194J – Professional fees", rate: 10 },
+  { value: "194I_PM", label: "194I – Rent: Plant & Machinery", rate: 2 },
+  { value: "194I_LB", label: "194I – Rent: Land & Building", rate: 10 },
+  { value: "194H", label: "194H – Commission / Brokerage", rate: 2 },
+  { value: "194Q", label: "194Q – Purchase of goods", rate: 0.1 },
+  { value: "194O", label: "194O – E-commerce operator", rate: 0.1 },
+  { value: "other", label: "Other (custom rate)", rate: 0 },
+];
+
+function termsToDays(terms: string): number | null {
+  const opt = PAYMENT_TERM_OPTIONS.find((o) => o.label.toLowerCase() === terms.trim().toLowerCase());
+  if (opt) return opt.days;
+  const m = terms.match(/net\s*(\d+)/i);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function addDays(isoDate: string, days: number): string {
+  if (!isoDate) return "";
+  const d = new Date(`${isoDate}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function stateFromGstin(gstin: string): string | null {
+  return GSTIN_REGEX.test(gstin) ? GST_STATES[gstin.slice(0, 2)] || null : null;
+}
+
+/** Intra-state (CGST+SGST) when the supplier's state equals the place of supply. */
+function deriveSupplyType(gstin: string, placeOfSupply: string, fallbackState?: string | null): "intra" | "inter" {
+  const supplierState = stateFromGstin(gstin) || fallbackState || "";
+  if (!supplierState || !placeOfSupply) return "intra";
+  return supplierState.toLowerCase() === placeOfSupply.toLowerCase() ? "intra" : "inter";
+}
+
+type BillLine = { description: string; hsn_sac_code: string; quantity: number; unit_price: number; tax_rate: number };
+
+const emptyLine = (): BillLine => ({ description: "", hsn_sac_code: "", quantity: 1, unit_price: 0, tax_rate: 18 });
+
+type BillForm = {
+  vendor: number | null;
+  vendor_reference: string;
+  purchase_order: number | null;
+  bill_date: string;
+  due_date: string;
+  dueDateTouched: boolean;
+  category: string;
+  payment_terms: string;
+  status: string;
+  notes: string;
+  vendor_gstin: string;
+  place_of_supply: string;
+  supply_type: "intra" | "inter";
+  discount_amount: number;
+  roundOff: boolean;
+  tds_section: string;
+  tds_rate: number;
+  attachmentFile: File | null;
+  existingAttachment?: string | null;
+  items: BillLine[];
+};
+
+function computeBillTotals(form: Pick<BillForm, "items" | "discount_amount" | "supply_type" | "roundOff" | "tds_section" | "tds_rate">) {
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const subtotal = form.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+  const discount = Math.min(Math.max(form.discount_amount || 0, 0), subtotal);
+  const taxable = subtotal - discount;
+  const ratio = subtotal ? taxable / subtotal : 0;
+  const gst = r2(form.items.reduce((s, i) => s + i.quantity * i.unit_price * ratio * (i.tax_rate / 100), 0));
+  const cgst = form.supply_type === "inter" ? 0 : r2(gst / 2);
+  const sgst = form.supply_type === "inter" ? 0 : r2(gst - cgst);
+  const igst = form.supply_type === "inter" ? gst : 0;
+  const preRound = r2(taxable + gst);
+  const roundOff = form.roundOff ? r2(Math.round(preRound) - preRound) : 0;
+  const total = r2(preRound + roundOff);
+  const tdsRate = form.tds_section ? form.tds_rate || 0 : 0;
+  const tds = r2((taxable * tdsRate) / 100);
+  return { subtotal: r2(subtotal), discount: r2(discount), taxable: r2(taxable), gst, cgst, sgst, igst, roundOff, total, tdsRate, tds, net: r2(total - tds) };
+}
+
+const inputCls = "w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors";
+const labelCls = "block text-xs font-medium text-ink mb-1.5";
+const lineInputCls = "w-full px-2.5 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors";
+const mobileLabelCls = "md:hidden block text-[11px] font-medium text-muted mb-1";
+const lineGridCls = "md:grid-cols-[minmax(0,1fr)_96px_72px_100px_80px_104px_32px]";
+
+function TotalRow({ label, value, currency }: { label: string; value: number; currency: string }) {
+  return (
+    <div className="flex justify-between text-muted">
+      <span>{label}</span>
+      <span className="font-mono">{formatCurrency(value, currency)}</span>
+    </div>
+  );
+}
 
 function getDueStatus(dueDateStr: string | null | undefined, billStatus: string) {
   if (billStatus === "paid") return { label: "Paid", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 };
@@ -158,6 +284,7 @@ export default function BillsPage() {
     const q = searchQuery.toLowerCase();
     return list.filter((b) => 
       b.bill_number.toLowerCase().includes(q) ||
+      (b.vendor_reference && b.vendor_reference.toLowerCase().includes(q)) ||
       (b.vendor_details?.name && b.vendor_details.name.toLowerCase().includes(q)) ||
       (b.notes && b.notes.toLowerCase().includes(q)) ||
       (b.category && b.category.toLowerCase().includes(q))
@@ -180,28 +307,103 @@ export default function BillsPage() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   // New/Edit Bill form state
-  const [newBill, setNewBill] = useState<{
-    vendor: number | null;
-    bill_date: string;
-    due_date: string;
-    category: string;
-    payment_terms: string;
-    status: string;
-    notes: string;
-    attachmentFile: File | null;
-    existingAttachment?: string | null;
-    items: { description: string; quantity: number; unit_price: number; tax_rate: number }[];
-  }>({
-    vendor: null,
-    bill_date: new Date().toISOString().split("T")[0],
-    due_date: "",
-    category: "other",
-    payment_terms: "Net 30",
-    status: "draft",
-    notes: "",
-    attachmentFile: null,
-    items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }],
-  });
+  const { data: poData } = usePurchaseOrderPage({ limit: 200 });
+  const purchaseOrders: any[] = poData?.results || [];
+
+  const blankForm = (): BillForm => {
+    const today = new Date().toISOString().split("T")[0];
+    return {
+      vendor: null,
+      vendor_reference: "",
+      purchase_order: null,
+      bill_date: today,
+      due_date: addDays(today, 30),
+      dueDateTouched: false,
+      category: "other",
+      payment_terms: "Net 30",
+      status: "draft",
+      notes: "",
+      vendor_gstin: "",
+      place_of_supply: company?.state || "",
+      supply_type: "intra",
+      discount_amount: 0,
+      roundOff: false,
+      tds_section: "",
+      tds_rate: 0,
+      attachmentFile: null,
+      items: [emptyLine()],
+    };
+  };
+
+  const [newBill, setNewBill] = useState<BillForm>(blankForm);
+
+  /** Apply a change and keep due date + supply type in sync with the inputs they derive from. */
+  const patchBill = (patch: Partial<BillForm>) => {
+    setNewBill((prev) => {
+      const next = { ...prev, ...patch };
+      if (("bill_date" in patch || "payment_terms" in patch) && !next.dueDateTouched) {
+        const days = termsToDays(next.payment_terms);
+        if (days !== null) next.due_date = addDays(next.bill_date, days);
+      }
+      if (("vendor_gstin" in patch || "place_of_supply" in patch) && !("supply_type" in patch)) {
+        next.supply_type = deriveSupplyType(next.vendor_gstin, next.place_of_supply);
+      }
+      return next;
+    });
+  };
+
+  const updateLine = (index: number, patch: Partial<BillLine>) => {
+    setNewBill((prev) => ({
+      ...prev,
+      items: prev.items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    }));
+  };
+
+  const handleVendorChange = (vendorId: number | null) => {
+    const v: any = vendors.find((x: any) => x.id === vendorId);
+    const gstin = (v?.tax_id || "").trim().toUpperCase();
+    const patch: Partial<BillForm> = {
+      vendor: vendorId,
+      vendor_gstin: GSTIN_REGEX.test(gstin) ? gstin : "",
+    };
+    if (v?.payment_terms) patch.payment_terms = v.payment_terms;
+    const currentPo = purchaseOrders.find((po) => po.id === newBill.purchase_order);
+    if (currentPo && currentPo.vendor !== vendorId) patch.purchase_order = null;
+    patchBill(patch);
+  };
+
+  const handlePurchaseOrderChange = (poId: number | null) => {
+    const po = purchaseOrders.find((x) => x.id === poId);
+    if (!po) {
+      patchBill({ purchase_order: null });
+      return;
+    }
+    const v: any = vendors.find((x: any) => x.id === po.vendor) || po.vendor_details;
+    const gstin = (v?.tax_id || "").trim().toUpperCase();
+    patchBill({
+      purchase_order: po.id,
+      vendor: po.vendor,
+      vendor_gstin: GSTIN_REGEX.test(gstin) ? gstin : newBill.vendor_gstin,
+      items:
+        po.items && po.items.length > 0
+          ? po.items.map((it: any) => ({
+              description: it.description,
+              hsn_sac_code: "",
+              quantity: parseFloat(String(it.quantity)) || 0,
+              unit_price: parseFloat(String(it.unit_price)) || 0,
+              tax_rate: parseFloat(String(it.tax_rate)) || 0,
+            }))
+          : newBill.items,
+    });
+  };
+
+  const totals = computeBillTotals(newBill);
+  const gstinInvalid = newBill.vendor_gstin !== "" && !GSTIN_REGEX.test(newBill.vendor_gstin);
+  const availablePOs = purchaseOrders.filter(
+    (po) =>
+      po.id === newBill.purchase_order ||
+      ((!newBill.vendor || po.vendor === newBill.vendor) && ["approved", "sent"].includes(po.status))
+  );
 
   // Mutations
   const createMutation = useMutation({
@@ -262,59 +464,56 @@ export default function BillsPage() {
   // Reset form
   const resetForm = () => {
     setEditBillId(null);
-    setNewBill({
-      vendor: null,
-      bill_date: new Date().toISOString().split("T")[0],
-      due_date: "",
-      category: "other",
-      payment_terms: "Net 30",
-      status: "draft",
-      notes: "",
-      attachmentFile: null,
-      items: [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }],
-    });
+    setNewBill(blankForm());
   };
 
   const handleEditClick = (bill: Bill) => {
     setEditBillId(bill.id);
     setNewBill({
       vendor: bill.vendor,
+      vendor_reference: bill.vendor_reference || "",
+      purchase_order: bill.purchase_order ?? null,
       bill_date: bill.bill_date,
       due_date: bill.due_date || "",
+      dueDateTouched: true,
       category: bill.category || "other",
       payment_terms: bill.payment_terms || "Net 30",
       status: bill.status,
       notes: bill.notes || "",
+      vendor_gstin: bill.vendor_gstin || "",
+      place_of_supply: bill.place_of_supply || company?.state || "",
+      supply_type: bill.supply_type || "intra",
+      discount_amount: parseFloat(String(bill.discount_amount || 0)),
+      roundOff: parseFloat(String(bill.round_off || 0)) !== 0,
+      tds_section: bill.tds_section || "",
+      tds_rate: parseFloat(String(bill.tds_rate || 0)),
       attachmentFile: null,
       existingAttachment: bill.attachment,
-      items: bill.items && bill.items.length > 0 
+      items: bill.items && bill.items.length > 0
         ? bill.items.map((item) => ({
             description: item.description,
+            hsn_sac_code: item.hsn_sac_code || "",
             quantity: parseFloat(String(item.quantity)),
             unit_price: parseFloat(String(item.unit_price)),
             tax_rate: parseFloat(String(item.tax_rate)),
           }))
-        : [{ description: "", quantity: 1, unit_price: 0, tax_rate: 0 }],
+        : [emptyLine()],
     });
     setIsModalOpen(true);
-  };
-
-  const calculateSubtotal = () => {
-    return newBill.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-  };
-
-  const calculateTax = () => {
-    return newBill.items.reduce((sum, item) => sum + item.quantity * item.unit_price * (item.tax_rate / 100), 0);
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
   };
 
   const handleCreateOrUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBill.vendor) {
       toast.error("Please select a vendor");
+      return;
+    }
+    if (gstinInvalid) {
+      toast.error("Vendor GSTIN is not valid. It should look like 29ABCDE1234F1Z5.");
+      return;
+    }
+    if (newBill.tds_section && !(newBill.tds_rate > 0)) {
+      toast.error("Enter a TDS rate for the selected section");
       return;
     }
 
@@ -324,17 +523,24 @@ export default function BillsPage() {
       return;
     }
 
+    // Money totals are calculated server-side from these inputs.
     const formData = new FormData();
     formData.append("vendor", String(newBill.vendor));
+    formData.append("vendor_reference", newBill.vendor_reference.trim());
+    formData.append("purchase_order", newBill.purchase_order ? String(newBill.purchase_order) : "");
     formData.append("bill_date", newBill.bill_date);
-    if (newBill.due_date) formData.append("due_date", newBill.due_date);
+    formData.append("due_date", newBill.due_date || "");
     formData.append("category", newBill.category);
     formData.append("payment_terms", newBill.payment_terms);
     formData.append("status", newBill.status);
     formData.append("notes", newBill.notes || "");
-    formData.append("subtotal", calculateSubtotal().toFixed(2));
-    formData.append("tax_amount", calculateTax().toFixed(2));
-    formData.append("total_amount", calculateTotal().toFixed(2));
+    formData.append("vendor_gstin", newBill.vendor_gstin);
+    formData.append("place_of_supply", newBill.place_of_supply);
+    formData.append("supply_type", newBill.supply_type);
+    formData.append("discount_amount", totals.discount.toFixed(2));
+    formData.append("round_off", totals.roundOff.toFixed(2));
+    formData.append("tds_section", newBill.tds_section);
+    formData.append("tds_rate", (newBill.tds_section ? newBill.tds_rate : 0).toString());
     formData.append("items", JSON.stringify(validItems));
 
     if (newBill.attachmentFile) {
@@ -593,7 +799,7 @@ export default function BillsPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 type="text"
-                placeholder="Search by bill #, vendor, or notes..."
+                placeholder="Search by bill #, vendor invoice #, vendor, or notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 bg-bone border border-line rounded-lg text-xs md:text-sm outline-none focus:border-ink transition-colors"
@@ -672,9 +878,10 @@ export default function BillsPage() {
                     const dueInfo = getDueStatus(bill.due_date, bill.status);
                     const DueIcon = dueInfo.icon;
                     const totalAmt = parseFloat(String(bill.total_amount || 0));
+                    const payableAmt = parseFloat(String(bill.net_payable || 0)) || totalAmt;
                     const paidAmt = parseFloat(String(bill.amount_paid || 0));
                     const dueAmt = parseFloat(String(bill.amount_due || 0));
-                    const percentPaid = totalAmt > 0 ? Math.min(100, Math.round((paidAmt / totalAmt) * 100)) : 0;
+                    const percentPaid = payableAmt > 0 ? Math.min(100, Math.round((paidAmt / payableAmt) * 100)) : 0;
 
                     return (
                       <tr 
@@ -1093,9 +1300,11 @@ export default function BillsPage() {
               {/* Financial Snapshot */}
               <div className="grid grid-cols-3 gap-3 p-4 bg-bone rounded-xl border border-line">
                 <div>
-                  <div className="text-[11px] font-medium text-muted uppercase">Total Amount</div>
+                  <div className="text-[11px] font-medium text-muted uppercase">
+                    {Number(detailBill.tds_amount || 0) > 0 ? "Net Payable" : "Total Amount"}
+                  </div>
                   <div className="text-lg font-semibold font-serif text-ink mt-0.5">
-                    {formatCurrency(parseFloat(String(detailBill.total_amount || 0)), currency)}
+                    {formatCurrency(parseFloat(String(detailBill.net_payable || detailBill.total_amount || 0)), currency)}
                   </div>
                 </div>
                 <div>
@@ -1135,6 +1344,22 @@ export default function BillsPage() {
                 {detailBill.vendor_details?.address && (
                   <div className="text-xs text-muted">Address: {detailBill.vendor_details.address}</div>
                 )}
+                {(detailBill.vendor_reference || detailBill.vendor_gstin || detailBill.place_of_supply) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-2 border-t border-line/60">
+                    <div>
+                      <div className="text-[11px] text-muted">Vendor Invoice No.</div>
+                      <div className="font-mono text-ink">{detailBill.vendor_reference || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-muted">GSTIN</div>
+                      <div className="font-mono text-ink">{detailBill.vendor_gstin || "Unregistered"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-muted">Place of Supply</div>
+                      <div className="text-ink">{detailBill.place_of_supply || "—"}</div>
+                    </div>
+                  </div>
+                )}
                 <div className="text-xs text-muted pt-2 border-t border-line/60 flex items-center justify-between">
                   <span>Payment Terms: <strong>{detailBill.payment_terms || "Net 30"}</strong></span>
                   <span>Due Date: <strong>{detailBill.due_date || "None"}</strong></span>
@@ -1169,6 +1394,7 @@ export default function BillsPage() {
                     <thead className="bg-bone border-b border-line text-muted">
                       <tr>
                         <th className="px-3 py-2 font-medium">Description</th>
+                        <th className="px-3 py-2 font-medium">HSN/SAC</th>
                         <th className="px-3 py-2 font-medium text-right">Qty</th>
                         <th className="px-3 py-2 font-medium text-right">Rate</th>
                         <th className="px-3 py-2 font-medium text-right">Tax %</th>
@@ -1180,6 +1406,7 @@ export default function BillsPage() {
                         detailBill.items.map((item, idx) => (
                           <tr key={idx}>
                             <td className="px-3 py-2 font-medium text-ink">{item.description}</td>
+                            <td className="px-3 py-2 text-muted font-mono">{item.hsn_sac_code || "—"}</td>
                             <td className="px-3 py-2 text-right text-muted font-mono">{item.quantity}</td>
                             <td className="px-3 py-2 text-right text-muted font-mono">{formatCurrency(Number(item.unit_price), currency)}</td>
                             <td className="px-3 py-2 text-right text-muted font-mono">{item.tax_rate}%</td>
@@ -1188,11 +1415,50 @@ export default function BillsPage() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} className="px-3 py-4 text-center text-muted">No line items recorded</td>
+                          <td colSpan={6} className="px-3 py-4 text-center text-muted">No line items recorded</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
+                </div>
+                <div className="ml-auto w-full max-w-[280px] text-xs space-y-1.5 pt-1">
+                  <TotalRow label="Subtotal" value={Number(detailBill.subtotal || 0)} currency={currency} />
+                  {Number(detailBill.discount_amount || 0) > 0 && (
+                    <>
+                      <TotalRow label="Discount" value={-Number(detailBill.discount_amount)} currency={currency} />
+                      <TotalRow label="Taxable value" value={Number(detailBill.taxable_amount || 0)} currency={currency} />
+                    </>
+                  )}
+                  {Number(detailBill.igst_amount || 0) > 0 ? (
+                    <TotalRow label="IGST" value={Number(detailBill.igst_amount)} currency={currency} />
+                  ) : Number(detailBill.cgst_amount || 0) > 0 || Number(detailBill.sgst_amount || 0) > 0 ? (
+                    <>
+                      <TotalRow label="CGST" value={Number(detailBill.cgst_amount)} currency={currency} />
+                      <TotalRow label="SGST" value={Number(detailBill.sgst_amount)} currency={currency} />
+                    </>
+                  ) : (
+                    <TotalRow label="Tax" value={Number(detailBill.tax_amount || 0)} currency={currency} />
+                  )}
+                  {Number(detailBill.round_off || 0) !== 0 && (
+                    <TotalRow label="Round off" value={Number(detailBill.round_off)} currency={currency} />
+                  )}
+                  <div className="flex justify-between font-semibold text-ink pt-1.5 border-t border-line">
+                    <span>Invoice Total</span>
+                    <span className="font-mono">{formatCurrency(Number(detailBill.total_amount || 0), currency)}</span>
+                  </div>
+                  {Number(detailBill.tds_amount || 0) > 0 && (
+                    <>
+                      <TotalRow
+                        label={`Less TDS ${detailBill.tds_section_display?.split(" - ")[0] || ""} @ ${Number(detailBill.tds_rate)}%`}
+                        value={-Number(detailBill.tds_amount)}
+                        currency={currency}
+                      />
+                      <div className="flex justify-between font-semibold text-emerald-800 pt-1.5 border-t border-line">
+                        <span>Net Payable</span>
+                        <span className="font-mono">{formatCurrency(Number(detailBill.net_payable || 0), currency)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -1311,15 +1577,15 @@ export default function BillsPage() {
             </div>
 
             <form onSubmit={handleCreateOrUpdate} id="create-bill-form" className="p-5 overflow-y-auto space-y-5">
+              {/* Vendor & references */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Vendor Selector */}
                 <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Vendor *</label>
+                  <label className={labelCls}>Vendor *</label>
                   <select
                     required
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                    className={inputCls}
                     value={newBill.vendor || ""}
-                    onChange={(e) => setNewBill({ ...newBill, vendor: parseInt(e.target.value) })}
+                    onChange={(e) => handleVendorChange(e.target.value ? parseInt(e.target.value) : null)}
                   >
                     <option value="">Select a vendor...</option>
                     {vendors.map((v: any) => (
@@ -1330,13 +1596,92 @@ export default function BillsPage() {
                   </select>
                 </div>
 
-                {/* Category Selector */}
                 <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Expense Category</label>
+                  <label className={labelCls}>Vendor Invoice No.</label>
+                  <input
+                    type="text"
+                    placeholder="As printed on vendor's invoice"
+                    className={inputCls}
+                    value={newBill.vendor_reference}
+                    onChange={(e) => patchBill({ vendor_reference: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelCls}>Purchase Order</label>
                   <select
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                    className={inputCls}
+                    value={newBill.purchase_order || ""}
+                    onChange={(e) => handlePurchaseOrderChange(e.target.value ? parseInt(e.target.value) : null)}
+                  >
+                    <option value="">No purchase order</option>
+                    {availablePOs.map((po) => (
+                      <option key={po.id} value={po.id}>
+                        {po.po_number}
+                        {!newBill.vendor && po.vendor_details?.name ? ` · ${po.vendor_details.name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelCls}>Issue Date *</label>
+                  <input
+                    type="date"
+                    required
+                    className={inputCls}
+                    value={newBill.bill_date}
+                    onChange={(e) => patchBill({ bill_date: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelCls}>Payment Terms</label>
+                  <select
+                    className={inputCls}
+                    value={PAYMENT_TERM_OPTIONS.some((o) => o.label === newBill.payment_terms) ? newBill.payment_terms : "__custom"}
+                    onChange={(e) => {
+                      if (e.target.value === "__custom") return;
+                      patchBill({ payment_terms: e.target.value, dueDateTouched: false });
+                    }}
+                  >
+                    {PAYMENT_TERM_OPTIONS.map((o) => (
+                      <option key={o.label} value={o.label}>
+                        {o.label}
+                      </option>
+                    ))}
+                    {!PAYMENT_TERM_OPTIONS.some((o) => o.label === newBill.payment_terms) && (
+                      <option value="__custom">{newBill.payment_terms || "Custom"}</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelCls}>
+                    Due Date
+                    {!newBill.dueDateTouched && termsToDays(newBill.payment_terms) !== null && (
+                      <span className="ml-1 font-normal text-muted">(from terms)</span>
+                    )}
+                  </label>
+                  <input
+                    type="date"
+                    className={inputCls}
+                    value={newBill.due_date}
+                    min={newBill.bill_date}
+                    onChange={(e) => patchBill({ due_date: e.target.value, dueDateTouched: true })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelCls}>Expense Category</label>
+                  <select
+                    className={inputCls}
                     value={newBill.category}
-                    onChange={(e) => setNewBill({ ...newBill, category: e.target.value })}
+                    onChange={(e) => patchBill({ category: e.target.value })}
                   >
                     {Object.entries(BILL_CATEGORIES).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -1346,13 +1691,12 @@ export default function BillsPage() {
                   </select>
                 </div>
 
-                {/* Status Selector */}
                 <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Status</label>
+                  <label className={labelCls}>Status</label>
                   <select
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
+                    className={inputCls}
                     value={newBill.status}
-                    onChange={(e) => setNewBill({ ...newBill, status: e.target.value })}
+                    onChange={(e) => patchBill({ status: e.target.value })}
                   >
                     <option value="draft">Draft</option>
                     <option value="open">Open</option>
@@ -1361,188 +1705,308 @@ export default function BillsPage() {
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Bill Issue Date */}
                 <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Issue Date *</label>
-                  <input
-                    type="date"
-                    required
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                    value={newBill.bill_date}
-                    onChange={(e) => setNewBill({ ...newBill, bill_date: e.target.value })}
-                  />
-                </div>
-
-                {/* Due Date */}
-                <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Due Date</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                    value={newBill.due_date}
-                    onChange={(e) => setNewBill({ ...newBill, due_date: e.target.value })}
-                  />
-                </div>
-
-                {/* Payment Terms */}
-                <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Payment Terms</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Net 30, Due on Receipt"
-                    className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                    value={newBill.payment_terms}
-                    onChange={(e) => setNewBill({ ...newBill, payment_terms: e.target.value })}
-                  />
+                  <label className={labelCls}>Vendor Invoice Attachment</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => patchBill({ attachmentFile: e.target.files?.[0] || null })}
+                      className="w-full min-w-0 text-xs text-muted file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border file:border-line file:text-xs file:font-medium file:bg-bone file:text-ink hover:file:bg-bone-2 cursor-pointer"
+                    />
+                    {newBill.existingAttachment && (
+                      <a
+                        href={newBill.existingAttachment}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-blue-600 hover:underline shrink-0 flex items-center gap-1 font-medium"
+                      >
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span>Current</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Original Vendor Invoice Attachment */}
-              <div>
-                <label className="block text-xs font-medium text-ink mb-1.5">Vendor Invoice Attachment (PDF/Image)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="file"
-                    accept="application/pdf,image/*"
-                    onChange={(e) => setNewBill({ ...newBill, attachmentFile: e.target.files?.[0] || null })}
-                    className="w-full text-xs text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-line file:text-xs file:font-medium file:bg-bone file:text-ink hover:file:bg-bone-2 cursor-pointer"
-                  />
-                  {newBill.existingAttachment && (
-                    <a
-                      href={newBill.existingAttachment}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-blue-600 hover:underline shrink-0 flex items-center gap-1 font-medium"
+              {/* GST details */}
+              <div className="p-4 rounded-lg border border-line bg-bone/40 space-y-3">
+                <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">GST Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className={labelCls}>Vendor GSTIN</label>
+                    <input
+                      type="text"
+                      maxLength={15}
+                      placeholder="e.g. 29ABCDE1234F1Z5"
+                      className={`${inputCls} font-mono uppercase ${gstinInvalid ? "border-rose-400 focus:border-rose-500" : ""}`}
+                      value={newBill.vendor_gstin}
+                      onChange={(e) => patchBill({ vendor_gstin: e.target.value.toUpperCase().replace(/\s/g, "") })}
+                    />
+                    {gstinInvalid ? (
+                      <p className="text-[11px] text-rose-600 mt-1">Invalid GSTIN format</p>
+                    ) : stateFromGstin(newBill.vendor_gstin) ? (
+                      <p className="text-[11px] text-muted mt-1">Registered in {stateFromGstin(newBill.vendor_gstin)}</p>
+                    ) : (
+                      <p className="text-[11px] text-muted mt-1">Leave blank for unregistered vendors</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={labelCls}>Place of Supply</label>
+                    <select
+                      className={inputCls}
+                      value={newBill.place_of_supply}
+                      onChange={(e) => patchBill({ place_of_supply: e.target.value })}
                     >
-                      <Paperclip className="w-3.5 h-3.5" />
-                      <span>Current File</span>
-                    </a>
-                  )}
+                      <option value="">Select state...</option>
+                      {STATE_NAMES.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                      {newBill.place_of_supply && !STATE_NAMES.includes(newBill.place_of_supply) && (
+                        <option value={newBill.place_of_supply}>{newBill.place_of_supply}</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={labelCls}>Supply Type</label>
+                    <select
+                      className={inputCls}
+                      value={newBill.supply_type}
+                      onChange={(e) => patchBill({ supply_type: e.target.value as "intra" | "inter" })}
+                    >
+                      <option value="intra">Intra-state (CGST + SGST)</option>
+                      <option value="inter">Inter-state (IGST)</option>
+                    </select>
+                    <p className="text-[11px] text-muted mt-1">Set automatically from GSTIN state vs. place of supply</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Line Items Table */}
+              {/* Line Items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Line Items</h3>
                   <button
                     type="button"
-                    onClick={() =>
-                      setNewBill({
-                        ...newBill,
-                        items: [...newBill.items, { description: "", quantity: 1, unit_price: 0, tax_rate: 0 }],
-                      })
-                    }
+                    onClick={() => patchBill({ items: [...newBill.items, emptyLine()] })}
                     className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  {newBill.items.map((item, index) => (
-                    <div key={index} className="flex flex-wrap md:flex-nowrap items-start gap-2 p-3 bg-bone-2 rounded-lg border border-line/60">
-                      <div className="flex-1 min-w-[200px]">
-                        <input
-                          required
-                          placeholder="Item or service description"
-                          className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                          value={item.description}
-                          onChange={(e) => {
-                            const newItems = [...newBill.items];
-                            newItems[index].description = e.target.value;
-                            setNewBill({ ...newBill, items: newItems });
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 w-full md:w-auto">
-                        <div className="w-[80px]">
-                          <input
-                            type="number"
-                            step="0.01"
-                            required
-                            placeholder="Qty"
-                            className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors font-mono"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const newItems = [...newBill.items];
-                              newItems[index].quantity = parseFloat(e.target.value) || 0;
-                              setNewBill({ ...newBill, items: newItems });
-                            }}
-                          />
+                <div className="rounded-lg border border-line/60 overflow-hidden">
+                  <div className={`hidden md:grid ${lineGridCls} gap-2 px-3 py-2 bg-bone text-[11px] font-medium text-muted uppercase tracking-wide border-b border-line/60`}>
+                    <span>Description</span>
+                    <span>HSN/SAC</span>
+                    <span className="text-right">Qty</span>
+                    <span className="text-right">Rate</span>
+                    <span className="text-right">GST %</span>
+                    <span className="text-right">Amount</span>
+                    <span />
+                  </div>
+
+                  <div className="divide-y divide-line/60 bg-bone-2">
+                    {newBill.items.map((item, index) => {
+                      const lineAmount = item.quantity * item.unit_price;
+                      return (
+                        <div key={index} className={`grid grid-cols-2 ${lineGridCls} gap-2 p-3 items-start`}>
+                          <div className="col-span-2 md:col-span-1">
+                            <span className={mobileLabelCls}>Description</span>
+                            <input
+                              required
+                              aria-label="Description"
+                              placeholder="Item or service description"
+                              className={lineInputCls}
+                              value={item.description}
+                              onChange={(e) => updateLine(index, { description: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <span className={mobileLabelCls}>HSN/SAC</span>
+                            <input
+                              aria-label="HSN/SAC code"
+                              placeholder="e.g. 998314"
+                              inputMode="numeric"
+                              maxLength={8}
+                              className={`${lineInputCls} font-mono`}
+                              value={item.hsn_sac_code}
+                              onChange={(e) => updateLine(index, { hsn_sac_code: e.target.value.replace(/\D/g, "") })}
+                            />
+                          </div>
+                          <div>
+                            <span className={mobileLabelCls}>Qty</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              required
+                              aria-label="Quantity"
+                              className={`${lineInputCls} font-mono text-right`}
+                              value={item.quantity}
+                              onChange={(e) => updateLine(index, { quantity: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div>
+                            <span className={mobileLabelCls}>Rate</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              required
+                              aria-label="Rate"
+                              className={`${lineInputCls} font-mono text-right`}
+                              value={item.unit_price}
+                              onChange={(e) => updateLine(index, { unit_price: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div>
+                            <span className={mobileLabelCls}>GST %</span>
+                            <select
+                              aria-label="GST rate"
+                              className={`${lineInputCls} font-mono text-right`}
+                              value={item.tax_rate}
+                              onChange={(e) => updateLine(index, { tax_rate: parseFloat(e.target.value) || 0 })}
+                            >
+                              {(GST_RATES.includes(item.tax_rate) ? GST_RATES : [...GST_RATES, item.tax_rate].sort((a, b) => a - b)).map((r) => (
+                                <option key={r} value={r}>
+                                  {r}%
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex md:block items-center justify-between md:text-right md:pt-1.5">
+                            <span className={mobileLabelCls}>Amount</span>
+                            <span className="text-sm font-mono font-medium text-ink">{formatCurrency(lineAmount, currency)}</span>
+                          </div>
+                          <div className="flex justify-end md:pt-0.5">
+                            {newBill.items.length > 1 && (
+                              <button
+                                type="button"
+                                aria-label="Remove line"
+                                onClick={() => patchBill({ items: newBill.items.filter((_, i) => i !== index) })}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="w-[110px]">
-                          <input
-                            type="number"
-                            step="0.01"
-                            required
-                            placeholder="Price"
-                            className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors font-mono"
-                            value={item.unit_price}
-                            onChange={(e) => {
-                              const newItems = [...newBill.items];
-                              newItems[index].unit_price = parseFloat(e.target.value) || 0;
-                              setNewBill({ ...newBill, items: newItems });
-                            }}
-                          />
-                        </div>
-                        <div className="w-[75px]">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Tax %"
-                            className="w-full px-3 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors font-mono"
-                            value={item.tax_rate}
-                            onChange={(e) => {
-                              const newItems = [...newBill.items];
-                              newItems[index].tax_rate = parseFloat(e.target.value) || 0;
-                              setNewBill({ ...newBill, items: newItems });
-                            }}
-                          />
-                        </div>
-                        {newBill.items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newItems = newBill.items.filter((_, i) => i !== index);
-                              setNewBill({ ...newBill, items: newItems });
-                            }}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors mt-0.5"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="mt-3 flex flex-col items-end gap-1 text-xs bg-bone/40 p-3 rounded-lg border border-line">
-                  <div className="w-full max-w-[240px] flex justify-between text-muted">
-                    <span>Subtotal:</span>
-                    <span className="font-mono">{formatCurrency(calculateSubtotal(), currency)}</span>
+                {/* Adjustments + totals */}
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg border border-line bg-bone/40 space-y-3">
+                    <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Adjustments & TDS</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Discount ({currency})</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className={`${inputCls} font-mono`}
+                          value={newBill.discount_amount || ""}
+                          placeholder="0.00"
+                          onChange={(e) => patchBill({ discount_amount: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 text-xs text-ink mt-6 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={newBill.roundOff}
+                          onChange={(e) => patchBill({ roundOff: e.target.checked })}
+                          className="accent-ink"
+                        />
+                        Round off total
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-[1fr_90px] gap-3">
+                      <div>
+                        <label className={labelCls}>TDS Section</label>
+                        <select
+                          className={inputCls}
+                          value={newBill.tds_section}
+                          onChange={(e) => {
+                            const sec = TDS_SECTIONS.find((t) => t.value === e.target.value);
+                            patchBill({ tds_section: e.target.value, tds_rate: sec ? sec.rate || newBill.tds_rate : 0 });
+                          }}
+                        >
+                          <option value="">No TDS</option>
+                          {TDS_SECTIONS.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                              {t.rate ? ` (${t.rate}%)` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>Rate %</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="30"
+                          disabled={!newBill.tds_section}
+                          className={`${inputCls} font-mono disabled:opacity-50`}
+                          value={newBill.tds_section ? newBill.tds_rate : ""}
+                          onChange={(e) => patchBill({ tds_rate: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted">TDS is calculated on the taxable value (excluding GST) and deducted from what you pay the vendor.</p>
                   </div>
-                  <div className="w-full max-w-[240px] flex justify-between text-muted">
-                    <span>Tax:</span>
-                    <span className="font-mono">{formatCurrency(calculateTax(), currency)}</span>
-                  </div>
-                  <div className="w-full max-w-[240px] flex justify-between font-bold text-ink pt-2 border-t border-line mt-1">
-                    <span>Total:</span>
-                    <span className="font-mono text-sm">{formatCurrency(calculateTotal(), currency)}</span>
+
+                  <div className="p-4 rounded-lg border border-line text-xs space-y-1.5">
+                    <TotalRow label="Subtotal" value={totals.subtotal} currency={currency} />
+                    {totals.discount > 0 && (
+                      <>
+                        <TotalRow label="Discount" value={-totals.discount} currency={currency} />
+                        <TotalRow label="Taxable value" value={totals.taxable} currency={currency} />
+                      </>
+                    )}
+                    {newBill.supply_type === "inter" ? (
+                      <TotalRow label="IGST" value={totals.igst} currency={currency} />
+                    ) : (
+                      <>
+                        <TotalRow label="CGST" value={totals.cgst} currency={currency} />
+                        <TotalRow label="SGST" value={totals.sgst} currency={currency} />
+                      </>
+                    )}
+                    {totals.roundOff !== 0 && <TotalRow label="Round off" value={totals.roundOff} currency={currency} />}
+                    <div className="flex justify-between font-bold text-ink pt-2 border-t border-line">
+                      <span>Invoice Total</span>
+                      <span className="font-mono text-sm">{formatCurrency(totals.total, currency)}</span>
+                    </div>
+                    {totals.tds > 0 && (
+                      <>
+                        <TotalRow label={`Less TDS @ ${totals.tdsRate}%`} value={-totals.tds} currency={currency} />
+                        <div className="flex justify-between font-bold text-emerald-800 pt-2 border-t border-line">
+                          <span>Net Payable to Vendor</span>
+                          <span className="font-mono text-sm">{formatCurrency(totals.net, currency)}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-medium text-ink mb-1.5">Notes & Instructions</label>
+                <label className={labelCls}>Notes & Instructions</label>
                 <textarea
-                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors min-h-[70px] resize-none"
+                  className={`${inputCls} min-h-[70px] resize-none`}
                   value={newBill.notes}
-                  onChange={(e) => setNewBill({ ...newBill, notes: e.target.value })}
+                  onChange={(e) => patchBill({ notes: e.target.value })}
                   placeholder="Additional instructions or notes..."
                 />
               </div>

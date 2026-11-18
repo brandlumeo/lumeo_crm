@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -1860,7 +1861,8 @@ class BillPaymentSerializer(serializers.ModelSerializer):
 class BillItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = BillItem
-        fields = ("id", "description", "quantity", "unit_price", "tax_rate", "total")
+        fields = ("id", "description", "hsn_sac_code", "quantity", "unit_price", "tax_rate", "total")
+        read_only_fields = ("total",)
 
 
 class BillSerializer(serializers.ModelSerializer):
@@ -1870,13 +1872,66 @@ class BillSerializer(serializers.ModelSerializer):
     purchase_order_details = PurchaseOrderSerializer(source="purchase_order", read_only=True)
     category_display = serializers.CharField(source="get_category_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    supply_type_display = serializers.CharField(source="get_supply_type_display", read_only=True)
+    tds_section_display = serializers.CharField(source="get_tds_section_display", read_only=True)
     is_overdue = serializers.SerializerMethodField()
     days_overdue = serializers.SerializerMethodField()
 
     class Meta:
         model = Bill
         fields = "__all__"
-        read_only_fields = ("company", "created_at", "updated_at", "bill_number", "amount_paid", "amount_due")
+        # Every money figure except discount, round-off and TDS rate is derived
+        # server-side from the line items in Bill.recalculate_totals().
+        read_only_fields = (
+            "company", "created_at", "updated_at", "bill_number", "amount_paid", "amount_due",
+            "subtotal", "taxable_amount", "cgst_amount", "sgst_amount", "igst_amount",
+            "tax_amount", "total_amount", "tds_amount", "net_payable",
+        )
+
+    def validate_vendor_gstin(self, value):
+        value = (value or "").strip().upper()
+        if value and not re.fullmatch(r"\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]", value):
+            raise serializers.ValidationError("Enter a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5).")
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context.get("request")
+        company = getattr(getattr(request, "user", None), "company", None)
+        vendor = attrs.get("vendor") or getattr(self.instance, "vendor", None)
+        po = attrs.get("purchase_order", getattr(self.instance, "purchase_order", None))
+        if vendor is not None and company is not None and vendor.company_id != company.id:
+            raise serializers.ValidationError({"vendor": "Vendor not found."})
+        if po is not None:
+            if company is not None and po.company_id != company.id:
+                raise serializers.ValidationError({"purchase_order": "Purchase order not found."})
+            if vendor is not None and po.vendor_id != vendor.id:
+                raise serializers.ValidationError({"purchase_order": "This purchase order belongs to a different vendor."})
+        tds_section = attrs.get("tds_section", getattr(self.instance, "tds_section", ""))
+        tds_rate = attrs.get("tds_rate", getattr(self.instance, "tds_rate", 0)) or 0
+        if tds_section and not (0 < tds_rate <= 30):
+            raise serializers.ValidationError({"tds_rate": "TDS rate must be between 0 and 30%."})
+        return attrs
+
+    def _fill_vendor_defaults(self, bill):
+        if not bill.vendor_gstin and bill.vendor_id and bill.vendor.tax_id:
+            candidate = bill.vendor.tax_id.strip().upper()
+            if len(candidate) == 15:
+                bill.vendor_gstin = candidate
+
+    def _save_items_and_totals(self, bill, items_data):
+        if items_data is not None:
+            bill.items.all().delete()
+            for item_data in items_data:
+                BillItem.objects.create(bill=bill, **item_data)
+        self._fill_vendor_defaults(bill)
+        bill.recalculate_totals()
+        bill.save()
+        if bill.payments.exists():
+            # Re-apply recorded payments against the new net payable (also fixes status).
+            BillPayment.recalculate_bill_totals(bill)
+            bill.refresh_from_db()
+        return bill
         
     def to_internal_value(self, data):
         import json
@@ -1903,22 +1958,19 @@ class BillSerializer(serializers.ModelSerializer):
         return 0
 
     def create(self, validated_data):
-        import uuid
+        from django.db import transaction
         items_data = validated_data.pop("items", [])
-        validated_data["bill_number"] = f"BILL-{uuid.uuid4().hex[:8].upper()}"
-        bill = super().create(validated_data)
-        for item_data in items_data:
-            BillItem.objects.create(bill=bill, **item_data)
-        return bill
+        with transaction.atomic():
+            validated_data["bill_number"] = Bill.next_bill_number(validated_data.get("company"))
+            bill = super().create(validated_data)
+            return self._save_items_and_totals(bill, items_data)
 
     def update(self, instance, validated_data):
+        from django.db import transaction
         items_data = validated_data.pop("items", None)
-        bill = super().update(instance, validated_data)
-        if items_data is not None:
-            instance.items.all().delete()
-            for item_data in items_data:
-                BillItem.objects.create(bill=instance, **item_data)
-        return bill
+        with transaction.atomic():
+            bill = super().update(instance, validated_data)
+            return self._save_items_and_totals(bill, items_data)
 
 
 class WhatsAppMessageSerializer(CompanyScopedSerializer):
