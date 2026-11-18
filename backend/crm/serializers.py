@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from companies.models import Company
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem, BillPayment, WhatsAppMessage, Income
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteLineItem, QuoteTemplate, Invoice, InvoiceLineItem, InvoicePayment, CustomFieldDefinition, WorkflowRule, WorkflowSequence, WorkflowStep, WorkflowRun, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, EmailAccount, EmailMessage, CalendarAccount, BookingLink, Campaign, Ticket, TicketComment, Order, OrderItem, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, PurchaseOrderItem, Bill, BillItem, BillPayment, WhatsAppMessage, Income
 
 
 
@@ -911,6 +911,30 @@ class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
             send_quote_email.delay(quote.id)
             
         return quote
+
+
+class QuoteTemplateSerializer(CompanyScopedSerializer):
+    class Meta:
+        model = QuoteTemplate
+        fields = (
+            "id",
+            "company",
+            "company_id",
+            "name",
+            "title",
+            "duration",
+            "overview",
+            "items",
+            "payment_schedule",
+            "timeline",
+            "client_responsibilities",
+            "exclusions",
+            "terms_conditions",
+            "is_default",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "company", "created_at", "updated_at")
 
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):

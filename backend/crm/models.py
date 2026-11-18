@@ -660,6 +660,35 @@ class QuoteLineItem(models.Model):
         return f"{self.name} x {self.quantity}"
 
 
+class QuoteTemplate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="quote_templates",
+    )
+    name = models.CharField(max_length=255, help_text="Template display name (e.g. Growth Package, Standard Retainer, Supply Order)")
+    title = models.CharField(max_length=255, blank=True, default="")
+    duration = models.CharField(max_length=100, blank=True, default="1 Month")
+    overview = models.TextField(blank=True, default="", help_text="Executive overview paragraph")
+    items = models.JSONField(default=list, blank=True, help_text="Template deliverables and line items")
+    payment_schedule = models.JSONField(default=list, blank=True, help_text="List of milestones: [{milestone: str, amount: float}]")
+    timeline = models.JSONField(default=list, blank=True, help_text="List of phases: [{phase: str, description: str}]")
+    client_responsibilities = models.JSONField(default=list, blank=True, help_text="List of client requirement strings")
+    exclusions = models.JSONField(default=list, blank=True, help_text="List of exclusion strings")
+    terms_conditions = models.JSONField(default=list, blank=True, help_text="List of contract term strings")
+    is_default = models.BooleanField(default=False, help_text="If True, auto-loaded when creating quote from lead")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-is_default", "name")
+
+    def __str__(self):
+        return f"{self.company.name} - {self.name}"
+
+
 class Invoice(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"

@@ -14,6 +14,7 @@ from .views import (
     AttachmentViewSet,
     ProductViewSet,
     QuoteViewSet,
+    QuoteTemplateViewSet,
     InvoiceViewSet,
     UnitViewSet,
     PaymentMethodViewSet,
@@ -78,6 +79,7 @@ router.register("activities", ActivityViewSet, basename="activity")
 router.register("attachments", AttachmentViewSet, basename="attachment")
 router.register("products", ProductViewSet, basename="product")
 router.register("quotes", QuoteViewSet, basename="quote")
+router.register("quote-templates", QuoteTemplateViewSet, basename="quote-template")
 router.register("invoices", InvoiceViewSet, basename="invoice")
 router.register("invoice-settings", InvoiceSettingsViewSet, basename="invoice-settings")
 router.register("units", UnitViewSet, basename="unit")

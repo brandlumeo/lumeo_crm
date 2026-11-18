@@ -33,6 +33,8 @@ import type {
   ProductInput,
   Quote,
   QuoteInput,
+  QuoteTemplate,
+  QuoteTemplateInput,
   Invoice,
   InvoiceInput,
   CustomFieldDefinition,
@@ -128,6 +130,7 @@ const endpoints = {
   attachments: "/crm/attachments/",
   products: "/crm/products/",
   quotes: "/crm/quotes/",
+  quoteTemplates: "/crm/quote-templates/",
   invoices: "/crm/invoices/",
   customFields: "/crm/custom-fields/",
   workflowRules: "/crm/workflow-rules/",
@@ -826,6 +829,24 @@ export async function fetchQuotes(params?: ListParams) {
 export async function createQuote(payload: QuoteInput) {
   const { data } = await api.post<Quote>(endpoints.quotes, payload);
   return data;
+}
+
+export async function fetchQuoteTemplates(params?: ListParams) {
+  return listPage<QuoteTemplate>(endpoints.quoteTemplates, params);
+}
+
+export async function createQuoteTemplate(payload: QuoteTemplateInput) {
+  const { data } = await api.post<QuoteTemplate>(endpoints.quoteTemplates, payload);
+  return data;
+}
+
+export async function updateQuoteTemplate(id: string, payload: Partial<QuoteTemplateInput>) {
+  const { data } = await api.patch<QuoteTemplate>(`${endpoints.quoteTemplates}${id}/`, payload);
+  return data;
+}
+
+export async function deleteQuoteTemplate(id: string) {
+  await api.delete(`${endpoints.quoteTemplates}${id}/`);
 }
 
 export async function fetchInvoices(params?: ListParams) {

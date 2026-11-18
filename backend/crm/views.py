@@ -15,7 +15,7 @@ from rest_framework import status
 from django.db.models import Q
 
 from rest_framework.decorators import action
-from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, BillPayment, WhatsAppMessage, Income
+from .models import Customer, Deal, Lead, Note, Task, Activity, Attachment, Product, Quote, QuoteTemplate, Invoice, CustomFieldDefinition, WorkflowRule, WorkflowSequence, SMTPConfig, EmailTemplate, WebhookSubscription, WebhookDeliveryLog, Campaign, Ticket, TicketComment, Order, Event, Notice, ServiceCategory, Project, Timesheet, Vendor, PurchaseOrder, Bill, BillPayment, WhatsAppMessage, Income
 from companies.models import Unit, PaymentMethod, InvoiceSettings
 from companies.serializers import UnitSerializer, PaymentMethodSerializer, InvoiceSettingsSerializer
 from .permissions import CompanyRBACPermission, AdminOnlyRBACPermission
@@ -29,6 +29,7 @@ from .serializers import (
     AttachmentSerializer,
     ProductSerializer,
     QuoteSerializer,
+    QuoteTemplateSerializer,
     InvoiceSerializer,
     CustomFieldDefinitionSerializer,
     WorkflowRuleSerializer,
@@ -1655,6 +1656,27 @@ class QuoteViewSet(CompanyScopedModelViewSet):
         quote.status = Quote.Status.SENT
         quote.save(update_fields=['is_locked', 'status', 'updated_at'])
         return Response({'status': 'Quote approved and locked as Read-Only'})
+
+
+class QuoteTemplateViewSet(CompanyScopedModelViewSet):
+    serializer_class = QuoteTemplateSerializer
+    queryset = QuoteTemplate.objects.all()
+    search_fields = ("name", "title")
+    ordering_fields = ("name", "is_default", "created_at")
+    ordering = ("-is_default", "name")
+
+    def perform_create(self, serializer):
+        is_default = serializer.validated_data.get("is_default", False)
+        if is_default and self.request.user.company_id:
+            QuoteTemplate.objects.filter(company_id=self.request.user.company_id, is_default=True).update(is_default=False)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        is_default = serializer.validated_data.get("is_default", False)
+        if is_default and self.request.user.company_id:
+            QuoteTemplate.objects.filter(company_id=self.request.user.company_id, is_default=True).exclude(pk=serializer.instance.pk).update(is_default=False)
+        super().perform_update(serializer)
+
 
 class InvoiceViewSet(CompanyScopedModelViewSet):
     serializer_class = InvoiceSerializer

@@ -4,20 +4,22 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { 
   useQuotes, useCreateQuote, useUpdateQuote, useDeleteQuote, 
-  useCustomerPage, useDealPage, useLeadPage, useCurrentCompany, useUnits 
+  useCustomerPage, useDealPage, useLeadPage, useCurrentCompany, useUnits,
+  useQuoteTemplates, useCreateQuoteTemplate, useDeleteQuoteTemplate 
 } from "@/lib/queries";
 import { downloadQuotePdf, openQuotePdfInNewTab } from "@/lib/api";
 import { 
   FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, 
   Trash2, Edit2, Eye, Sparkles, Building2, User, Calendar, Clock, 
-  Layers, DollarSign, ShieldAlert, CheckCircle2, ChevronRight, X
+  Layers, DollarSign, ShieldAlert, CheckCircle2, ChevronRight, X,
+  ChevronDown, BookmarkPlus, Star
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
 import { CurrencyPicker } from "@/components/currency-picker";
 import { toast } from "sonner";
-import type { QuoteLineItem } from "@/lib/types";
+import type { QuoteLineItem, QuoteTemplate } from "@/lib/types";
 
 // Standard Agency Presets matching BrandLumeo's executive proposal format
 const AGENCY_GROWTH_PRESET = {
@@ -78,7 +80,17 @@ function QuotesPageContent() {
   const deleteMutation = useDeleteQuote();
   const updateMutation = useUpdateQuote();
 
+  const { data: templateData } = useQuoteTemplates();
+  const createTemplateMutation = useCreateQuoteTemplate();
+  const deleteTemplateMutation = useDeleteQuoteTemplate();
+  const templates: QuoteTemplate[] = templateData?.results || [];
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = useState(false);
+  const [templateSaveName, setTemplateSaveName] = useState("");
+  const [templateSaveDefault, setTemplateSaveDefault] = useState(false);
+
   const [activeTab, setActiveTab] = useState<"client" | "scope" | "terms" | "schedule">("client");
   const [editQuoteId, setEditQuoteId] = useState<number | null>(null);
   
@@ -139,7 +151,37 @@ function QuotesPageContent() {
 
   const isBrandLumeo = (company?.name || "").toLowerCase().includes("brandlumeo");
 
-  // Load Preset
+  // Apply a dynamic QuoteTemplate
+  const applyTemplate = (t: QuoteTemplate) => {
+    setTitle(t.title || t.name);
+    if (t.duration) setDuration(t.duration);
+    const cName = clientName.trim() || "the client";
+    if (t.overview) {
+      setOverview(t.overview.replace(/client/gi, (match) => match === "Client" ? cName : cName.toLowerCase()));
+    }
+    if (t.items && t.items.length > 0) {
+      setItems(JSON.parse(JSON.stringify(t.items)));
+    }
+    if (t.payment_schedule && t.payment_schedule.length > 0) {
+      setPaymentSchedule(JSON.parse(JSON.stringify(t.payment_schedule)));
+    }
+    if (t.timeline && t.timeline.length > 0) {
+      setTimeline(JSON.parse(JSON.stringify(t.timeline)));
+    }
+    if (t.client_responsibilities && t.client_responsibilities.length > 0) {
+      setClientResponsibilities([...t.client_responsibilities]);
+    }
+    if (t.exclusions && t.exclusions.length > 0) {
+      setExclusions([...t.exclusions]);
+    }
+    if (t.terms_conditions && t.terms_conditions.length > 0) {
+      setTermsConditions([...t.terms_conditions]);
+    }
+    setIsTemplatesOpen(false);
+    toast.success(`Loaded template "${t.name}"`);
+  };
+
+  // Fallback Preset
   const handleLoadPreset = () => {
     setTitle(AGENCY_GROWTH_PRESET.title);
     setDuration(AGENCY_GROWTH_PRESET.duration);
@@ -154,6 +196,47 @@ function QuotesPageContent() {
     toast.success(isBrandLumeo ? "Loaded BrandLumeo Growth Package SOW Preset" : "Loaded Sample Agency Proposal Template");
   };
 
+  // Save current quote deliverables as reusable company template
+  const handleSaveCurrentAsTemplate = async () => {
+    if (!templateSaveName.trim()) {
+      toast.error("Please enter a template name");
+      return;
+    }
+    try {
+      await createTemplateMutation.mutateAsync({
+        name: templateSaveName.trim(),
+        title: title || templateSaveName.trim(),
+        duration,
+        overview,
+        items,
+        payment_schedule: paymentSchedule,
+        timeline,
+        client_responsibilities: clientResponsibilities,
+        exclusions,
+        terms_conditions: termsConditions,
+        is_default: templateSaveDefault,
+      });
+      toast.success(`Saved template "${templateSaveName.trim()}"`);
+      setIsSaveTemplateModalOpen(false);
+      setTemplateSaveName("");
+      setTemplateSaveDefault(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to save template");
+    }
+  };
+
+  // Delete a saved template
+  const handleDeleteTemplate = async (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete template "${name}"?`)) return;
+    try {
+      await deleteTemplateMutation.mutateAsync(id);
+      toast.success(`Deleted template "${name}"`);
+    } catch (err: any) {
+      toast.error("Failed to delete template");
+    }
+  };
+
   // Handle URL params for direct lead quotation creation
   useEffect(() => {
     if (leadParam && leads.length > 0) {
@@ -164,10 +247,15 @@ function QuotesPageContent() {
         setClientName(l.name || (l as any).company || "");
         setClientPhone(l.mobile || "");
         setClientAddress((l as any).address || "");
-        setTitle(isBrandLumeo ? `Growth Package - ${l.name}` : `Quotation - ${l.name}`);
+
         if (createParam === "true") {
-          if (isBrandLumeo) {
+          const defaultTpl = templates.find((t) => t.is_default);
+          if (defaultTpl) {
+            applyTemplate(defaultTpl);
+            setTitle(defaultTpl.title ? `${defaultTpl.title} - ${l.name}` : `Quotation - ${l.name}`);
+          } else if (isBrandLumeo) {
             handleLoadPreset();
+            setTitle(`Growth Package - ${l.name}`);
           } else {
             resetForm();
             setClientType("lead");
@@ -181,7 +269,7 @@ function QuotesPageContent() {
         }
       }
     }
-  }, [leadParam, leads, createParam, company, isBrandLumeo]);
+  }, [leadParam, leads, createParam, company, isBrandLumeo, templates]);
 
   // When Lead is selected
   const handleLeadSelect = (idStr: string) => {
@@ -400,7 +488,12 @@ function QuotesPageContent() {
           <button 
             onClick={() => {
               resetForm();
-              handleLoadPreset(); // Default to clean Growth Package preset
+              const defaultTpl = templates.find((t) => t.is_default);
+              if (defaultTpl) {
+                applyTemplate(defaultTpl);
+              } else if (isBrandLumeo) {
+                handleLoadPreset();
+              }
               setIsModalOpen(true);
             }}
             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#55B334] hover:bg-[#499e2b] text-white font-medium rounded-lg shadow-sm transition-all shrink-0 w-full sm:w-auto"
@@ -591,19 +684,111 @@ function QuotesPageContent() {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleLoadPreset}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${
-                    isBrandLumeo
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      : "bg-paper hover:bg-bone border border-line text-ink"
-                  }`}
-                  title={isBrandLumeo ? "Load digital marketing Growth Package defaults" : "Load sample agency deliverables as a starting template"}
-                >
-                  <Sparkles className={`w-3.5 h-3.5 ${isBrandLumeo ? "text-white" : "text-emerald-700"}`} />
-                  {isBrandLumeo ? "Load Growth Package Preset" : "Load Sample Agency Preset"}
-                </button>
+                {/* Templates Dropdown Button & Menu */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsTemplatesOpen(!isTemplatesOpen)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm bg-paper hover:bg-bone border border-line text-ink"
+                    title="Load or manage company proposal templates"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Templates</span>
+                    {templates.length > 0 && (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {templates.length}
+                      </span>
+                    )}
+                    <ChevronDown className="w-3.5 h-3.5 text-muted" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isTemplatesOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsTemplatesOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-80 bg-paper border border-line rounded-xl shadow-xl z-50 p-2 text-left animate-in fade-in-50 zoom-in-95">
+                        <div className="px-3 py-2 border-b border-line flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                            Company Templates
+                          </span>
+                          <span className="text-[11px] text-muted">
+                            {templates.length} {templates.length === 1 ? "template" : "templates"}
+                          </span>
+                        </div>
+
+                        <div className="max-h-64 overflow-y-auto py-1 space-y-1">
+                          {templates.map((tpl) => (
+                            <div
+                              key={tpl.id}
+                              onClick={() => applyTemplate(tpl)}
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-bone-2 transition-colors flex items-center justify-between group cursor-pointer"
+                            >
+                              <div className="flex-1 min-w-0 pr-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-ink truncate">{tpl.name}</span>
+                                  {tpl.is_default && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-muted truncate">
+                                  {(tpl.items || []).length} deliverables • {tpl.duration || "1 Month"}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteTemplate(e, tpl.id, tpl.name)}
+                                  className="p-1 rounded hover:bg-red-50 text-muted hover:text-red-600 transition-colors"
+                                  title="Delete template"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+
+                          {templates.length === 0 && (
+                            <div className="px-3 py-4 text-center text-xs text-muted">
+                              No custom templates saved yet.
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-line space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsTemplatesOpen(false);
+                              setIsSaveTemplateModalOpen(true);
+                            }}
+                            className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center gap-2 transition-colors"
+                          >
+                            <BookmarkPlus className="w-3.5 h-3.5 text-emerald-700" />
+                            Save Current as New Template...
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleLoadPreset();
+                              setIsTemplatesOpen(false);
+                            }}
+                            className="w-full px-3 py-1.5 text-[11px] font-medium rounded-lg text-muted hover:text-ink hover:bg-bone-2 flex items-center gap-2 transition-colors"
+                          >
+                            <Sparkles className="w-3 h-3 text-muted" />
+                            {isBrandLumeo ? "Reload BrandLumeo Starter Scope" : "Load Sample Agency Starter Scope"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <button 
                   onClick={() => setIsModalOpen(false)} 
                   className="text-muted hover:text-ink text-2xl font-light w-8 h-8 rounded-lg grid place-items-center hover:bg-bone-2 transition-colors"
@@ -1285,6 +1470,89 @@ function QuotesPageContent() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Save Template Modal */}
+      {isSaveTemplateModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-paper border border-line rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookmarkPlus className="w-5 h-5 text-emerald-700" />
+                <h3 className="text-base font-bold text-ink">Save as Reusable Template</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSaveTemplateModalOpen(false)}
+                className="text-muted hover:text-ink p-1 rounded-lg hover:bg-bone-2 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted">
+              Save current deliverables ({items.length} items), timeline, milestones, terms, and exclusions as a preset template for {company?.name || "your company"}.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
+                  Template Name *
+                </label>
+                <input
+                  type="text"
+                  value={templateSaveName}
+                  onChange={(e) => setTemplateSaveName(e.target.value)}
+                  placeholder="e.g. Standard Retainer, Supply Contract, Video Production"
+                  className="w-full px-3 py-2 text-sm bg-bone border border-line rounded-lg focus:outline-none focus:border-emerald-600"
+                  autoFocus
+                />
+              </div>
+
+              <label className="flex items-start gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={templateSaveDefault}
+                  onChange={(e) => setTemplateSaveDefault(e.target.checked)}
+                  className="mt-0.5 rounded border-line text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-xs text-ink">
+                  <span className="font-semibold">Set as company default template</span>
+                  <span className="block text-muted text-[11px]">
+                    Automatically pre-fills when creating new quotations from leads or deals.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
+              <button
+                type="button"
+                onClick={() => setIsSaveTemplateModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-lg border border-line text-muted hover:text-ink hover:bg-bone transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCurrentAsTemplate}
+                disabled={createTemplateMutation.isPending || !templateSaveName.trim()}
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {createTemplateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    Save Template
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

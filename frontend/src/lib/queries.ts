@@ -140,6 +140,10 @@ import {
   createQuote,
   updateQuote,
   deleteQuote,
+  fetchQuoteTemplates,
+  createQuoteTemplate,
+  updateQuoteTemplate,
+  deleteQuoteTemplate,
   fetchInvoices,
   getInvoice,
   createInvoice,
@@ -167,7 +171,7 @@ import {
   getAIMonthlyAnalysis,
   generateAIMonthlyAnalysis,
 } from "@/lib/api";
-import type { ListParams, CampaignInput, TicketInput, TicketCommentInput, DailyReportMatrixResponse, AIMonthlyPerformanceResponse } from "@/lib/types";
+import type { ListParams, CampaignInput, TicketInput, TicketCommentInput, DailyReportMatrixResponse, AIMonthlyPerformanceResponse, QuoteTemplateInput } from "@/lib/types";
 
 const fiveMinutes = 5 * 60 * 1000;
 
@@ -1314,6 +1318,44 @@ export function useDeleteQuote() {
     mutationFn: deleteQuote,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["quotes"] });
+    },
+  });
+}
+
+export function useQuoteTemplates(params?: ListParams) {
+  return useQuery({
+    queryKey: ["quote-templates", params],
+    queryFn: () => fetchQuoteTemplates(params),
+  });
+}
+
+export function useCreateQuoteTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createQuoteTemplate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["quote-templates"] });
+    },
+  });
+}
+
+export function useUpdateQuoteTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<QuoteTemplateInput> }) =>
+      updateQuoteTemplate(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["quote-templates"] });
+    },
+  });
+}
+
+export function useDeleteQuoteTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteQuoteTemplate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["quote-templates"] });
     },
   });
 }

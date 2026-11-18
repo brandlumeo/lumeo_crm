@@ -639,6 +639,26 @@ export interface QuoteInput {
   items: QuoteLineItem[];
 }
 
+export interface QuoteTemplate {
+  id: string;
+  company?: CompanySummary;
+  name: string;
+  title: string;
+  duration?: string;
+  overview?: string;
+  items?: QuoteLineItem[] | any[];
+  payment_schedule?: { milestone: string; amount: number }[];
+  timeline?: { phase: string; description: string }[];
+  client_responsibilities?: string[];
+  exclusions?: string[];
+  terms_conditions?: string[];
+  is_default: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type QuoteTemplateInput = Omit<QuoteTemplate, "id" | "company" | "created_at" | "updated_at">;
+
 export interface InvoiceLineItem {
   id?: number;
   product?: number;
