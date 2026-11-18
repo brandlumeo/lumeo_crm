@@ -8,6 +8,7 @@ from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import Lead, Deal, Task, WorkflowRule, WebhookSubscription, WebhookDeliveryLog, Invoice, DailyRevenue
+from companies.models import Company
 from notifications.models import Notification
 from accounts.models import User
 from .workflows import (
@@ -273,3 +274,22 @@ def ticket_comment_post_save(sender, instance, created, **kwargs):
                     title="New Reply on Your Ticket",
                     body=f"Support has replied to your ticket '#{ticket.id} - {ticket.subject}'."
                 )
+
+
+@receiver(post_save, sender=Company)
+def ensure_company_subscription(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
+    if created:
+        try:
+            from subscriptions.models import Subscription, Plan
+            plan = Plan.STARTER if instance.status == Company.Status.ACTIVE else Plan.FREE
+            Subscription.objects.get_or_create(
+                company=instance,
+                defaults={
+                    "plan": plan,
+                    "is_active": instance.status != Company.Status.SUSPENDED,
+                }
+            )
+        except Exception as e:
+            logger.warning("Failed to auto-create subscription for company %s: %s", instance.name, e)

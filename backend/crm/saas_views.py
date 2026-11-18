@@ -17,8 +17,23 @@ class SaasUserViewSet(viewsets.ModelViewSet):
 
 class SaasSubscriptionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
-    queryset = Subscription.objects.all().select_related('company').order_by('-created_at')
     serializer_class = SaasSubscriptionSerializer
+
+    def get_queryset(self):
+        # Auto-ensure every company has a Subscription record
+        companies_without_sub = Company.objects.filter(subscription__isnull=True)
+        if companies_without_sub.exists():
+            from subscriptions.models import Subscription, Plan
+            for comp in companies_without_sub:
+                plan = Plan.STARTER if comp.status == "active" else Plan.FREE
+                Subscription.objects.get_or_create(
+                    company=comp,
+                    defaults={
+                        "plan": plan,
+                        "is_active": comp.status != "suspended",
+                    }
+                )
+        return Subscription.objects.all().select_related('company').order_by('-created_at')
 
     def perform_update(self, serializer):
         subscription = serializer.save()
