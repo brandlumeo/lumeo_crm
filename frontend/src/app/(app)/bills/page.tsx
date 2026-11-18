@@ -88,7 +88,94 @@ const GST_STATES: Record<string, string> = {
 };
 const STATE_NAMES = Object.values(GST_STATES).sort();
 const GSTIN_REGEX = /^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/;
-const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28];
+const TRN_REGEX = /^\d{15}$/;
+
+type TaxRegime = "in_gst" | "ae_vat" | "generic";
+type TaxCategory = "" | "standard" | "zero" | "exempt";
+type RateOption = { label: string; rate: number; category: TaxCategory };
+
+const TAX_REGIMES: Record<
+  TaxRegime,
+  {
+    label: string;
+    taxName: string;
+    taxIdLabel: string;
+    taxIdPlaceholder: string;
+    taxIdHint: string;
+    validateTaxId: (v: string) => boolean;
+    defaultRate: number;
+    rateOptions: RateOption[] | null; // null => free numeric input
+    showPlaceOfSupply: boolean;
+    showHsn: boolean;
+    showTds: boolean;
+    reverseChargeHint: string;
+  }
+> = {
+  in_gst: {
+    label: "India – GST",
+    taxName: "GST",
+    taxIdLabel: "Vendor GSTIN",
+    taxIdPlaceholder: "e.g. 29ABCDE1234F1Z5",
+    taxIdHint: "15 characters",
+    validateTaxId: (v) => GSTIN_REGEX.test(v),
+    defaultRate: 18,
+    rateOptions: [
+      ...[0, 0.25, 3, 5, 12, 18, 28].map((r) => ({ label: `${r}%`, rate: r, category: "standard" as TaxCategory })),
+      { label: "Nil-rated", rate: 0, category: "zero" },
+      { label: "Exempt", rate: 0, category: "exempt" },
+    ],
+    showPlaceOfSupply: true,
+    showHsn: true,
+    showTds: true,
+    reverseChargeHint: "RCM: you pay the GST directly to the government; the vendor is paid the pre-tax amount.",
+  },
+  ae_vat: {
+    label: "UAE – VAT",
+    taxName: "VAT",
+    taxIdLabel: "Vendor TRN",
+    taxIdPlaceholder: "e.g. 100123456700003",
+    taxIdHint: "15-digit Tax Registration Number",
+    validateTaxId: (v) => TRN_REGEX.test(v),
+    defaultRate: 5,
+    rateOptions: [
+      { label: "5%", rate: 5, category: "standard" },
+      { label: "0% Zero-rated", rate: 0, category: "zero" },
+      { label: "Exempt", rate: 0, category: "exempt" },
+    ],
+    showPlaceOfSupply: false,
+    showHsn: false,
+    showTds: false,
+    reverseChargeHint: "For imports / overseas suppliers: you account for the 5% VAT yourself; the vendor is paid the pre-tax amount.",
+  },
+  generic: {
+    label: "Other – single tax",
+    taxName: "Tax",
+    taxIdLabel: "Vendor Tax ID",
+    taxIdPlaceholder: "VAT / tax registration no.",
+    taxIdHint: "Optional",
+    validateTaxId: (v) => v.length <= 30,
+    defaultRate: 0,
+    rateOptions: null,
+    showPlaceOfSupply: false,
+    showHsn: false,
+    showTds: false,
+    reverseChargeHint: "You account for the tax yourself; the vendor is paid the pre-tax amount.",
+  },
+};
+
+function defaultTaxRegime(country?: string | null, currency?: string | null): TaxRegime {
+  const c = (country || "").trim().toLowerCase();
+  const cur = (currency || "").trim().toUpperCase();
+  if (c.includes("india") || ["in", "ind", "bharat"].includes(c) || (!c && cur === "INR")) return "in_gst";
+  if (
+    c.includes("emirates") || c.replace(/\./g, "").includes("uae") ||
+    ["ae", "are", "dubai", "abu dhabi", "sharjah"].includes(c) || (!c && cur === "AED")
+  ) return "ae_vat";
+  return "generic";
+}
+
+const normalizeTaxId = (v: string) => v.toUpperCase().replace(/[\s-]/g, "");
+const rateKey = (rate: number, category: TaxCategory) => `${rate}|${category}`;
 
 const PAYMENT_TERM_OPTIONS: { label: string; days: number }[] = [
   { label: "Due on Receipt", days: 0 },
@@ -116,8 +203,15 @@ const TDS_SECTIONS: { value: string; label: string; rate: number }[] = [
 function termsToDays(terms: string): number | null {
   const opt = PAYMENT_TERM_OPTIONS.find((o) => o.label.toLowerCase() === terms.trim().toLowerCase());
   if (opt) return opt.days;
-  const m = terms.match(/net\s*(\d+)/i);
+  const m = terms.match(/^\s*(?:net\s*)?(\d+)\s*(?:days?)?\s*$/i);
   return m ? parseInt(m[1], 10) : null;
+}
+
+/** "65" or "65 days" -> "Net 65" so it matches the dropdown and drives the due date. */
+function normalizeTerms(terms: string): string {
+  const days = termsToDays(terms);
+  if (days === null) return terms;
+  return PAYMENT_TERM_OPTIONS.find((o) => o.days === days)?.label || (days === 0 ? "Due on Receipt" : `Net ${days}`);
 }
 
 function addDays(isoDate: string, days: number): string {
@@ -139,9 +233,23 @@ function deriveSupplyType(gstin: string, placeOfSupply: string, fallbackState?: 
   return supplierState.toLowerCase() === placeOfSupply.toLowerCase() ? "intra" : "inter";
 }
 
-type BillLine = { description: string; hsn_sac_code: string; quantity: number; unit_price: number; tax_rate: number };
+type BillLine = {
+  description: string;
+  hsn_sac_code: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  tax_category: TaxCategory;
+};
 
-const emptyLine = (): BillLine => ({ description: "", hsn_sac_code: "", quantity: 1, unit_price: 0, tax_rate: 18 });
+const emptyLine = (rate = 0): BillLine => ({
+  description: "",
+  hsn_sac_code: "",
+  quantity: 1,
+  unit_price: 0,
+  tax_rate: rate,
+  tax_category: rate > 0 ? "standard" : "",
+});
 
 type BillForm = {
   vendor: number | null;
@@ -154,9 +262,12 @@ type BillForm = {
   payment_terms: string;
   status: string;
   notes: string;
-  vendor_gstin: string;
+  tax_regime: TaxRegime;
+  taxApplicable: boolean;
+  vendor_tax_id: string;
   place_of_supply: string;
   supply_type: "intra" | "inter";
+  reverse_charge: boolean;
   discount_amount: number;
   roundOff: boolean;
   tds_section: string;
@@ -166,29 +277,53 @@ type BillForm = {
   items: BillLine[];
 };
 
-function computeBillTotals(form: Pick<BillForm, "items" | "discount_amount" | "supply_type" | "roundOff" | "tds_section" | "tds_rate">) {
+/** Mirrors Bill.recalculate_totals() on the server. */
+function computeBillTotals(form: BillForm) {
   const r2 = (n: number) => Math.round(n * 100) / 100;
+  const cfg = TAX_REGIMES[form.tax_regime];
   const subtotal = form.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
   const discount = Math.min(Math.max(form.discount_amount || 0, 0), subtotal);
   const taxable = subtotal - discount;
   const ratio = subtotal ? taxable / subtotal : 0;
-  const gst = r2(form.items.reduce((s, i) => s + i.quantity * i.unit_price * ratio * (i.tax_rate / 100), 0));
-  const cgst = form.supply_type === "inter" ? 0 : r2(gst / 2);
-  const sgst = form.supply_type === "inter" ? 0 : r2(gst - cgst);
-  const igst = form.supply_type === "inter" ? gst : 0;
-  const preRound = r2(taxable + gst);
+  const lineTax = form.taxApplicable
+    ? r2(form.items.reduce((s, i) => s + i.quantity * i.unit_price * ratio * ((i.tax_category === "zero" || i.tax_category === "exempt" ? 0 : i.tax_rate) / 100), 0))
+    : 0;
+  const reverseCharge = form.taxApplicable && form.reverse_charge ? lineTax : 0;
+  const tax = reverseCharge ? 0 : lineTax;
+  const split = form.tax_regime === "in_gst" && !reverseCharge;
+  const igst = split && form.supply_type === "inter" ? tax : 0;
+  const cgst = split && form.supply_type !== "inter" ? r2(tax / 2) : 0;
+  const sgst = split && form.supply_type !== "inter" ? r2(tax - cgst) : 0;
+  const preRound = r2(taxable + tax);
   const roundOff = form.roundOff ? r2(Math.round(preRound) - preRound) : 0;
   const total = r2(preRound + roundOff);
-  const tdsRate = form.tds_section ? form.tds_rate || 0 : 0;
+  const tdsRate = cfg.showTds && form.tds_section ? form.tds_rate || 0 : 0;
   const tds = r2((taxable * tdsRate) / 100);
-  return { subtotal: r2(subtotal), discount: r2(discount), taxable: r2(taxable), gst, cgst, sgst, igst, roundOff, total, tdsRate, tds, net: r2(total - tds) };
+  return { subtotal: r2(subtotal), discount: r2(discount), taxable: r2(taxable), tax, cgst, sgst, igst, reverseCharge, roundOff, total, tdsRate, tds, net: r2(total - tds) };
 }
 
 const inputCls = "w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors";
 const labelCls = "block text-xs font-medium text-ink mb-1.5";
 const lineInputCls = "w-full px-2.5 py-1.5 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors";
 const mobileLabelCls = "md:hidden block text-[11px] font-medium text-muted mb-1";
-const lineGridCls = "md:grid-cols-[minmax(0,1fr)_96px_72px_100px_80px_104px_32px]";
+// Literal class strings so Tailwind can see them: [desc, hsn?, qty, rate, tax?, amount, remove]
+const LINE_GRID = {
+  full: "md:grid-cols-[minmax(0,1fr)_96px_72px_100px_120px_104px_32px]",
+  noHsn: "md:grid-cols-[minmax(0,1fr)_72px_100px_120px_104px_32px]",
+  noTax: "md:grid-cols-[minmax(0,1fr)_72px_100px_104px_32px]",
+};
+
+function ReverseChargeToggle({ checked, onChange, hint }: { checked: boolean; onChange: (v: boolean) => void; hint: string }) {
+  return (
+    <label className="flex items-start gap-2 text-xs text-ink cursor-pointer select-none">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-ink mt-0.5" />
+      <span>
+        <span className="font-medium">Reverse charge applies</span>
+        <span className="block text-[11px] text-muted">{hint}</span>
+      </span>
+    </label>
+  );
+}
 
 function TotalRow({ label, value, currency }: { label: string; value: number; currency: string }) {
   return (
@@ -310,6 +445,8 @@ export default function BillsPage() {
   const { data: poData } = usePurchaseOrderPage({ limit: 200 });
   const purchaseOrders: any[] = poData?.results || [];
 
+  const companyRegime = defaultTaxRegime(company?.country, company?.currency);
+
   const blankForm = (): BillForm => {
     const today = new Date().toISOString().split("T")[0];
     return {
@@ -323,9 +460,12 @@ export default function BillsPage() {
       payment_terms: "Net 30",
       status: "draft",
       notes: "",
-      vendor_gstin: "",
-      place_of_supply: company?.state || "",
+      tax_regime: companyRegime,
+      taxApplicable: false,
+      vendor_tax_id: "",
+      place_of_supply: companyRegime === "in_gst" ? company?.state || "" : "",
       supply_type: "intra",
+      reverse_charge: false,
       discount_amount: 0,
       roundOff: false,
       tds_section: "",
@@ -336,8 +476,9 @@ export default function BillsPage() {
   };
 
   const [newBill, setNewBill] = useState<BillForm>(blankForm);
+  const regimeCfg = TAX_REGIMES[newBill.tax_regime];
 
-  /** Apply a change and keep due date + supply type in sync with the inputs they derive from. */
+  /** Apply a change and keep derived fields (due date, supply type, line tax) in sync. */
   const patchBill = (patch: Partial<BillForm>) => {
     setNewBill((prev) => {
       const next = { ...prev, ...patch };
@@ -345,8 +486,23 @@ export default function BillsPage() {
         const days = termsToDays(next.payment_terms);
         if (days !== null) next.due_date = addDays(next.bill_date, days);
       }
-      if (("vendor_gstin" in patch || "place_of_supply" in patch) && !("supply_type" in patch)) {
-        next.supply_type = deriveSupplyType(next.vendor_gstin, next.place_of_supply);
+      if ("tax_regime" in patch && patch.tax_regime !== prev.tax_regime) {
+        const cfg = TAX_REGIMES[next.tax_regime];
+        if (!cfg.validateTaxId(next.vendor_tax_id)) next.vendor_tax_id = "";
+        if (!cfg.showTds) next.tds_section = "";
+        if (!cfg.showPlaceOfSupply) next.place_of_supply = "";
+        else if (!next.place_of_supply) next.place_of_supply = company?.state || "";
+        if (next.taxApplicable) {
+          next.items = next.items.map((i) => ({ ...i, tax_rate: cfg.defaultRate, tax_category: cfg.defaultRate > 0 ? "standard" : "" }));
+        }
+      }
+      if ("taxApplicable" in patch && patch.taxApplicable !== prev.taxApplicable) {
+        const rate = next.taxApplicable ? TAX_REGIMES[next.tax_regime].defaultRate : 0;
+        next.items = next.items.map((i) => ({ ...i, tax_rate: rate, tax_category: rate > 0 ? "standard" : "" }));
+        if (!next.taxApplicable) next.reverse_charge = false;
+      }
+      if (next.tax_regime === "in_gst" && ("vendor_tax_id" in patch || "place_of_supply" in patch || "tax_regime" in patch) && !("supply_type" in patch)) {
+        next.supply_type = deriveSupplyType(next.vendor_tax_id, next.place_of_supply);
       }
       return next;
     });
@@ -359,14 +515,19 @@ export default function BillsPage() {
     }));
   };
 
+  const vendorTaxDefaults = (v: any, regime: TaxRegime): Partial<BillForm> => {
+    const taxId = normalizeTaxId(v?.tax_id || "");
+    const valid = taxId !== "" && TAX_REGIMES[regime].validateTaxId(taxId);
+    return { vendor_tax_id: valid ? taxId : "", ...(valid ? { taxApplicable: true } : {}) };
+  };
+
   const handleVendorChange = (vendorId: number | null) => {
     const v: any = vendors.find((x: any) => x.id === vendorId);
-    const gstin = (v?.tax_id || "").trim().toUpperCase();
-    const patch: Partial<BillForm> = {
-      vendor: vendorId,
-      vendor_gstin: GSTIN_REGEX.test(gstin) ? gstin : "",
-    };
-    if (v?.payment_terms) patch.payment_terms = v.payment_terms;
+    const patch: Partial<BillForm> = { vendor: vendorId, ...vendorTaxDefaults(v, newBill.tax_regime) };
+    if (v?.payment_terms) {
+      patch.payment_terms = normalizeTerms(v.payment_terms);
+      patch.dueDateTouched = false;
+    }
     const currentPo = purchaseOrders.find((po) => po.id === newBill.purchase_order);
     if (currentPo && currentPo.vendor !== vendorId) patch.purchase_order = null;
     patchBill(patch);
@@ -379,26 +540,35 @@ export default function BillsPage() {
       return;
     }
     const v: any = vendors.find((x: any) => x.id === po.vendor) || po.vendor_details;
-    const gstin = (v?.tax_id || "").trim().toUpperCase();
-    patchBill({
-      purchase_order: po.id,
-      vendor: po.vendor,
-      vendor_gstin: GSTIN_REGEX.test(gstin) ? gstin : newBill.vendor_gstin,
-      items:
-        po.items && po.items.length > 0
-          ? po.items.map((it: any) => ({
+    const items: BillLine[] =
+      po.items && po.items.length > 0
+        ? po.items.map((it: any) => {
+            const rate = parseFloat(String(it.tax_rate)) || 0;
+            return {
               description: it.description,
               hsn_sac_code: "",
               quantity: parseFloat(String(it.quantity)) || 0,
               unit_price: parseFloat(String(it.unit_price)) || 0,
-              tax_rate: parseFloat(String(it.tax_rate)) || 0,
-            }))
-          : newBill.items,
+              tax_rate: rate,
+              tax_category: rate > 0 ? "standard" : "",
+            };
+          })
+        : newBill.items;
+    const defaults = vendorTaxDefaults(v, newBill.tax_regime);
+    patchBill({
+      purchase_order: po.id,
+      vendor: po.vendor,
+      ...defaults,
+      vendor_tax_id: defaults.vendor_tax_id || newBill.vendor_tax_id,
+      // set items after taxApplicable so the PO's own rates are kept
     });
+    setNewBill((prev) => ({ ...prev, items, taxApplicable: prev.taxApplicable || items.some((i) => i.tax_rate > 0) }));
   };
 
   const totals = computeBillTotals(newBill);
-  const gstinInvalid = newBill.vendor_gstin !== "" && !GSTIN_REGEX.test(newBill.vendor_gstin);
+  const taxIdInvalid = newBill.vendor_tax_id !== "" && !regimeCfg.validateTaxId(newBill.vendor_tax_id);
+  const showHsn = newBill.taxApplicable && regimeCfg.showHsn;
+  const lineGridCls = !newBill.taxApplicable ? LINE_GRID.noTax : showHsn ? LINE_GRID.full : LINE_GRID.noHsn;
   const availablePOs = purchaseOrders.filter(
     (po) =>
       po.id === newBill.purchase_order ||
@@ -469,6 +639,18 @@ export default function BillsPage() {
 
   const handleEditClick = (bill: Bill) => {
     setEditBillId(bill.id);
+    const regime: TaxRegime = bill.tax_regime || companyRegime;
+    const items: BillLine[] =
+      bill.items && bill.items.length > 0
+        ? bill.items.map((item) => ({
+            description: item.description,
+            hsn_sac_code: item.hsn_sac_code || "",
+            quantity: parseFloat(String(item.quantity)),
+            unit_price: parseFloat(String(item.unit_price)),
+            tax_rate: parseFloat(String(item.tax_rate)),
+            tax_category: (item.tax_category || "") as TaxCategory,
+          }))
+        : [emptyLine()];
     setNewBill({
       vendor: bill.vendor,
       vendor_reference: bill.vendor_reference || "",
@@ -480,24 +662,20 @@ export default function BillsPage() {
       payment_terms: bill.payment_terms || "Net 30",
       status: bill.status,
       notes: bill.notes || "",
-      vendor_gstin: bill.vendor_gstin || "",
-      place_of_supply: bill.place_of_supply || company?.state || "",
+      tax_regime: regime,
+      taxApplicable:
+        !!bill.vendor_tax_id || !!bill.reverse_charge || items.some((i) => i.tax_rate > 0 || i.tax_category !== ""),
+      vendor_tax_id: bill.vendor_tax_id || "",
+      place_of_supply: bill.place_of_supply || (regime === "in_gst" ? company?.state || "" : ""),
       supply_type: bill.supply_type || "intra",
+      reverse_charge: !!bill.reverse_charge,
       discount_amount: parseFloat(String(bill.discount_amount || 0)),
       roundOff: parseFloat(String(bill.round_off || 0)) !== 0,
       tds_section: bill.tds_section || "",
       tds_rate: parseFloat(String(bill.tds_rate || 0)),
       attachmentFile: null,
       existingAttachment: bill.attachment,
-      items: bill.items && bill.items.length > 0
-        ? bill.items.map((item) => ({
-            description: item.description,
-            hsn_sac_code: item.hsn_sac_code || "",
-            quantity: parseFloat(String(item.quantity)),
-            unit_price: parseFloat(String(item.unit_price)),
-            tax_rate: parseFloat(String(item.tax_rate)),
-          }))
-        : [emptyLine()],
+      items,
     });
     setIsModalOpen(true);
   };
@@ -508,16 +686,21 @@ export default function BillsPage() {
       toast.error("Please select a vendor");
       return;
     }
-    if (gstinInvalid) {
-      toast.error("Vendor GSTIN is not valid. It should look like 29ABCDE1234F1Z5.");
+    if (newBill.taxApplicable && taxIdInvalid) {
+      toast.error(`${regimeCfg.taxIdLabel} is not valid (${regimeCfg.taxIdHint}).`);
       return;
     }
-    if (newBill.tds_section && !(newBill.tds_rate > 0)) {
+    if (regimeCfg.showTds && newBill.tds_section && !(newBill.tds_rate > 0)) {
       toast.error("Enter a TDS rate for the selected section");
       return;
     }
 
-    const validItems = newBill.items.filter((item) => item.description.trim() !== "");
+    const validItems = newBill.items
+      .filter((item) => item.description.trim() !== "")
+      .map((item) => {
+        if (!newBill.taxApplicable) return { ...item, tax_rate: 0, tax_category: "" as TaxCategory, hsn_sac_code: "" };
+        return regimeCfg.showHsn ? item : { ...item, hsn_sac_code: "" };
+      });
     if (validItems.length === 0) {
       toast.error("Please add at least one line item with a description");
       return;
@@ -534,13 +717,15 @@ export default function BillsPage() {
     formData.append("payment_terms", newBill.payment_terms);
     formData.append("status", newBill.status);
     formData.append("notes", newBill.notes || "");
-    formData.append("vendor_gstin", newBill.vendor_gstin);
-    formData.append("place_of_supply", newBill.place_of_supply);
+    formData.append("tax_regime", newBill.tax_regime);
+    formData.append("vendor_tax_id", newBill.taxApplicable ? newBill.vendor_tax_id : "");
+    formData.append("place_of_supply", regimeCfg.showPlaceOfSupply ? newBill.place_of_supply : "");
     formData.append("supply_type", newBill.supply_type);
+    formData.append("reverse_charge", newBill.taxApplicable && newBill.reverse_charge ? "true" : "false");
     formData.append("discount_amount", totals.discount.toFixed(2));
     formData.append("round_off", totals.roundOff.toFixed(2));
-    formData.append("tds_section", newBill.tds_section);
-    formData.append("tds_rate", (newBill.tds_section ? newBill.tds_rate : 0).toString());
+    formData.append("tds_section", regimeCfg.showTds ? newBill.tds_section : "");
+    formData.append("tds_rate", (regimeCfg.showTds && newBill.tds_section ? newBill.tds_rate : 0).toString());
     formData.append("items", JSON.stringify(validItems));
 
     if (newBill.attachmentFile) {
@@ -1344,20 +1529,34 @@ export default function BillsPage() {
                 {detailBill.vendor_details?.address && (
                   <div className="text-xs text-muted">Address: {detailBill.vendor_details.address}</div>
                 )}
-                {(detailBill.vendor_reference || detailBill.vendor_gstin || detailBill.place_of_supply) && (
+                {(detailBill.vendor_reference || detailBill.vendor_tax_id || detailBill.place_of_supply || detailBill.reverse_charge) && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-2 border-t border-line/60">
                     <div>
                       <div className="text-[11px] text-muted">Vendor Invoice No.</div>
                       <div className="font-mono text-ink">{detailBill.vendor_reference || "—"}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-muted">GSTIN</div>
-                      <div className="font-mono text-ink">{detailBill.vendor_gstin || "Unregistered"}</div>
+                      <div className="text-[11px] text-muted">{TAX_REGIMES[detailBill.tax_regime || "generic"].taxIdLabel.replace("Vendor ", "")}</div>
+                      <div className="font-mono text-ink">{detailBill.vendor_tax_id || "Unregistered"}</div>
                     </div>
-                    <div>
-                      <div className="text-[11px] text-muted">Place of Supply</div>
-                      <div className="text-ink">{detailBill.place_of_supply || "—"}</div>
-                    </div>
+                    {detailBill.tax_regime === "in_gst" ? (
+                      <div>
+                        <div className="text-[11px] text-muted">Place of Supply</div>
+                        <div className="text-ink">{detailBill.place_of_supply || "—"}</div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-[11px] text-muted">Tax System</div>
+                        <div className="text-ink">{TAX_REGIMES[detailBill.tax_regime || "generic"].label}</div>
+                      </div>
+                    )}
+                    {detailBill.reverse_charge && (
+                      <div className="sm:col-span-3">
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                          Reverse charge applies
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="text-xs text-muted pt-2 border-t border-line/60 flex items-center justify-between">
@@ -1394,10 +1593,10 @@ export default function BillsPage() {
                     <thead className="bg-bone border-b border-line text-muted">
                       <tr>
                         <th className="px-3 py-2 font-medium">Description</th>
-                        <th className="px-3 py-2 font-medium">HSN/SAC</th>
+                        {detailBill.tax_regime === "in_gst" && <th className="px-3 py-2 font-medium">HSN/SAC</th>}
                         <th className="px-3 py-2 font-medium text-right">Qty</th>
                         <th className="px-3 py-2 font-medium text-right">Rate</th>
-                        <th className="px-3 py-2 font-medium text-right">Tax %</th>
+                        <th className="px-3 py-2 font-medium text-right">{TAX_REGIMES[detailBill.tax_regime || "generic"].taxName}</th>
                         <th className="px-3 py-2 font-medium text-right">Total</th>
                       </tr>
                     </thead>
@@ -1406,10 +1605,12 @@ export default function BillsPage() {
                         detailBill.items.map((item, idx) => (
                           <tr key={idx}>
                             <td className="px-3 py-2 font-medium text-ink">{item.description}</td>
-                            <td className="px-3 py-2 text-muted font-mono">{item.hsn_sac_code || "—"}</td>
+                            {detailBill.tax_regime === "in_gst" && <td className="px-3 py-2 text-muted font-mono">{item.hsn_sac_code || "—"}</td>}
                             <td className="px-3 py-2 text-right text-muted font-mono">{item.quantity}</td>
                             <td className="px-3 py-2 text-right text-muted font-mono">{formatCurrency(Number(item.unit_price), currency)}</td>
-                            <td className="px-3 py-2 text-right text-muted font-mono">{item.tax_rate}%</td>
+                            <td className="px-3 py-2 text-right text-muted font-mono">
+                              {item.tax_category === "exempt" ? "Exempt" : item.tax_category === "zero" ? "0% (zero)" : `${Number(item.tax_rate)}%`}
+                            </td>
                             <td className="px-3 py-2 text-right font-medium text-ink font-mono">{formatCurrency(Number(item.total || Number(item.quantity) * Number(item.unit_price)), currency)}</td>
                           </tr>
                         ))
@@ -1437,7 +1638,9 @@ export default function BillsPage() {
                       <TotalRow label="SGST" value={Number(detailBill.sgst_amount)} currency={currency} />
                     </>
                   ) : (
-                    <TotalRow label="Tax" value={Number(detailBill.tax_amount || 0)} currency={currency} />
+                    Number(detailBill.tax_amount || 0) > 0 && (
+                      <TotalRow label={TAX_REGIMES[detailBill.tax_regime || "generic"].taxName} value={Number(detailBill.tax_amount)} currency={currency} />
+                    )
                   )}
                   {Number(detailBill.round_off || 0) !== 0 && (
                     <TotalRow label="Round off" value={Number(detailBill.round_off)} currency={currency} />
@@ -1458,6 +1661,12 @@ export default function BillsPage() {
                         <span className="font-mono">{formatCurrency(Number(detailBill.net_payable || 0), currency)}</span>
                       </div>
                     </>
+                  )}
+                  {detailBill.reverse_charge && (
+                    <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900 flex justify-between">
+                      <span>{TAX_REGIMES[detailBill.tax_regime || "generic"].taxName} under reverse charge (self-accounted)</span>
+                      <span className="font-mono">{formatCurrency(Number(detailBill.reverse_charge_amount || 0), currency)}</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1730,61 +1939,115 @@ export default function BillsPage() {
                 </div>
               </div>
 
-              {/* GST details */}
+              {/* Tax details */}
               <div className="p-4 rounded-lg border border-line bg-bone/40 space-y-3">
-                <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">GST Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className={labelCls}>Vendor GSTIN</label>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 text-sm font-medium text-ink cursor-pointer select-none">
                     <input
-                      type="text"
-                      maxLength={15}
-                      placeholder="e.g. 29ABCDE1234F1Z5"
-                      className={`${inputCls} font-mono uppercase ${gstinInvalid ? "border-rose-400 focus:border-rose-500" : ""}`}
-                      value={newBill.vendor_gstin}
-                      onChange={(e) => patchBill({ vendor_gstin: e.target.value.toUpperCase().replace(/\s/g, "") })}
+                      type="checkbox"
+                      checked={newBill.taxApplicable}
+                      onChange={(e) => patchBill({ taxApplicable: e.target.checked })}
+                      className="accent-ink w-4 h-4"
                     />
-                    {gstinInvalid ? (
-                      <p className="text-[11px] text-rose-600 mt-1">Invalid GSTIN format</p>
-                    ) : stateFromGstin(newBill.vendor_gstin) ? (
-                      <p className="text-[11px] text-muted mt-1">Registered in {stateFromGstin(newBill.vendor_gstin)}</p>
-                    ) : (
-                      <p className="text-[11px] text-muted mt-1">Leave blank for unregistered vendors</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className={labelCls}>Place of Supply</label>
+                    {regimeCfg.taxName} applicable on this bill
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted">Tax system</span>
                     <select
-                      className={inputCls}
-                      value={newBill.place_of_supply}
-                      onChange={(e) => patchBill({ place_of_supply: e.target.value })}
+                      aria-label="Tax system"
+                      className="px-2 py-1 bg-bone border border-line rounded-md text-xs outline-none focus:border-ink"
+                      value={newBill.tax_regime}
+                      onChange={(e) => patchBill({ tax_regime: e.target.value as TaxRegime })}
                     >
-                      <option value="">Select state...</option>
-                      {STATE_NAMES.map((st) => (
-                        <option key={st} value={st}>
-                          {st}
+                      {(Object.keys(TAX_REGIMES) as TaxRegime[]).map((r) => (
+                        <option key={r} value={r}>
+                          {TAX_REGIMES[r].label}
                         </option>
                       ))}
-                      {newBill.place_of_supply && !STATE_NAMES.includes(newBill.place_of_supply) && (
-                        <option value={newBill.place_of_supply}>{newBill.place_of_supply}</option>
-                      )}
                     </select>
-                  </div>
-
-                  <div>
-                    <label className={labelCls}>Supply Type</label>
-                    <select
-                      className={inputCls}
-                      value={newBill.supply_type}
-                      onChange={(e) => patchBill({ supply_type: e.target.value as "intra" | "inter" })}
-                    >
-                      <option value="intra">Intra-state (CGST + SGST)</option>
-                      <option value="inter">Inter-state (IGST)</option>
-                    </select>
-                    <p className="text-[11px] text-muted mt-1">Set automatically from GSTIN state vs. place of supply</p>
                   </div>
                 </div>
+
+                {!newBill.taxApplicable ? (
+                  <p className="text-[11px] text-muted">
+                    No {regimeCfg.taxName} will be recorded. Tick the box if the vendor charges {regimeCfg.taxName}.
+                  </p>
+                ) : (
+                  <>
+                    <div className={`grid grid-cols-1 gap-4 ${regimeCfg.showPlaceOfSupply ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+                      <div>
+                        <label className={labelCls}>{regimeCfg.taxIdLabel}</label>
+                        <input
+                          type="text"
+                          maxLength={30}
+                          placeholder={regimeCfg.taxIdPlaceholder}
+                          className={`${inputCls} font-mono uppercase ${taxIdInvalid ? "border-rose-400 focus:border-rose-500" : ""}`}
+                          value={newBill.vendor_tax_id}
+                          onChange={(e) => patchBill({ vendor_tax_id: normalizeTaxId(e.target.value) })}
+                        />
+                        {taxIdInvalid ? (
+                          <p className="text-[11px] text-rose-600 mt-1">Invalid format: {regimeCfg.taxIdHint}</p>
+                        ) : newBill.tax_regime === "in_gst" && stateFromGstin(newBill.vendor_tax_id) ? (
+                          <p className="text-[11px] text-muted mt-1">Registered in {stateFromGstin(newBill.vendor_tax_id)}</p>
+                        ) : (
+                          <p className="text-[11px] text-muted mt-1">{regimeCfg.taxIdHint}. Leave blank if unregistered</p>
+                        )}
+                      </div>
+
+                      {regimeCfg.showPlaceOfSupply && (
+                        <div>
+                          <label className={labelCls}>Place of Supply</label>
+                          <select
+                            className={inputCls}
+                            value={newBill.place_of_supply}
+                            onChange={(e) => patchBill({ place_of_supply: e.target.value })}
+                          >
+                            <option value="">Select state...</option>
+                            {STATE_NAMES.map((st) => (
+                              <option key={st} value={st}>
+                                {st}
+                              </option>
+                            ))}
+                            {newBill.place_of_supply && !STATE_NAMES.includes(newBill.place_of_supply) && (
+                              <option value={newBill.place_of_supply}>{newBill.place_of_supply}</option>
+                            )}
+                          </select>
+                        </div>
+                      )}
+
+                      {regimeCfg.showPlaceOfSupply ? (
+                        <div>
+                          <label className={labelCls}>Supply Type</label>
+                          <select
+                            className={inputCls}
+                            value={newBill.supply_type}
+                            disabled={newBill.reverse_charge}
+                            onChange={(e) => patchBill({ supply_type: e.target.value as "intra" | "inter" })}
+                          >
+                            <option value="intra">Intra-state (CGST + SGST)</option>
+                            <option value="inter">Inter-state (IGST)</option>
+                          </select>
+                          <p className="text-[11px] text-muted mt-1">Set automatically from GSTIN state vs. place of supply</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-end">
+                          <ReverseChargeToggle
+                            checked={newBill.reverse_charge}
+                            onChange={(v) => patchBill({ reverse_charge: v })}
+                            hint={regimeCfg.reverseChargeHint}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {regimeCfg.showPlaceOfSupply && (
+                      <ReverseChargeToggle
+                        checked={newBill.reverse_charge}
+                        onChange={(v) => patchBill({ reverse_charge: v })}
+                        hint={regimeCfg.reverseChargeHint}
+                      />
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Line Items */}
@@ -1793,7 +2056,7 @@ export default function BillsPage() {
                   <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Line Items</h3>
                   <button
                     type="button"
-                    onClick={() => patchBill({ items: [...newBill.items, emptyLine()] })}
+                    onClick={() => patchBill({ items: [...newBill.items, emptyLine(newBill.taxApplicable ? regimeCfg.defaultRate : 0)] })}
                     className="text-xs font-medium text-ink bg-bone px-2 py-1 rounded-md border border-line hover:bg-bone-2 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Item
@@ -1803,10 +2066,10 @@ export default function BillsPage() {
                 <div className="rounded-lg border border-line/60 overflow-hidden">
                   <div className={`hidden md:grid ${lineGridCls} gap-2 px-3 py-2 bg-bone text-[11px] font-medium text-muted uppercase tracking-wide border-b border-line/60`}>
                     <span>Description</span>
-                    <span>HSN/SAC</span>
+                    {showHsn && <span>HSN/SAC</span>}
                     <span className="text-right">Qty</span>
                     <span className="text-right">Rate</span>
-                    <span className="text-right">GST %</span>
+                    {newBill.taxApplicable && <span className="text-right">{regimeCfg.taxName}</span>}
                     <span className="text-right">Amount</span>
                     <span />
                   </div>
@@ -1814,6 +2077,13 @@ export default function BillsPage() {
                   <div className="divide-y divide-line/60 bg-bone-2">
                     {newBill.items.map((item, index) => {
                       const lineAmount = item.quantity * item.unit_price;
+                      const options = regimeCfg.rateOptions;
+                      const currentKey = rateKey(item.tax_rate, item.tax_category || (item.tax_rate > 0 ? "standard" : ""));
+                      const optionList = options
+                        ? options.some((o) => rateKey(o.rate, o.category) === currentKey)
+                          ? options
+                          : [...options, { label: `${item.tax_rate}%`, rate: item.tax_rate, category: item.tax_category }]
+                        : null;
                       return (
                         <div key={index} className={`grid grid-cols-2 ${lineGridCls} gap-2 p-3 items-start`}>
                           <div className="col-span-2 md:col-span-1">
@@ -1827,18 +2097,20 @@ export default function BillsPage() {
                               onChange={(e) => updateLine(index, { description: e.target.value })}
                             />
                           </div>
-                          <div>
-                            <span className={mobileLabelCls}>HSN/SAC</span>
-                            <input
-                              aria-label="HSN/SAC code"
-                              placeholder="e.g. 998314"
-                              inputMode="numeric"
-                              maxLength={8}
-                              className={`${lineInputCls} font-mono`}
-                              value={item.hsn_sac_code}
-                              onChange={(e) => updateLine(index, { hsn_sac_code: e.target.value.replace(/\D/g, "") })}
-                            />
-                          </div>
+                          {showHsn && (
+                            <div>
+                              <span className={mobileLabelCls}>HSN/SAC</span>
+                              <input
+                                aria-label="HSN/SAC code"
+                                placeholder="e.g. 998314"
+                                inputMode="numeric"
+                                maxLength={8}
+                                className={`${lineInputCls} font-mono`}
+                                value={item.hsn_sac_code}
+                                onChange={(e) => updateLine(index, { hsn_sac_code: e.target.value.replace(/\D/g, "") })}
+                              />
+                            </div>
+                          )}
                           <div>
                             <span className={mobileLabelCls}>Qty</span>
                             <input
@@ -1865,21 +2137,45 @@ export default function BillsPage() {
                               onChange={(e) => updateLine(index, { unit_price: parseFloat(e.target.value) || 0 })}
                             />
                           </div>
-                          <div>
-                            <span className={mobileLabelCls}>GST %</span>
-                            <select
-                              aria-label="GST rate"
-                              className={`${lineInputCls} font-mono text-right`}
-                              value={item.tax_rate}
-                              onChange={(e) => updateLine(index, { tax_rate: parseFloat(e.target.value) || 0 })}
-                            >
-                              {(GST_RATES.includes(item.tax_rate) ? GST_RATES : [...GST_RATES, item.tax_rate].sort((a, b) => a - b)).map((r) => (
-                                <option key={r} value={r}>
-                                  {r}%
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                          {newBill.taxApplicable && (
+                            <div>
+                              <span className={mobileLabelCls}>{regimeCfg.taxName}</span>
+                              {optionList ? (
+                                <select
+                                  aria-label={`${regimeCfg.taxName} rate`}
+                                  className={`${lineInputCls} font-mono text-right`}
+                                  value={currentKey}
+                                  onChange={(e) => {
+                                    const [rate, category] = e.target.value.split("|");
+                                    updateLine(index, { tax_rate: parseFloat(rate) || 0, tax_category: category as TaxCategory });
+                                  }}
+                                >
+                                  {optionList.map((o) => (
+                                    <option key={rateKey(o.rate, o.category)} value={rateKey(o.rate, o.category)}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max="100"
+                                    aria-label="Tax rate"
+                                    className={`${lineInputCls} font-mono text-right pr-6`}
+                                    value={item.tax_rate}
+                                    onChange={(e) => {
+                                      const rate = parseFloat(e.target.value) || 0;
+                                      updateLine(index, { tax_rate: rate, tax_category: rate > 0 ? "standard" : "" });
+                                    }}
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted">%</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <div className="flex md:block items-center justify-between md:text-right md:pt-1.5">
                             <span className={mobileLabelCls}>Amount</span>
                             <span className="text-sm font-mono font-medium text-ink">{formatCurrency(lineAmount, currency)}</span>
@@ -1905,7 +2201,9 @@ export default function BillsPage() {
                 {/* Adjustments + totals */}
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg border border-line bg-bone/40 space-y-3">
-                    <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Adjustments & TDS</h3>
+                    <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">
+                      {regimeCfg.showTds ? "Adjustments & TDS" : "Adjustments"}
+                    </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={labelCls}>Discount ({currency})</label>
@@ -1929,41 +2227,45 @@ export default function BillsPage() {
                         Round off total
                       </label>
                     </div>
-                    <div className="grid grid-cols-[1fr_90px] gap-3">
-                      <div>
-                        <label className={labelCls}>TDS Section</label>
-                        <select
-                          className={inputCls}
-                          value={newBill.tds_section}
-                          onChange={(e) => {
-                            const sec = TDS_SECTIONS.find((t) => t.value === e.target.value);
-                            patchBill({ tds_section: e.target.value, tds_rate: sec ? sec.rate || newBill.tds_rate : 0 });
-                          }}
-                        >
-                          <option value="">No TDS</option>
-                          {TDS_SECTIONS.map((t) => (
-                            <option key={t.value} value={t.value}>
-                              {t.label}
-                              {t.rate ? ` (${t.rate}%)` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className={labelCls}>Rate %</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="30"
-                          disabled={!newBill.tds_section}
-                          className={`${inputCls} font-mono disabled:opacity-50`}
-                          value={newBill.tds_section ? newBill.tds_rate : ""}
-                          onChange={(e) => patchBill({ tds_rate: parseFloat(e.target.value) || 0 })}
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-muted">TDS is calculated on the taxable value (excluding GST) and deducted from what you pay the vendor.</p>
+                    {regimeCfg.showTds && (
+                      <>
+                        <div className="grid grid-cols-[1fr_90px] gap-3">
+                          <div>
+                            <label className={labelCls}>TDS Section</label>
+                            <select
+                              className={inputCls}
+                              value={newBill.tds_section}
+                              onChange={(e) => {
+                                const sec = TDS_SECTIONS.find((t) => t.value === e.target.value);
+                                patchBill({ tds_section: e.target.value, tds_rate: sec ? sec.rate || newBill.tds_rate : 0 });
+                              }}
+                            >
+                              <option value="">No TDS</option>
+                              {TDS_SECTIONS.map((t) => (
+                                <option key={t.value} value={t.value}>
+                                  {t.label}
+                                  {t.rate ? ` (${t.rate}%)` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelCls}>Rate %</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="30"
+                              disabled={!newBill.tds_section}
+                              className={`${inputCls} font-mono disabled:opacity-50`}
+                              value={newBill.tds_section ? newBill.tds_rate : ""}
+                              onChange={(e) => patchBill({ tds_rate: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-muted">TDS is calculated on the taxable value (excluding GST) and deducted from what you pay the vendor.</p>
+                      </>
+                    )}
                   </div>
 
                   <div className="p-4 rounded-lg border border-line text-xs space-y-1.5">
@@ -1974,13 +2276,19 @@ export default function BillsPage() {
                         <TotalRow label="Taxable value" value={totals.taxable} currency={currency} />
                       </>
                     )}
-                    {newBill.supply_type === "inter" ? (
-                      <TotalRow label="IGST" value={totals.igst} currency={currency} />
-                    ) : (
-                      <>
-                        <TotalRow label="CGST" value={totals.cgst} currency={currency} />
-                        <TotalRow label="SGST" value={totals.sgst} currency={currency} />
-                      </>
+                    {newBill.taxApplicable && !newBill.reverse_charge && (
+                      newBill.tax_regime === "in_gst" ? (
+                        newBill.supply_type === "inter" ? (
+                          <TotalRow label="IGST" value={totals.igst} currency={currency} />
+                        ) : (
+                          <>
+                            <TotalRow label="CGST" value={totals.cgst} currency={currency} />
+                            <TotalRow label="SGST" value={totals.sgst} currency={currency} />
+                          </>
+                        )
+                      ) : (
+                        <TotalRow label={regimeCfg.taxName} value={totals.tax} currency={currency} />
+                      )
                     )}
                     {totals.roundOff !== 0 && <TotalRow label="Round off" value={totals.roundOff} currency={currency} />}
                     <div className="flex justify-between font-bold text-ink pt-2 border-t border-line">
@@ -1995,6 +2303,15 @@ export default function BillsPage() {
                           <span className="font-mono text-sm">{formatCurrency(totals.net, currency)}</span>
                         </div>
                       </>
+                    )}
+                    {newBill.taxApplicable && newBill.reverse_charge && (
+                      <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900">
+                        <div className="flex justify-between font-medium">
+                          <span>{regimeCfg.taxName} under reverse charge</span>
+                          <span className="font-mono">{formatCurrency(totals.reverseCharge, currency)}</span>
+                        </div>
+                        <p className="text-[11px] mt-0.5">You account for this yourself. It is not paid to the vendor.</p>
+                      </div>
                     )}
                   </div>
                 </div>

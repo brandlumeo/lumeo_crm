@@ -1544,6 +1544,11 @@ class Bill(models.Model):
         UTILITIES = "utilities", "Utilities & Internet"
         OTHER = "other", "Other Expenses"
 
+    class TaxRegime(models.TextChoices):
+        IN_GST = "in_gst", "India GST"
+        AE_VAT = "ae_vat", "UAE VAT"
+        GENERIC = "generic", "Generic tax"
+
     class SupplyType(models.TextChoices):
         INTRA = "intra", "Intra-state (CGST + SGST)"
         INTER = "inter", "Inter-state (IGST)"
@@ -1574,10 +1579,13 @@ class Bill(models.Model):
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
 
-    # GST
-    vendor_gstin = models.CharField(max_length=15, blank=True, default="")
+    # Tax (regime-aware: India GST, UAE VAT, or a generic single tax)
+    tax_regime = models.CharField(max_length=10, choices=TaxRegime.choices, default=TaxRegime.IN_GST)
+    vendor_tax_id = models.CharField(max_length=30, blank=True, default="", help_text="GSTIN (India), TRN (UAE) or other tax number")
     place_of_supply = models.CharField(max_length=100, blank=True, default="")
     supply_type = models.CharField(max_length=10, choices=SupplyType.choices, default=SupplyType.INTRA)
+    reverse_charge = models.BooleanField(default=False, help_text="Recipient self-accounts the tax; vendor is paid the pre-tax amount")
+    reverse_charge_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -1607,6 +1615,19 @@ class Bill(models.Model):
         return f"{self.bill_number} - {self.vendor.name}"
 
     @classmethod
+    def default_tax_regime(cls, company):
+        """India -> GST, UAE -> VAT, anything else -> a single generic tax."""
+        if company is None:
+            return cls.TaxRegime.GENERIC
+        country = (getattr(company, "country", "") or "").strip().lower()
+        currency = (getattr(company, "currency", "") or "").strip().upper()
+        if ("india" in country or country in {"in", "ind", "bharat"}) or (not country and currency == "INR"):
+            return cls.TaxRegime.IN_GST
+        if ("emirates" in country or "uae" in country.replace(".", "") or country in {"ae", "are", "dubai", "abu dhabi", "sharjah"}) or (not country and currency == "AED"):
+            return cls.TaxRegime.AE_VAT
+        return cls.TaxRegime.GENERIC
+
+    @classmethod
     def next_bill_number(cls, company):
         """Sequential per-company number: BILL-00001, BILL-00002, ..."""
         import re
@@ -1634,7 +1655,7 @@ class Bill(models.Model):
         discount = min(max(Decimal(str(self.discount_amount or 0)), Decimal("0")), subtotal)
         ratio = (subtotal - discount) / subtotal if subtotal else Decimal("0")
 
-        gst = sum(
+        tax = sum(
             (Decimal(str(i.quantity or 0)) * Decimal(str(i.unit_price or 0)) * ratio * Decimal(str(i.tax_rate or 0)) / 100 for i in items),
             Decimal("0"),
         ).quantize(two, ROUND_HALF_UP)
@@ -1642,15 +1663,29 @@ class Bill(models.Model):
         self.subtotal = subtotal.quantize(two, ROUND_HALF_UP)
         self.discount_amount = discount.quantize(two, ROUND_HALF_UP)
         self.taxable_amount = (subtotal - discount).quantize(two, ROUND_HALF_UP)
-        if self.supply_type == self.SupplyType.INTER:
-            self.igst_amount, self.cgst_amount, self.sgst_amount = gst, Decimal("0"), Decimal("0")
-        else:
-            half = (gst / 2).quantize(two, ROUND_HALF_UP)
-            self.cgst_amount, self.sgst_amount, self.igst_amount = half, gst - half, Decimal("0")
-        self.tax_amount = gst
-        self.round_off = min(max(Decimal(str(self.round_off or 0)), Decimal("-1")), Decimal("1")).quantize(two)
-        self.total_amount = self.taxable_amount + gst + self.round_off
+        zero = Decimal("0")
+        self.cgst_amount = self.sgst_amount = self.igst_amount = zero
 
+        if self.reverse_charge:
+            # Vendor does not charge the tax; we account for it ourselves
+            # (output + input) so it is recorded but never payable to the vendor.
+            self.reverse_charge_amount = tax
+            self.tax_amount = zero
+        else:
+            self.reverse_charge_amount = zero
+            self.tax_amount = tax
+            if self.tax_regime == self.TaxRegime.IN_GST:
+                if self.supply_type == self.SupplyType.INTER:
+                    self.igst_amount = tax
+                else:
+                    half = (tax / 2).quantize(two, ROUND_HALF_UP)
+                    self.cgst_amount, self.sgst_amount = half, tax - half
+
+        self.round_off = min(max(Decimal(str(self.round_off or 0)), Decimal("-1")), Decimal("1")).quantize(two)
+        self.total_amount = self.taxable_amount + self.tax_amount + self.round_off
+
+        if self.tax_regime != self.TaxRegime.IN_GST:
+            self.tds_section = ""  # TDS is an Indian income-tax concept
         if not self.tds_section:
             self.tds_rate = Decimal("0")
         self.tds_amount = (self.taxable_amount * Decimal(str(self.tds_rate or 0)) / 100).quantize(two, ROUND_HALF_UP)
@@ -1722,6 +1757,10 @@ class BillItem(models.Model):
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name="items")
     description = models.CharField(max_length=500)
     hsn_sac_code = models.CharField(max_length=20, blank=True, default="")
+    tax_category = models.CharField(
+        max_length=10, blank=True, default="",
+        choices=[("standard", "Standard"), ("zero", "Zero-rated"), ("exempt", "Exempt")],
+    )
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)

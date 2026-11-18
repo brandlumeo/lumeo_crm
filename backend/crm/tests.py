@@ -340,6 +340,7 @@ def test_bill_gst_tds_and_numbering(setup_data):
         "vendor_reference": "SP/2026/117",
         "bill_date": "2026-11-18",
         "status": "open",
+        "tax_regime": "in_gst",
         "supply_type": "intra",
         "place_of_supply": "Kerala",
         "discount_amount": "1000",
@@ -357,7 +358,7 @@ def test_bill_gst_tds_and_numbering(setup_data):
     bill = Bill.objects.get(id=res.data["id"])
 
     assert bill.bill_number == "BILL-00001"
-    assert bill.vendor_gstin == "32ABCDE1234F1Z5"  # defaulted from vendor tax_id
+    assert bill.vendor_tax_id == "32ABCDE1234F1Z5"  # defaulted from vendor tax_id
     assert bill.taxable_amount == Decimal("11000.00")
     assert (bill.cgst_amount, bill.sgst_amount, bill.igst_amount) == (Decimal("990.00"), Decimal("990.00"), Decimal("0"))
     assert bill.total_amount == Decimal("12980.40")
@@ -380,11 +381,92 @@ def test_bill_gst_tds_and_numbering(setup_data):
     # Sequential numbering, GSTIN validation, PO/vendor tenancy
     res = client.post("/api/v1/crm/bills/", {**payload, "vendor_reference": "SP/2026/118"}, format="json")
     assert res.data["bill_number"] == "BILL-00002"
-    res = client.post("/api/v1/crm/bills/", {**payload, "vendor_gstin": "12345"}, format="json")
-    assert res.status_code == 400 and "vendor_gstin" in res.data
+    res = client.post("/api/v1/crm/bills/", {**payload, "vendor_tax_id": "12345"}, format="json")
+    assert res.status_code == 400 and "vendor_tax_id" in res.data
     res = client.post("/api/v1/crm/bills/", {**payload, "vendor": other_vendor.id}, format="json")
     assert res.status_code == 400
 
     # Voucher PDF renders with the new breakdown
+    res = client.get(f"/api/v1/crm/bills/{bill.id}/pdf/")
+    assert res.status_code == 200
+
+
+@pytest.mark.django_db
+def test_bill_uae_vat_reverse_charge_and_no_tax(setup_data):
+    """UAE VAT (TRN, 5%/zero/exempt, no TDS), reverse charge, and tax-free bills."""
+    from decimal import Decimal
+    from rest_framework.test import APIClient
+    from crm.models import Vendor, Bill
+
+    user = setup_data["user1"]
+    user.role = "admin"
+    user.save()
+    company = setup_data["company1"]
+    company.country = "United Arab Emirates"
+    company.currency = "AED"
+    company.save()
+    vendor = Vendor.objects.create(company=company, name="Dubai Print House", tax_id="100123456700003")
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    base = {
+        "vendor": vendor.id,
+        "bill_date": "2026-11-18",
+        "status": "open",
+        "tds_section": "194J_P",  # must be ignored outside India
+        "tds_rate": "10",
+        "items": [
+            {"description": "Brochures", "quantity": 10, "unit_price": 100, "tax_rate": 5, "tax_category": "standard"},
+            {"description": "Export freight", "quantity": 1, "unit_price": 500, "tax_rate": 5, "tax_category": "zero"},
+            {"description": "Insurance", "quantity": 1, "unit_price": 200, "tax_rate": 5, "tax_category": "exempt"},
+        ],
+    }
+
+    # Regime defaults from company country; TRN copied from vendor
+    res = client.post("/api/v1/crm/bills/", base, format="json")
+    assert res.status_code == 201, res.data
+    bill = Bill.objects.get(id=res.data["id"])
+    assert bill.tax_regime == "ae_vat"
+    assert bill.vendor_tax_id == "100123456700003"
+    assert bill.subtotal == Decimal("1700.00")
+    assert bill.tax_amount == Decimal("50.00")  # only the standard-rated line
+    assert bill.cgst_amount == bill.sgst_amount == bill.igst_amount == 0
+    assert bill.tds_section == "" and bill.tds_amount == 0
+    assert bill.total_amount == bill.net_payable == Decimal("1750.00")
+    assert bill.items.get(description="Insurance").tax_rate == 0
+
+    # Reverse charge: VAT recorded but not payable to the vendor
+    res = client.patch(f"/api/v1/crm/bills/{bill.id}/", {"reverse_charge": True}, format="json")
+    assert res.status_code == 200, res.data
+    bill.refresh_from_db()
+    assert bill.reverse_charge_amount == Decimal("50.00")
+    assert bill.tax_amount == 0
+    assert bill.total_amount == bill.amount_due == Decimal("1700.00")
+
+    # TRN validation
+    res = client.post("/api/v1/crm/bills/", {**base, "vendor_tax_id": "29ABCDE1234F1Z5"}, format="json")
+    assert res.status_code == 400 and "vendor_tax_id" in res.data
+
+    # Bill with no tax at all
+    res = client.post("/api/v1/crm/bills/", {
+        **base,
+        "items": [{"description": "Courier", "quantity": 1, "unit_price": 80, "tax_rate": 0}],
+    }, format="json")
+    assert res.status_code == 201, res.data
+    assert Decimal(res.data["total_amount"]) == Decimal("80.00")
+    assert Decimal(res.data["tax_amount"]) == 0
+
+    # India GST reverse charge (RCM): no CGST/SGST payable to vendor
+    res = client.post("/api/v1/crm/bills/", {
+        **base, "tax_regime": "in_gst", "vendor_tax_id": "", "reverse_charge": True, "tds_section": "",
+        "items": [{"description": "Legal fees", "quantity": 1, "unit_price": 10000, "tax_rate": 18}],
+    }, format="json")
+    assert res.status_code == 201, res.data
+    assert Decimal(res.data["reverse_charge_amount"]) == Decimal("1800.00")
+    assert Decimal(res.data["cgst_amount"]) == 0
+    assert Decimal(res.data["total_amount"]) == Decimal("10000.00")
+
+    # PDF renders for UAE + reverse charge
     res = client.get(f"/api/v1/crm/bills/{bill.id}/pdf/")
     assert res.status_code == 200

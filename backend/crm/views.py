@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import get_object_or_404
@@ -1313,7 +1314,9 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         from xml.sax.saxutils import escape as _xml_escape
         if getattr(instance, 'vendor_reference', None):
             meta_info += f"<font size=9 color='#6B7280'>Vendor Invoice #:</font> <font size=9 color='#111827'>{_xml_escape(instance.vendor_reference)}</font><br/>"
-        if getattr(instance, 'place_of_supply', None):
+        if getattr(instance, 'reverse_charge', False):
+            meta_info += "<font size=9 color='#B45309'><b>REVERSE CHARGE APPLIES</b></font><br/>"
+        if getattr(instance, 'place_of_supply', None) and getattr(instance, 'tax_regime', '') == "in_gst":
             meta_info += f"<font size=9 color='#6B7280'>Place of Supply:</font> <font size=9 color='#111827'>{_xml_escape(instance.place_of_supply)}</font><br/>"
         if getattr(instance, 'purchase_order', None):
             meta_info += f"<font size=9 color='#6B7280'>PO Ref:</font> <font size=9 color='#111827'>{_xml_escape(instance.purchase_order.po_number)}</font><br/>"
@@ -1358,9 +1361,10 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             if getattr(vendor_obj, 'email', None): cust_email = f"{vendor_obj.email}<br/>"
             if getattr(vendor_obj, 'phone', None): cust_phone = f"{vendor_obj.phone}<br/>"
             if getattr(vendor_obj, 'address', None): cust_address = f"{vendor_obj.address}<br/>"
-            vendor_gstin = getattr(instance, 'vendor_gstin', None)
-            if vendor_gstin:
-                cust_address += f"GSTIN: {vendor_gstin}<br/>"
+            vendor_tax_id = getattr(instance, 'vendor_tax_id', None)
+            if vendor_tax_id:
+                tax_id_label = {"in_gst": "GSTIN", "ae_vat": "TRN"}.get(getattr(instance, 'tax_regime', ''), "Tax ID")
+                cust_address += f"{tax_id_label}: {vendor_tax_id}<br/>"
         else:
             cust_name = "<b>Vendor Record</b>"
     else:
@@ -1490,11 +1494,14 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         if instance.discount_amount:
             totals_data.append(_row("Discount:", -instance.discount_amount))
             totals_data.append(_row("Taxable Value:", instance.taxable_amount))
+        tax_name = {"in_gst": "GST", "ae_vat": "VAT"}.get(instance.tax_regime, "Tax")
         if instance.igst_amount:
             totals_data.append(_row("IGST:", instance.igst_amount))
         elif instance.cgst_amount or instance.sgst_amount:
             totals_data.append(_row("CGST:", instance.cgst_amount))
             totals_data.append(_row("SGST:", instance.sgst_amount))
+        elif instance.tax_amount:
+            totals_data.append(_row(f"{tax_name}:", instance.tax_amount))
         if instance.round_off:
             totals_data.append(_row("Round Off:", instance.round_off))
         totals_data.append([Paragraph("<b>Invoice Total:</b>", right_total), Paragraph(f"<b>{curr}{instance.total_amount:,.2f}</b>", right_total)])
@@ -1502,6 +1509,12 @@ def generate_pdf_response(instance, doc_type="Invoice"):
             section = instance.get_tds_section_display().split(" - ")[0] if instance.tds_section else ""
             totals_data.append(_row(f"Less TDS {section} @ {instance.tds_rate:g}%:", -instance.tds_amount))
             totals_data.append([Paragraph("<b>Net Payable:</b>", right_total), Paragraph(f"<b>{curr}{instance.net_payable:,.2f}</b>", right_total)])
+        if instance.reverse_charge:
+            muted = ParagraphStyle('RightMuted', parent=right_normal, textColor=colors.HexColor("#6B7280"), fontSize=8)
+            totals_data.append([
+                Paragraph(f"{tax_name} payable under reverse charge (self-accounted, not payable to vendor):", muted),
+                Paragraph(f"{curr}{instance.reverse_charge_amount:,.2f}", muted),
+            ])
 
     if doc_type in ["Invoice", "Receipt", "Bill"] and hasattr(instance, "amount_paid"):
         paid_style = ParagraphStyle('RightPaid', parent=right_normal, textColor=colors.HexColor("#059669"))
@@ -2704,7 +2717,12 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
             
         from django.db import transaction
 
-        vendor_tax_id = (po.vendor.tax_id or "").strip().upper()
+        from .serializers import BillSerializer
+
+        regime = Bill.default_tax_regime(po.company)
+        vendor_tax_id = re.sub(r"[\s-]", "", po.vendor.tax_id or "").upper()
+        if not BillSerializer.tax_id_is_valid(regime, vendor_tax_id):
+            vendor_tax_id = ""
         with transaction.atomic():
             bill = Bill.objects.create(
                 company=po.company,
@@ -2714,8 +2732,9 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
                 bill_date=timezone.now().date(),
                 due_date=po.expected_delivery_date,
                 status=Bill.Status.DRAFT,
-                vendor_gstin=vendor_tax_id if len(vendor_tax_id) == 15 else "",
-                place_of_supply=po.company.state or "",
+                tax_regime=regime,
+                vendor_tax_id=vendor_tax_id,
+                place_of_supply=(po.company.state or "") if regime == Bill.TaxRegime.IN_GST else "",
                 payment_terms=po.vendor.payment_terms or "Net 30",
                 notes=f"Converted from Purchase Order {po.po_number}"
             )

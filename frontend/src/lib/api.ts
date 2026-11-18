@@ -1894,6 +1894,7 @@ export interface BillItem {
   id?: number;
   description: string;
   hsn_sac_code?: string;
+  tax_category?: "" | "standard" | "zero" | "exempt";
   quantity: number;
   unit_price: number;
   tax_rate: number;
@@ -1931,7 +1932,11 @@ export interface Bill {
   };
   purchase_order?: number | null;
   vendor_reference?: string;
-  vendor_gstin?: string;
+  tax_regime?: "in_gst" | "ae_vat" | "generic";
+  tax_regime_display?: string;
+  vendor_tax_id?: string;
+  reverse_charge?: boolean;
+  reverse_charge_amount?: string | number;
   place_of_supply?: string;
   supply_type?: "intra" | "inter";
   supply_type_display?: string;

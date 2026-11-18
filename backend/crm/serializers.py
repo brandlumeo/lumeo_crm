@@ -1861,8 +1861,14 @@ class BillPaymentSerializer(serializers.ModelSerializer):
 class BillItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = BillItem
-        fields = ("id", "description", "hsn_sac_code", "quantity", "unit_price", "tax_rate", "total")
+        fields = ("id", "description", "hsn_sac_code", "quantity", "unit_price", "tax_rate", "tax_category", "total")
         read_only_fields = ("total",)
+
+    def validate(self, attrs):
+        # Zero-rated and exempt lines never carry a tax rate.
+        if attrs.get("tax_category") in ("zero", "exempt"):
+            attrs["tax_rate"] = 0
+        return attrs
 
 
 class BillSerializer(serializers.ModelSerializer):
@@ -1873,6 +1879,7 @@ class BillSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source="get_category_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     supply_type_display = serializers.CharField(source="get_supply_type_display", read_only=True)
+    tax_regime_display = serializers.CharField(source="get_tax_regime_display", read_only=True)
     tds_section_display = serializers.CharField(source="get_tds_section_display", read_only=True)
     is_overdue = serializers.SerializerMethodField()
     days_overdue = serializers.SerializerMethodField()
@@ -1885,14 +1892,21 @@ class BillSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "company", "created_at", "updated_at", "bill_number", "amount_paid", "amount_due",
             "subtotal", "taxable_amount", "cgst_amount", "sgst_amount", "igst_amount",
-            "tax_amount", "total_amount", "tds_amount", "net_payable",
+            "tax_amount", "total_amount", "tds_amount", "net_payable", "reverse_charge_amount",
         )
 
-    def validate_vendor_gstin(self, value):
-        value = (value or "").strip().upper()
-        if value and not re.fullmatch(r"\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]", value):
-            raise serializers.ValidationError("Enter a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5).")
-        return value
+    GSTIN_RE = r"\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]"
+    TRN_RE = r"\d{15}"
+
+    @classmethod
+    def tax_id_is_valid(cls, regime, value):
+        if not value:
+            return True
+        if regime == Bill.TaxRegime.IN_GST:
+            return bool(re.fullmatch(cls.GSTIN_RE, value))
+        if regime == Bill.TaxRegime.AE_VAT:
+            return bool(re.fullmatch(cls.TRN_RE, value))
+        return len(value) <= 30
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -1911,13 +1925,27 @@ class BillSerializer(serializers.ModelSerializer):
         tds_rate = attrs.get("tds_rate", getattr(self.instance, "tds_rate", 0)) or 0
         if tds_section and not (0 < tds_rate <= 30):
             raise serializers.ValidationError({"tds_rate": "TDS rate must be between 0 and 30%."})
+
+        if self.instance is None and "tax_regime" not in attrs:
+            attrs["tax_regime"] = Bill.default_tax_regime(company)
+        regime = attrs.get("tax_regime", getattr(self.instance, "tax_regime", Bill.TaxRegime.GENERIC))
+
+        if "vendor_tax_id" in attrs:
+            value = re.sub(r"[\s-]", "", attrs["vendor_tax_id"] or "").upper()
+            if not self.tax_id_is_valid(regime, value):
+                message = {
+                    Bill.TaxRegime.IN_GST: "Enter a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5).",
+                    Bill.TaxRegime.AE_VAT: "Enter a valid 15-digit TRN (e.g. 100123456700003).",
+                }.get(regime, "Tax number is too long.")
+                raise serializers.ValidationError({"vendor_tax_id": message})
+            attrs["vendor_tax_id"] = value
         return attrs
 
     def _fill_vendor_defaults(self, bill):
-        if not bill.vendor_gstin and bill.vendor_id and bill.vendor.tax_id:
-            candidate = bill.vendor.tax_id.strip().upper()
-            if len(candidate) == 15:
-                bill.vendor_gstin = candidate
+        if not bill.vendor_tax_id and bill.vendor_id and bill.vendor.tax_id:
+            candidate = re.sub(r"[\s-]", "", bill.vendor.tax_id).upper()
+            if candidate and self.tax_id_is_valid(bill.tax_regime, candidate):
+                bill.vendor_tax_id = candidate
 
     def _save_items_and_totals(self, bill, items_data):
         if items_data is not None:
