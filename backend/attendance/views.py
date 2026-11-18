@@ -659,7 +659,7 @@ class ExpenseClaimListCreateView(APIView):
             # Determine employee who incurred/spent the money
             target_user = request.user
             user_id = request.data.get("user_id") or request.data.get("user")
-            if user_id and request.user.has_management_access:
+            if user_id:
                 try:
                     from accounts.models import User
                     target_user = User.objects.get(id=user_id, company=request.user.company)
@@ -774,16 +774,15 @@ class ExpenseClaimDetailView(APIView):
         if serializer.is_valid():
             expense = serializer.save()
 
-            if request.user.has_management_access:
-                user_id = request.data.get("user_id") or request.data.get("user")
-                if user_id:
-                    try:
-                        from accounts.models import User
-                        chosen_user = User.objects.get(id=user_id, company=request.user.company)
-                        expense.user = chosen_user
-                        expense.save(update_fields=["user", "updated_at"])
-                    except (User.DoesNotExist, ValueError):
-                        pass
+            user_id = request.data.get("user_id") or request.data.get("user")
+            if user_id:
+                try:
+                    from accounts.models import User
+                    chosen_user = User.objects.get(id=user_id, company=request.user.company)
+                    expense.user = chosen_user
+                    expense.save(update_fields=["user", "updated_at"])
+                except (User.DoesNotExist, ValueError):
+                    pass
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

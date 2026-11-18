@@ -146,7 +146,19 @@ const PAYMENT_METHODS: { id: ExpenseClaim["payment_method"]; label: string; icon
 export default function ExpensesPage() {
   const { data: user } = useCurrentUser();
   const { data: company } = useCurrentCompany();
-  const isManager = user?.role === "owner" || user?.role === "admin";
+  const isManager =
+    user?.role === "owner" ||
+    user?.role === "admin" ||
+    user?.role === "manager" ||
+    user?.role === "secondary_admin" ||
+    Boolean(user?.can_manage_team) ||
+    Boolean((user as any)?.has_management_access) ||
+    Boolean((user as any)?.is_staff) ||
+    (typeof user?.role === "string" && (
+      user.role.toLowerCase().includes("manager") ||
+      user.role.toLowerCase().includes("admin") ||
+      user.role.toLowerCase().includes("lead")
+    ));
 
   // Data Queries
   const { data: myExpenses = [], isLoading: myLoading } = useExpenseClaims(false);
@@ -882,11 +894,14 @@ export default function ExpensesPage() {
                 className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium"
               >
                 <option value="all">All Employees ({teamUsers.length})</option>
-                {teamUsers.map((m: any) => (
-                  <option key={m.id} value={m.id}>
-                    👤 {m.first_name || m.name ? `${m.first_name || m.name}` : m.email}
-                  </option>
-                ))}
+                {teamUsers.map((m: any) => {
+                  const mName = [m.first_name, m.last_name].filter(Boolean).join(" ").trim() || m.name || m.username || m.email;
+                  return (
+                    <option key={m.id} value={m.id}>
+                      👤 {mName}
+                    </option>
+                  );
+                })}
               </select>
             )}
 
@@ -1339,26 +1354,27 @@ export default function ExpensesPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-muted flex items-center justify-between">
                     <span>Employee / Spender <span className="text-rose-500">*</span></span>
-                    {isManager && (
-                      <span className="text-[10px] text-emerald-700 font-medium lowercase">
-                        {formType === "reimbursement" ? "(claimant)" : "(who spent)"}
-                      </span>
-                    )}
+                    <span className="text-[10px] text-emerald-700 font-medium lowercase">
+                      {formType === "reimbursement" ? "(claimant)" : "(who spent)"}
+                    </span>
                   </label>
                   <select
                     value={formUserId}
                     onChange={(e) => setFormUserId(e.target.value)}
-                    disabled={!isManager}
-                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium disabled:opacity-80 disabled:cursor-not-allowed"
+                    className="bg-bone border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-ink font-medium"
                   >
-                    {teamUsers.map((member: any) => (
-                      <option key={member.id} value={member.id}>
-                        👤 {member.first_name || member.name ? `${member.first_name || member.name} (${member.email})` : member.email} {member.id === user?.id ? "• You" : ""}
-                      </option>
-                    ))}
+                    {teamUsers.map((member: any) => {
+                      const fullName = [member.first_name, member.last_name].filter(Boolean).join(" ").trim() || member.name || member.username;
+                      const label = fullName ? `${fullName} (${member.email})` : member.email;
+                      return (
+                        <option key={member.id} value={member.id}>
+                          👤 {label} {member.id === user?.id ? "• You" : ""}
+                        </option>
+                      );
+                    })}
                     {teamUsers.length === 0 && (
                       <option value={user?.id || ""}>
-                        👤 {user?.first_name || user?.email || "Current User"} • You
+                        👤 {[user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() || user?.email || "Current User"} • You
                       </option>
                     )}
                   </select>

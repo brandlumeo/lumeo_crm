@@ -103,7 +103,15 @@ class User(AbstractUser):
 
     @property
     def has_management_access(self):
-        return self.role in [self.Role.OWNER, self.Role.ADMIN, self.Role.MANAGER] or self.can_manage_team
+        if not self.role:
+            return bool(self.can_manage_team or self.is_staff or self.is_superuser)
+        role_lower = str(self.role).lower().strip()
+        return (
+            role_lower in [self.Role.OWNER, self.Role.ADMIN, self.Role.MANAGER, "secondary_admin", "lead", "team_lead"]
+            or "manager" in role_lower
+            or "admin" in role_lower
+            or bool(self.can_manage_team or self.is_staff or self.is_superuser)
+        )
 
     def clean(self):
         super().clean()
