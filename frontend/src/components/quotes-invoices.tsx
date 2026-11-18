@@ -218,6 +218,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
       quoteMutation.mutate({
         deal: dealId,
         title,
+        ...(selectedCustomer ? { customer: parseInt(selectedCustomer, 10) } : {}),
         currency,
         items: payloadItems(),
         ...taxPayload(taxSettings),
@@ -407,12 +408,11 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                       onChange={(e) => setTitle(e.target.value)}
                     />
                   </label>
-                ) : (
-                  <>
+                ) : null}
                     <label className="block">
-                      <span className="label">Customer Recipient</span>
+                      <span className="label">{builderType === "quote" ? "Client (optional, used for sharing)" : "Customer Recipient"}</span>
                       <select
-                        required
+                        required={builderType === "invoice"}
                         className="input"
                         value={selectedCustomer}
                         onChange={(e) => {
@@ -436,6 +436,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                         ))}
                       </select>
                     </label>
+                {builderType === "invoice" && (
                     <label className="block">
                       <span className="label">Due Date (Optional)</span>
                       <input
@@ -445,7 +446,6 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                         onChange={(e) => setDueDate(e.target.value)}
                       />
                     </label>
-                  </>
                 )}
                 
                 <label className="block">

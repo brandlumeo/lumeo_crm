@@ -741,6 +741,11 @@ def test_document_share_context_log_and_public_pdfs(setup_data):
     receipt_ctx = client.get(f"/api/v1/crm/share/receipt/{payment.pk}/").data
     assert receipt_ctx["number"] == "RCPT-T1" and receipt_ctx["reference"] == inv["invoice_number"]
 
+    # A quote for a typed-in client (no customer/lead record) still greets them by name
+    q2 = Quote.objects.create(company=company, quote_number="EST-T9", title="Walk-in", client_name="GVP Family Mart", client_phone="9895012345")
+    q2_ctx = client.get(f"/api/v1/crm/share/quote/{q2.pk}/").data
+    assert q2_ctx["recipient"]["name"] == "GVP Family Mart" and q2_ctx["recipient"]["phone"] == "9895012345"
+
     # Unknown token / doc type -> 404; another company's document is invisible
     import uuid
     assert anon.get(f"/api/v1/crm/public/invoice/{uuid.uuid4()}/pdf/").status_code == 404

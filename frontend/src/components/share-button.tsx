@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Share2, X, Loader2, MessageCircle, Mail, Link2, Download, Smartphone, Users, User, Contact, Settings2 } from "lucide-react";
+import { Share2, X, Loader2, MessageCircle, Mail, Link2, Download, Users, User, Contact, Settings2 } from "lucide-react";
 import { updateInvoiceSettings } from "@/lib/api";
 import {
   DEFAULT_TEMPLATES,
@@ -80,14 +80,37 @@ function SharePanel({ docType, docId, onDone }: { docType: ShareDocType; docId: 
   const [message, setMessage] = useState("");
   const [edited, setEdited] = useState(false);
   const [markSent, setMarkSent] = useState(true);
-  const [busy, setBusy] = useState<ShareChannel | null>(null);
   const [showTemplate, setShowTemplate] = useState(false);
   const [templateDraft, setTemplateDraft] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templates, setTemplates] = useState<Record<string, string>>({});
+  const [attachPdf, setAttachPdf] = useState(true);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfState, setPdfState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     if (ctx) setTemplates(ctx.templates || {});
+  }, [ctx]);
+
+  // Prepare the PDF as soon as the panel opens, so sharing it happens instantly on click
+  // (browsers only allow the share menu right after a tap/click).
+  useEffect(() => {
+    if (!ctx) return;
+    let cancelled = false;
+    setPdfState("loading");
+    fetch(ctx.pdf_url)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+      .then((blob) => {
+        if (cancelled) return;
+        setPdfFile(new File([blob], `${ctx.number.replace(/[^\w.-]+/g, "_")}.pdf`, { type: "application/pdf" }));
+        setPdfState("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setPdfState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [ctx]);
 
   const link = ctx ? (ctx.page_path ? `${window.location.origin}${ctx.page_path}` : ctx.pdf_url) : "";
@@ -106,8 +129,8 @@ function SharePanel({ docType, docId, onDone }: { docType: ShareDocType; docId: 
   }, [ctx, mode, member]);
   useEffect(() => {
     if (!ctx || edited) return;
-    setMessage(fillTemplate(template, ctx, recipientName, link));
-  }, [ctx, template, recipientName, link, edited]);
+    setMessage(fillTemplate(template, ctx, recipientName, link, attachPdf));
+  }, [ctx, template, recipientName, link, edited, attachPdf]);
 
   const waNumber = mode === "pick" ? "" : toWhatsAppNumber(phone, ...(mode === "team" ? [ctx?.company_country] : hints));
   const recipientType: RecipientType = mode === "party" ? (ctx?.recipient.kind === "vendor" ? "vendor" : "client") : mode === "team" ? "team" : "other";
@@ -130,9 +153,58 @@ function SharePanel({ docType, docId, onDone }: { docType: ShareDocType; docId: 
     }
   };
 
+  // Email / copy can't carry a file, so they always include the link.
+  const messageWithLink = !link || message.includes(link) ? message : `${message.trimEnd()}\n\n${link}`;
+  const canShareFiles =
+    pdfFile !== null && typeof navigator !== "undefined" && typeof navigator.canShare === "function" && navigator.canShare({ files: [pdfFile] });
+  const noTeamNumber = () => toast.error("Add this team member's mobile number, or use “Choose in WhatsApp”.");
+
+  const downloadPdfFile = (file: File) => {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  };
+
+  const sendLinkOnWhatsApp = () => {
+    if (mode === "team" && !waNumber) return noTeamNumber();
+    window.open(whatsAppUrl(waNumber, messageWithLink), "_blank", "noopener,noreferrer");
+    void record("whatsapp");
+    onDone();
+  };
+
   const handleWhatsApp = () => {
-    if (mode === "team" && !waNumber) return toast.error("Add this team member's mobile number, or use “Choose in WhatsApp”.");
+    if (!attachPdf) return sendLinkOnWhatsApp();
+    if (pdfState === "loading") return toast.info("Preparing the PDF… try again in a moment.");
+    if (pdfState === "error" || !pdfFile) {
+      toast.error("Couldn't prepare the PDF, so the link was sent instead.");
+      return sendLinkOnWhatsApp();
+    }
+    if (canShareFiles) {
+      // Opens the phone/computer share menu with the PDF attached: pick WhatsApp, then the contact.
+      navigator
+        .share({ files: [pdfFile], text: message, title: `${ctx?.doc_label} ${ctx?.number}` })
+        .then(() => {
+          void record("whatsapp");
+          onDone();
+        })
+        .catch((err) => {
+          if (err?.name !== "AbortError") {
+            toast.error("Sharing the file failed, so the link was sent instead.");
+            sendLinkOnWhatsApp();
+          }
+        });
+      return;
+    }
+    // This browser can't share files: download the PDF and open the chat with the message.
+    if (mode === "team" && !waNumber) return noTeamNumber();
+    downloadPdfFile(pdfFile);
     window.open(whatsAppUrl(waNumber, message), "_blank", "noopener,noreferrer");
+    toast.success(`${pdfFile.name} downloaded. Attach it in WhatsApp with the 📎 button.`, { duration: 8000 });
     void record("whatsapp");
     onDone();
   };
@@ -140,13 +212,13 @@ function SharePanel({ docType, docId, onDone }: { docType: ShareDocType; docId: 
   const handleEmail = () => {
     const to = mode === "party" ? ctx?.recipient.email || "" : "";
     const subject = `${ctx?.doc_label} ${ctx?.number} from ${ctx?.company_name}`;
-    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(messageWithLink)}`;
     void record("email");
   };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(messageWithLink);
       toast.success("Message with link copied");
       void record("copy");
     } catch {
@@ -154,35 +226,10 @@ function SharePanel({ docType, docId, onDone }: { docType: ShareDocType; docId: 
     }
   };
 
-  const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
-  const handleNativeShare = async () => {
-    if (!ctx) return;
-    setBusy("native");
-    try {
-      let shared = false;
-      try {
-        const blob = await fetch(ctx.pdf_url).then((r) => (r.ok ? r.blob() : Promise.reject()));
-        const file = new File([blob], `${ctx.number}.pdf`, { type: "application/pdf" });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], text: message, title: `${ctx.doc_label} ${ctx.number}` });
-          shared = true;
-        }
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-      }
-      if (!shared) await navigator.share({ text: message, title: `${ctx.doc_label} ${ctx.number}` });
-      void record("native");
-      onDone();
-    } catch (err: any) {
-      if (err?.name !== "AbortError") toast.error("Sharing isn't available on this device.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const handleDownload = () => {
     if (!ctx) return;
-    window.open(ctx.pdf_url, "_blank", "noopener,noreferrer");
+    if (pdfFile) downloadPdfFile(pdfFile);
+    else window.open(ctx.pdf_url, "_blank", "noopener,noreferrer");
     void record("download");
   };
 
@@ -349,22 +396,48 @@ function SharePanel({ docType, docId, onDone }: { docType: ShareDocType; docId: 
             </label>
           )}
 
+          <label className="flex items-start gap-2 text-[13px] text-ink">
+            <input
+              type="checkbox"
+              className="accent-ink mt-0.5"
+              checked={attachPdf}
+              onChange={(e) => {
+                setAttachPdf(e.target.checked);
+                setEdited(false);
+              }}
+            />
+            <span>
+              <span className="font-medium">Attach the PDF</span>
+              <span className="block text-[11px] text-muted">
+                {!attachPdf
+                  ? "Only a link to view & download is sent."
+                  : pdfState === "loading"
+                    ? "Preparing the PDF…"
+                    : pdfState === "error"
+                      ? "Couldn't prepare the PDF; the link will be sent instead."
+                      : canShareFiles
+                        ? `Your share menu opens with ${pdfFile?.name} attached: choose WhatsApp, then ${mode === "party" && ctx.recipient.name ? ctx.recipient.name : "the contact"}.`
+                        : `This browser can't attach files directly: ${pdfFile?.name} downloads and WhatsApp opens, then attach it with 📎.`}
+              </span>
+            </span>
+          </label>
+
           <button
             type="button"
             onClick={handleWhatsApp}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#25D366] hover:bg-[#1ebe5b] text-white text-sm font-semibold transition-colors"
+            disabled={attachPdf && pdfState === "loading"}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#25D366] hover:bg-[#1ebe5b] disabled:opacity-70 text-white text-sm font-semibold transition-colors"
           >
-            <MessageCircle className="w-4 h-4" />
-            {mode === "pick" ? "Open WhatsApp & choose contact" : "Send on WhatsApp"}
+            {attachPdf && pdfState === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+            {attachPdf && pdfState !== "error" ? "Send PDF on WhatsApp" : mode === "pick" ? "Open WhatsApp & choose contact" : "Send on WhatsApp"}
           </button>
+          {attachPdf && pdfState !== "error" && (
+            <button type="button" onClick={sendLinkOnWhatsApp} className="w-full text-[12px] text-muted hover:text-ink -mt-2">
+              or send a link {waNumber ? `straight to +${waNumber}` : "instead"}
+            </button>
+          )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {canNativeShare && (
-              <button type="button" onClick={handleNativeShare} disabled={busy === "native"} className="flex flex-col items-center gap-1 p-2 rounded-lg border border-line hover:bg-bone text-[11.5px] text-ink">
-                {busy === "native" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
-                Share PDF
-              </button>
-            )}
+          <div className="grid grid-cols-3 gap-2">
             <button type="button" onClick={handleEmail} className="flex flex-col items-center gap-1 p-2 rounded-lg border border-line hover:bg-bone text-[11.5px] text-ink">
               <Mail className="w-4 h-4" /> Email
             </button>

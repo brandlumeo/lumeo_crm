@@ -54,11 +54,21 @@ export const DEFAULT_TEMPLATES: Record<ShareDocType | "team", string> = {
   purchase_order:
     "Hello {name},\n\nPlease find purchase order {number} from {company} for {amount}{date}.\n\nPO document: {link}\n\nKindly confirm receipt.\n– {sender}",
   receipt:
-    "Hi {name},\n\nThank you for your payment of {amount} against invoice {reference}. Your receipt {number}: {link}\n\n– {sender}, {company}",
+    "Hi {name},\n\nThank you for your payment of {amount} against invoice {reference}. Your receipt is {number}.\n\nReceipt: {link}\n\n– {sender}, {company}",
   team: "Hi {name}, sharing {doc} {number} ({amount}){date}.\n{link}\n– {sender}",
 };
 
-export function fillTemplate(template: string, ctx: ShareContext, recipientName: string, link: string) {
+/**
+ * Fill a template. With `attachPdf`, lines carrying {link} are dropped because the PDF itself is sent.
+ */
+export function fillTemplate(template: string, ctx: ShareContext, recipientName: string, link: string, attachPdf = false) {
+  if (attachPdf) {
+    template = template
+      .split("\n")
+      .filter((line) => !line.includes("{link}"))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n");
+  }
   const fmt = (v: string) => formatCurrency(parseFloat(v || "0") || 0, ctx.currency);
   const date = ctx.date
     ? `, ${ctx.date_label} ${new Date(`${ctx.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
