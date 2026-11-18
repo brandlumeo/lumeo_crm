@@ -87,13 +87,25 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
 
 class ExpenseClaimSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source="user.email", read_only=True)
-    user_full_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    user_full_name = serializers.SerializerMethodField()
     approved_by_name = serializers.CharField(source="approved_by.get_full_name", read_only=True)
     deal_name = serializers.CharField(source="deal.title", read_only=True)
     category_display = serializers.CharField(source="get_category_display", read_only=True)
     expense_type_display = serializers.CharField(source="get_expense_type_display", read_only=True)
     payment_method_display = serializers.CharField(source="get_payment_method_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    def get_user_full_name(self, obj):
+        if not obj.user:
+            return ""
+        full_name = obj.user.get_full_name()
+        if full_name and full_name.strip():
+            return full_name.strip()
+        if obj.user.username and "@" not in obj.user.username:
+            return obj.user.username.title()
+        if obj.user.email:
+            return obj.user.email.split("@")[0].replace(".", " ").title()
+        return "Team Member"
 
     class Meta:
         model = ExpenseClaim

@@ -980,6 +980,7 @@ export default function ExpensesPage() {
                 <tr className="border-b border-line bg-bone/60 text-muted uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4 font-semibold">Date</th>
                   <th className="py-3 px-4 font-semibold">Title & Merchant</th>
+                  <th className="py-3 px-4 font-semibold">Spender</th>
                   <th className="py-3 px-4 font-semibold">Category</th>
                   <th className="py-3 px-4 font-semibold">Type & Payment</th>
                   <th className="py-3 px-4 font-semibold">Deal Context</th>
@@ -1009,32 +1010,53 @@ export default function ExpensesPage() {
                         </div>
                       </td>
 
-                      {/* 2. Title & Merchant & Submitter */}
+                      {/* 2. Title & Merchant */}
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-ink text-[13px] leading-snug">
                           {exp.title}
                         </div>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {exp.merchant && (
+                        {exp.merchant && (
+                          <div className="flex items-center gap-1.5 mt-1">
                             <span className="flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-bone px-1.5 py-0.5 rounded border border-line">
                               <Building2 className="w-3 h-3 text-muted" />
                               {exp.merchant}
                             </span>
-                          )}
-                          {isManager && scope === "all" && (
-                            <span className="text-[11px] text-muted">
-                              by <strong className="text-ink font-medium">{exp.user_full_name || exp.user_email}</strong>
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         {exp.description && (
-                          <div className="text-[11px] text-muted leading-relaxed line-clamp-1 mt-0.5">
+                          <div className="text-[11px] text-muted leading-relaxed line-clamp-1 mt-0.5" title={exp.description}>
                             "{exp.description}"
                           </div>
                         )}
                       </td>
 
-                      {/* 3. Category */}
+                      {/* 3. Spender */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] flex items-center justify-center shrink-0 border border-emerald-200">
+                            {(() => {
+                              const nameStr = exp.user_full_name || exp.user_email || "U";
+                              const parts = nameStr.trim().split(" ");
+                              if (parts.length >= 2) {
+                                return (parts[0][0] + parts[1][0]).toUpperCase();
+                              }
+                              return nameStr.slice(0, 2).toUpperCase();
+                            })()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-ink text-[12px] truncate max-w-[140px]" title={exp.user_full_name || exp.user_email}>
+                              {exp.user_full_name || exp.user_email?.split("@")[0]}
+                            </div>
+                            {exp.user_email && (
+                              <div className="text-[10px] text-muted truncate max-w-[140px]" title={exp.user_email}>
+                                {exp.user_email}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 4. Category */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
                           className={cn(
@@ -1610,7 +1632,13 @@ export default function ExpensesPage() {
                         Receipt: {lightboxExpense.title}
                       </Dialog.Title>
                       <div className="text-[11px] text-muted flex items-center gap-2">
-                        {lightboxExpense.merchant && <span>Merchant: {lightboxExpense.merchant}</span>}
+                        {lightboxExpense.merchant && (
+                          <>
+                            <span>Merchant: <strong className="font-medium text-ink">{lightboxExpense.merchant}</strong></span>
+                            <span>•</span>
+                          </>
+                        )}
+                        <span>Spender: <strong className="font-medium text-ink">{lightboxExpense.user_full_name || lightboxExpense.user_email}</strong></span>
                         <span>•</span>
                         <span className="font-mono font-semibold">{formatINR(toNumber(lightboxExpense.amount))}</span>
                         <span>•</span>
