@@ -6,6 +6,7 @@ import { useInvoice, useUpdateInvoice, useCustomerPage, useDealPage, useCurrentC
 import { Loader2, ArrowLeft, Plus, Trash2, Save, FileText } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { ShareButton } from "@/components/share-button";
 import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
 import {
   SALES_TAX_REGIMES,
@@ -151,10 +152,11 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
         <Link href="/invoices" className="p-2 -ml-2 text-muted hover:text-ink hover:bg-bone-2 rounded-lg transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold text-ink">Edit Invoice</h1>
           <p className="text-sm text-muted">{formData.invoice_number}</p>
         </div>
+        <ShareButton docType="invoice" docId={id} variant="button" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">

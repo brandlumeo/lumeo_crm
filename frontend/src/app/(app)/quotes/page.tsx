@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
 import { CurrencyPicker } from "@/components/currency-picker";
+import { ShareButton } from "@/components/share-button";
 import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
 import {
   SALES_TAX_REGIMES,
@@ -639,6 +640,8 @@ function QuotesPageContent() {
                               )}
                               View PDF
                             </button>
+
+                            <ShareButton docType="quote" docId={quote.id} className="p-1.5" />
 
                             {/* Download PDF Button */}
                             <button

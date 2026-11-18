@@ -7,6 +7,7 @@ import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, T
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { CurrencyPicker } from "@/components/currency-picker";
+import { ShareButton } from "@/components/share-button";
 import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
 import {
   SALES_TAX_REGIMES,
@@ -262,6 +263,7 @@ export default function InvoicesPage() {
                         >
                           <DollarSign className="w-4 h-4" />
                         </button>
+                        <ShareButton docType="invoice" docId={invoice.id} />
                         <button
                           onClick={() => window.open(`/public/invoice/${invoice.public_token}?print=true`, '_blank')}
                           className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line"
@@ -626,6 +628,7 @@ export default function InvoicesPage() {
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
+                          <ShareButton docType="receipt" docId={payment.id} label="Share receipt" className="p-1.5" />
                         </div>
                       </div>
                     ))}

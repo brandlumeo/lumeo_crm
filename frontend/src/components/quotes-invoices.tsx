@@ -19,6 +19,7 @@ import {
 } from "@/lib/api";
 import { formatDateTime, formatINR, toNumber } from "@/lib/utils";
 import { useCurrentCompany, useInvoiceSettings, useUnits } from "@/lib/queries";
+import { ShareButton } from "@/components/share-button";
 import { DocTaxPanel, DocTaxTotals, LineTaxRate } from "@/components/tax-panel";
 import {
   SALES_TAX_REGIMES,
@@ -316,6 +317,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                     <div className="font-serif text-ink font-semibold">
                       {formatINR(toNumber(quote.total), quote.currency)}
                     </div>
+                    <ShareButton docType="quote" docId={quote.id} className="p-1.5" />
                     <button
                       onClick={() => window.open(`/public/quote/${quote.public_token}?print=true`, '_blank')}
                       className="p-1.5 hover:bg-bone rounded border border-transparent hover:border-line text-muted hover:text-ink transition-colors"
@@ -358,6 +360,7 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                   <div className="font-serif text-ink font-semibold">
                     {formatINR(toNumber(invoice.total), invoice.currency)}
                   </div>
+                  <ShareButton docType="invoice" docId={invoice.id} className="p-1.5" />
                   <button
                     onClick={() => window.open(`/public/invoice/${invoice.public_token}?print=true`, '_blank')}
                     className="p-1.5 hover:bg-bone rounded border border-transparent hover:border-line text-muted hover:text-ink transition-colors"

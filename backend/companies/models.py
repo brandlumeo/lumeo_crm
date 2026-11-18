@@ -609,6 +609,7 @@ class InvoiceSettings(models.Model):
     payment_qr_label = models.CharField(max_length=100, blank=True, default="Scan to pay")
     payment_qr_on_quotes = models.BooleanField(default=True)
     payment_qr_on_invoices = models.BooleanField(default=True)
+    share_templates = models.JSONField(default=dict, blank=True, help_text="WhatsApp/email share message per document type")
     payment_qr_currency = models.CharField(max_length=3, blank=True, default="INR", help_text="Only show on documents in this currency (blank = all)")
 
     def payment_qr_for(self, doc_kind, currency):

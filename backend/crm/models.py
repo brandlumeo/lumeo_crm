@@ -393,6 +393,7 @@ class Activity(models.Model):
         EMAIL = "email", "Email"
         NOTE = "note", "Note"
         STATUS_CHANGE = "status_change", "Status Change"
+        SHARE = "share", "Document Shared"
 
     class CallOutcome(models.TextChoices):
         CONNECTED = "connected", "Connected"
@@ -870,6 +871,7 @@ class InvoicePayment(models.Model):
     transaction_id = models.CharField(max_length=255, blank=True, null=True)
     receipt_number = models.CharField(max_length=50, blank=True, null=True, unique=True, db_index=True)
     notes = models.TextField(blank=True)
+    public_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -1374,6 +1376,7 @@ class Order(models.Model):
     )
     order_number = models.CharField(max_length=50, unique=True, db_index=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    public_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     notes = models.TextField(blank=True)
     currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
     exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1, help_text="Base-currency units per 1 unit of this document's currency")
@@ -1570,6 +1573,7 @@ class PurchaseOrder(models.Model):
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="assigned_purchase_orders")
     
     po_number = models.CharField(max_length=50, db_index=True)
+    public_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     issue_date = models.DateField(default=timezone.now, db_index=True)
     expected_delivery_date = models.DateField(null=True, blank=True)
     

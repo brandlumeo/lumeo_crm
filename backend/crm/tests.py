@@ -688,3 +688,65 @@ def test_payment_qr_settings_on_documents(setup_data, monkeypatch, tmp_path, set
     s.save()
     assert payment_qr_flowable(company, "quote", "INR", Decimal("100"), 80) == (None, "")
     assert client.get(f"/api/v1/crm/invoices/{inv['id']}/pdf/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_document_share_context_log_and_public_pdfs(setup_data):
+    """Share panel data, timeline log + mark-as-sent, public PDF links for all document types, tenant isolation."""
+    from rest_framework.test import APIClient
+    from crm.models import Activity, Customer, Invoice, Order, PurchaseOrder, Quote, Vendor, InvoicePayment
+
+    user = setup_data["user1"]
+    user.role = "admin"
+    user.save()
+    company = setup_data["company1"]
+    company.currency = "INR"
+    company.save()
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    cust = Customer.objects.create(company=company, name="Kochi Foods", email="ap@kochi.example", phone="9847012345")
+    inv = client.post("/api/v1/crm/invoices/", {"customer": cust.id, "items": [{"name": "Work", "quantity": 1, "unit_price": 1000}]}, format="json").data
+    quote = client.post("/api/v1/crm/quotes/", {"title": "Retainer", "customer": cust.id, "items": [{"name": "Work", "quantity": 1, "unit_price": 500}]}, format="json").data
+
+    ctx = client.get(f"/api/v1/crm/share/invoice/{inv['id']}/").data
+    assert ctx["recipient"]["phone"] == "9847012345" and ctx["recipient"]["name"] == "Kochi Foods"
+    assert ctx["number"] == inv["invoice_number"] and ctx["currency"] == "INR" and ctx["can_mark_sent"] is True
+    assert ctx["page_path"].startswith("/public/invoice/") and "/api/v1/crm/public/invoice/" in ctx["pdf_url"]
+    assert isinstance(ctx["team"], list)
+
+    # Sharing with a team member never changes the status
+    res = client.post(f"/api/v1/crm/share/invoice/{inv['id']}/", {"channel": "whatsapp", "recipient_type": "team", "recipient_name": "Manager", "mark_sent": True}, format="json")
+    assert res.status_code == 201 and res.data["marked_sent"] is False
+    assert Invoice.objects.get(pk=inv["id"]).status == "draft"
+
+    # Sharing with the client marks Sent and logs on the client's timeline
+    res = client.post(f"/api/v1/crm/share/invoice/{inv['id']}/", {"channel": "whatsapp", "recipient_type": "client", "recipient_name": "Kochi Foods", "recipient_phone": "+919847012345", "mark_sent": True}, format="json")
+    assert res.data["marked_sent"] is True and Invoice.objects.get(pk=inv["id"]).status == "sent"
+    act = Activity.objects.filter(customer=cust, activity_type="share").latest("id")
+    assert inv["invoice_number"] in act.description and "WhatsApp" in act.description
+
+    # Public PDF links for every document type (no login)
+    vendor = Vendor.objects.create(company=company, name="Print Co", phone="0501234567", email="v@print.example")
+    po = PurchaseOrder.objects.create(company=company, vendor=vendor, po_number="PO-1", currency="INR")
+    order = Order.objects.create(company=company, customer=cust, order_number="ORD-T1", currency="INR")
+    payment = InvoicePayment.objects.create(invoice_id=inv["id"], amount=400, payment_method="UPI", receipt_number="RCPT-T1")
+    anon = APIClient()
+    for doc_type, obj in (("quote", Quote.objects.get(pk=quote["id"])), ("invoice", Invoice.objects.get(pk=inv["id"])), ("order", order), ("purchase_order", po), ("receipt", payment)):
+        r = anon.get(f"/api/v1/crm/public/{doc_type}/{obj.public_token}/pdf/")
+        assert r.status_code == 200, doc_type
+        assert r["Content-Type"] == "application/pdf"
+        assert client.get(f"/api/v1/crm/share/{doc_type}/{obj.pk}/").status_code == 200, doc_type
+    assert client.get(f"/api/v1/crm/share/purchase_order/{po.pk}/").data["recipient"]["kind"] == "vendor"
+    receipt_ctx = client.get(f"/api/v1/crm/share/receipt/{payment.pk}/").data
+    assert receipt_ctx["number"] == "RCPT-T1" and receipt_ctx["reference"] == inv["invoice_number"]
+
+    # Unknown token / doc type -> 404; another company's document is invisible
+    import uuid
+    assert anon.get(f"/api/v1/crm/public/invoice/{uuid.uuid4()}/pdf/").status_code == 404
+    assert client.get(f"/api/v1/crm/share/bill/{inv['id']}/").status_code == 404
+    other = setup_data["user2"]
+    other_client = APIClient()
+    other_client.force_authenticate(user=other)
+    assert other_client.get(f"/api/v1/crm/share/invoice/{inv['id']}/").status_code == 404
+    assert other_client.post(f"/api/v1/crm/share/invoice/{inv['id']}/", {"channel": "copy", "recipient_type": "other"}, format="json").status_code == 404

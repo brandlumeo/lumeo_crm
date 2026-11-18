@@ -1,4 +1,5 @@
 "use client";
+import { ShareButton } from "@/components/share-button";
 
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -659,13 +660,19 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <span className="text-muted text-sm">
-                          {new Date(order.created_at).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="text-muted text-sm">
+                            {new Date(order.created_at).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                          {/* stopPropagation: the share dialog must not open the order drawer */}
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <ShareButton docType="order" docId={order.id} className="p-1.5" />
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );

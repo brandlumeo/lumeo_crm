@@ -1,3 +1,4 @@
+from .sharing import DocumentShareView, PublicDocumentPdfView
 from rest_framework_nested import routers
 from rest_framework.routers import DefaultRouter
 from django.urls import path
@@ -126,6 +127,8 @@ urlpatterns = [
     path('webhooks/whatsapp/', WhatsAppWebhookView.as_view(), name='whatsapp_webhook'),
     path('webhooks/meta-leads/', MetaLeadAdsWebhookView.as_view(), name='meta_leads_webhook'),
     path('public/quote/<uuid:token>/', PublicQuoteView.as_view(), name='public_quote'),
+    path('public/<str:doc_type>/<uuid:token>/pdf/', PublicDocumentPdfView.as_view(), name='public_document_pdf'),
+    path('share/<str:doc_type>/<int:pk>/', DocumentShareView.as_view(), name='document_share'),
     path('public/invoice/<uuid:token>/', PublicInvoiceView.as_view(), name='public_invoice'),
     path('public/invoice/<uuid:token>/pay/', PublicInvoicePayView.as_view(), name='public_invoice_pay'),
     path('public/invoice/<uuid:token>/verify-payment/', PublicInvoiceVerifyPaymentView.as_view(), name='public_invoice_verify_payment'),

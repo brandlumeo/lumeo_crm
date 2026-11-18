@@ -1285,7 +1285,7 @@ def generate_pdf_response(instance, doc_type="Invoice"):
     bold_style = ParagraphStyle('BoldText', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14)
     
     # Header Section
-    doc_number = getattr(instance, 'bill_number', getattr(instance, 'po_number', getattr(instance, 'quote_number', getattr(instance, 'invoice_number', ''))))
+    doc_number = next((getattr(instance, f) for f in ('bill_number', 'po_number', 'quote_number', 'invoice_number', 'order_number') if getattr(instance, f, None)), '')
     
     left_p = None
     logo_url = get_setting("invoice_logo")

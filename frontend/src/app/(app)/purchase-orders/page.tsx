@@ -8,6 +8,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 
 import { usePurchaseOrderPage, useVendorPage, useConvertPurchaseOrderToBill, useCurrentCompany } from "@/lib/queries";
 import { createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus, downloadPurchaseOrderPdf } from "@/lib/api";
+import { ShareButton } from "@/components/share-button";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -249,6 +250,7 @@ export default function PurchaseOrdersPage() {
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
+                        <ShareButton docType="purchase_order" docId={po.id} />
                         <button 
                           onClick={() => downloadPurchaseOrderPdf(po.id, po.po_number)}
                           className="p-2 text-ink hover:bg-bone-2 rounded-md transition-colors border border-line bg-paper"
