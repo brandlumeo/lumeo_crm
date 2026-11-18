@@ -127,9 +127,10 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     });
   };
 
-  const curr = company?.currency ? 
-    (company.currency === 'USD' ? '$' : company.currency === 'EUR' ? '€' : company.currency === 'GBP' ? '£' : company.currency === 'INR' ? '₹' : company.currency) 
-    : '$';
+  // Show amounts in the invoice's own currency (falls back to the company currency).
+  const docCurrency = ((invoice as any)?.currency || company?.currency || "USD").toUpperCase();
+  const CURRENCY_SIGNS: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", INR: "₹" };
+  const curr = CURRENCY_SIGNS[docCurrency] || `${docCurrency} `;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

@@ -1,4 +1,5 @@
 "use client";
+import { CURRENCIES, currencyLabel } from "@/lib/currency";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -51,7 +52,7 @@ export default function VendorsPage() {
     mutationFn: createVendor,
     onSuccess: () => {
       toast.success("Vendor created successfully.");
-      setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
+      setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", currency: "", bank_details: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
     onError: (err: any) => {
@@ -72,7 +73,7 @@ export default function VendorsPage() {
     mutationFn: (data: any) => updateVendor(editingId!, data),
     onSuccess: () => {
       toast.success("Vendor updated successfully.");
-      setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
+      setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", currency: "", bank_details: "", custom_data: {} });
       setEditingId(null);
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
     },
@@ -226,7 +227,7 @@ export default function VendorsPage() {
                   className="text-[13px] font-medium text-muted hover:text-ink transition-colors bg-bone-2 px-3 py-1.5 rounded-lg border border-line hover:bg-line"
                   onClick={() => {
                     setEditingId(null);
-                    setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", bank_details: "", custom_data: {} });
+                    setForm({ name: "", contact_name: "", email: "", phone: "", website: "", address: "", tax_id: "", payment_terms: "", currency: "", bank_details: "", custom_data: {} });
                   }}
                 >
                   Cancel
@@ -320,6 +321,19 @@ export default function VendorsPage() {
                     placeholder="e.g. Net 30"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink flex items-center gap-1.5 mb-1">Preferred Currency</label>
+                  <select
+                    className="w-full px-3.5 py-2.5 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink focus:bg-paper transition-all"
+                    value={form.currency || ""}
+                    onChange={(event) => setForm({ ...form, currency: event.target.value })}
+                  >
+                    <option value="">Company default</option>
+                    {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
+                  ))}
+                  </select>
+                </div>
               </div>
               
               <div className="space-y-1.5">
@@ -378,6 +392,7 @@ export default function VendorsPage() {
             website: vendor.website || "",
             address: vendor.address || "",
             tax_id: vendor.tax_id || "",
+            currency: vendor.currency || "",
             payment_terms: vendor.payment_terms || "",
             bank_details: vendor.bank_details || "",
             custom_data: vendor.custom_data || {},

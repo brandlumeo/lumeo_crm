@@ -15,6 +15,7 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { formatCurrency } from "@/lib/utils";
+import { CurrencyPicker } from "@/components/currency-picker";
 import { toast } from "sonner";
 import type { QuoteLineItem } from "@/lib/types";
 
@@ -67,6 +68,7 @@ function QuotesPageContent() {
   const createParam = searchParams.get("create");
 
   const { data: company } = useCurrentCompany();
+  const baseCurrency = (company?.currency || "INR").toUpperCase();
   const { data, isLoading } = useQuotes();
   const { data: customerData } = useCustomerPage({});
   const { data: dealData } = useDealPage({});
@@ -93,6 +95,7 @@ function QuotesPageContent() {
   const [duration, setDuration] = useState("1 Month");
   const [validUntil, setValidUntil] = useState("");
   const [currency, setCurrency] = useState("INR");
+  const [exchangeRate, setExchangeRate] = useState(1);
   const [overview, setOverview] = useState("");
   
   const [items, setItems] = useState<any[]>([
@@ -189,6 +192,10 @@ function QuotesPageContent() {
     if (!id) return;
     const c = customers.find((x: any) => x.id === id) as any;
     if (c) {
+      if (c.currency && c.currency !== currency) {
+        setCurrency(c.currency);
+        setExchangeRate(1);
+      }
       setClientName(c.name || c.company_name || "");
       setClientPhone(c.phone || "");
       setClientAddress(c.address || c.custom_data?.address || "");
@@ -210,6 +217,7 @@ function QuotesPageContent() {
     setDuration("1 Month");
     setValidUntil("");
     setCurrency(company?.currency || "INR");
+    setExchangeRate(1);
     setOverview("");
     setItems([{ item_number: "1", name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "", is_included: false }]);
     setPaymentSchedule([]);
@@ -239,7 +247,8 @@ function QuotesPageContent() {
     setTitle(quote.title || "");
     setDuration(quote.duration || "1 Month");
     setValidUntil(quote.valid_until || "");
-    setCurrency(quote.currency || "INR");
+    setCurrency(quote.currency || company?.currency || "INR");
+    setExchangeRate(parseFloat(quote.exchange_rate || "1") || 1);
     setOverview(quote.overview || "");
     
     setItems(quote.items && quote.items.length > 0 ? quote.items : [
@@ -271,6 +280,7 @@ function QuotesPageContent() {
       title,
       duration,
       currency,
+      ...(currency !== baseCurrency && exchangeRate > 0 && exchangeRate !== 1 ? { exchange_rate: exchangeRate } : {}),
       overview,
       client_name: clientName,
       client_address: clientAddress,
@@ -771,6 +781,17 @@ function QuotesPageContent() {
                         className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm outline-none focus:border-ink"
                       />
                     </div>
+
+                    <CurrencyPicker
+                      label="Quote Currency"
+                      currency={currency}
+                      rate={exchangeRate}
+                      baseCurrency={baseCurrency}
+                      onChange={(code, rate) => {
+                        setCurrency(code);
+                        setExchangeRate(rate);
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -906,7 +927,7 @@ function QuotesPageContent() {
                             {/* Rate / Included toggle */}
                             <div className="sm:col-span-3">
                               <div className="flex items-center justify-between mb-0.5">
-                                <label className="text-[10px] font-bold text-muted">Rate (₹)</label>
+                                <label className="text-[10px] font-bold text-muted">Rate ({currency})</label>
                                 <label className="flex items-center gap-1 cursor-pointer">
                                   <input
                                     type="checkbox"
@@ -1025,7 +1046,7 @@ function QuotesPageContent() {
                                 updated[idx].amount = parseFloat(e.target.value) || 0;
                                 setPaymentSchedule(updated);
                               }}
-                              placeholder="Amount (₹)"
+                              placeholder={`Amount (${currency})`}
                               className="w-full px-2 py-1 bg-paper border border-line rounded text-xs font-semibold text-right outline-none focus:border-ink"
                             />
                           </div>

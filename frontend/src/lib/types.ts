@@ -258,6 +258,7 @@ export interface Customer {
   name: string;
   email: string;
   phone: string;
+  currency?: string;
   custom_data: Record<string, any>;
   has_portal_access?: boolean;
   created_at: string;
@@ -336,6 +337,7 @@ export interface CustomerInput {
   name: string;
   email: string;
   phone: string;
+  currency?: string;
   custom_data?: Record<string, any>;
 }
 

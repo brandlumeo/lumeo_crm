@@ -470,3 +470,80 @@ def test_bill_uae_vat_reverse_charge_and_no_tax(setup_data):
     # PDF renders for UAE + reverse charge
     res = client.get(f"/api/v1/crm/bills/{bill.id}/pdf/")
     assert res.status_code == 200
+
+
+@pytest.mark.django_db
+def test_document_currencies_and_base_conversion(setup_data, monkeypatch):
+    """Documents carry their own currency + frozen rate; dashboards convert to base currency."""
+    from decimal import Decimal
+    from rest_framework.test import APIClient
+    from crm import currency as fx
+    from crm.models import Vendor, Bill, Customer
+
+    rates = {("AED", "INR"): Decimal("22.75"), ("SAR", "INR"): Decimal("22.30")}
+    calls = []
+
+    def fake_fetch(src, dst):
+        calls.append((src, dst))
+        return rates.get((src, dst))
+
+    monkeypatch.setattr(fx, "fetch_rate", fake_fetch)
+
+    user = setup_data["user1"]
+    user.role = "admin"
+    user.save()
+    company = setup_data["company1"]
+    company.currency = "INR"
+    company.country = "India"
+    company.save()
+
+    uae_vendor = Vendor.objects.create(company=company, name="Dubai Studio", currency="AED")
+    in_vendor = Vendor.objects.create(company=company, name="Kochi Print")
+    ksa_client = Customer.objects.create(company=company, name="Riyadh Retail", email="ap@riyadh.example", phone="1", currency="SAR")
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    item = [{"description": "Work", "quantity": 1, "unit_price": 1000, "tax_rate": 0}]
+
+    # Vendor's preferred currency is used, rate fetched automatically
+    res = client.post("/api/v1/crm/bills/", {"vendor": uae_vendor.id, "bill_date": "2026-11-18", "status": "open", "items": item}, format="json")
+    assert res.status_code == 201, res.data
+    assert res.data["currency"] == "AED" and Decimal(res.data["exchange_rate"]) == Decimal("22.75")
+
+    # Base-currency bill: rate is 1, no lookup
+    calls.clear()
+    res = client.post("/api/v1/crm/bills/", {"vendor": in_vendor.id, "bill_date": "2026-11-18", "status": "open", "items": item}, format="json")
+    assert res.data["currency"] == "INR" and Decimal(res.data["exchange_rate"]) == 1 and calls == []
+
+    # A manually entered rate wins over the lookup
+    res = client.post("/api/v1/crm/bills/", {"vendor": uae_vendor.id, "currency": "AED", "exchange_rate": "23.00", "bill_date": "2026-11-18", "status": "open", "items": item}, format="json")
+    assert Decimal(res.data["exchange_rate"]) == Decimal("23.000000")
+
+    # KPIs are in base currency: 1000 AED*22.75 + 1000 INR + 1000 AED*23
+    kpis = client.get("/api/v1/crm/bills/kpis/").data
+    assert round(kpis["total_outstanding"], 2) == 22750 + 1000 + 23000
+
+    # Rate service down and no rate given -> clear validation error
+    res = client.post("/api/v1/crm/bills/", {"vendor": in_vendor.id, "currency": "QAR", "bill_date": "2026-11-18", "status": "open", "items": item}, format="json")
+    assert res.status_code == 400 and "exchange_rate" in res.data
+
+    # Unsupported currency rejected
+    res = client.post("/api/v1/crm/bills/", {"vendor": in_vendor.id, "currency": "XYZ", "bill_date": "2026-11-18", "items": item}, format="json")
+    assert res.status_code == 400 and "currency" in res.data
+
+    # Invoice defaults to the client's preferred currency (SAR)
+    res = client.post("/api/v1/crm/invoices/", {"customer": ksa_client.id, "items": [{"name": "Retainer", "quantity": 1, "unit_price": 500, "tax_rate": 15}]}, format="json")
+    assert res.status_code == 201, res.data
+    assert res.data["currency"] == "SAR" and Decimal(res.data["exchange_rate"]) == Decimal("22.30")
+
+    # Status-only update does not re-fetch or change the frozen rate
+    calls.clear()
+    bill = Bill.objects.filter(currency="AED").first()
+    res = client.post(f"/api/v1/crm/bills/{bill.id}/change_status/", {"status": "open"}, format="json")
+    res = client.patch(f"/api/v1/crm/bills/{bill.id}/", {"notes": "hello"}, format="json")
+    assert res.status_code == 200 and calls == []
+
+    # Quote PDF renders in AED with words in dirhams
+    from crm.utils_quote_pdf import amount_to_words, format_currency_inr
+    assert format_currency_inr(1500, "AED") == "AED 1,500.00"
+    assert amount_to_words(1250000, "AED") == "UAE Dirhams One Million Two Hundred Fifty Thousand Only"

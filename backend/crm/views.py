@@ -488,6 +488,22 @@ class LeadViewSet(CompanyScopedModelViewSet):
             ])
             return response
 
+class ExchangeRateView(APIView):
+    """GET ?from=AED[&to=INR] -> today's rate (to defaults to the company currency)."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .currency import SUPPORTED_CURRENCIES, company_base_currency, fetch_rate
+        source = (request.query_params.get("from") or "").upper()
+        target = (request.query_params.get("to") or company_base_currency(getattr(request.user, "company", None))).upper()
+        if source not in SUPPORTED_CURRENCIES or (target not in SUPPORTED_CURRENCIES and len(target) != 3):
+            return Response({"error": "Unsupported currency."}, status=400)
+        rate = fetch_rate(source, target)
+        if rate is None:
+            return Response({"error": "Rate service unavailable. Enter the rate manually."}, status=503)
+        return Response({"from": source, "to": target, "rate": str(rate)})
+
+
 class BillViewSet(CompanyScopedModelViewSet):
     serializer_class = BillSerializer
     queryset = Bill.objects.select_related("vendor", "purchase_order").prefetch_related("items", "payments", "payments__created_by")
@@ -531,21 +547,22 @@ class BillViewSet(CompanyScopedModelViewSet):
         bills = Bill.objects.filter(company=company)
         unpaid_bills = bills.exclude(status__in=[Bill.Status.PAID, Bill.Status.CANCELLED])
         
-        total_outstanding = unpaid_bills.aggregate(total=Sum('amount_due'))['total'] or 0
-        
+        from .currency import in_base
+        total_outstanding = unpaid_bills.aggregate(total=Sum(in_base('amount_due')))['total'] or 0
+
         overdue_qs = unpaid_bills.filter(due_date__lt=today)
-        overdue_agg = overdue_qs.aggregate(total=Sum('amount_due'), count=Count('id'))
+        overdue_agg = overdue_qs.aggregate(total=Sum(in_base('amount_due')), count=Count('id'))
         overdue_amount = overdue_agg['total'] or 0
         overdue_count = overdue_agg['count'] or 0
         
-        due_7_days = unpaid_bills.filter(due_date__gte=today, due_date__lte=next_7_days).aggregate(total=Sum('amount_due'))['total'] or 0
+        due_7_days = unpaid_bills.filter(due_date__gte=today, due_date__lte=next_7_days).aggregate(total=Sum(in_base('amount_due')))['total'] or 0
         
         month_start = today.replace(day=1)
         paid_this_month = BillPayment.objects.filter(
             bill__company=company,
             payment_date__gte=month_start,
             payment_date__lte=today
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).aggregate(total=Sum(in_base('amount', 'bill__exchange_rate')))['total'] or 0
         
         counts = bills.aggregate(
             total=Count('id'),
@@ -1379,9 +1396,9 @@ def generate_pdf_response(instance, doc_type="Invoice"):
         
     recipient_text = f"{cust_name}{cust_company}{cust_email}{cust_phone}{cust_address}"
         
-    currency_symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': 'Rs. '}
-    doc_currency = getattr(instance, 'currency', None) or comp.currency or "USD"
-    curr = currency_symbols.get(doc_currency, f"{doc_currency} ")
+    from .currency import pdf_symbol
+    doc_currency = (getattr(instance, 'currency', None) or comp.currency or "USD").upper()
+    curr = pdf_symbol(doc_currency)
     
     sender_text = f"<b>{comp.name}</b>"
     address_parts = [p for p in [comp.address_line1, comp.address_line2, comp.city, comp.state, comp.postal_code, comp.country] if p]
@@ -2734,6 +2751,8 @@ class PurchaseOrderViewSet(CompanyScopedModelViewSet):
                 status=Bill.Status.DRAFT,
                 tax_regime=regime,
                 vendor_tax_id=vendor_tax_id,
+                currency=po.currency or po.company.currency,
+                exchange_rate=po.exchange_rate or 1,
                 place_of_supply=(po.company.state or "") if regime == Bill.TaxRegime.IN_GST else "",
                 payment_terms=po.vendor.payment_terms or "Net 30",
                 notes=f"Converted from Purchase Order {po.po_number}"

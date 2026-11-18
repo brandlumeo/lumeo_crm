@@ -1,4 +1,5 @@
 "use client";
+import { CURRENCIES, currencyLabel } from "@/lib/currency";
 
 import { use, useState } from "react";
 import Link from "next/link";
@@ -169,6 +170,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     name: "",
     email: "",
     phone: "",
+    currency: "",
     custom_data: {} as Record<string, any>,
   });
 
@@ -211,6 +213,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
       name: customer.name,
       email: customer.email,
       phone: customer.phone || "",
+      currency: (customer as any).currency || "",
       custom_data: customer.custom_data || {},
     });
     setIsEditing(true);
@@ -390,6 +393,19 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
+                </div>
+                <div>
+                  <label className="label">Preferred Currency</label>
+                  <select
+                    className="input"
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  >
+                    <option value="">Company default</option>
+                    {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
+                  ))}
+                  </select>
                 </div>
               </div>
 

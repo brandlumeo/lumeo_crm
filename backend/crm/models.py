@@ -124,6 +124,7 @@ class Customer(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(db_index=True)
     phone = models.CharField(max_length=20)
+    currency = models.CharField(max_length=3, blank=True, default="", help_text="Preferred currency for quotes and invoices")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     custom_data = models.JSONField(default=dict, blank=True)
@@ -582,6 +583,7 @@ class Quote(models.Model):
     is_locked = models.BooleanField(default=False, help_text="If True, the quote is read-only")
     content = models.TextField(blank=True, help_text="HTML content of the contract/proposal")
     currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1, help_text="Base-currency units per 1 unit of this document's currency")
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -693,6 +695,7 @@ class Invoice(models.Model):
     issue_date = models.DateField(auto_now_add=True)
     due_date = models.DateField(null=True, blank=True)
     currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1, help_text="Base-currency units per 1 unit of this document's currency")
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -1285,6 +1288,7 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
     notes = models.TextField(blank=True)
     currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1, help_text="Base-currency units per 1 unit of this document's currency")
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -1449,6 +1453,7 @@ class Vendor(models.Model):
     tax_id = models.CharField(max_length=100, blank=True, null=True)
     payment_terms = models.CharField(max_length=100, blank=True, null=True)
     bank_details = models.TextField(blank=True, null=True)
+    currency = models.CharField(max_length=3, blank=True, default="", help_text="Preferred currency for POs and bills")
     custom_data = models.JSONField(default=dict, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -1481,7 +1486,9 @@ class PurchaseOrder(models.Model):
     expected_delivery_date = models.DateField(null=True, blank=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
-    
+
+    currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1, help_text="Base-currency units per 1 unit of this document's currency")
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -1578,6 +1585,9 @@ class Bill(models.Model):
     attachment = models.FileField(upload_to="bills/vendor_invoices/", blank=True, null=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
+
+    currency = models.CharField(max_length=3, blank=True, null=True, help_text='3-letter currency code')
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1, help_text="Base-currency units per 1 unit of this document's currency")
 
     # Tax (regime-aware: India GST, UAE VAT, or a generic single tax)
     tax_regime = models.CharField(max_length=10, choices=TaxRegime.choices, default=TaxRegime.IN_GST)

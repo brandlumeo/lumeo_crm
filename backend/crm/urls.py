@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from django.urls import path
 
 from .views import (
+    ExchangeRateView,
     CustomerViewSet,
     DealViewSet,
     LeadViewSet,
@@ -111,6 +112,7 @@ from .webhooks import WhatsAppWebhookView, MetaLeadAdsWebhookView
 
 urlpatterns = [
     path('search/', GlobalSearchView.as_view(), name='global_search'),
+    path('fx-rate/', ExchangeRateView.as_view(), name='fx_rate'),
     path('counts/', CrmCountsView.as_view(), name='crm_counts'),
     path('analytics/', PremiumAnalyticsView.as_view(), name='premium_analytics'),
     path('finance-dashboard/', FinanceDashboardView.as_view(), name='finance_dashboard'),

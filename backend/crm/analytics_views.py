@@ -281,13 +281,14 @@ class FinanceDashboardView(APIView):
         import calendar
         from django.db.models import Q
         from crm.models import Invoice, InvoicePayment, Bill
+        from crm.currency import in_base
         from attendance.models import Payroll, ExpenseClaim
 
         # 1. 12-Month Bulk Aggregation for Selected Year
         payments_qs = InvoicePayment.objects.filter(
             invoice__company=company,
             payment_date__year=year
-        ).values("payment_date__month").annotate(total=Sum("amount"))
+        ).values("payment_date__month").annotate(total=Sum(in_base("amount", "invoice__exchange_rate")))
         payment_by_month = {item["payment_date__month"]: Decimal(str(item["total"] or 0)) for item in payments_qs}
 
         paid_invoices_with_payments = InvoicePayment.objects.filter(invoice__company=company).values("invoice_id")
@@ -295,7 +296,7 @@ class FinanceDashboardView(APIView):
             company=company,
             status="paid",
             issue_date__year=year
-        ).exclude(id__in=paid_invoices_with_payments).values("issue_date__month").annotate(total=Sum("total"))
+        ).exclude(id__in=paid_invoices_with_payments).values("issue_date__month").annotate(total=Sum(in_base("total")))
         direct_invoices_by_month = {item["issue_date__month"]: Decimal(str(item["total"] or 0)) for item in direct_invoices_qs}
 
         # Direct recorded incomes (retainers, consulting, grants, investments, other)
@@ -315,7 +316,7 @@ class FinanceDashboardView(APIView):
         bill_payments_qs = BillPayment.objects.filter(
             bill__company=company,
             payment_date__year=year
-        ).values("payment_date__month").annotate(total=Sum("amount"))
+        ).values("payment_date__month").annotate(total=Sum(in_base("amount", "bill__exchange_rate")))
         bill_payments_by_month = {item["payment_date__month"]: Decimal(str(item["total"] or 0)) for item in bill_payments_qs}
 
         # For bills marked as paid without individual BillPayment records, fallback to bill_date
@@ -324,8 +325,8 @@ class FinanceDashboardView(APIView):
             bill_date__year=year,
             payments__isnull=True
         ).values("bill_date__month").annotate(
-            total_paid=Sum("amount_paid"),
-            total_full_paid=Sum("total_amount", filter=Q(status="paid", amount_paid=Decimal("0.00")))
+            total_paid=Sum(in_base("amount_paid")),
+            total_full_paid=Sum(in_base("total_amount"), filter=Q(status="paid", amount_paid=Decimal("0.00")))
         )
         bills_by_month = {m: bill_payments_by_month.get(m, Decimal("0.00")) for m in range(1, 13)}
         for item in legacy_bills_qs:
@@ -390,12 +391,12 @@ class FinanceDashboardView(APIView):
         pending_receivables = Invoice.objects.filter(
             company=company,
             status__in=["sent", "overdue", "partially_paid", "draft"]
-        ).aggregate(total=Sum("total"))["total"] or Decimal("0.00")
+        ).aggregate(total=Sum(in_base("total")))["total"] or Decimal("0.00")
 
         pending_payables = Bill.objects.filter(
             company=company,
             status__in=["open", "partial", "draft"]
-        ).aggregate(total=Sum("amount_due"))["total"] or Decimal("0.00")
+        ).aggregate(total=Sum(in_base("amount_due")))["total"] or Decimal("0.00")
 
         # Annual Totals for Selected Year
         annual_inflow = sum(m["inflow"] for m in months_data)
@@ -425,7 +426,9 @@ class FinanceDashboardView(APIView):
                 "type": "inflow",
                 "category": "Client Payment",
                 "title": f"Payment: {cust_name}",
-                "amount": float(p.amount),
+                "amount": float(p.amount * (p.invoice.exchange_rate if p.invoice else 1)),
+                "currency": (p.invoice.currency if p.invoice else None),
+                "original_amount": float(p.amount),
                 "date": p.payment_date.strftime("%Y-%m-%d") if p.payment_date else str(p.created_at.date()),
                 "status": "Received",
                 "reference": inv_num or f"INV-{p.id}"
@@ -445,7 +448,9 @@ class FinanceDashboardView(APIView):
                 "type": "inflow",
                 "category": "Invoice Settled",
                 "title": f"Invoice: {cust_name}",
-                "amount": float(inv.total),
+                "amount": float(inv.total * inv.exchange_rate),
+                "currency": inv.currency,
+                "original_amount": float(inv.total),
                 "date": inv.issue_date.strftime("%Y-%m-%d") if inv.issue_date else str(inv.created_at.date()),
                 "status": "Settled",
                 "reference": inv.invoice_number
@@ -504,7 +509,9 @@ class FinanceDashboardView(APIView):
                 "type": "bill",
                 "category": f"Vendor Payment: {v_name}",
                 "title": f"Payment for {bp.bill.bill_number}",
-                "amount": float(bp.amount),
+                "amount": float(bp.amount * (bp.bill.exchange_rate if bp.bill else 1)),
+                "currency": (bp.bill.currency if bp.bill else None),
+                "original_amount": float(bp.amount),
                 "date": bp.payment_date.strftime("%Y-%m-%d") if bp.payment_date else str(bp.created_at.date()),
                 "status": "Disbursed",
                 "reference": bp.transaction_id or bp.bill.bill_number
@@ -523,7 +530,9 @@ class FinanceDashboardView(APIView):
                 "type": "bill",
                 "category": "Vendor Bill",
                 "title": f"Bill #{b.bill_number} - {v_name}",
-                "amount": float(b.total_amount),
+                "amount": float(b.total_amount * b.exchange_rate),
+                "currency": b.currency,
+                "original_amount": float(b.total_amount),
                 "date": b.bill_date.strftime("%Y-%m-%d") if b.bill_date else (str(b.due_date) if b.due_date else str(b.id)),
                 "status": b.status.title(),
                 "reference": b.bill_number

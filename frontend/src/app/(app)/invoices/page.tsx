@@ -6,9 +6,11 @@ import { downloadInvoicePdf, downloadReceiptPdf } from "@/lib/api";
 import { FileText, Plus, Search, Loader2, Copy, Check, ExternalLink, Download, Trash2, DollarSign, Edit2, Receipt } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
+import { CurrencyPicker } from "@/components/currency-picker";
 
 export default function InvoicesPage() {
   const { data: company } = useCurrentCompany();
+  const baseCurrency = (company?.currency || "INR").toUpperCase();
   const { data, isLoading } = useInvoices();
   const { data: customerData } = useCustomerPage({});
   const { data: dealData } = useDealPage({});
@@ -20,8 +22,8 @@ export default function InvoicesPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editInvoiceId, setEditInvoiceId] = useState<number | null>(null);
-  const [newInvoice, setNewInvoice] = useState<{ currency?: string, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
-    currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR",
+  const [newInvoice, setNewInvoice] = useState<{ currency?: string, exchange_rate: number, customer_id: number | null, deal_id: number | null, due_date: string, items: { name: string, description?: string, quantity: number, unit_price: number, tax_rate: number, unit?: string }[] }>({ 
+    currency: "", exchange_rate: 1,
     customer_id: null, 
     deal_id: null, 
     due_date: "",
@@ -44,7 +46,8 @@ export default function InvoicesPage() {
   const handleEditClick = (invoice: any) => {
     setEditInvoiceId(invoice.id);
     setNewInvoice({
-      currency: invoice.currency,
+      currency: invoice.currency || baseCurrency,
+      exchange_rate: parseFloat(invoice.exchange_rate || "1") || 1,
       customer_id: invoice.customer?.id,
       deal_id: invoice.deal?.id,
       due_date: invoice.due_date || "",
@@ -67,7 +70,11 @@ export default function InvoicesPage() {
     // Filter out items without a name
     const validItems = newInvoice.items.filter(item => item.name.trim() !== "");
 
-    const payload: any = { customer: newInvoice.customer_id, items: validItems, currency: newInvoice.currency || "INR" };
+    const currency = newInvoice.currency || baseCurrency;
+    const payload: any = { customer: newInvoice.customer_id, items: validItems, currency };
+    if (currency !== baseCurrency && newInvoice.exchange_rate > 0 && newInvoice.exchange_rate !== 1) {
+      payload.exchange_rate = newInvoice.exchange_rate;
+    }
     if (newInvoice.deal_id) payload.deal = newInvoice.deal_id;
     if (newInvoice.due_date) payload.due_date = newInvoice.due_date;
     
@@ -76,14 +83,14 @@ export default function InvoicesPage() {
         onSuccess: () => {
           setIsModalOpen(false);
           setEditInvoiceId(null);
-          setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+          setNewInvoice({ currency: "", exchange_rate: 1, customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
         }
       });
     } else {
       createMutation.mutate(payload, {
         onSuccess: () => {
           setIsModalOpen(false);
-          setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+          setNewInvoice({ currency: "", exchange_rate: 1, customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
         }
       });
     }
@@ -124,7 +131,7 @@ export default function InvoicesPage() {
         <button
           onClick={() => {
             setEditInvoiceId(null);
-            setNewInvoice({ currency: (typeof window !== "undefined" && (window as any).__CRM_CURRENCY__) ? (window as any).__CRM_CURRENCY__ : "INR", customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
+            setNewInvoice({ currency: "", exchange_rate: 1, customer_id: null, deal_id: null, due_date: "", items: [{ name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, unit: "" }] });
             setIsModalOpen(true);
           }}
           className="bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
@@ -277,7 +284,16 @@ export default function InvoicesPage() {
                 <select
                   required
                   value={newInvoice.customer_id || ""}
-                  onChange={(e) => setNewInvoice({ ...newInvoice, customer_id: parseInt(e.target.value) || null })}
+                  onChange={(e) => {
+                    const customerId = parseInt(e.target.value) || null;
+                    const c: any = customers.find((x: any) => x.id === customerId);
+                    const clientCurrency = (c?.currency || "").toUpperCase();
+                    setNewInvoice({
+                      ...newInvoice,
+                      customer_id: customerId,
+                      ...(clientCurrency && clientCurrency !== newInvoice.currency ? { currency: clientCurrency, exchange_rate: 1 } : {}),
+                    });
+                  }}
                   className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                 >
                   <option value="">Select a customer</option>
@@ -301,23 +317,12 @@ export default function InvoicesPage() {
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Currency</label>
-                <select
-                  value={newInvoice.currency || "INR"}
-                  onChange={(e) => setNewInvoice({ ...newInvoice, currency: e.target.value })}
-                  className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
-                >
-                  <option value="INR">INR (₹)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="AUD">AUD (A$)</option>
-                  <option value="CAD">CAD (C$)</option>
-                  <option value="SGD">SGD (S$)</option>
-                  <option value="AED">AED (د.إ)</option>
-                </select>
-              </div>
+              <CurrencyPicker
+                currency={newInvoice.currency || baseCurrency}
+                rate={newInvoice.exchange_rate}
+                baseCurrency={baseCurrency}
+                onChange={(currency, exchange_rate) => setNewInvoice((prev) => ({ ...prev, currency, exchange_rate }))}
+              />
 
               </div>
 
@@ -444,7 +449,7 @@ export default function InvoicesPage() {
             </form>
             <div className="p-5 border-t border-line bg-bone flex justify-between items-center mt-auto">
               <div className="text-sm font-medium text-ink">
-                Total: {formatCurrency(newInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), company?.currency)}
+                Total: {formatCurrency(newInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price * (1 + item.tax_rate / 100)), 0), newInvoice.currency || baseCurrency)}
               </div>
               <div className="flex gap-3">
                 <button

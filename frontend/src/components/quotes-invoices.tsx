@@ -1,4 +1,5 @@
 "use client";
+import { CURRENCIES, currencyLabel } from "@/lib/currency";
 import { toast } from "sonner";
 
 
@@ -412,14 +413,9 @@ export function QuotesInvoices({ dealId }: QuotesInvoicesProps) {
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                   >
-                    <option value="INR">INR (₹)</option>
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="AUD">AUD (A$)</option>
-                    <option value="CAD">CAD (C$)</option>
-                    <option value="SGD">SGD (S$)</option>
-                    <option value="AED">AED (د.إ)</option>
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
+                    ))}
                   </select>
                 </label>
               </div>

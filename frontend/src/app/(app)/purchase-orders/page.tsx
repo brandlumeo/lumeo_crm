@@ -12,6 +12,7 @@ import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
+import { CurrencyPicker } from "@/components/currency-picker";
 
 export default function PurchaseOrdersPage() {
   const queryClient = useQueryClient();
@@ -24,8 +25,11 @@ export default function PurchaseOrdersPage() {
   const [editPoId, setEditPoId] = useState<number | null>(null);
   const [deletePoId, setDeletePoId] = useState<number | null>(null);
   
-  const [newPo, setNewPo] = useState<{ vendor: number | null, issue_date: string, expected_delivery_date: string, status: string, notes: string, terms_conditions: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
+  const baseCurrency = (company?.currency || "INR").toUpperCase();
+  const [newPo, setNewPo] = useState<{ vendor: number | null, currency: string, exchange_rate: number, issue_date: string, expected_delivery_date: string, status: string, notes: string, terms_conditions: string, items: { description: string, quantity: number, unit_price: number, tax_rate: number }[] }>({ 
     vendor: null, 
+    currency: "",
+    exchange_rate: 1,
     issue_date: new Date().toISOString().split('T')[0],
     expected_delivery_date: "",
     status: "draft",
@@ -88,6 +92,8 @@ export default function PurchaseOrdersPage() {
     setEditPoId(null);
     setNewPo({ 
       vendor: null, 
+      currency: "",
+      exchange_rate: 1,
       issue_date: new Date().toISOString().split('T')[0],
       expected_delivery_date: "",
       status: "draft",
@@ -112,6 +118,8 @@ export default function PurchaseOrdersPage() {
     setEditPoId(po.id);
     setNewPo({
       vendor: po.vendor,
+      currency: (po.currency || baseCurrency).toUpperCase(),
+      exchange_rate: parseFloat(po.exchange_rate || "1") || 1,
       issue_date: po.issue_date,
       expected_delivery_date: po.expected_delivery_date || "",
       status: po.status,
@@ -147,6 +155,7 @@ export default function PurchaseOrdersPage() {
     
     const payload = {
       ...newPo,
+      currency: newPo.currency || baseCurrency,
       expected_delivery_date: newPo.expected_delivery_date || null,
       items: validItems,
       subtotal: calculateSubtotal(),
@@ -208,7 +217,7 @@ export default function PurchaseOrdersPage() {
                     </td>
                     <td className="px-6 py-4 text-muted">{po.vendor_details?.name || "Unknown"}</td>
                     <td className="px-6 py-4 text-muted">{po.issue_date}</td>
-                    <td className="px-6 py-4 font-medium text-ink">{formatCurrency(parseFloat(po.total_amount), company?.currency || "USD")}</td>
+                    <td className="px-6 py-4 font-medium text-ink">{formatCurrency(parseFloat(po.total_amount), po.currency || company?.currency || "USD")}</td>
                     <td className="px-6 py-4">
                       <select 
                         value={po.status}
@@ -290,7 +299,16 @@ export default function PurchaseOrdersPage() {
                     required
                     className="w-full px-3 py-2 bg-bone border border-line rounded-md text-sm outline-none focus:border-ink transition-colors"
                     value={newPo.vendor || ""}
-                    onChange={(e) => setNewPo({...newPo, vendor: parseInt(e.target.value)})}
+                    onChange={(e) => {
+                      const vendorId = parseInt(e.target.value);
+                      const v: any = vendors.find((x: any) => x.id === vendorId);
+                      const vendorCurrency = (v?.currency || "").toUpperCase();
+                      setNewPo({
+                        ...newPo,
+                        vendor: vendorId,
+                        ...(vendorCurrency && vendorCurrency !== newPo.currency ? { currency: vendorCurrency, exchange_rate: 1 } : {}),
+                      });
+                    }}
                   >
                     <option value="">Select a vendor...</option>
                     {vendors.map((v: any) => (
@@ -314,6 +332,15 @@ export default function PurchaseOrdersPage() {
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <CurrencyPicker
+                  currency={newPo.currency || baseCurrency}
+                  rate={newPo.exchange_rate}
+                  baseCurrency={baseCurrency}
+                  onChange={(currency, exchange_rate) => setNewPo((prev) => ({ ...prev, currency, exchange_rate }))}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -431,15 +458,15 @@ export default function PurchaseOrdersPage() {
                 <div className="mt-4 flex flex-col items-end gap-1 text-sm bg-bone/30 p-3 rounded-lg border border-line">
                   <div className="w-full max-w-[240px] flex justify-between text-muted">
                     <span>Subtotal:</span>
-                    <span className="font-mono">{formatCurrency(calculateSubtotal(), company?.currency || "USD")}</span>
+                    <span className="font-mono">{formatCurrency(calculateSubtotal(), newPo.currency || baseCurrency)}</span>
                   </div>
                   <div className="w-full max-w-[240px] flex justify-between text-muted">
                     <span>Tax:</span>
-                    <span className="font-mono">{formatCurrency(calculateTax(), company?.currency || "USD")}</span>
+                    <span className="font-mono">{formatCurrency(calculateTax(), newPo.currency || baseCurrency)}</span>
                   </div>
                   <div className="w-full max-w-[240px] flex justify-between font-medium text-ink pt-2 border-t border-line mt-1">
                     <span>Total:</span>
-                    <span className="font-mono">{formatCurrency(calculateTotal(), company?.currency || "USD")}</span>
+                    <span className="font-mono">{formatCurrency(calculateTotal(), newPo.currency || baseCurrency)}</span>
                   </div>
                 </div>
               </div>

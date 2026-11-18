@@ -157,13 +157,54 @@ def amount_to_inr_words(amount):
     return f"Indian Rupees {words} Only"
 
 
-def format_currency_inr(val):
+CURRENCY_WORD_NAMES = {
+    "INR": "Indian Rupees", "AED": "UAE Dirhams", "SAR": "Saudi Riyals", "QAR": "Qatari Riyals",
+    "KWD": "Kuwaiti Dinars", "OMR": "Omani Rials", "BHD": "Bahraini Dinars", "USD": "US Dollars",
+    "EUR": "Euros", "GBP": "British Pounds", "AUD": "Australian Dollars", "CAD": "Canadian Dollars",
+    "SGD": "Singapore Dollars",
+}
+
+
+def format_currency_inr(val, currency="INR"):
+    """Format an amount in the quote's currency (₹ 15,999.00 / AED 15,999.00)."""
+    currency = (currency or "INR").upper()
+    prefix = "₹" if currency == "INR" else currency
     try:
-        f = float(val or 0)
-        # Format as INR currency string (₹ 15,999.00)
-        return f"₹ {f:,.2f}"
+        return f"{prefix} {float(val or 0):,.2f}"
     except Exception:
-        return "₹ 0.00"
+        return f"{prefix} 0.00"
+
+
+def amount_to_words(amount, currency="INR"):
+    """Indian numbering (lakh/crore) for INR, international (million) for others."""
+    currency = (currency or "INR").upper()
+    if currency == "INR":
+        return amount_to_inr_words(amount)
+    try:
+        val = int(round(float(amount)))
+    except Exception:
+        return ""
+    name = CURRENCY_WORD_NAMES.get(currency, currency)
+    if val == 0:
+        return f"{name} Zero Only"
+    ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+            "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+            "Seventeen", "Eighteen", "Nineteen"]
+    tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+    def three(n):
+        h, rem = divmod(n, 100)
+        out = [ones[h] + " Hundred"] if h else []
+        if rem:
+            out.append(ones[rem] if rem < 20 else tens[rem // 10] + ("" if rem % 10 == 0 else "-" + ones[rem % 10]))
+        return " ".join(out)
+
+    parts = []
+    for size, label in ((1_000_000_000, "Billion"), (1_000_000, "Million"), (1000, "Thousand"), (1, "")):
+        chunk, val = divmod(val, size)
+        if chunk:
+            parts.append((three(chunk) + (" " + label if label else "")).strip())
+    return f"{name} {' '.join(parts)} Only"
 
 
 # ── Story Builder (Smart Adaptive Layout) ────────────────────────────────────
@@ -178,6 +219,7 @@ def _build_quote_story(quote, is_compact=False):
     """
     story = []
     comp = quote.company
+    qcur = (quote.currency or getattr(comp, "currency", None) or "INR").upper()
     settings = getattr(comp, "invoice_settings", None)
     accent_green = "#55B334"
     ink_slate = "#0F172A"
@@ -366,8 +408,8 @@ def _build_quote_story(quote, is_compact=False):
             Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">1</font>', ps("TB_N", fontSize=7.5 if is_compact else 8)),
             Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">{esc(quote.title or "Growth Package")}</font>', ps("TB_D", fontSize=7.5 if is_compact else 8)),
             Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">1</font>', ps("TB_Q", fontSize=7.5 if is_compact else 8, alignment=1)),
-            Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">{format_currency_inr(quote.total)}</font>', ps("TB_R", fontSize=7.5 if is_compact else 8, alignment=2)),
-            Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">{format_currency_inr(quote.total)}</font>', ps("TB_A", fontSize=7.5 if is_compact else 8, alignment=2)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">{format_currency_inr(quote.total, qcur)}</font>', ps("TB_R", fontSize=7.5 if is_compact else 8, alignment=2)),
+            Paragraph(f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">{format_currency_inr(quote.total, qcur)}</font>', ps("TB_A", fontSize=7.5 if is_compact else 8, alignment=2)),
         ])
     else:
         for idx, item in enumerate(line_items, 1):
@@ -395,8 +437,8 @@ def _build_quote_story(quote, is_compact=False):
                 desc_html = f'<font name="{FONT_BOLD}" size="{"7.5" if is_compact else "8"}" color="{ink_slate}">{esc(item.name)}</font>'
                 if item.description:
                     desc_html += f'<br/><font size="{"6" if is_compact else "6.5"}" color="{muted_slate}">{esc(item.description)}</font>'
-                rate_str = format_currency_inr(item.unit_price)
-                amt_str = format_currency_inr(item.subtotal)
+                rate_str = format_currency_inr(item.unit_price, qcur)
+                amt_str = format_currency_inr(item.subtotal, qcur)
                 font_name = FONT_BOLD
 
             items_table_data.append([
@@ -408,8 +450,8 @@ def _build_quote_story(quote, is_compact=False):
             ])
 
     # Totals Rows
-    subtotal_str = format_currency_inr(quote.subtotal or quote.total)
-    total_str = format_currency_inr(quote.total)
+    subtotal_str = format_currency_inr(quote.subtotal or quote.total, qcur)
+    total_str = format_currency_inr(quote.total, qcur)
 
     items_table_data.append([
         "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Sub Total</font>', ps("ST1", fontSize=7 if is_compact else 7.5, alignment=2)),
@@ -417,7 +459,7 @@ def _build_quote_story(quote, is_compact=False):
     ])
 
     if quote.tax_amount and quote.tax_amount > 0:
-        tax_str = format_currency_inr(quote.tax_amount)
+        tax_str = format_currency_inr(quote.tax_amount, qcur)
         items_table_data.append([
             "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Tax</font>', ps("TX1", fontSize=7 if is_compact else 7.5, alignment=2)),
             "", "", Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{tax_str}</font>', ps("TX2", fontSize=7 if is_compact else 7.5, alignment=2))
@@ -451,7 +493,7 @@ def _build_quote_story(quote, is_compact=False):
     story.append(Spacer(1, 4 if is_compact else 12))
 
     # Amount in words
-    amount_words = amount_to_inr_words(quote.total)
+    amount_words = amount_to_words(quote.total, qcur)
     story.append(Paragraph(
         f'<font name="Helvetica-Bold" size="{"6.5" if is_compact else "7"}" color="{ink_slate}">Amount in words: </font>'
         f'<font size="{"6.5" if is_compact else "7"}" color="{ink_slate}">{amount_words}</font>',
@@ -488,7 +530,7 @@ def _build_quote_story(quote, is_compact=False):
         m_amt = p.get("amount", 0)
         pay_rows.append([
             Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{body_slate}">{esc(m_label)}</font>', ps("PS1", fontSize=7 if is_compact else 7.5)),
-            Paragraph(f'<font name="{FONT_BOLD}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{format_currency_inr(m_amt)}</font>', ps("PS2", fontSize=7 if is_compact else 7.5, alignment=2))
+            Paragraph(f'<font name="{FONT_BOLD}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{format_currency_inr(m_amt, qcur)}</font>', ps("PS2", fontSize=7 if is_compact else 7.5, alignment=2))
         ])
 
     pay_table = Table(pay_rows, colWidths=[430, 110])
@@ -596,6 +638,8 @@ def _build_quote_story(quote, is_compact=False):
     bank_ifsc = getattr(settings, "bank_routing_number", None) or "HDFC0008363"
     upi_id = getattr(settings, "upi_id", None) or "info@brandlumeo.com"
 
+    is_inr = qcur == "INR"
+
     # Generate UPI QR Code
     tot_val = float(quote.total or 0)
     upi_payload = f"upi://pay?pa={upi_id}&pn={urllib.parse.quote(company_name)}&am={tot_val:.2f}&cu=INR"
@@ -614,15 +658,21 @@ def _build_quote_story(quote, is_compact=False):
         f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_name)}</font><br/>'
         f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Account No.:</font> &nbsp;'
         f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_acc_no)}</font><br/>'
-        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">IFSC:</font> &nbsp;'
-        f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_ifsc)}</font><br/>'
-        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">UPI:</font> &nbsp;'
-        f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Scan QR to pay</font>'
+        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">{"IFSC" if is_inr else "SWIFT / Routing"}:</font> &nbsp;'
+        f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_ifsc)}</font>'
     )
+    if is_inr:
+        # UPI only settles in INR, so the QR is shown on rupee quotes only.
+        bank_details_html += (
+            f'<br/><font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">UPI:</font> &nbsp;'
+            f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Scan QR to pay</font>'
+        )
 
-    bank_inner_table = Table([
-        [qr_drawing, Paragraph(bank_details_html, ps("BankP", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))]
-    ], colWidths=[qr_size + 8, 260 - (qr_size + 8)])
+    bank_para = Paragraph(bank_details_html, ps("BankP", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))
+    if is_inr:
+        bank_inner_table = Table([[qr_drawing, bank_para]], colWidths=[qr_size + 8, 260 - (qr_size + 8)])
+    else:
+        bank_inner_table = Table([[bank_para]], colWidths=[260])
     bank_inner_table.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),

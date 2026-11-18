@@ -1,4 +1,5 @@
 "use client";
+import { CURRENCIES, currencyLabel } from "@/lib/currency";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -48,7 +49,7 @@ export default function CustomersPage() {
   const mutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: () => {
-      setForm({ name: "", email: "", phone: "", custom_data: {} });
+      setForm({ name: "", email: "", phone: "", currency: "", custom_data: {} });
       void queryClient.invalidateQueries({ queryKey: ["crm"] });
       void queryClient.invalidateQueries({ queryKey: ["crm-counts"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard-bundle"] });
@@ -292,6 +293,19 @@ export default function CustomersPage() {
                 onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
                 placeholder="+91 98765 43210"
               />
+            </label>
+            <label>
+              <span className="label">Preferred Currency</span>
+              <select
+                className="input"
+                value={form.currency || ""}
+                onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))}
+              >
+                <option value="">Company default</option>
+                {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{currencyLabel(c.code)}</option>
+                  ))}
+              </select>
             </label>
 
             <CustomFieldsFormInputs

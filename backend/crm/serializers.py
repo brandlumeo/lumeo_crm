@@ -303,6 +303,7 @@ class CustomerSerializer(CompanyScopedSerializer):
             "name",
             "email",
             "phone",
+            "currency",
             "custom_data",
             "has_portal_access",
             "created_at",
@@ -710,7 +711,67 @@ class QuoteLineItemSerializer(serializers.ModelSerializer):
         )
 
 
-class QuoteSerializer(CompanyScopedSerializer):
+class DocumentCurrencyMixin:
+    """Resolve a document's currency and exchange rate during validation.
+
+    currency: explicit value > party's preferred currency > company base currency.
+    exchange_rate: 1 for base currency; otherwise the value sent by the client,
+    or today's rate fetched from the public rate service.
+    """
+
+    currency_party_field = "customer"
+
+    def _currency_company(self, attrs):
+        request = self.context.get("request")
+        company = getattr(getattr(request, "user", None), "company", None)
+        return company or attrs.get("company") or getattr(self.instance, "company", None)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        from decimal import Decimal
+        from .currency import SUPPORTED_CURRENCIES, company_base_currency, fetch_rate
+
+        # Partial updates that don't touch currency (e.g. status changes) are left alone.
+        if self.instance is not None and "currency" not in attrs and "exchange_rate" not in attrs:
+            return attrs
+
+        company = self._currency_company(attrs)
+        base = company_base_currency(company)
+
+        if "currency" in attrs:
+            currency = (attrs.get("currency") or "").strip().upper()
+        else:
+            currency = (getattr(self.instance, "currency", "") or "").strip().upper()
+        if not currency:
+            party = attrs.get(self.currency_party_field) or getattr(self.instance, self.currency_party_field, None)
+            currency = ((getattr(party, "currency", "") or "").strip().upper()) or base
+        if currency not in SUPPORTED_CURRENCIES and currency != base:
+            raise serializers.ValidationError({"currency": f"Unsupported currency '{currency}'."})
+        attrs["currency"] = currency
+
+        if currency == base:
+            attrs["exchange_rate"] = Decimal("1")
+            return attrs
+
+        rate = attrs.get("exchange_rate")
+        currency_changed = self.instance is None or (self.instance.currency or base).upper() != currency
+        # A rate of exactly 1 between two different currencies means "not set".
+        if rate is not None and rate > 0 and rate != 1:
+            return attrs
+        if not currency_changed and self.instance is not None and self.instance.exchange_rate not in (None, 0, 1):
+            attrs["exchange_rate"] = self.instance.exchange_rate
+            return attrs
+
+        fetched = fetch_rate(currency, base)
+        if fetched is None:
+            raise serializers.ValidationError({
+                "exchange_rate": f"Couldn't fetch the {currency} to {base} rate. Please enter the exchange rate."
+            })
+        attrs["exchange_rate"] = fetched
+        return attrs
+
+
+class QuoteSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
     items = QuoteLineItemSerializer(many=True, required=False)
     deal_details = DealSerializer(source='deal', read_only=True)
     customer_details = CustomerSerializer(source='customer', read_only=True)
@@ -756,6 +817,7 @@ class QuoteSerializer(CompanyScopedSerializer):
             "content",
             "is_locked",
             "currency",
+            "exchange_rate",
             "subtotal",
             "tax_amount",
             "total",
@@ -899,7 +961,7 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 
 from companies.serializers import PublicInvoiceSettingsSerializer
 
-class InvoiceSerializer(CompanyScopedSerializer):
+class InvoiceSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
     items = InvoiceLineItemSerializer(many=True, required=False)
     payments = InvoicePaymentSerializer(many=True, read_only=True)
     deal_details = DealSerializer(source='deal', read_only=True)
@@ -943,6 +1005,7 @@ class InvoiceSerializer(CompanyScopedSerializer):
             "notes",
             "terms",
             "currency",
+            "exchange_rate",
             "subtotal",
             "tax_amount",
             "total",
@@ -1561,7 +1624,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         )
 
 
-class OrderSerializer(CompanyScopedSerializer):
+class OrderSerializer(DocumentCurrencyMixin, CompanyScopedSerializer):
     items = OrderItemSerializer(many=True, required=False)
     customer_name = serializers.SerializerMethodField()
     created_by = UserSummarySerializer(read_only=True)
@@ -1578,6 +1641,7 @@ class OrderSerializer(CompanyScopedSerializer):
             "status",
             "notes",
             "currency",
+            "exchange_rate",
             "subtotal",
             "tax_amount",
             "total",
@@ -1762,7 +1826,8 @@ class PurchaseOrderItemSerializer(serializers.ModelSerializer):
         fields = ("id", "description", "quantity", "unit_price", "tax_rate", "total")
 
 
-class PurchaseOrderSerializer(serializers.ModelSerializer):
+class PurchaseOrderSerializer(DocumentCurrencyMixin, serializers.ModelSerializer):
+    currency_party_field = "vendor"
     items = PurchaseOrderItemSerializer(many=True, required=False)
     vendor_details = VendorSerializer(source="vendor", read_only=True)
     assigned_to_details = UserSummarySerializer(source="assigned_to", read_only=True)
@@ -1871,7 +1936,8 @@ class BillItemSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class BillSerializer(serializers.ModelSerializer):
+class BillSerializer(DocumentCurrencyMixin, serializers.ModelSerializer):
+    currency_party_field = "vendor"
     items = BillItemSerializer(many=True, required=False)
     payments = BillPaymentSerializer(many=True, read_only=True)
     vendor_details = VendorSerializer(source="vendor", read_only=True)

@@ -23,8 +23,9 @@ import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
 import { PageShell } from "@/components/page-shell";
-import { useOrders, useCreateOrder, useUpdateOrder, useDeleteOrder } from "@/lib/queries";
-import { formatINR, toNumber, formatDateTime } from "@/lib/utils";
+import { useOrders, useCreateOrder, useUpdateOrder, useDeleteOrder, useCurrentCompany } from "@/lib/queries";
+import { formatCurrency, toNumber, formatDateTime } from "@/lib/utils";
+import { CurrencyPicker } from "@/components/currency-picker";
 
 const PAGE_SIZE = 20;
 
@@ -155,7 +156,7 @@ function OrderDrawer({
             </div>
             <div className="surface-muted p-3 rounded-lg">
               <div className="text-[10px] uppercase tracking-widest text-muted mb-1">Grand Total</div>
-              <div className="text-sm font-medium text-ink font-serif">{formatINR(toNumber(order.total))}</div>
+              <div className="text-sm font-medium text-ink font-serif">{formatCurrency(toNumber(order.total), order.currency || "INR")}</div>
             </div>
           </div>
 
@@ -191,8 +192,8 @@ function OrderDrawer({
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right text-muted">{item.quantity}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-xs">{formatINR(toNumber(item.unit_price))}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-xs font-medium text-ink">{formatINR(toNumber(item.total))}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-xs">{formatCurrency(toNumber(item.unit_price), order.currency || "INR")}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-xs font-medium text-ink">{formatCurrency(toNumber(item.total), order.currency || "INR")}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -201,15 +202,15 @@ function OrderDrawer({
                 <div className="bg-bone border-t border-line divide-y divide-line">
                   <div className="flex justify-between items-center px-3 py-2 text-xs text-muted">
                     <span>Subtotal</span>
-                    <span className="font-mono">{formatINR(toNumber(order.subtotal))}</span>
+                    <span className="font-mono">{formatCurrency(toNumber(order.subtotal), order.currency || "INR")}</span>
                   </div>
                   <div className="flex justify-between items-center px-3 py-2 text-xs text-muted">
                     <span>Tax</span>
-                    <span className="font-mono">{formatINR(toNumber(order.tax_amount))}</span>
+                    <span className="font-mono">{formatCurrency(toNumber(order.tax_amount), order.currency || "INR")}</span>
                   </div>
                   <div className="flex justify-between items-center px-3 py-2.5 text-sm font-semibold text-ink bg-bone-2">
                     <span>Grand Total</span>
-                    <span className="font-serif text-base">{formatINR(toNumber(order.total))}</span>
+                    <span className="font-serif text-base">{formatCurrency(toNumber(order.total), order.currency || "INR")}</span>
                   </div>
                 </div>
               </div>
@@ -281,7 +282,9 @@ export default function OrdersPage() {
   const [mounted, setMounted] = useState(false);
 
   // New order form
-  const [form, setForm] = useState({ status: "pending", notes: "" });
+  const { data: company } = useCurrentCompany();
+  const baseCurrency = (company?.currency || "INR").toUpperCase();
+  const [form, setForm] = useState({ status: "pending", notes: "", currency: "", exchange_rate: 1 });
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
 
   useEffect(() => { setMounted(true); }, []);
@@ -313,7 +316,7 @@ export default function OrdersPage() {
       completed: allOrders.filter((o) => o.status === "completed").length,
       revenue: allOrders
         .filter((o) => o.status === "completed")
-        .reduce((sum, o) => sum + toNumber(o.total), 0),
+        .reduce((sum, o) => sum + toNumber(o.total) * (toNumber(o.exchange_rate) || 1), 0),
     };
   }, [allOrders, allData]);
 
@@ -333,14 +336,20 @@ export default function OrdersPage() {
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      ...form,
+    const currency = form.currency || baseCurrency;
+    const payload: any = {
+      status: form.status,
+      notes: form.notes,
+      currency,
       items: items.filter((i) => i.name.trim()),
     };
+    if (currency !== baseCurrency && form.exchange_rate > 0 && form.exchange_rate !== 1) {
+      payload.exchange_rate = form.exchange_rate;
+    }
     createMutation.mutate(payload, {
       onSuccess: () => {
         setIsModalOpen(false);
-        setForm({ status: "pending", notes: "" });
+        setForm({ status: "pending", notes: "", currency: "", exchange_rate: 1 });
         setItems([emptyItem()]);
         toast.success("Order created successfully.");
       },
@@ -434,7 +443,7 @@ export default function OrdersPage() {
         <StatCard
           icon={TrendingUp}
           label="Revenue"
-          value={formatINR(stats.revenue)}
+          value={formatCurrency(stats.revenue, baseCurrency)}
           sub="completed orders"
           color="bg-blue-50 text-blue-600"
         />
@@ -636,11 +645,11 @@ export default function OrdersPage() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="font-serif text-base text-ink">
-                          {formatINR(toNumber(order.total))}
+                          {formatCurrency(toNumber(order.total), order.currency || "INR")}
                         </div>
                         {toNumber(order.tax_amount) > 0 && (
                           <div className="text-[10px] text-muted">
-                            incl. {formatINR(toNumber(order.tax_amount))} tax
+                            incl. {formatCurrency(toNumber(order.tax_amount), order.currency || "INR")} tax
                           </div>
                         )}
                       </td>
@@ -743,6 +752,12 @@ export default function OrdersPage() {
                       <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
                     </div>
                   </label>
+                  <CurrencyPicker
+                    currency={form.currency || baseCurrency}
+                    rate={form.exchange_rate}
+                    baseCurrency={baseCurrency}
+                    onChange={(currency, exchange_rate) => setForm((prev) => ({ ...prev, currency, exchange_rate }))}
+                  />
                 </div>
 
                 <label>
@@ -849,15 +864,15 @@ export default function OrdersPage() {
                     <div className="border-t border-line bg-bone divide-y divide-line">
                       <div className="flex justify-between px-3 py-2 text-xs text-muted">
                         <span>Subtotal</span>
-                        <span className="font-mono">{formatINR(grandSubtotal)}</span>
+                        <span className="font-mono">{formatCurrency(grandSubtotal, form.currency || baseCurrency)}</span>
                       </div>
                       <div className="flex justify-between px-3 py-2 text-xs text-muted">
                         <span>Tax</span>
-                        <span className="font-mono">{formatINR(grandTax)}</span>
+                        <span className="font-mono">{formatCurrency(grandTax, form.currency || baseCurrency)}</span>
                       </div>
                       <div className="flex justify-between px-3 py-3 text-sm font-semibold text-ink bg-bone-2">
                         <span>Grand Total</span>
-                        <span className="font-serif text-base">{formatINR(grandTotal)}</span>
+                        <span className="font-serif text-base">{formatCurrency(grandTotal, form.currency || baseCurrency)}</span>
                       </div>
                     </div>
                   </div>

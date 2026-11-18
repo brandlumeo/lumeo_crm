@@ -47,6 +47,7 @@ import {
   openBillPdfInNewTab
 } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
+import { CurrencyPicker } from "@/components/currency-picker";
 import { PageShell } from "@/components/page-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonTable } from "@/components/skeleton-table";
@@ -262,6 +263,8 @@ type BillForm = {
   payment_terms: string;
   status: string;
   notes: string;
+  currency: string;
+  exchange_rate: number;
   tax_regime: TaxRegime;
   taxApplicable: boolean;
   vendor_tax_id: string;
@@ -446,6 +449,7 @@ export default function BillsPage() {
   const purchaseOrders: any[] = poData?.results || [];
 
   const companyRegime = defaultTaxRegime(company?.country, company?.currency);
+  const baseCurrency = (company?.currency || "INR").toUpperCase();
 
   const blankForm = (): BillForm => {
     const today = new Date().toISOString().split("T")[0];
@@ -460,6 +464,8 @@ export default function BillsPage() {
       payment_terms: "Net 30",
       status: "draft",
       notes: "",
+      currency: baseCurrency,
+      exchange_rate: 1,
       tax_regime: companyRegime,
       taxApplicable: false,
       vendor_tax_id: "",
@@ -508,6 +514,15 @@ export default function BillsPage() {
     });
   };
 
+  const handleCurrencyChange = (code: string, rate: number) => {
+    const patch: Partial<BillForm> = { currency: code, exchange_rate: rate };
+    if (code !== newBill.currency) {
+      // A dirham bill is almost always UAE VAT, a rupee bill Indian GST.
+      patch.tax_regime = code === "INR" ? "in_gst" : code === "AED" ? "ae_vat" : code === baseCurrency ? companyRegime : "generic";
+    }
+    patchBill(patch);
+  };
+
   const updateLine = (index: number, patch: Partial<BillLine>) => {
     setNewBill((prev) => ({
       ...prev,
@@ -523,7 +538,15 @@ export default function BillsPage() {
 
   const handleVendorChange = (vendorId: number | null) => {
     const v: any = vendors.find((x: any) => x.id === vendorId);
-    const patch: Partial<BillForm> = { vendor: vendorId, ...vendorTaxDefaults(v, newBill.tax_regime) };
+    const vendorCurrency = (v?.currency || "").toUpperCase() || baseCurrency;
+    const regime: TaxRegime =
+      vendorCurrency === newBill.currency ? newBill.tax_regime
+      : vendorCurrency === "INR" ? "in_gst" : vendorCurrency === "AED" ? "ae_vat" : vendorCurrency === baseCurrency ? companyRegime : "generic";
+    const patch: Partial<BillForm> = {
+      vendor: vendorId,
+      ...(vendorCurrency !== newBill.currency ? { currency: vendorCurrency, exchange_rate: 1, tax_regime: regime } : {}),
+      ...vendorTaxDefaults(v, regime),
+    };
     if (v?.payment_terms) {
       patch.payment_terms = normalizeTerms(v.payment_terms);
       patch.dueDateTouched = false;
@@ -555,9 +578,12 @@ export default function BillsPage() {
           })
         : newBill.items;
     const defaults = vendorTaxDefaults(v, newBill.tax_regime);
+    const poCurrency = (po.currency || baseCurrency).toUpperCase();
     patchBill({
       purchase_order: po.id,
       vendor: po.vendor,
+      currency: poCurrency,
+      exchange_rate: parseFloat(String(po.exchange_rate || 1)) || 1,
       ...defaults,
       vendor_tax_id: defaults.vendor_tax_id || newBill.vendor_tax_id,
       // set items after taxApplicable so the PO's own rates are kept
@@ -662,6 +688,8 @@ export default function BillsPage() {
       payment_terms: bill.payment_terms || "Net 30",
       status: bill.status,
       notes: bill.notes || "",
+      currency: (bill.currency || baseCurrency).toUpperCase(),
+      exchange_rate: parseFloat(String(bill.exchange_rate || 1)) || 1,
       tax_regime: regime,
       taxApplicable:
         !!bill.vendor_tax_id || !!bill.reverse_charge || items.some((i) => i.tax_rate > 0 || i.tax_category !== ""),
@@ -717,6 +745,10 @@ export default function BillsPage() {
     formData.append("payment_terms", newBill.payment_terms);
     formData.append("status", newBill.status);
     formData.append("notes", newBill.notes || "");
+    formData.append("currency", newBill.currency);
+    if (newBill.currency !== baseCurrency && newBill.exchange_rate > 0 && newBill.exchange_rate !== 1) {
+      formData.append("exchange_rate", String(newBill.exchange_rate));
+    }
     formData.append("tax_regime", newBill.tax_regime);
     formData.append("vendor_tax_id", newBill.taxApplicable ? newBill.vendor_tax_id : "");
     formData.append("place_of_supply", regimeCfg.showPlaceOfSupply ? newBill.place_of_supply : "");
@@ -771,7 +803,7 @@ export default function BillsPage() {
       { id: paymentBill.id, payload: formData },
       {
         onSuccess: (updated) => {
-          toast.success(`Payment of ${formatCurrency(amt, currency)} recorded`);
+          toast.success(`Payment of ${formatCurrency(amt, paymentBill.currency || currency)} recorded`);
           setPaymentBill(null);
           if (detailBill?.id === updated.id) {
             setDetailBill(updated);
@@ -1136,7 +1168,7 @@ export default function BillsPage() {
                         <td className="px-5 py-3.5">
                           <div className="flex items-baseline justify-between gap-3 text-xs mb-1">
                             <span className="font-semibold text-ink font-mono">
-                              {formatCurrency(totalAmt, currency)}
+                              {formatCurrency(totalAmt, bill.currency || currency)}
                             </span>
                             <span className="text-[11px] text-muted">
                               {percentPaid}% paid
@@ -1156,7 +1188,7 @@ export default function BillsPage() {
                             />
                           </div>
                           <div className="text-[11px] text-muted mt-1 flex items-center justify-between">
-                            <span>Due: <strong className={dueAmt > 0 ? "text-ink font-mono" : "text-emerald-700"}>{formatCurrency(dueAmt, currency)}</strong></span>
+                            <span>Due: <strong className={dueAmt > 0 ? "text-ink font-mono" : "text-emerald-700"}>{formatCurrency(dueAmt, bill.currency || currency)}</strong></span>
                           </div>
                         </td>
 
@@ -1306,7 +1338,7 @@ export default function BillsPage() {
                 <div>
                   <div className="text-xs font-medium text-emerald-800 uppercase tracking-wider">Remaining Balance Due</div>
                   <div className="text-xl font-bold font-serif text-emerald-950 mt-0.5">
-                    {formatCurrency(parseFloat(String(paymentBill.amount_due || 0)), currency)}
+                    {formatCurrency(parseFloat(String(paymentBill.amount_due || 0)), paymentBill.currency || currency)}
                   </div>
                 </div>
                 <button
@@ -1321,7 +1353,7 @@ export default function BillsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Payment Amount */}
                 <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">Payment Amount ({currency}) *</label>
+                  <label className="block text-xs font-medium text-ink mb-1.5">Payment Amount ({paymentBill.currency || currency}) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1489,19 +1521,19 @@ export default function BillsPage() {
                     {Number(detailBill.tds_amount || 0) > 0 ? "Net Payable" : "Total Amount"}
                   </div>
                   <div className="text-lg font-semibold font-serif text-ink mt-0.5">
-                    {formatCurrency(parseFloat(String(detailBill.net_payable || detailBill.total_amount || 0)), currency)}
+                    {formatCurrency(parseFloat(String(detailBill.net_payable || detailBill.total_amount || 0)), detailBill.currency || currency)}
                   </div>
                 </div>
                 <div>
                   <div className="text-[11px] font-medium text-muted uppercase">Amount Paid</div>
                   <div className="text-lg font-semibold font-serif text-emerald-700 mt-0.5">
-                    {formatCurrency(parseFloat(String(detailBill.amount_paid || 0)), currency)}
+                    {formatCurrency(parseFloat(String(detailBill.amount_paid || 0)), detailBill.currency || currency)}
                   </div>
                 </div>
                 <div>
                   <div className="text-[11px] font-medium text-muted uppercase">Balance Due</div>
                   <div className="text-lg font-semibold font-serif text-rose-700 mt-0.5">
-                    {formatCurrency(parseFloat(String(detailBill.amount_due || 0)), currency)}
+                    {formatCurrency(parseFloat(String(detailBill.amount_due || 0)), detailBill.currency || currency)}
                   </div>
                 </div>
               </div>
@@ -1607,11 +1639,11 @@ export default function BillsPage() {
                             <td className="px-3 py-2 font-medium text-ink">{item.description}</td>
                             {detailBill.tax_regime === "in_gst" && <td className="px-3 py-2 text-muted font-mono">{item.hsn_sac_code || "—"}</td>}
                             <td className="px-3 py-2 text-right text-muted font-mono">{item.quantity}</td>
-                            <td className="px-3 py-2 text-right text-muted font-mono">{formatCurrency(Number(item.unit_price), currency)}</td>
+                            <td className="px-3 py-2 text-right text-muted font-mono">{formatCurrency(Number(item.unit_price), detailBill.currency || currency)}</td>
                             <td className="px-3 py-2 text-right text-muted font-mono">
                               {item.tax_category === "exempt" ? "Exempt" : item.tax_category === "zero" ? "0% (zero)" : `${Number(item.tax_rate)}%`}
                             </td>
-                            <td className="px-3 py-2 text-right font-medium text-ink font-mono">{formatCurrency(Number(item.total || Number(item.quantity) * Number(item.unit_price)), currency)}</td>
+                            <td className="px-3 py-2 text-right font-medium text-ink font-mono">{formatCurrency(Number(item.total || Number(item.quantity) * Number(item.unit_price)), detailBill.currency || currency)}</td>
                           </tr>
                         ))
                       ) : (
@@ -1623,49 +1655,49 @@ export default function BillsPage() {
                   </table>
                 </div>
                 <div className="ml-auto w-full max-w-[280px] text-xs space-y-1.5 pt-1">
-                  <TotalRow label="Subtotal" value={Number(detailBill.subtotal || 0)} currency={currency} />
+                  <TotalRow label="Subtotal" value={Number(detailBill.subtotal || 0)} currency={detailBill.currency || currency} />
                   {Number(detailBill.discount_amount || 0) > 0 && (
                     <>
-                      <TotalRow label="Discount" value={-Number(detailBill.discount_amount)} currency={currency} />
-                      <TotalRow label="Taxable value" value={Number(detailBill.taxable_amount || 0)} currency={currency} />
+                      <TotalRow label="Discount" value={-Number(detailBill.discount_amount)} currency={detailBill.currency || currency} />
+                      <TotalRow label="Taxable value" value={Number(detailBill.taxable_amount || 0)} currency={detailBill.currency || currency} />
                     </>
                   )}
                   {Number(detailBill.igst_amount || 0) > 0 ? (
-                    <TotalRow label="IGST" value={Number(detailBill.igst_amount)} currency={currency} />
+                    <TotalRow label="IGST" value={Number(detailBill.igst_amount)} currency={detailBill.currency || currency} />
                   ) : Number(detailBill.cgst_amount || 0) > 0 || Number(detailBill.sgst_amount || 0) > 0 ? (
                     <>
-                      <TotalRow label="CGST" value={Number(detailBill.cgst_amount)} currency={currency} />
-                      <TotalRow label="SGST" value={Number(detailBill.sgst_amount)} currency={currency} />
+                      <TotalRow label="CGST" value={Number(detailBill.cgst_amount)} currency={detailBill.currency || currency} />
+                      <TotalRow label="SGST" value={Number(detailBill.sgst_amount)} currency={detailBill.currency || currency} />
                     </>
                   ) : (
                     Number(detailBill.tax_amount || 0) > 0 && (
-                      <TotalRow label={TAX_REGIMES[detailBill.tax_regime || "generic"].taxName} value={Number(detailBill.tax_amount)} currency={currency} />
+                      <TotalRow label={TAX_REGIMES[detailBill.tax_regime || "generic"].taxName} value={Number(detailBill.tax_amount)} currency={detailBill.currency || currency} />
                     )
                   )}
                   {Number(detailBill.round_off || 0) !== 0 && (
-                    <TotalRow label="Round off" value={Number(detailBill.round_off)} currency={currency} />
+                    <TotalRow label="Round off" value={Number(detailBill.round_off)} currency={detailBill.currency || currency} />
                   )}
                   <div className="flex justify-between font-semibold text-ink pt-1.5 border-t border-line">
                     <span>Invoice Total</span>
-                    <span className="font-mono">{formatCurrency(Number(detailBill.total_amount || 0), currency)}</span>
+                    <span className="font-mono">{formatCurrency(Number(detailBill.total_amount || 0), detailBill.currency || currency)}</span>
                   </div>
                   {Number(detailBill.tds_amount || 0) > 0 && (
                     <>
                       <TotalRow
                         label={`Less TDS ${detailBill.tds_section_display?.split(" - ")[0] || ""} @ ${Number(detailBill.tds_rate)}%`}
                         value={-Number(detailBill.tds_amount)}
-                        currency={currency}
+                        currency={detailBill.currency || currency}
                       />
                       <div className="flex justify-between font-semibold text-emerald-800 pt-1.5 border-t border-line">
                         <span>Net Payable</span>
-                        <span className="font-mono">{formatCurrency(Number(detailBill.net_payable || 0), currency)}</span>
+                        <span className="font-mono">{formatCurrency(Number(detailBill.net_payable || 0), detailBill.currency || currency)}</span>
                       </div>
                     </>
                   )}
                   {detailBill.reverse_charge && (
                     <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900 flex justify-between">
                       <span>{TAX_REGIMES[detailBill.tax_regime || "generic"].taxName} under reverse charge (self-accounted)</span>
-                      <span className="font-mono">{formatCurrency(Number(detailBill.reverse_charge_amount || 0), currency)}</span>
+                      <span className="font-mono">{formatCurrency(Number(detailBill.reverse_charge_amount || 0), detailBill.currency || currency)}</span>
                     </div>
                   )}
                 </div>
@@ -1692,7 +1724,7 @@ export default function BillsPage() {
                       <div key={p.id} className="p-3 bg-bone rounded-lg border border-line text-xs flex items-center justify-between">
                         <div>
                           <div className="font-semibold text-emerald-700 font-mono text-sm">
-                            +{formatCurrency(parseFloat(String(p.amount)), currency)}
+                            +{formatCurrency(parseFloat(String(p.amount)), detailBill.currency || currency)}
                           </div>
                           <div className="text-muted mt-0.5 flex items-center gap-2">
                             <span>{p.payment_date}</span>
@@ -1884,7 +1916,13 @@ export default function BillsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                <CurrencyPicker
+                  currency={newBill.currency}
+                  rate={newBill.exchange_rate}
+                  baseCurrency={baseCurrency}
+                  onChange={handleCurrencyChange}
+                />
                 <div>
                   <label className={labelCls}>Expense Category</label>
                   <select
@@ -1915,7 +1953,9 @@ export default function BillsPage() {
                   </select>
                 </div>
 
-                <div>
+              </div>
+
+              <div>
                   <label className={labelCls}>Vendor Invoice Attachment</label>
                   <div className="flex items-center gap-2">
                     <input
@@ -1937,7 +1977,6 @@ export default function BillsPage() {
                     )}
                   </div>
                 </div>
-              </div>
 
               {/* Tax details */}
               <div className="p-4 rounded-lg border border-line bg-bone/40 space-y-3">
@@ -2178,7 +2217,7 @@ export default function BillsPage() {
                           )}
                           <div className="flex md:block items-center justify-between md:text-right md:pt-1.5">
                             <span className={mobileLabelCls}>Amount</span>
-                            <span className="text-sm font-mono font-medium text-ink">{formatCurrency(lineAmount, currency)}</span>
+                            <span className="text-sm font-mono font-medium text-ink">{formatCurrency(lineAmount, newBill.currency)}</span>
                           </div>
                           <div className="flex justify-end md:pt-0.5">
                             {newBill.items.length > 1 && (
@@ -2206,7 +2245,7 @@ export default function BillsPage() {
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={labelCls}>Discount ({currency})</label>
+                        <label className={labelCls}>Discount ({newBill.currency})</label>
                         <input
                           type="number"
                           step="0.01"
@@ -2269,38 +2308,38 @@ export default function BillsPage() {
                   </div>
 
                   <div className="p-4 rounded-lg border border-line text-xs space-y-1.5">
-                    <TotalRow label="Subtotal" value={totals.subtotal} currency={currency} />
+                    <TotalRow label="Subtotal" value={totals.subtotal} currency={newBill.currency} />
                     {totals.discount > 0 && (
                       <>
-                        <TotalRow label="Discount" value={-totals.discount} currency={currency} />
-                        <TotalRow label="Taxable value" value={totals.taxable} currency={currency} />
+                        <TotalRow label="Discount" value={-totals.discount} currency={newBill.currency} />
+                        <TotalRow label="Taxable value" value={totals.taxable} currency={newBill.currency} />
                       </>
                     )}
                     {newBill.taxApplicable && !newBill.reverse_charge && (
                       newBill.tax_regime === "in_gst" ? (
                         newBill.supply_type === "inter" ? (
-                          <TotalRow label="IGST" value={totals.igst} currency={currency} />
+                          <TotalRow label="IGST" value={totals.igst} currency={newBill.currency} />
                         ) : (
                           <>
-                            <TotalRow label="CGST" value={totals.cgst} currency={currency} />
-                            <TotalRow label="SGST" value={totals.sgst} currency={currency} />
+                            <TotalRow label="CGST" value={totals.cgst} currency={newBill.currency} />
+                            <TotalRow label="SGST" value={totals.sgst} currency={newBill.currency} />
                           </>
                         )
                       ) : (
-                        <TotalRow label={regimeCfg.taxName} value={totals.tax} currency={currency} />
+                        <TotalRow label={regimeCfg.taxName} value={totals.tax} currency={newBill.currency} />
                       )
                     )}
-                    {totals.roundOff !== 0 && <TotalRow label="Round off" value={totals.roundOff} currency={currency} />}
+                    {totals.roundOff !== 0 && <TotalRow label="Round off" value={totals.roundOff} currency={newBill.currency} />}
                     <div className="flex justify-between font-bold text-ink pt-2 border-t border-line">
                       <span>Invoice Total</span>
-                      <span className="font-mono text-sm">{formatCurrency(totals.total, currency)}</span>
+                      <span className="font-mono text-sm">{formatCurrency(totals.total, newBill.currency)}</span>
                     </div>
                     {totals.tds > 0 && (
                       <>
-                        <TotalRow label={`Less TDS @ ${totals.tdsRate}%`} value={-totals.tds} currency={currency} />
+                        <TotalRow label={`Less TDS @ ${totals.tdsRate}%`} value={-totals.tds} currency={newBill.currency} />
                         <div className="flex justify-between font-bold text-emerald-800 pt-2 border-t border-line">
                           <span>Net Payable to Vendor</span>
-                          <span className="font-mono text-sm">{formatCurrency(totals.net, currency)}</span>
+                          <span className="font-mono text-sm">{formatCurrency(totals.net, newBill.currency)}</span>
                         </div>
                       </>
                     )}
@@ -2308,7 +2347,7 @@ export default function BillsPage() {
                       <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900">
                         <div className="flex justify-between font-medium">
                           <span>{regimeCfg.taxName} under reverse charge</span>
-                          <span className="font-mono">{formatCurrency(totals.reverseCharge, currency)}</span>
+                          <span className="font-mono">{formatCurrency(totals.reverseCharge, newBill.currency)}</span>
                         </div>
                         <p className="text-[11px] mt-0.5">You account for this yourself. It is not paid to the vendor.</p>
                       </div>

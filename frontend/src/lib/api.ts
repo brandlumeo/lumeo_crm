@@ -1929,8 +1929,11 @@ export interface Bill {
     company_name?: string;
     tax_id?: string;
     payment_terms?: string;
+    currency?: string;
   };
   purchase_order?: number | null;
+  currency?: string | null;
+  exchange_rate?: string | number;
   vendor_reference?: string;
   tax_regime?: "in_gst" | "ae_vat" | "generic";
   tax_regime_display?: string;
@@ -2072,5 +2075,13 @@ export async function getAIMonthlyAnalysis(month: number, year: number) {
 
 export async function generateAIMonthlyAnalysis(month: number, year: number) {
   const { data } = await api.post<AIMonthlyPerformanceResponse>("/attendance/reports/ai-monthly-analysis/", { month, year });
+  return data;
+}
+
+// Exchange rates (document currency -> company base currency)
+export async function fetchExchangeRate(from: string, to?: string) {
+  const { data } = await api.get<{ from: string; to: string; rate: string }>("/crm/fx-rate/", {
+    params: to ? { from, to } : { from },
+  });
   return data;
 }
