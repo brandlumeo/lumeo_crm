@@ -137,6 +137,8 @@ function QuotesPageContent() {
     toast.success("Applied 50% Advance / 50% Balance payment split");
   };
 
+  const isBrandLumeo = (company?.name || "").toLowerCase().includes("brandlumeo");
+
   // Load Preset
   const handleLoadPreset = () => {
     setTitle(AGENCY_GROWTH_PRESET.title);
@@ -149,7 +151,7 @@ function QuotesPageContent() {
     setClientResponsibilities([...AGENCY_GROWTH_PRESET.client_responsibilities]);
     setExclusions([...AGENCY_GROWTH_PRESET.exclusions]);
     setTermsConditions([...AGENCY_GROWTH_PRESET.terms_conditions]);
-    toast.success("Loaded BrandLumeo Growth Package SOW Preset");
+    toast.success(isBrandLumeo ? "Loaded BrandLumeo Growth Package SOW Preset" : "Loaded Sample Agency Proposal Template");
   };
 
   // Handle URL params for direct lead quotation creation
@@ -161,15 +163,25 @@ function QuotesPageContent() {
         setSelectedLeadId(l.id);
         setClientName(l.name || (l as any).company || "");
         setClientPhone(l.mobile || "");
-        setClientAddress((l as any).address || "Calicut, Kerala");
-        setTitle(`Growth Package - ${l.name}`);
+        setClientAddress((l as any).address || "");
+        setTitle(isBrandLumeo ? `Growth Package - ${l.name}` : `Quotation - ${l.name}`);
         if (createParam === "true") {
-          handleLoadPreset();
+          if (isBrandLumeo) {
+            handleLoadPreset();
+          } else {
+            resetForm();
+            setClientType("lead");
+            setSelectedLeadId(l.id);
+            setClientName(l.name || (l as any).company || "");
+            setClientPhone(l.mobile || "");
+            setClientAddress((l as any).address || "");
+            setTitle(`Quotation - ${l.name}`);
+          }
           setIsModalOpen(true);
         }
       }
     }
-  }, [leadParam, leads, createParam]);
+  }, [leadParam, leads, createParam, company, isBrandLumeo]);
 
   // When Lead is selected
   const handleLeadSelect = (idStr: string) => {
@@ -180,7 +192,7 @@ function QuotesPageContent() {
     if (l) {
       setClientName(l.name || (l as any).company || "");
       setClientPhone(l.mobile || "");
-      setClientAddress((l as any).address || "Calicut, Kerala");
+      setClientAddress((l as any).address || "");
       if (!title) setTitle(`Quotation - ${l.name}`);
     }
   };
@@ -572,7 +584,7 @@ function QuotesPageContent() {
             <div className="px-6 py-4 border-b border-line flex justify-between items-center bg-bone">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">
-                  BrandLumeo Executive Proposal Studio
+                  {company?.name ? `${company.name} Proposal Studio` : "Executive Proposal Studio"}
                 </span>
                 <h2 className="text-lg font-bold text-ink mt-1">
                   {editQuoteId ? "Edit Quotation Statement of Work" : "Create New Quotation SOW"}
@@ -582,11 +594,15 @@ function QuotesPageContent() {
                 <button
                   type="button"
                   onClick={handleLoadPreset}
-                  className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
-                  title="Load digital marketing Growth Package defaults"
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${
+                    isBrandLumeo
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-paper hover:bg-bone border border-line text-ink"
+                  }`}
+                  title={isBrandLumeo ? "Load digital marketing Growth Package defaults" : "Load sample agency deliverables as a starting template"}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Load Growth Package Preset
+                  <Sparkles className={`w-3.5 h-3.5 ${isBrandLumeo ? "text-white" : "text-emerald-700"}`} />
+                  {isBrandLumeo ? "Load Growth Package Preset" : "Load Sample Agency Preset"}
                 </button>
                 <button 
                   onClick={() => setIsModalOpen(false)} 
@@ -756,7 +772,7 @@ function QuotesPageContent() {
                         required
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g. Growth Package"
+                        placeholder={isBrandLumeo ? "e.g. Growth Package" : "e.g. Website Revamp / Supply Order / Consulting"}
                         className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm font-semibold outline-none focus:border-ink"
                       />
                     </div>
@@ -808,7 +824,7 @@ function QuotesPageContent() {
                       rows={3}
                       value={overview}
                       onChange={(e) => setOverview(e.target.value)}
-                      placeholder="This quotation covers our Growth Package for Edufix Learning — a one-month digital marketing programme..."
+                      placeholder="Executive overview outlining project background, scope objectives, and deliverables..."
                       className="w-full px-3 py-2 bg-bone border border-line rounded-lg text-sm leading-relaxed outline-none focus:border-ink"
                     />
                   </div>

@@ -56,7 +56,7 @@ init_fonts()
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
-        self.footer_company_name = kwargs.pop("footer_company_name", "BrandLumeo Marketing LLP")
+        self.footer_company_name = kwargs.pop("footer_company_name", "")
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
 
@@ -79,7 +79,7 @@ class NumberedCanvas(canvas.Canvas):
 
         # Single page proposal
         if page_count == 1:
-            left_text = self.footer_company_name or "BrandLumeo Marketing LLP"
+            left_text = self.footer_company_name or "Company"
             self.drawString(36, 16, left_text)
             self.drawRightString(self._pagesize[0] - 36, 16, "Page 1 of 1")
             self.restoreState()
@@ -89,7 +89,7 @@ class NumberedCanvas(canvas.Canvas):
         # Page 1: Company legal name on left, Page 1 of 2 on right
         # Page 2+: "Thank you for your business." on left, Page X of Y on right
         if self._pageNumber == 1:
-            left_text = self.footer_company_name or "BrandLumeo Marketing LLP"
+            left_text = self.footer_company_name or "Company"
         else:
             left_text = "Thank you for your business."
 
@@ -237,11 +237,31 @@ def _build_quote_story(quote, is_compact=False):
         return ParagraphStyle(name, parent=styles["Normal"], **kwargs)
 
     # Company Details & Branding
-    company_name = getattr(comp, "legal_name", None) or comp.name or "BrandLumeo Marketing LLP"
+    is_brandlumeo = "brandlumeo" in (getattr(comp, "name", "") or "").lower() or "brandlumeo" in (getattr(comp, "slug", "") or "").lower()
+    company_name = getattr(comp, "legal_name", None) or comp.name or ("BrandLumeo Marketing LLP" if is_brandlumeo else "Company")
     addr_parts = [p for p in [comp.address_line1, comp.address_line2, comp.city, comp.state, comp.postal_code] if p]
-    company_address = ", ".join(addr_parts) if addr_parts else "Payyoli Perambra Rd, Kizhur, Kerala 673522"
-    company_phone = getattr(comp, "phone", None) or getattr(settings, "company_phone", None) or "+91 97464 57565"
-    company_email = getattr(comp, "company_email", None) or getattr(comp, "email", None) or "info@brandlumeo.com"
+    if addr_parts:
+        company_address = ", ".join(addr_parts)
+    elif is_brandlumeo:
+        company_address = "Payyoli Perambra Rd, Kizhur, Kerala 673522"
+    else:
+        company_address = ""
+
+    comp_phone_val = getattr(comp, "phone", None) or getattr(settings, "company_phone", None)
+    if comp_phone_val:
+        company_phone = str(comp_phone_val)
+    elif is_brandlumeo:
+        company_phone = "+91 97464 57565"
+    else:
+        company_phone = ""
+
+    comp_email_val = getattr(comp, "company_email", None) or getattr(comp, "email", None)
+    if comp_email_val:
+        company_email = str(comp_email_val)
+    elif is_brandlumeo:
+        company_email = "info@brandlumeo.com"
+    else:
+        company_email = ""
 
     # Logo resolution
     logo_flowable = None
@@ -258,18 +278,26 @@ def _build_quote_story(quote, is_compact=False):
             logo_flowable = None
 
     if not logo_flowable:
-        logo_flowable = Paragraph(
-            f'<font name="Helvetica-Bold" size="{"16" if is_compact else "18"}" color="{ink_slate}">Brand</font>'
-            f'<font name="Helvetica-Bold" size="{"16" if is_compact else "18"}" color="{accent_green}">Lumeo</font>',
-            ps("BrandLogo", fontSize=16 if is_compact else 18, leading=20 if is_compact else 22)
-        )
+        if is_brandlumeo:
+            logo_flowable = Paragraph(
+                f'<font name="Helvetica-Bold" size="{"16" if is_compact else "18"}" color="{ink_slate}">Brand</font>'
+                f'<font name="Helvetica-Bold" size="{"16" if is_compact else "18"}" color="{accent_green}">Lumeo</font>',
+                ps("BrandLogo", fontSize=16 if is_compact else 18, leading=20 if is_compact else 22)
+            )
+        else:
+            logo_flowable = Paragraph(
+                f'<font name="Helvetica-Bold" size="{"15" if is_compact else "17"}" color="{ink_slate}">{esc(company_name)}</font>',
+                ps("CompanyLogoText", fontSize=15 if is_compact else 17, leading=19 if is_compact else 21)
+            )
 
     def build_header():
-        company_info_text = (
-            f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8.5"}" color="{ink_slate}">{company_name.upper()}</font><br/>'
-            f'<font size="{"6.5" if is_compact else "7"}" color="{muted_slate}">{company_address}</font><br/>'
-            f'<font size="{"6.5" if is_compact else "7"}" color="{muted_slate}">{company_phone} &nbsp;·&nbsp; {company_email}</font>'
-        )
+        meta_lines = [f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8.5"}" color="{ink_slate}">{esc(company_name.upper())}</font>']
+        if company_address:
+            meta_lines.append(f'<font size="{"6.5" if is_compact else "7"}" color="{muted_slate}">{esc(company_address)}</font>')
+        contact_line = " · ".join([esc(x) for x in [company_phone, company_email] if x])
+        if contact_line:
+            meta_lines.append(f'<font size="{"6.5" if is_compact else "7"}" color="{muted_slate}">{contact_line}</font>')
+        company_info_text = "<br/>".join(meta_lines)
         header_table = Table(
             [[logo_flowable, Paragraph(company_info_text, ps("HeaderRight", fontSize=6.5 if is_compact else 7, leading=9.5 if is_compact else 10, alignment=2))]],
             colWidths=[200, 340]
@@ -632,60 +660,78 @@ def _build_quote_story(quote, is_compact=False):
     story.append(Spacer(1, 6 if is_compact else 14))
 
     # ── 2-Column Bottom: BANK DETAILS vs AUTHORIZED SIGNATORY ─────────────────
-    bank_name = getattr(settings, "bank_name", None) or "HDFC Bank"
-    bank_acc_name = getattr(settings, "bank_account_name", None) or company_name
-    bank_acc_no = getattr(settings, "bank_account_number", None) or "50200109172854"
-    bank_ifsc = getattr(settings, "bank_routing_number", None) or "HDFC0008363"
-    upi_id = getattr(settings, "upi_id", None) or "info@brandlumeo.com"
+    raw_bank_name = getattr(settings, "bank_name", None)
+    raw_bank_acc_no = getattr(settings, "bank_account_number", None)
+    raw_bank_ifsc = getattr(settings, "bank_routing_number", None)
+    raw_upi_id = getattr(settings, "upi_id", None)
+    raw_bank_acc_name = getattr(settings, "bank_account_name", None)
+
+    if is_brandlumeo:
+        bank_name = raw_bank_name or "HDFC Bank"
+        bank_acc_name = raw_bank_acc_name or company_name
+        bank_acc_no = raw_bank_acc_no or "50200109172854"
+        bank_ifsc = raw_bank_ifsc or "HDFC0008363"
+        upi_id = raw_upi_id or "info@brandlumeo.com"
+    else:
+        bank_name = raw_bank_name or ""
+        bank_acc_name = raw_bank_acc_name or company_name
+        bank_acc_no = raw_bank_acc_no or ""
+        bank_ifsc = raw_bank_ifsc or ""
+        upi_id = raw_upi_id or ""
 
     is_inr = qcur == "INR"
+    has_bank_info = bool(bank_acc_no)
 
-    # Generate UPI QR Code
-    tot_val = float(quote.total or 0)
-    upi_payload = f"upi://pay?pa={upi_id}&pn={urllib.parse.quote(company_name)}&am={tot_val:.2f}&cu=INR"
-    qr_widget = QrCodeWidget(upi_payload)
-    qr_size = 44 if is_compact else 56
-    qr_widget.barWidth = qr_size
-    qr_widget.barHeight = qr_size
-    qr_widget.qrVersion = 1
-    qr_drawing = Drawing(qr_size, qr_size)
-    qr_drawing.add(qr_widget)
+    if has_bank_info:
+        qr_size = 44 if is_compact else 56
+        qr_drawing = None
 
-    bank_details_html = (
-        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Account Name:</font> &nbsp;'
-        f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_acc_name)}</font><br/>'
-        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Bank:</font> &nbsp;'
-        f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_name)}</font><br/>'
-        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Account No.:</font> &nbsp;'
-        f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_acc_no)}</font><br/>'
-        f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">{"IFSC" if is_inr else "SWIFT / Routing"}:</font> &nbsp;'
-        f'<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_ifsc)}</font>'
-    )
-    if is_inr:
-        # UPI only settles in INR, so the QR is shown on rupee quotes only.
-        bank_details_html += (
-            f'<br/><font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">UPI:</font> &nbsp;'
-            f'<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Scan QR to pay</font>'
-        )
+        if is_inr and upi_id:
+            tot_val = float(quote.total or 0)
+            upi_payload = f"upi://pay?pa={upi_id}&pn={urllib.parse.quote(company_name)}&am={tot_val:.2f}&cu=INR"
+            qr_widget = QrCodeWidget(upi_payload)
+            qr_widget.barWidth = qr_size
+            qr_widget.barHeight = qr_size
+            qr_widget.qrVersion = 1
+            qr_drawing = Drawing(qr_size, qr_size)
+            qr_drawing.add(qr_widget)
 
-    bank_para = Paragraph(bank_details_html, ps("BankP", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))
-    if is_inr:
-        bank_inner_table = Table([[qr_drawing, bank_para]], colWidths=[qr_size + 8, 260 - (qr_size + 8)])
+        bank_lines = []
+        if bank_acc_name:
+            bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Account Name:</font> &nbsp;<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_acc_name)}</font>')
+        if bank_name:
+            bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Bank:</font> &nbsp;<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_name)}</font>')
+        bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Account No.:</font> &nbsp;<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_acc_no)}</font>')
+        if bank_ifsc:
+            bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">{"IFSC" if is_inr else "SWIFT / Routing"}:</font> &nbsp;<font name="{FONT_REG}" size="{"7" if is_compact else "7.5"}" color="{ink_slate}">{esc(bank_ifsc)}</font>')
+        if is_inr and qr_drawing:
+            bank_lines.append(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">UPI:</font> &nbsp;<font size="{"7" if is_compact else "7.5"}" color="{ink_slate}">Scan QR to pay</font>')
+
+        bank_details_html = "<br/>".join(bank_lines)
+        bank_para = Paragraph(bank_details_html, ps("BankP", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))
+
+        if qr_drawing:
+            bank_inner_table = Table([[qr_drawing, bank_para]], colWidths=[qr_size + 8, 260 - (qr_size + 8)])
+        else:
+            bank_inner_table = Table([[bank_para]], colWidths=[260])
+        bank_inner_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        bank_block = [
+            Paragraph(f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8"}" color="{accent_green}">BANK DETAILS</font>', ps("BankHead", fontSize=7.5 if is_compact else 8, leading=9 if is_compact else 10)),
+            Spacer(1, 2 if is_compact else 3),
+            bank_inner_table
+        ]
     else:
-        bank_inner_table = Table([[bank_para]], colWidths=[260])
-    bank_inner_table.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
-
-    bank_block = [
-        Paragraph(f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8"}" color="{accent_green}">BANK DETAILS</font>', ps("BankHead", fontSize=7.5 if is_compact else 8, leading=9 if is_compact else 10)),
-        Spacer(1, 2 if is_compact else 3),
-        bank_inner_table
-    ]
+        bank_block = [
+            Paragraph(f'<font name="Helvetica-Bold" size="{"7.5" if is_compact else "8"}" color="{accent_green}">PAYMENT TERMS</font>', ps("PTermsHead", fontSize=7.5 if is_compact else 8, leading=9 if is_compact else 10)),
+            Spacer(1, 2 if is_compact else 3),
+            Paragraph(f'<font size="{"7" if is_compact else "7.5"}" color="{muted_slate}">Payment details and remittance instructions will be provided on the official invoice upon quotation acceptance.</font>', ps("PTermsDesc", fontSize=7 if is_compact else 7.5, leading=9.5 if is_compact else 10.5))
+        ]
 
     sig_lead = "<br/>" if is_compact else "<br/><br/><br/>"
     signatory_html = (
@@ -747,7 +793,8 @@ def generate_agency_quote_pdf_response(quote):
     and a comprehensive 2-page Agency proposal for full package deliverables.
     """
     comp = quote.company
-    company_name = getattr(comp, "legal_name", None) or getattr(comp, "name", None) or "BrandLumeo Marketing LLP"
+    is_brandlumeo = "brandlumeo" in (getattr(comp, "name", "") or "").lower() or "brandlumeo" in (getattr(comp, "slug", "") or "").lower()
+    company_name = getattr(comp, "legal_name", None) or getattr(comp, "name", None) or ("BrandLumeo Marketing LLP" if is_brandlumeo else "Company")
     line_items_count = quote.items.count()
     can_be_compact = line_items_count <= 3 and len(quote.overview or "") < 600
 
