@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { AiChatWidget } from "@/components/ai-chat-widget";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function AppLayout({
         <Sidebar />
       </div>
       <main className="flex flex-col min-w-0 flex-1 overflow-x-hidden">
+        <ImpersonationBanner />
         <Topbar />
         {children}
         {modal}

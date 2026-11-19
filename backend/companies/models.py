@@ -480,7 +480,10 @@ class PlatformSettings(models.Model):
     # Keys / Configs (In reality, these should be encrypted or in env vars, but this is for demo UI)
     stripe_public_key = models.CharField(max_length=255, blank=True)
     support_email = models.EmailField(default='support@crm.estgrp.in')
-    
+
+    # Admin-edited plan prices/limits, merged over subscriptions.models.PLAN_LIMITS
+    plan_overrides = models.JSONField(default=dict, blank=True)
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -493,6 +496,26 @@ class PlatformSettings(models.Model):
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(id=1)
         return obj
+
+class PlatformAuditLog(models.Model):
+    """Every action a platform (SaaS) admin takes: plan changes, suspensions, impersonation, settings."""
+
+    actor = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, related_name="platform_actions")
+    actor_email = models.CharField(max_length=255, blank=True, default="")
+    action = models.CharField(max_length=60, db_index=True)
+    company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True, related_name="platform_audit_logs")
+    target_user = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    summary = models.CharField(max_length=500)
+    details = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.created_at:%Y-%m-%d %H:%M} {self.actor_email}: {self.summary}"
+
 
 class Unit(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="units")

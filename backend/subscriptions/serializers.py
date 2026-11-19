@@ -48,10 +48,11 @@ class PlanDetailSerializer(serializers.Serializer):
 
 
 def build_plan_catalogue(current_plan: str):
-    from .models import Plan
+    from .models import Plan, get_plan_catalog
+    catalog = get_plan_catalog()
     result = []
     for choice_key, choice_label in Plan.choices:
-        limits = PLAN_LIMITS[choice_key]
+        limits = catalog[choice_key]
         result.append({
             "key": choice_key,
             "name": choice_label,

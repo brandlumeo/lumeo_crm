@@ -1,120 +1,321 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Users, Activity, Settings, ArrowLeft, CreditCard, Menu, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import {
+  LayoutDashboard, Building2, Users, Settings, ArrowLeft, Wallet, Menu, X, Search, ScrollText, Command, Loader2, CornerDownLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useCurrentUser } from "@/lib/queries";
+import { saasApi, type SaasUser, type TenantRow } from "@/lib/saas";
+import { Avatar, PlanBadge, StatusBadge } from "@/components/saas/ui";
 
-const nav = [
-  { label: "Dashboard", href: "/saas", icon: LayoutDashboard },
-  { label: "Tenants", href: "/saas/companies", icon: Building2 },
-  { label: "Global Users", href: "/saas/users", icon: Users },
-  { label: "Billing", href: "/saas/billing", icon: CreditCard },
-  { label: "Settings", href: "/saas/settings", icon: Settings },
+const NAV = [
+  { group: "Insights", items: [{ label: "Overview", href: "/saas", icon: LayoutDashboard }] },
+  {
+    group: "Customers",
+    items: [
+      { label: "Tenants", href: "/saas/companies", icon: Building2 },
+      { label: "Users", href: "/saas/users", icon: Users },
+    ],
+  },
+  { group: "Revenue", items: [{ label: "Billing & plans", href: "/saas/billing", icon: Wallet }] },
+  {
+    group: "Platform",
+    items: [
+      { label: "Audit log", href: "/saas/audit", icon: ScrollText },
+      { label: "Settings", href: "/saas/settings", icon: Settings },
+    ],
+  },
 ];
 
-function SaasSidebar({ pathname, onClose }: { pathname: string, onClose?: () => void }) {
+function isActive(pathname: string, href: string) {
+  return href === "/saas" ? pathname === "/saas" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function Sidebar({ pathname, onNavigate, onSearch }: { pathname: string; onNavigate?: () => void; onSearch: () => void }) {
+  const { data: me } = useCurrentUser();
+  const name = me ? `${me.first_name || ""} ${me.last_name || ""}`.trim() || me.email : "Admin";
   return (
-    <aside className="w-[260px] h-full bg-[#0f0f11] border-r border-white/5 flex flex-col shrink-0 relative z-20">
-      <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10" />
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 relative z-10">
-            <Activity className="w-5 h-5 text-white" />
-          </div>
-          <span className="ml-3 font-semibold tracking-wide text-sm relative z-10">Lumeo SaaS</span>
-        </div>
-        {onClose && (
-          <button onClick={onClose} className="relative z-10 p-1 md:hidden text-white/60 hover:text-white">
-            <X className="w-5 h-5" />
+    <aside className="flex h-full w-[264px] shrink-0 flex-col border-r border-white/[0.06] bg-[#08080B]/95">
+      <div className="flex h-[68px] items-center justify-between px-5">
+        <Link href="/saas" onClick={onNavigate} className="flex items-center gap-3">
+          <span className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#D9B97A]/30 bg-gradient-to-br from-[#2A2214] to-[#0F0C07] shadow-[0_0_24px_-6px_rgba(217,185,122,0.45)]">
+            <span className="font-serif text-[19px] leading-none text-[#E9D3A3]">L</span>
+          </span>
+          <span className="leading-tight">
+            <span className="block text-[14px] font-semibold tracking-wide text-white">Lumeo</span>
+            <span className="block text-[10.5px] uppercase tracking-[0.24em] text-[#D9B97A]/70">Platform</span>
+          </span>
+        </Link>
+        {onNavigate && (
+          <button onClick={onNavigate} className="rounded-lg p-1.5 text-white/50 hover:bg-white/5 hover:text-white md:hidden" aria-label="Close menu">
+            <X className="h-5 w-5" />
           </button>
         )}
       </div>
-      
-      <div className="p-4 flex-1">
-        <div className="text-xs font-medium text-white/40 mb-3 px-3 uppercase tracking-wider">Platform</div>
-        <nav className="flex flex-col gap-1.5">
-          {nav.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm group relative",
-                  active 
-                    ? "text-white bg-white/10 shadow-sm" 
-                    : "text-white/60 hover:text-white hover:bg-white/5"
-                )}
-              >
-                {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
-                )}
-                <item.icon className={cn("w-4 h-4 transition-colors", active ? "text-indigo-400" : "text-white/40 group-hover:text-white/70")} />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+
+      <div className="px-4">
+        <button
+          onClick={onSearch}
+          className="flex h-9 w-full items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-[12.5px] text-white/40 transition hover:border-white/15 hover:text-white/70"
+        >
+          <Search className="h-3.5 w-3.5" />
+          Search tenants, users…
+          <kbd className="ml-auto flex items-center gap-0.5 rounded-md border border-white/10 px-1.5 text-[10px] text-white/40">
+            <Command className="h-2.5 w-2.5" />K
+          </kbd>
+        </button>
       </div>
 
-      <div className="p-4 border-t border-white/5">
+      <nav className="mt-5 flex-1 space-y-6 overflow-y-auto px-3">
+        {NAV.map((section) => (
+          <div key={section.group}>
+            <div className="mb-2 px-3 text-[10.5px] font-medium uppercase tracking-[0.2em] text-white/25">{section.group}</div>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] transition",
+                      active ? "bg-white/[0.06] text-white" : "text-white/50 hover:bg-white/[0.03] hover:text-white/85",
+                    )}
+                  >
+                    {active && <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-[#D9B97A] shadow-[0_0_12px_rgba(217,185,122,0.8)]" />}
+                    <item.icon className={cn("h-4 w-4", active ? "text-[#E9D3A3]" : "text-white/35 group-hover:text-white/60")} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="space-y-1 border-t border-white/[0.06] p-3">
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+          <Avatar name={name} size={30} tone="linear-gradient(135deg,#3A2E17,#16120A)" />
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-[12.5px] text-white/85">{name}</div>
+            <div className="text-[10.5px] uppercase tracking-[0.16em] text-[#D9B97A]/70">Super admin</div>
+          </div>
+        </div>
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm text-white/60 hover:text-white hover:bg-white/5 group"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] text-white/45 transition hover:bg-white/[0.03] hover:text-white/80"
         >
-          <ArrowLeft className="w-4 h-4 text-white/40 group-hover:text-white/70" />
-          <span className="font-medium">Exit Admin</span>
+          <ArrowLeft className="h-4 w-4" />
+          Back to CRM
         </Link>
       </div>
     </aside>
   );
 }
 
-export default function SaasLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [tenants, setTenants] = useState<TenantRow[]>([]);
+  const [users, setUsers] = useState<SaasUser[]>([]);
+  const [cursor, setCursor] = useState(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+    if (!open) {
+      setQ("");
+      setTenants([]);
+      setUsers([]);
+      return;
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    if (!q.trim()) {
+      setTenants([]);
+      setUsers([]);
+      return;
+    }
+    timer.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const [t, u] = await Promise.all([saasApi.tenants({ search: q, page_size: 5 }), saasApi.users({ search: q, page_size: 5 })]);
+        setTenants(t.results);
+        setUsers(u.results);
+        setCursor(0);
+      } catch {
+        /* ignore */
+      } finally {
+        setLoading(false);
+      }
+    }, 220);
+  }, [q]);
+
+  const items: { key: string; href: string; render: () => React.ReactNode }[] = [
+    ...tenants.map((t) => ({
+      key: `t-${t.id}`,
+      href: `/saas/companies/${t.id}`,
+      render: () => (
+        <>
+          <Avatar name={t.name} size={28} />
+          <span className="min-w-0 flex-1 truncate text-white/85">{t.name}</span>
+          <PlanBadge plan={t.plan} label={t.plan_display} />
+          <StatusBadge status={t.status} />
+        </>
+      ),
+    })),
+    ...users.map((u) => ({
+      key: `u-${u.id}`,
+      href: u.company ? `/saas/companies/${u.company.id}` : "/saas/users",
+      render: () => (
+        <>
+          <Avatar name={u.name} size={28} />
+          <span className="min-w-0 flex-1 truncate">
+            <span className="text-white/85">{u.name}</span>
+            <span className="ml-2 text-white/35">{u.email}</span>
+          </span>
+          <span className="text-[11.5px] text-white/35">{u.company?.name}</span>
+        </>
+      ),
+    })),
+  ];
+
+  const go = (href: string) => {
+    onOpenChange(false);
+    router.push(href);
+  };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full bg-[#0a0a0b] text-white selection:bg-indigo-500/30 overflow-hidden font-sans">
-      {/* Mobile Header */}
-      <div className="md:hidden h-16 border-b border-white/5 flex items-center px-4 shrink-0 bg-[#0f0f11] relative z-20">
-        <button onClick={() => setMobileMenuOpen(true)} className="p-2 -ml-2 text-white/60 hover:text-white">
-          <Menu className="w-6 h-6" />
-        </button>
-        <span className="ml-2 font-semibold tracking-wide text-sm">Lumeo SaaS Admin</span>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[95] bg-black/70 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-[14vh] z-[96] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-[#101016] shadow-2xl focus:outline-none">
+          <Dialog.Title className="sr-only">Search</Dialog.Title>
+          <Dialog.Description className="sr-only">Search tenants and users</Dialog.Description>
+          <div className="flex items-center gap-3 border-b border-white/[0.06] px-4">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin text-white/40" /> : <Search className="h-4 w-4 text-white/40" />}
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setCursor((c) => Math.min(c + 1, items.length - 1));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setCursor((c) => Math.max(c - 1, 0));
+                } else if (e.key === "Enter" && items[cursor]) {
+                  go(items[cursor].href);
+                }
+              }}
+              placeholder="Search tenants, users, emails…"
+              className="h-14 flex-1 bg-transparent text-[14px] text-white placeholder:text-white/30 outline-none"
+            />
+            <kbd className="rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-white/35">ESC</kbd>
+          </div>
+          <div className="max-h-[50vh] overflow-y-auto p-2">
+            {!q.trim() ? (
+              <div className="px-3 py-8 text-center text-[12.5px] text-white/35">Type a company name, person or email.</div>
+            ) : items.length === 0 && !loading ? (
+              <div className="px-3 py-8 text-center text-[12.5px] text-white/35">No matches for “{q}”.</div>
+            ) : (
+              items.map((item, i) => (
+                <button
+                  key={item.key}
+                  onMouseEnter={() => setCursor(i)}
+                  onClick={() => go(item.href)}
+                  className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px]", i === cursor ? "bg-white/[0.06]" : "hover:bg-white/[0.03]")}
+                >
+                  {item.render()}
+                  {i === cursor && <CornerDownLeft className="h-3.5 w-3.5 text-white/30" />}
+                </button>
+              ))
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+export default function SaasLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { data: me, isLoading } = useCurrentUser();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    if (!isLoading && me && !me.is_superuser) router.replace("/dashboard");
+  }, [isLoading, me, router]);
+
+  if (isLoading || !me || !me.is_superuser) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#060608]">
+        <Loader2 className="h-6 w-6 animate-spin text-[#D9B97A]/70" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="saas-luxe flex h-screen w-full overflow-hidden bg-[#060608] font-sans text-white antialiased selection:bg-[#D9B97A]/25">
+      <div className="hidden h-full md:flex">
+        <Sidebar pathname={pathname} onSearch={() => setSearchOpen(true)} />
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex h-full">
-        <SaasSidebar pathname={pathname} />
-      </div>
-
-      {/* Mobile Sidebar Drawer */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}>
-          <div className="h-full bg-[#0f0f11] shadow-2xl animate-in slide-in-from-left duration-200" onClick={(e) => e.stopPropagation()}>
-            <SaasSidebar pathname={pathname} onClose={() => setMobileMenuOpen(false)} />
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex bg-black/70 backdrop-blur-sm md:hidden" onClick={() => setMenuOpen(false)}>
+          <div className="h-full" onClick={(e) => e.stopPropagation()}>
+            <Sidebar pathname={pathname} onNavigate={() => setMenuOpen(false)} onSearch={() => setSearchOpen(true)} />
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto relative">
-        {/* Background glow effects */}
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/20 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto relative z-10 min-h-full">
-          {children}
+      <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Ambient light */}
+        <div className="pointer-events-none fixed inset-0 -z-0">
+          <div className="absolute -top-40 left-1/3 h-[480px] w-[720px] rounded-full bg-[#9D8CFF]/[0.07] blur-[140px]" />
+          <div className="absolute -bottom-40 right-0 h-[420px] w-[620px] rounded-full bg-[#D9B97A]/[0.06] blur-[140px]" />
+          <div
+            className="absolute inset-0 opacity-[0.035]"
+            style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 0.6px, transparent 0.6px)", backgroundSize: "22px 22px" }}
+          />
         </div>
+
+        <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.06] bg-[#060608]/80 px-4 backdrop-blur-xl md:hidden">
+          <button onClick={() => setMenuOpen(true)} className="-ml-1 rounded-lg p-1.5 text-white/60 hover:text-white" aria-label="Open menu">
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="font-serif text-[18px] text-white">Lumeo Platform</span>
+          <button onClick={() => setSearchOpen(true)} className="ml-auto rounded-lg p-1.5 text-white/60 hover:text-white" aria-label="Search">
+            <Search className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="relative z-10 mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 md:py-10 lg:px-10">{children}</div>
       </main>
+
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }

@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -25,8 +25,11 @@ logger = logging.getLogger(__name__)
 
 class MyRefreshToken(RefreshToken):
     @classmethod
-    def for_user(cls, user):
+    def for_user(cls, user, record_login=True):
         token = super().for_user(user)
+        if record_login:
+            # JWT logins don't go through Django's login(), so last_login was never set.
+            User.objects.filter(pk=user.pk).update(last_login=timezone.now())
         token['first_name'] = user.first_name
         token['last_name'] = user.last_name
         token['username'] = user.username
@@ -121,22 +124,9 @@ class CookieTokenObtainView(APIView):
 
         user = authenticate(request, username=username, password=password)
         if user is None:
-            # DEBUGGING: Let's find out exactly why it failed
-            from django.contrib.auth import get_user_model
-            from django.db.models import Q
-            UserModel = get_user_model()
-            debug_user = UserModel.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).first()
-            if not debug_user:
-                debug_msg = f"User '{username}' does not exist in the database."
-            elif not debug_user.is_active:
-                debug_msg = "User exists but is deactivated (is_active=False)."
-            elif not debug_user.check_password(password):
-                debug_msg = "User exists and is active, but the password provided is incorrect."
-            else:
-                debug_msg = "User exists, active, password correct, but authenticate() failed for an unknown reason."
-                
+            logger.info("Failed login attempt for %r", username)
             return Response(
-                {"detail": f"No active account found with the given credentials. DEBUG: {debug_msg}"},
+                {"detail": "No active account found with the given credentials."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -282,7 +272,7 @@ class CookieTokenRefreshView(APIView):
 
     def post(self, request):
         # Support both cookie and body to fix third-party cookie blocking
-        raw_refresh = request.COOKIES.get(COOKIE_REFRESH_TOKEN_NAME) or request.data.get("refresh")
+        raw_refresh = request.data.get("refresh") or request.COOKIES.get(COOKIE_REFRESH_TOKEN_NAME)
         if not raw_refresh:
             return Response(
                 {"detail": "Refresh token not found in cookies or request body."},
@@ -299,12 +289,22 @@ class CookieTokenRefreshView(APIView):
             _clear_auth_cookies(response)
             return response
 
+        user_id = refresh.get("user_id")
+        if user_id and not refresh.get("imp"):
+            # Refreshes happen every ~30 min while someone is using the app: a good "last seen".
+            stale = timezone.now() - timedelta(minutes=15)
+            User.objects.filter(pk=user_id).filter(
+                models.Q(last_login__isnull=True) | models.Q(last_login__lt=stale)
+            ).update(last_login=timezone.now())
+
         # Return both tokens to keep localStorage updated
         response = Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh)
         })
-        _set_auth_cookies(response, refresh)
+        if not refresh.get("imp"):
+            # Never overwrite the admin's own cookie with an impersonation token.
+            _set_auth_cookies(response, refresh)
         return response
 
 
@@ -340,6 +340,12 @@ class RegisterView(APIView):
     throttle_scope = "login"
 
     def post(self, request):
+        from companies.models import PlatformSettings
+        if not PlatformSettings.get_settings().allow_new_registrations:
+            return Response(
+                {"detail": "New sign-ups are currently closed. Please contact support."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         email = request.data.get("email", "").strip().lower()
         password = request.data.get("password", "")
         first_name = request.data.get("first_name", "").strip()

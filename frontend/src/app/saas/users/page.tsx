@@ -1,117 +1,185 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { Users, Search, ShieldAlert, ShieldCheck } from "lucide-react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Download, LogIn, Search, ShieldCheck, UserCheck, UserX, Users, X } from "lucide-react";
+import { downloadCsv, relTime, saasApi, shortDate, type SaasUser } from "@/lib/saas";
+import { Avatar, Badge, Button, Empty, PageHeader, Pagination, Panel, Segmented, Select, Skeleton, StatusBadge, Table, Td, Th, inputCls } from "@/components/saas/ui";
+import { ImpersonateModal } from "@/components/saas/tenant-actions";
 
-export default function SaasUsers() {
-  const [users, setUsers] = useState<any[]>([]);
+type State = "" | "active" | "inactive" | "dormant" | "admins";
+
+export default function SaasUsersPage() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [state, setState] = useState<State>("");
+  const [role, setRole] = useState("");
+  const [ordering, setOrdering] = useState("-date_joined");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [loginAs, setLoginAs] = useState<SaasUser | null>(null);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const t = setTimeout(() => setQ(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => setPage(1), [q, state, role, ordering]);
 
-  const fetchUsers = () => {
-    api.get("/saas/users/").then(res => setUsers(res.data.results || res.data)).catch(console.error);
-  };
+  const params = { search: q, status: state, role, ordering, page, page_size: 30 };
+  const { data, isLoading, isFetching } = useQuery({ queryKey: ["saas", "users", params], queryFn: () => saasApi.users(params), placeholderData: keepPreviousData });
+  const rows = data?.results || [];
+  const refresh = () => qc.invalidateQueries({ queryKey: ["saas"] });
 
-  const handleActiveToggle = async (id: number, isActive: boolean) => {
-    await api.patch(`/saas/users/${id}/`, { is_active: isActive });
-    fetchUsers();
+  const toggleActive = async (u: SaasUser) => {
+    try {
+      await saasApi.setUserActive(u.id, !u.is_active);
+      toast.success(`${u.name} ${u.is_active ? "deactivated" : "activated"}`);
+      refresh();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Couldn't update the user");
+    }
   };
+  const bulk = async (action: "activate" | "deactivate") => {
+    setBusy(true);
+    try {
+      const res = await saasApi.userBulk([...selected], action);
+      toast.success(`${res.updated} user(s) ${action}d`);
+      setSelected(new Set());
+      refresh();
+    } catch {
+      toast.error("Bulk action failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const sortProps = (key: string) => ({
+    onClick: () => setOrdering((o) => (o === `-${key}` ? key : `-${key}`)),
+    active: ordering.replace("-", "") === key,
+    dir: (ordering.startsWith("-") ? "desc" : "asc") as "asc" | "desc",
+  });
+  const selectable = rows.filter((u) => !u.is_superuser);
+  const allSelected = selectable.length > 0 && selectable.every((u) => selected.has(u.id));
 
   return (
-    <div className="space-y-8 animate-fade-in relative z-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.15)]">
-            <Users className="w-6 h-6 text-indigo-400" />
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Customers"
+        title="People"
+        description="Everyone with an account across all workspaces."
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => downloadCsv("/saas/users/export/", { search: q, status: state, role, ordering }, "users.csv").catch(() => toast.error("Export failed"))}>
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </Button>
+        }
+      />
+
+      <Panel padded={false}>
+        <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 sm:p-5 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <input className={`${inputCls} pl-9`} placeholder="Name, email or company…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            {search && <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white" aria-label="Clear"><X className="h-3.5 w-3.5" /></button>}
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Global Users</h1>
-            <p className="text-white/50 text-sm mt-1">Manage user accounts and access across all tenants.</p>
+          <div className="overflow-x-auto">
+            <Segmented<State> value={state} onChange={setState} options={[
+              { value: "", label: "All" }, { value: "active", label: "Active" }, { value: "dormant", label: "Dormant 30d+" }, { value: "inactive", label: "Deactivated" }, { value: "admins", label: "Platform admins" },
+            ]} />
+          </div>
+          <div className="lg:ml-auto">
+            <Select value={role} onChange={setRole} aria-label="Role">
+              <option value="">All roles</option>
+              <option value="owner">Owner</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+              <option value="staff">Staff</option>
+              <option value="customer">Customer</option>
+            </Select>
           </div>
         </div>
-      </div>
 
-      <div className="bg-[#131316] border border-white/5 rounded-2xl overflow-hidden shadow-xl relative">
-        <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input 
-              type="text" 
-              placeholder="Search users by name or email..." 
-              className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all"
-            />
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 border-b border-white/[0.06] bg-[#D9B97A]/[0.06] px-5 py-2.5 text-[12.5px] sm:px-6">
+            <span className="text-white/80">{selected.size} selected</span>
+            <Button size="sm" variant="secondary" loading={busy} onClick={() => bulk("activate")}><UserCheck className="h-3.5 w-3.5" /> Activate</Button>
+            <Button size="sm" variant="danger" loading={busy} onClick={() => bulk("deactivate")}><UserX className="h-3.5 w-3.5" /> Deactivate</Button>
+            <button onClick={() => setSelected(new Set())} className="ml-auto text-white/45 hover:text-white">Clear</button>
           </div>
-        </div>
+        )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-black/20 text-white/40">
-              <tr>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">User</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Role</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Company</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider text-right">Access</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {users.map((u: any) => (
-                <tr key={u.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-xs uppercase">
-                        {u.first_name?.[0] || u.email[0]}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-white/90">{u.first_name || u.username} {u.last_name}</div>
-                        <div className="flex flex-col gap-0.5 mt-0.5">
-                          <div className="text-white/40 text-xs">Email: {u.email}</div>
-                          {u.username !== u.email && (
-                            <div className="text-white/30 text-[10px]">Username: {u.username}</div>
-                          )}
+        {isLoading ? (
+          <div className="space-y-2 p-5">{[...Array(8)].map((_, i) => <Skeleton key={i} className="h-11" />)}</div>
+        ) : rows.length === 0 ? (
+          <Empty icon={<Users className="h-5 w-5" />} title="No people match" hint="Try another search or filter." />
+        ) : (
+          <div className={isFetching ? "opacity-70 transition" : "transition"}>
+            <Table>
+              <thead>
+                <tr>
+                  <Th className="w-10"><input type="checkbox" className="accent-[#D9B97A]" checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(selectable.map((u) => u.id)))} aria-label="Select all" /></Th>
+                  <Th {...sortProps("first_name")}>Person</Th>
+                  <Th>Workspace</Th>
+                  <Th>Role</Th>
+                  <Th>Status</Th>
+                  <Th {...sortProps("last_login")}>Last login</Th>
+                  <Th {...sortProps("date_joined")}>Joined</Th>
+                  <Th className="text-right">Actions</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((u) => (
+                  <tr key={u.id} className="hover:bg-white/[0.02]">
+                    <Td className="w-10">
+                      {!u.is_superuser && (
+                        <input type="checkbox" className="accent-[#D9B97A]" checked={selected.has(u.id)} aria-label={`Select ${u.name}`}
+                          onChange={() => setSelected((s) => { const n = new Set(s); if (n.has(u.id)) n.delete(u.id); else n.add(u.id); return n; })} />
+                      )}
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={u.name} size={32} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 truncate text-white/90">
+                            {u.name}
+                            {u.is_superuser && <ShieldCheck className="h-3.5 w-3.5 text-[#E9D3A3]" aria-label="Platform admin" />}
+                          </div>
+                          <div className="truncate text-[11.5px] text-white/35">{u.email}</div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5 text-white/60 capitalize text-xs">
-                      {u.is_superuser ? <ShieldAlert className="w-3.5 h-3.5 text-purple-400" /> : <ShieldCheck className="w-3.5 h-3.5 text-white/40" />}
-                      <span className={u.is_superuser ? "text-purple-400 font-medium" : ""}>
-                        {u.is_superuser ? "Superadmin" : u.role}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-white/80 font-medium">{u.company_name || <span className="text-white/30 italic">Unassigned</span>}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      u.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}>
-                      {u.is_active ? 'Active' : 'Disabled'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleActiveToggle(u.id, !u.is_active)}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${
-                        u.is_active 
-                          ? 'text-red-400 hover:bg-red-500/10 border-transparent hover:border-red-500/20' 
-                          : 'text-emerald-400 hover:bg-emerald-500/10 border-transparent hover:border-emerald-500/20'
-                      }`}
-                    >
-                      {u.is_active ? 'Revoke Access' : 'Restore Access'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    </Td>
+                    <Td>{u.company ? <Link href={`/saas/companies/${u.company.id}`} className="text-white/70 hover:text-[#E9D3A3]">{u.company.name}</Link> : <span className="text-white/30">—</span>}</Td>
+                    <Td>{u.is_superuser ? <Badge className="border-[#D9B97A]/30 bg-[#D9B97A]/10 text-[#E9D3A3]">Super admin</Badge> : <span className="capitalize text-white/60">{u.role}</span>}</Td>
+                    <Td><StatusBadge status={u.is_active ? "active" : "inactive"} /></Td>
+                    <Td className="text-white/50">{relTime(u.last_login)}</Td>
+                    <Td className="text-white/40">{shortDate(u.date_joined)}</Td>
+                    <Td className="text-right">
+                      {!u.is_superuser && (
+                        <div className="inline-flex gap-1.5">
+                          {u.is_active && !u.is_staff && u.company && (
+                            <button onClick={() => setLoginAs(u)} title="Log in as this user" className="rounded-lg border border-white/10 p-1.5 text-white/50 transition hover:border-[#D9B97A]/40 hover:text-[#E9D3A3]">
+                              <LogIn className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <button onClick={() => toggleActive(u)} title={u.is_active ? "Deactivate" : "Activate"}
+                            className={`rounded-lg border border-white/10 p-1.5 transition ${u.is_active ? "text-white/50 hover:border-rose-400/40 hover:text-rose-300" : "text-white/50 hover:border-emerald-400/40 hover:text-emerald-300"}`}>
+                            {u.is_active ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      )}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <Pagination page={data!.page} pageSize={data!.page_size} count={data!.count} onPage={setPage} />
+          </div>
+        )}
+      </Panel>
+
+      {loginAs && <ImpersonateModal userId={loginAs.id} userName={loginAs.name} companyName={loginAs.company?.name || ""} open onOpenChange={(v) => !v && setLoginAs(null)} />}
     </div>
   );
 }

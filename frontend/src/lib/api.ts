@@ -215,6 +215,13 @@ export function storeTokens(tokens: TokenPair, rememberMe = true): void {
 
 export async function clearSession(): Promise<void> {
   if (!isBrowser()) return;
+  // Signing out (or the session expiring) while a platform admin is "logged in as" a tenant
+  // returns them to their own admin session instead of the login page.
+  if (localStorage.getItem("lumeo_impersonation")) {
+    const { endImpersonation } = await import("@/lib/saas");
+    await endImpersonation();
+    return;
+  }
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   sessionStorage.removeItem("lumeo_refresh_token");

@@ -51,6 +51,41 @@ PLAN_LIMITS = {
 }
 
 
+PLAN_LIMIT_KEYS = (
+    "max_users", "max_leads_monthly", "max_deals_monthly", "max_leads_yearly", "max_deals_yearly",
+    "price_monthly", "price_yearly",
+)
+
+
+def get_plan_catalog():
+    """PLAN_LIMITS with the SaaS admin's price/limit overrides applied."""
+    catalog = {plan: dict(limits) for plan, limits in PLAN_LIMITS.items()}
+    try:
+        from companies.models import PlatformSettings
+        overrides = PlatformSettings.get_settings().plan_overrides or {}
+    except Exception:  # table missing during early migrations
+        overrides = {}
+    for plan, values in overrides.items():
+        if plan in catalog and isinstance(values, dict):
+            for key in PLAN_LIMIT_KEYS:
+                if key in values and values[key] is not None:
+                    catalog[plan][key] = values[key]
+    return catalog
+
+
+def plan_limits_for(plan):
+    catalog = get_plan_catalog()
+    return catalog.get(plan, catalog[Plan.FREE])
+
+
+def monthly_value(plan, billing_period, catalog=None):
+    """Recurring revenue per month for a plan: yearly prices are spread over 12 months."""
+    limits = (catalog or get_plan_catalog()).get(plan) or {}
+    if billing_period == "yearly":
+        return float(limits.get("price_yearly", 0) or 0) / 12
+    return float(limits.get("price_monthly", 0) or 0)
+
+
 class Subscription(models.Model):
     company = models.OneToOneField(
         Company,
@@ -100,7 +135,7 @@ class Subscription(models.Model):
 
     @property
     def plan_limits(self):
-        limits = PLAN_LIMITS.get(self.plan, PLAN_LIMITS[Plan.FREE])
+        limits = plan_limits_for(self.plan)
         return {
             "max_users": limits["max_users"],
             "max_leads": limits["max_leads_yearly"] if self.billing_period == "yearly" else limits["max_leads_monthly"],

@@ -98,7 +98,8 @@ class CreateSubscriptionView(APIView):
         try:
             import razorpay
             client = razorpay.Client(auth=(rzp_id, rzp_secret))
-            limits = PLAN_LIMITS.get(plan_key, {})
+            from .models import get_plan_catalog
+            limits = get_plan_catalog().get(plan_key, {})
             price = limits.get("price_yearly" if billing_period == "yearly" else "price_monthly", 0)
 
             # Create the plan dynamically in Razorpay for ease of setup

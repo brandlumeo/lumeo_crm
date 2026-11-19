@@ -1,191 +1,201 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { CreditCard, Search, ArrowUpRight, ChevronDown, Check } from "lucide-react";
-import * as Select from "@radix-ui/react-select";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Crown, Pencil, RotateCcw, Search, Wallet } from "lucide-react";
+import { daysUntil, inr, saasApi, shortDate, type PlanRow, type TenantRow } from "@/lib/saas";
+import { Badge, Button, Empty, Field, Kpi, Modal, PageHeader, Pagination, Panel, PlanBadge, Segmented, Select, Skeleton, StatusBadge, Table, Td, Th, inputCls } from "@/components/saas/ui";
+import { ChangePlanModal } from "@/components/saas/tenant-actions";
 
-export default function SaasBilling() {
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+type SubState = "" | "active" | "inactive" | "expiring";
+
+const LIMIT_FIELDS: { key: keyof PlanRow["defaults"]; label: string; money?: boolean }[] = [
+  { key: "price_monthly", label: "Price / month (₹)", money: true },
+  { key: "price_yearly", label: "Price / year (₹)", money: true },
+  { key: "max_users", label: "Seats" },
+  { key: "max_leads_monthly", label: "Leads / month" },
+  { key: "max_deals_monthly", label: "Deals / month" },
+  { key: "max_leads_yearly", label: "Leads / year" },
+  { key: "max_deals_yearly", label: "Deals / year" },
+];
+
+function fmtLimit(n: number) {
+  return n >= 999999 ? "Unlimited" : n.toLocaleString("en-IN");
+}
+
+function PlanEditor({ plan, open, onOpenChange }: { plan: PlanRow; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const qc = useQueryClient();
+  const [values, setValues] = useState<Record<string, number>>(() => Object.fromEntries(LIMIT_FIELDS.map((f) => [f.key, plan[f.key]])));
+  const [saving, setSaving] = useState(false);
+  const save = async (reset = false) => {
+    setSaving(true);
+    try {
+      await saasApi.updatePlans({ [plan.key]: reset ? null : values });
+      toast.success(reset ? `${plan.name} restored to defaults` : `${plan.name} updated`);
+      void qc.invalidateQueries({ queryKey: ["saas"] });
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Couldn't save the plan");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Modal wide open={open} onOpenChange={onOpenChange} title={`Edit ${plan.name}`} description="Applies to every workspace on this plan, including the pricing page and checkout."
+      footer={
+        <>
+          {plan.customised && <Button variant="ghost" className="mr-auto" loading={saving} onClick={() => save(true)}><RotateCcw className="h-3.5 w-3.5" /> Restore defaults</Button>}
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="gold" loading={saving} onClick={() => save(false)}>Save plan</Button>
+        </>
+      }>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {LIMIT_FIELDS.map((f) => (
+          <Field key={f.key} label={f.label} hint={values[f.key] !== plan.defaults[f.key] ? `Default ${fmtLimit(plan.defaults[f.key])}` : undefined}>
+            <input type="number" min={0} className={inputCls} value={values[f.key]} onChange={(e) => setValues((v) => ({ ...v, [f.key]: Math.max(0, parseInt(e.target.value, 10) || 0) }))} />
+          </Field>
+        ))}
+      </div>
+      <p className="mt-4 text-[11.5px] text-white/35">Tip: 999999 means unlimited.</p>
+    </Modal>
+  );
+}
+
+export default function BillingPage() {
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [plan, setPlan] = useState("");
+  const [state, setState] = useState<SubState>("");
+  const [page, setPage] = useState(1);
+  const [editing, setEditing] = useState<PlanRow | null>(null);
+  const [changing, setChanging] = useState<TenantRow | null>(null);
 
   useEffect(() => {
-    fetchSubscriptions();
-  }, []);
+    const t = setTimeout(() => setQ(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => setPage(1), [q, plan, state]);
 
-  const fetchSubscriptions = () => {
-    setLoading(true);
-    api.get("/saas/subscriptions/")
-      .then(res => setSubscriptions(res.data.results || res.data || []))
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load subscriptions");
-      })
-      .finally(() => setLoading(false));
-  };
+  const params = { search: q, plan, status: state, page, page_size: 25 };
+  const { data, isLoading } = useQuery({ queryKey: ["saas", "billing", params], queryFn: () => saasApi.billing(params), placeholderData: keepPreviousData });
 
-  const handlePlanChange = async (id: number, newPlan: string) => {
-    try {
-      await api.patch(`/saas/subscriptions/${id}/`, { plan: newPlan });
-      toast.success(`Plan updated to ${newPlan.toUpperCase()}`);
-      fetchSubscriptions();
-    } catch {
-      toast.error("Failed to update plan");
-    }
-  };
-
-  const handleStatusChange = async (id: number, isActive: boolean) => {
-    try {
-      await api.patch(`/saas/subscriptions/${id}/`, { is_active: isActive });
-      toast.success(isActive ? "Subscription reactivated" : "Subscription suspended");
-      fetchSubscriptions();
-    } catch {
-      toast.error("Failed to update status");
-    }
-  };
-
-  const filteredSubscriptions = subscriptions.filter((sub: any) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
+  if (isLoading || !data) {
     return (
-      (sub.company_name || "").toLowerCase().includes(q) ||
-      (sub.plan || "").toLowerCase().includes(q)
+      <div className="space-y-6">
+        <Skeleton className="h-16 w-72" />
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}</div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-64" />)}</div>
+      </div>
     );
-  });
+  }
+
+  const s = data.summary;
+  const prices = Object.fromEntries(data.plans.map((p) => [p.key, { monthly: p.price_monthly, yearly: p.price_yearly }]));
+  const subs = data.subscriptions;
 
   return (
-    <div className="space-y-8 animate-fade-in relative z-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.15)]">
-            <CreditCard className="w-6 h-6 text-indigo-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Billing & Subscriptions</h1>
-            <p className="text-white/50 text-sm mt-1">Manage tenant plans, payments, and active subscriptions.</p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Revenue" title="Billing & plans" description="Recurring revenue, plan catalogue and every subscription on the platform. Yearly plans count as one-twelfth per month." />
+
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <Kpi tone="gold" label="MRR" value={inr(s.mrr, true)} hint={`ARR ${inr(s.arr, true)}`} icon={<Wallet className="h-4 w-4" />} />
+        <Kpi label="Monthly plans" value={inr(s.monthly_mrr, true)} hint="per month" />
+        <Kpi label="Yearly plans" value={inr(s.yearly_mrr, true)} hint="per month (spread)" />
+        <Kpi label="Renewals in 30 days" value={s.expiring_30d} hint={`${s.paying} paying workspaces`} />
       </div>
 
-      <div className="bg-[#131316] border border-white/5 rounded-2xl overflow-hidden shadow-xl relative">
-        <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search subscriptions by company..." 
-              className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all"
-            />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {data.plans.map((p) => (
+          <Panel key={p.key} padded={false} className={p.key === "enterprise" ? "border-[#D9B97A]/25" : ""}>
+            <div className="p-5">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-[14px] font-medium text-white">
+                  {p.key === "enterprise" && <Crown className="h-4 w-4 text-[#E9D3A3]" />}
+                  {p.name}
+                </span>
+                {p.customised && <Badge className="border-[#D9B97A]/30 bg-[#D9B97A]/10 text-[#E9D3A3]">Custom</Badge>}
+              </div>
+              <div className="mt-4 font-serif text-[34px] leading-none text-white">{p.price_monthly ? inr(p.price_monthly) : "Free"}</div>
+              <div className="mt-1 text-[12px] text-white/40">{p.price_monthly ? `per month · ${inr(p.price_yearly)} yearly` : "trial plan"}</div>
+              <ul className="mt-4 space-y-1.5 text-[12.5px] text-white/60">
+                <li className="flex justify-between"><span>Seats</span><span className="tabular-nums text-white/85">{fmtLimit(p.max_users)}</span></li>
+                <li className="flex justify-between"><span>Leads / month</span><span className="tabular-nums text-white/85">{fmtLimit(p.max_leads_monthly)}</span></li>
+                <li className="flex justify-between"><span>Deals / month</span><span className="tabular-nums text-white/85">{fmtLimit(p.max_deals_monthly)}</span></li>
+              </ul>
+              <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-4">
+                <div className="text-[12px] text-white/45">
+                  <span className="tabular-nums text-white/85">{p.tenants}</span> workspaces
+                  {p.mrr > 0 && <span className="ml-1 text-white/35">· {inr(p.mrr, true)}/mo</span>}
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(p)}><Pencil className="h-3.5 w-3.5" /> Edit</Button>
+              </div>
+            </div>
+          </Panel>
+        ))}
+      </div>
+
+      <Panel padded={false} title="Subscriptions" subtitle="Sorted by revenue">
+        <div className="mt-3 flex flex-col gap-3 border-b border-white/[0.06] px-4 pb-4 sm:px-5 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <input className={`${inputCls} pl-9`} placeholder="Search workspace…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <div className="overflow-x-auto">
+            <Segmented<SubState> value={state} onChange={setState} options={[{ value: "", label: "All" }, { value: "active", label: "Active" }, { value: "expiring", label: "Expiring 30d" }, { value: "inactive", label: "Inactive" }]} />
+          </div>
+          <div className="lg:ml-auto">
+            <Select value={plan} onChange={setPlan} aria-label="Plan">
+              <option value="">All plans</option>
+              {data.plans.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
+            </Select>
           </div>
         </div>
+        {subs.results.length === 0 ? (
+          <Empty title="No subscriptions match" />
+        ) : (
+          <>
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Workspace</Th>
+                  <Th>Plan</Th>
+                  <Th>Billing</Th>
+                  <Th>Workspace status</Th>
+                  <Th className="text-right">MRR</Th>
+                  <Th>Paid until</Th>
+                  <Th className="text-right">Manage</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {subs.results.map((r) => {
+                  const d = daysUntil(r.expires_at);
+                  return (
+                    <tr key={r.id} className="hover:bg-white/[0.02]">
+                      <Td><Link href={`/saas/companies/${r.company.id}`} className="text-white/85 hover:text-[#E9D3A3]">{r.company.name}</Link></Td>
+                      <Td><PlanBadge plan={r.plan} label={r.plan_display} /></Td>
+                      <Td className="capitalize text-white/55">{r.plan === "free" ? "—" : r.billing_period}{r.razorpay && <Badge className="ml-2 border-white/10 text-white/45">Razorpay</Badge>}</Td>
+                      <Td><StatusBadge status={r.is_active ? r.company.status : "suspended"} /></Td>
+                      <Td className="text-right tabular-nums">{r.mrr ? inr(r.mrr) : <span className="text-white/25">—</span>}</Td>
+                      <Td className={d !== null && d <= 7 ? "text-amber-300" : "text-white/45"}>{r.expires_at ? `${shortDate(r.expires_at)}${d !== null && d >= 0 ? ` · ${d}d` : ""}` : "No end date"}</Td>
+                      <Td className="text-right">
+                        <Button size="sm" variant="secondary" onClick={() => setChanging({
+                          id: r.company.id, name: r.company.name, plan: r.plan, plan_display: r.plan_display, billing_period: r.billing_period, expires_at: r.expires_at,
+                        } as TenantRow)}>Change plan</Button>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+            <Pagination page={subs.page} pageSize={subs.page_size} count={subs.count} onPage={setPage} />
+          </>
+        )}
+      </Panel>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-black/20 text-white/40">
-              <tr>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Company</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Current Plan</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">MRR Effect</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider text-right">Overrides</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading && subscriptions.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-white/40 text-sm">
-                    Loading subscriptions...
-                  </td>
-                </tr>
-              ) : filteredSubscriptions.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-white/40 text-sm">
-                    {searchQuery ? `No subscriptions found matching "${searchQuery}"` : "No subscriptions found"}
-                  </td>
-                </tr>
-              ) : (
-                filteredSubscriptions.map((sub: any) => (
-                  <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-white/90">{sub.company_name}</div>
-                      <div className="text-white/40 text-xs mt-0.5">Since {new Date(sub.created_at).toLocaleDateString()}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Select.Root
-                        value={sub.plan}
-                        onValueChange={(value) => handlePlanChange(sub.id, value)}
-                      >
-                        <Select.Trigger className="inline-flex items-center justify-between w-[120px] bg-black/40 border border-white/10 hover:bg-white/5 transition-colors rounded-lg px-3 py-1.5 text-xs text-white/90 outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50">
-                          <Select.Value />
-                          <Select.Icon>
-                            <ChevronDown className="w-3.5 h-3.5 text-white/50" />
-                          </Select.Icon>
-                        </Select.Trigger>
-                        <Select.Portal>
-                          <Select.Content
-                            className="overflow-hidden bg-[#1a1a1f] border border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95"
-                            position="popper"
-                            sideOffset={4}
-                          >
-                            <Select.Viewport className="p-1.5">
-                              {[
-                                { value: "free", label: "Free Trial" },
-                                { value: "starter", label: "Starter" },
-                                { value: "pro", label: "Pro" },
-                                { value: "enterprise", label: "Enterprise" },
-                              ].map((plan) => (
-                                <Select.Item
-                                  key={plan.value}
-                                  value={plan.value}
-                                  className="relative flex items-center px-6 py-2 text-xs text-white/80 font-medium rounded-md hover:bg-indigo-500/10 hover:text-indigo-300 focus:bg-indigo-500/10 focus:text-indigo-300 focus:outline-none cursor-pointer transition-colors select-none"
-                                >
-                                  <Select.ItemText>{plan.label}</Select.ItemText>
-                                  <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-indigo-400" />
-                                  </Select.ItemIndicator>
-                                </Select.Item>
-                              ))}
-                            </Select.Viewport>
-                          </Select.Content>
-                        </Select.Portal>
-                      </Select.Root>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                        sub.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
-                      }`}>
-                        {sub.is_active ? 'Active' : 'Suspended'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5 font-medium text-emerald-400">
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                        {sub.plan === 'free' ? '₹0' : sub.plan === 'starter' ? '₹599' : sub.plan === 'pro' ? '₹1,199' : '₹7,999'}/mo
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleStatusChange(sub.id, !sub.is_active)}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${
-                          sub.is_active 
-                            ? 'text-red-400 hover:bg-red-500/10 border-transparent hover:border-red-500/20' 
-                            : 'text-emerald-400 hover:bg-emerald-500/10 border-transparent hover:border-emerald-500/20'
-                        }`}
-                      >
-                        {sub.is_active ? 'Suspend Billing' : 'Reactivate'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {editing && <PlanEditor plan={editing} open onOpenChange={(v) => !v && setEditing(null)} />}
+      {changing && <ChangePlanModal tenant={changing} prices={prices} open onOpenChange={(v) => !v && setChanging(null)} />}
     </div>
   );
 }

@@ -1,133 +1,178 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { Building2, Search, MoreHorizontal, ChevronDown, Check } from "lucide-react";
-import * as Select from "@radix-ui/react-select";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Building2, Download, Pause, Play, Search, X } from "lucide-react";
+import { downloadCsv, inr, relTime, saasApi, shortDate } from "@/lib/saas";
+import { Avatar, Button, Empty, HealthPill, PageHeader, Pagination, Panel, PlanBadge, Segmented, Select, Skeleton, StatusBadge, Table, Td, Th, inputCls } from "@/components/saas/ui";
+import { useTenantRefresh } from "@/components/saas/tenant-actions";
 
-export default function SaasCompanies() {
-  const [companies, setCompanies] = useState<any[]>([]);
+type Status = "" | "active" | "trial" | "suspended";
 
+function useDebounced<T>(value: T, ms = 300) {
+  const [v, setV] = useState(value);
   useEffect(() => {
-    fetchCompanies();
-  }, []);
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
 
-  const fetchCompanies = () => {
-    api.get("/saas/companies/").then(res => setCompanies(res.data.results || res.data)).catch(console.error);
-  };
+export default function TenantsPage() {
+  const router = useRouter();
+  const refresh = useTenantRefresh();
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<Status>("");
+  const [plan, setPlan] = useState("");
+  const [health, setHealth] = useState("");
+  const [ordering, setOrdering] = useState("-created_at");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const q = useDebounced(search);
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    await api.patch(`/saas/companies/${id}/`, { status: newStatus });
-    fetchCompanies();
+  useEffect(() => setPage(1), [q, status, plan, health, ordering]);
+  const params = { search: q, status, plan, health, ordering, page, page_size: 25 };
+  const { data, isLoading, isFetching } = useQuery({ queryKey: ["saas", "tenants", params], queryFn: () => saasApi.tenants(params), placeholderData: keepPreviousData });
+  const rows = data?.results || [];
+
+  const sort = (key: string) => setOrdering((o) => (o === `-${key}` ? key : `-${key}`));
+  const sortProps = (key: string) => ({ onClick: () => sort(key), active: ordering.replace("-", "") === key, dir: (ordering.startsWith("-") ? "desc" : "asc") as "asc" | "desc" });
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
+  const toggle = (id: string) => setSelected((s) => {
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
+
+  const bulk = async (action: "suspend" | "reactivate") => {
+    if (action === "suspend" && !confirm(`Suspend ${selected.size} workspace(s)? Members lose access until reactivated.`)) return;
+    setBulkBusy(true);
+    try {
+      const res = await saasApi.tenantBulk([...selected], action);
+      toast.success(`${res.updated} workspace(s) ${action === "suspend" ? "suspended" : "reactivated"}`);
+      setSelected(new Set());
+      refresh();
+    } catch {
+      toast.error("Bulk action failed");
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in relative z-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.15)]">
-            <Building2 className="w-6 h-6 text-indigo-400" />
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Customers"
+        title="Tenants"
+        description="Every workspace on the platform: plan, revenue, adoption and health at a glance."
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => downloadCsv("/saas/tenants/export/", { search: q, status, plan, health, ordering }, "tenants.csv").catch(() => toast.error("Export failed"))}>
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </Button>
+        }
+      />
+
+      <Panel padded={false}>
+        <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 sm:p-5 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <input className={`${inputCls} pl-9`} placeholder="Search name, slug, email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white" aria-label="Clear search">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Tenants</h1>
-            <p className="text-white/50 text-sm mt-1">Manage workspaces and subscriptions across the platform.</p>
+          <div className="overflow-x-auto">
+            <Segmented<Status> value={status} onChange={setStatus} options={[{ value: "", label: "All" }, { value: "active", label: "Active" }, { value: "trial", label: "Trial" }, { value: "suspended", label: "Suspended" }]} />
+          </div>
+          <div className="flex gap-2 lg:ml-auto">
+            <Select value={plan} onChange={setPlan} aria-label="Plan">
+              <option value="">All plans</option>
+              <option value="free">Free Trial</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+              <option value="enterprise">Enterprise</option>
+            </Select>
+            <Select value={health} onChange={setHealth} aria-label="Health">
+              <option value="">Any health</option>
+              <option value="healthy">Healthy</option>
+              <option value="attention">Needs attention</option>
+              <option value="at_risk">At risk</option>
+            </Select>
           </div>
         </div>
-      </div>
 
-      <div className="bg-[#131316] border border-white/5 rounded-2xl overflow-hidden shadow-xl relative">
-        <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input 
-              type="text" 
-              placeholder="Search tenants..." 
-              className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all"
-            />
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 border-b border-white/[0.06] bg-[#D9B97A]/[0.06] px-5 py-2.5 text-[12.5px] sm:px-6">
+            <span className="text-white/80">{selected.size} selected</span>
+            <Button size="sm" variant="secondary" loading={bulkBusy} onClick={() => bulk("reactivate")}><Play className="h-3.5 w-3.5" /> Reactivate</Button>
+            <Button size="sm" variant="danger" loading={bulkBusy} onClick={() => bulk("suspend")}><Pause className="h-3.5 w-3.5" /> Suspend</Button>
+            <button onClick={() => setSelected(new Set())} className="ml-auto text-white/45 hover:text-white">Clear</button>
           </div>
-        </div>
+        )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-black/20 text-white/40">
-              <tr>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Company Name</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Slug</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Joined</th>
-                <th className="px-6 py-4 font-medium text-xs uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {companies.map((c: any) => (
-                <tr key={c.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-white/90">{c.name}</div>
-                    <div className="text-white/40 text-xs mt-0.5">ID: {c.id}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="bg-white/5 px-2.5 py-1 rounded-md text-white/60 font-mono text-xs inline-block border border-white/10">
-                      {c.slug}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      c.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                      c.status === 'trial' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
-                      'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-white/40">
-                    {new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </td>
-                  <td className="px-6 py-4">
-                    <Select.Root
-                      value={c.status}
-                      onValueChange={(value) => handleStatusChange(c.id, value)}
-                    >
-                      <Select.Trigger className="inline-flex items-center justify-between w-[120px] bg-black/40 border border-white/10 hover:bg-white/5 transition-colors rounded-lg px-3 py-1.5 text-xs text-white/90 outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50">
-                        <Select.Value />
-                        <Select.Icon>
-                          <ChevronDown className="w-3.5 h-3.5 text-white/50" />
-                        </Select.Icon>
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Content
-                          className="overflow-hidden bg-[#1a1a1f] border border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95"
-                          position="popper"
-                          sideOffset={4}
-                        >
-                          <Select.Viewport className="p-1.5">
-                            {[
-                              { value: "trial", label: "Trial" },
-                              { value: "active", label: "Active" },
-                              { value: "suspended", label: "Suspended" },
-                              { value: "cancelled", label: "Cancelled" },
-                            ].map((status) => (
-                              <Select.Item
-                                key={status.value}
-                                value={status.value}
-                                className="relative flex items-center px-6 py-2 text-xs text-white/80 font-medium rounded-md hover:bg-indigo-500/10 hover:text-indigo-300 focus:bg-indigo-500/10 focus:text-indigo-300 focus:outline-none cursor-pointer transition-colors select-none"
-                              >
-                                <Select.ItemText>{status.label}</Select.ItemText>
-                                <Select.ItemIndicator className="absolute left-1.5 inline-flex items-center justify-center">
-                                  <Check className="w-3 h-3 text-indigo-400" />
-                                </Select.ItemIndicator>
-                              </Select.Item>
-                            ))}
-                          </Select.Viewport>
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select.Root>
-                  </td>
+        {isLoading ? (
+          <div className="space-y-2 p-5">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
+        ) : rows.length === 0 ? (
+          <Empty icon={<Building2 className="h-5 w-5" />} title="No tenants match" hint="Try a different search or clear the filters." />
+        ) : (
+          <div className={isFetching ? "opacity-70 transition" : "transition"}>
+            <Table>
+              <thead>
+                <tr>
+                  <Th className="w-10"><input type="checkbox" className="accent-[#D9B97A]" checked={allSelected} onChange={toggleAll} aria-label="Select all" /></Th>
+                  <Th {...sortProps("name")}>Workspace</Th>
+                  <Th>Plan</Th>
+                  <Th>Status</Th>
+                  <Th {...sortProps("mrr")} className="text-right">MRR</Th>
+                  <Th {...sortProps("users")}>Seats</Th>
+                  <Th {...sortProps("health")}>Health</Th>
+                  <Th {...sortProps("last_active")}>Last active</Th>
+                  <Th {...sortProps("created_at")}>Joined</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {rows.map((t) => (
+                  <tr key={t.id} onClick={() => router.push(`/saas/companies/${t.id}`)} className="cursor-pointer transition hover:bg-white/[0.025]">
+                    <Td className="w-10" >
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" className="accent-[#D9B97A]" checked={selected.has(t.id)} onChange={() => toggle(t.id)} aria-label={`Select ${t.name}`} />
+                      </span>
+                    </Td>
+                    <Td>
+                      <Link href={`/saas/companies/${t.id}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-3">
+                        <Avatar name={t.name} size={34} />
+                        <span className="min-w-0">
+                          <span className="block max-w-[240px] truncate text-[13.5px] text-white/90">{t.name}</span>
+                          <span className="block max-w-[240px] truncate text-[11.5px] text-white/35">{t.owner?.email || t.slug}</span>
+                        </span>
+                      </Link>
+                    </Td>
+                    <Td><PlanBadge plan={t.plan} label={t.plan_display} />{t.subscription_expired ? <span className="ml-1.5 text-[10.5px] text-amber-300/80">expired</span> : t.billing_period === "yearly" && t.plan !== "free" && <span className="ml-1.5 text-[10.5px] text-white/35">yearly</span>}</Td>
+                    <Td><StatusBadge status={t.status} /></Td>
+                    <Td className="text-right tabular-nums">{t.mrr ? <span className="text-white/90">{inr(t.mrr)}</span> : <span className="text-white/25">—</span>}</Td>
+                    <Td className="tabular-nums">
+                      <span className="text-white/85">{t.active_users}</span>
+                      <span className="text-white/30"> / {t.max_users >= 999999 ? "∞" : t.max_users}</span>
+                    </Td>
+                    <Td><HealthPill health={t.health} /></Td>
+                    <Td className="text-white/50">{relTime(t.last_active)}</Td>
+                    <Td className="text-white/40">{shortDate(t.created_at)}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <Pagination page={data!.page} pageSize={data!.page_size} count={data!.count} onPage={setPage} />
+          </div>
+        )}
+      </Panel>
     </div>
   );
 }
