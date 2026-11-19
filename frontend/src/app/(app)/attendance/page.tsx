@@ -185,7 +185,7 @@ export default function AttendancePage() {
 
   if (!mounted || statusLoading) {
     return (
-      <div className="p-7 pb-16 max-w-[1400px]">
+      <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1400px] mx-auto">
         <div className="flex flex-col gap-8">
           <div className="h-10 bg-bone-2 rounded-lg w-1/4 animate-pulse" />
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6">
@@ -287,7 +287,7 @@ export default function AttendancePage() {
   });
 
   return (
-    <div className="p-6 md:p-8 pb-16 max-w-[1400px] mx-auto flex flex-col gap-8 animate-rise">
+    <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1400px] mx-auto flex flex-col gap-8 animate-rise">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/60 pb-5">
         <div>

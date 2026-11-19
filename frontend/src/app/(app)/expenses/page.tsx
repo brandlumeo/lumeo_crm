@@ -606,11 +606,11 @@ export default function ExpensesPage() {
 
   if (!mounted || isLoading) {
     return (
-      <div className="p-7 pb-16 max-w-[1440px] mx-auto">
+      <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1440px] mx-auto">
         <div className="card p-10 animate-pulse border border-line bg-paper">
           <div className="h-8 bg-bone-2 rounded w-1/4 mb-4" />
           <div className="h-4 bg-bone-2 rounded w-1/2 mb-8" />
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <div className="h-24 bg-bone-2 rounded" />
             <div className="h-24 bg-bone-2 rounded" />
             <div className="h-24 bg-bone-2 rounded" />
@@ -622,11 +622,11 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 pb-20 max-w-[1440px] mx-auto flex flex-col gap-7 animate-rise">
+    <div className="p-4 sm:p-6 md:p-8 pb-20 w-full min-w-0 max-w-[1440px] mx-auto flex flex-col gap-6 md:gap-7 animate-rise">
       {/* ── Top Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-line">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-line w-full min-w-0">
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
               Corporate Spend & Claims
             </span>
@@ -636,16 +636,16 @@ export default function ExpensesPage() {
               </span>
             )}
           </div>
-          <h1 className="font-serif text-[28px] md:text-[32px] tracking-tight text-ink font-semibold">
+          <h1 className="font-serif text-[26px] sm:text-[30px] md:text-[32px] tracking-tight text-ink font-semibold">
             Financial Expenses & Claims
           </h1>
-          <p className="text-[13px] text-muted max-w-2xl">
+          <p className="text-[12.5px] sm:text-[13px] text-muted max-w-2xl leading-relaxed">
             Track business expenditures, audit employee out-of-pocket receipts, manage tax attribution, and disburse reimbursement payouts.
           </p>
         </div>
 
         {/* Global Header Actions */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-line bg-paper hover:bg-bone text-ink transition-colors shadow-xs"
@@ -666,7 +666,7 @@ export default function ExpensesPage() {
 
           <button
             onClick={() => openNewExpenseModal("reimbursement")}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-ink hover:opacity-90 text-paper transition-all shadow-sm"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 text-xs font-semibold rounded-lg bg-ink hover:opacity-90 text-paper transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>Log Expense</span>
@@ -675,9 +675,9 @@ export default function ExpensesPage() {
       </div>
 
       {/* ── 4 KPI Metric Cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full min-w-0">
         {/* Card 1: Total Registered Spend */}
-        <div className="card p-5 border border-line bg-paper flex items-center gap-4 shadow-2xs">
+        <div className="card p-4 sm:p-5 border border-line bg-paper flex items-center gap-3.5 sm:gap-4 shadow-2xs min-w-0 overflow-hidden">
           <div className="w-11 h-11 bg-bone border border-line rounded-xl grid place-items-center shrink-0">
             <Coins className="w-5 h-5 text-ink-2" />
           </div>
@@ -688,14 +688,14 @@ export default function ExpensesPage() {
             <div className="text-[22px] font-semibold tracking-tight text-ink mt-0.5 font-mono">
               {formatINR(kpiTotalSpend)}
             </div>
-            <div className="text-[11px] text-muted mt-0.5">
+            <div className="text-[11px] text-muted mt-0.5 truncate">
               {activePool.filter((e) => e.status !== "rejected").length} active records
             </div>
           </div>
         </div>
 
         {/* Card 2: Pending Verification Queue */}
-        <div className="card p-5 border border-line bg-paper flex items-center gap-4 shadow-2xs">
+        <div className="card p-4 sm:p-5 border border-line bg-paper flex items-center gap-3.5 sm:gap-4 shadow-2xs min-w-0 overflow-hidden">
           <div className="w-11 h-11 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl grid place-items-center shrink-0 text-amber-700 dark:text-amber-400">
             <Clock className="w-5 h-5" />
           </div>
@@ -706,32 +706,32 @@ export default function ExpensesPage() {
             <div className="text-[22px] font-semibold tracking-tight text-amber-700 dark:text-amber-400 mt-0.5 font-mono">
               {formatINR(kpiPending.amount)}
             </div>
-            <div className="text-[11px] text-muted mt-0.5">
+            <div className="text-[11px] text-muted mt-0.5 truncate">
               {kpiPending.count} claims waiting for review
             </div>
           </div>
         </div>
 
         {/* Card 3: Reimbursed & Settled */}
-        <div className="card p-5 border border-line bg-paper flex items-center gap-4 shadow-2xs">
+        <div className="card p-4 sm:p-5 border border-line bg-paper flex items-center gap-3.5 sm:gap-4 shadow-2xs min-w-0 overflow-hidden">
           <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl grid place-items-center shrink-0 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wider text-muted font-medium truncate">
-              Settled & Disbursed
+              Settled &amp; Disbursed
             </div>
             <div className="text-[22px] font-semibold tracking-tight text-emerald-800 dark:text-emerald-300 mt-0.5 font-mono">
               {formatINR(kpiSettled.amount)}
             </div>
-            <div className="text-[11px] text-muted mt-0.5">
+            <div className="text-[11px] text-muted mt-0.5 truncate">
               {kpiSettled.count} disbursed transactions
             </div>
           </div>
         </div>
 
         {/* Card 4: Client Recoverable / Billable */}
-        <div className="card p-5 border border-line bg-paper flex items-center gap-4 shadow-2xs">
+        <div className="card p-4 sm:p-5 border border-line bg-paper flex items-center gap-3.5 sm:gap-4 shadow-2xs min-w-0 overflow-hidden">
           <div className="w-11 h-11 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl grid place-items-center shrink-0 text-blue-700 dark:text-blue-400">
             <Sparkles className="w-5 h-5" />
           </div>
@@ -742,7 +742,7 @@ export default function ExpensesPage() {
             <div className="text-[22px] font-semibold tracking-tight text-blue-700 dark:text-blue-400 mt-0.5 font-mono">
               {formatINR(kpiBillable.amount)}
             </div>
-            <div className="text-[11px] text-muted mt-0.5">
+            <div className="text-[11px] text-muted mt-0.5 truncate">
               {kpiBillable.count} rechargeable to clients
             </div>
           </div>
@@ -751,8 +751,8 @@ export default function ExpensesPage() {
 
       {/* ── Category Spend Distribution Visual Bar ──────────────────────────── */}
       {categoryBreakdown.grandTotal > 0 && (
-        <div className="card p-5 border border-line bg-paper flex flex-col gap-3 shadow-2xs">
-          <div className="flex items-center justify-between text-xs">
+        <div className="card p-4 sm:p-5 border border-line bg-paper flex flex-col gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
             <span className="font-semibold text-ink flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-ink-2" />
               Category Spend Distribution
@@ -813,59 +813,61 @@ export default function ExpensesPage() {
       )}
 
       {/* ── Filters & Controls Bar ──────────────────────────────────────────── */}
-      <div className="card p-4 border border-line bg-paper flex flex-col gap-3 shadow-2xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Scope Selector (Managers Only) */}
-          {isManager && (
-            <div className="flex items-center p-0.5 bg-bone border border-line rounded-lg w-fit">
-              <button
-                onClick={() => setScope("all")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
-                  scope === "all" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
-                )}
-              >
-                All Company Spend ({companyExpenses.length})
-              </button>
-              <button
-                onClick={() => setScope("my")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
-                  scope === "my" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
-                )}
-              >
-                My Claims ({myExpenses.length})
-              </button>
-            </div>
-          )}
-
-          {/* Search Box */}
-          <div className="relative flex-grow max-w-md">
-            <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by title, merchant, user, deal, or notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bone border border-line rounded-lg pl-9 pr-8 py-2 text-xs outline-none focus:border-ink transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink p-0.5"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+      <div className="card p-4 border border-line bg-paper flex flex-col gap-3.5 shadow-2xs w-full min-w-0">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 w-full min-w-0">
+          {/* Left: Scope Selector (Managers Only) + Search Box */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
+            {isManager && (
+              <div className="flex items-center p-0.5 bg-bone border border-line rounded-lg shrink-0">
+                <button
+                  onClick={() => setScope("all")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap",
+                    scope === "all" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
+                  )}
+                >
+                  All Company Spend ({companyExpenses.length})
+                </button>
+                <button
+                  onClick={() => setScope("my")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap",
+                    scope === "my" ? "bg-paper text-ink shadow-xs" : "text-muted hover:text-ink"
+                  )}
+                >
+                  My Claims ({myExpenses.length})
+                </button>
+              </div>
             )}
+
+            {/* Search Box */}
+            <div className="relative flex-1 min-w-[200px] max-w-full xl:max-w-md">
+              <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by title, merchant, user, deal, or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-bone border border-line rounded-lg pl-9 pr-8 py-2 text-xs outline-none focus:border-ink transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Dropdown Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Right: Dropdown Filters */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             {/* Category Dropdown */}
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium"
+              className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium cursor-pointer"
             >
               <option value="all">All Categories</option>
               {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
@@ -879,7 +881,7 @@ export default function ExpensesPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium"
+              className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium cursor-pointer"
             >
               <option value="all">All Types</option>
               <option value="reimbursement">Reimbursements</option>
@@ -891,7 +893,7 @@ export default function ExpensesPage() {
               <select
                 value={employeeFilter}
                 onChange={(e) => setEmployeeFilter(e.target.value)}
-                className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium"
+                className="bg-bone border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-ink font-medium cursor-pointer max-w-[170px] truncate"
               >
                 <option value="all">All Employees ({teamUsers.length})</option>
                 {teamUsers.map((m: any) => {
@@ -960,8 +962,8 @@ export default function ExpensesPage() {
       </div>
 
       {/* ── Main Interactive Expenses Ledger Table ──────────────────────────── */}
-      <div className="card border border-line bg-paper overflow-hidden shadow-2xs">
-        <div className="p-4 border-b border-line flex items-center justify-between">
+      <div className="card border border-line bg-paper overflow-hidden shadow-2xs w-full min-w-0">
+        <div className="p-4 border-b border-line flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Receipt className="w-4 h-4 text-ink-2" />
             <h2 className="font-serif text-[17px] font-semibold text-ink">
@@ -973,7 +975,7 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full min-w-0">
           {filteredClaims.length === 0 ? (
             <div className="py-16 text-center flex flex-col items-center justify-center gap-2">
               <Coins className="w-10 h-10 text-muted/40 stroke-1" />
@@ -990,7 +992,7 @@ export default function ExpensesPage() {
               </button>
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[950px] text-left text-xs">
               <thead>
                 <tr className="border-b border-line bg-bone/60 text-muted uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4 font-semibold">Date</th>

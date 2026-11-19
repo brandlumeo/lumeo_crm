@@ -333,7 +333,7 @@ export default function DashboardPage() {
 
   if (!mounted) {
     return (
-      <div className="p-7 pb-16 max-w-[1400px]">
+      <div className="p-4 sm:p-6 md:p-7 pb-16 w-full min-w-0 max-w-[1400px] mx-auto">
         <div className="card p-10 animate-rise flex flex-col items-center justify-center h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-muted mb-4" />
           <div className="font-serif text-[32px] mb-2 text-center">Preparing workspace...</div>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 md:p-7 pb-16 max-w-[1400px]">
+    <div className="p-4 sm:p-6 md:p-7 pb-16 w-full min-w-0 max-w-[1400px] mx-auto">
       <DashboardHeader />
       
       <div className="animate-rise" style={{ animationDelay: "100ms", animationFillMode: "both" }}>

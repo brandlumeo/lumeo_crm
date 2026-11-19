@@ -228,7 +228,7 @@ export default function LeavesPage() {
   const isLoading = isManager && activeTab === "all" ? companyLeavesLoading : myLeavesLoading;
 
   return (
-    <div className="p-6 md:p-8 pb-16 max-w-[1440px] mx-auto flex flex-col gap-8">
+    <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1440px] mx-auto flex flex-col gap-8">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line/60 pb-6">
         <div>

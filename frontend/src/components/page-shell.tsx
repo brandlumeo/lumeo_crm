@@ -27,7 +27,7 @@ export function PageShell({
   children,
 }: PageShellProps) {
   return (
-    <div className="p-4 md:p-7 pb-16 max-w-[1400px]">
+    <div className="p-4 md:p-7 pb-16 w-full min-w-0 max-w-[1400px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-8 animate-rise">
         <div className="min-w-0">
           {eyebrow && (

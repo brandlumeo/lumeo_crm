@@ -54,7 +54,7 @@ export default function AssetsPage() {
 
   if (!mounted || assetsLoading || teamLoading) {
     return (
-      <div className="p-7 pb-16 max-w-[1400px]">
+      <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1400px] mx-auto">
         <div className="card p-10 animate-pulse">
           <div className="h-8 bg-bone-2 rounded w-1/4 mb-4" />
           <div className="h-4 bg-bone-2 rounded w-1/2" />
@@ -131,7 +131,7 @@ export default function AssetsPage() {
   };
 
   return (
-    <div className="p-7 pb-16 max-w-[1400px] flex flex-col gap-8 animate-rise">
+    <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1400px] mx-auto flex flex-col gap-8 animate-rise">
       <div className="flex flex-col gap-1">
         <h1 className="font-serif text-[32px] tracking-tight">Company Hardware & Assets</h1>
         <p className="text-[13.5px] text-muted">

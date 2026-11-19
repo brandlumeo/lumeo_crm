@@ -210,7 +210,7 @@ export default function PayrollPage() {
 
   if (isLoading) {
     return (
-      <div className="p-7 max-w-[1200px] animate-pulse">
+      <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1200px] mx-auto animate-pulse">
         <div className="h-8 bg-bone-2 rounded w-1/4 mb-4" />
         <div className="h-4 bg-bone-2 rounded w-1/2" />
       </div>
@@ -219,7 +219,7 @@ export default function PayrollPage() {
 
   if (isGenerating && isManager) {
     return (
-      <div className="p-7 pb-16 max-w-[1000px] mx-auto animate-rise">
+      <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1000px] mx-auto animate-rise">
         <button onClick={() => { setIsGenerating(false); resetForm(); }} className="flex items-center gap-2 text-muted hover:text-ink transition-colors mb-6 text-sm font-medium">
           <ArrowLeft className="w-4 h-4" /> Back to Payroll
         </button>
@@ -399,7 +399,7 @@ export default function PayrollPage() {
 
   return (
     <>
-    <div className="p-7 pb-16 max-w-[1200px] flex flex-col gap-8 animate-rise">
+    <div className="p-4 sm:p-6 md:p-8 pb-16 w-full min-w-0 max-w-[1200px] mx-auto flex flex-col gap-8 animate-rise">
       <div className="flex flex-col gap-1">
         <h1 className="font-serif text-[32px] tracking-tight">Payroll & Salary Slips</h1>
         <p className="text-[13.5px] text-muted">
