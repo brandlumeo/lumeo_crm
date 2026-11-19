@@ -12,6 +12,9 @@ urlpatterns = [
     path("token/refresh/", views.CookieTokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
     path("register/", views.RegisterView.as_view(), name="register"),
+    path("verify-email/", views.VerifyEmailView.as_view(), name="verify_email"),
+    path("verify-email/resend/", views.ResendVerificationView.as_view(), name="verify_email_resend"),
+    path("platform-flags/", views.PlatformFlagsView.as_view(), name="platform_flags"),
 
     path("me/", views.MeView.as_view(), name="me"),
     path("password/", views.PasswordUpdateView.as_view(), name="password_update"),

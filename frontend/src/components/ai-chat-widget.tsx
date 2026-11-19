@@ -12,6 +12,13 @@ type Message = {
 
 export function AiChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  // Hidden when the platform admin has switched AI features off.
+  const [aiEnabled, setAiEnabled] = useState(true);
+  useEffect(() => {
+    api.get<{ ai_enabled: boolean }>("/accounts/platform-flags/")
+      .then(({ data }) => setAiEnabled(data.ai_enabled !== false))
+      .catch(() => undefined);
+  }, []);
   const [messages, setMessages] = useState<Message[]>([
     { id: "1", role: "assistant", content: "Hi! I'm Lumeo AI, your intelligent CRM assistant. How can I help you today?" }
   ]);
@@ -57,6 +64,8 @@ export function AiChatWidget() {
       setIsLoading(false);
     }
   };
+
+  if (!aiEnabled) return null;
 
   return (
     <>

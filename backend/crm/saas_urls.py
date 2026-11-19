@@ -18,5 +18,7 @@ urlpatterns = [
     path("billing/", v.SaasBillingView.as_view(), name="saas-billing"),
     path("billing/plans/", v.SaasPlanUpdateView.as_view(), name="saas-billing-plans"),
     path("audit/", v.SaasAuditView.as_view(), name="saas-audit"),
+    path("lifecycle/run/", v.SaasLifecycleRunView.as_view(), name="saas-lifecycle-run"),
+    path("lifecycle/events/", v.SaasLifecycleEventsView.as_view(), name="saas-lifecycle-events"),
     path("settings/", v.SaasSettingsView.as_view(), name="saas-settings"),
 ]

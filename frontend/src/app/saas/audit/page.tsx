@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Crown, KeyRound, LogIn, Pause, Play, ScrollText, Search, Settings, UserCheck, UserX, CalendarPlus } from "lucide-react";
+import { Bot, MousePointerClick, Zap, Crown, KeyRound, LogIn, Pause, Play, ScrollText, Search, Settings, UserCheck, UserX, CalendarPlus } from "lucide-react";
 import { relTime, saasApi } from "@/lib/saas";
 import { Empty, PageHeader, Pagination, Panel, Select, Skeleton, inputCls } from "@/components/saas/ui";
 
@@ -18,6 +18,9 @@ const ICONS: Record<string, React.ReactNode> = {
   "impersonation.end": <LogIn className="h-3.5 w-3.5 rotate-180 text-white/40" />,
   "plans.update": <KeyRound className="h-3.5 w-3.5 text-[#C9C0FF]" />,
   "settings.update": <Settings className="h-3.5 w-3.5 text-white/50" />,
+  "impersonation.action": <MousePointerClick className="h-3.5 w-3.5 text-amber-300" />,
+  "tenant.auto-suspend": <Bot className="h-3.5 w-3.5 text-rose-300" />,
+  "lifecycle.run": <Zap className="h-3.5 w-3.5 text-[#E9D3A3]" />,
 };
 
 export default function AuditPage() {
@@ -51,6 +54,7 @@ export default function AuditPage() {
               <option value="impersonation.">Login as tenant</option>
               <option value="plans.">Plan pricing</option>
               <option value="settings.">Platform settings</option>
+              <option value="lifecycle.">Automation runs</option>
             </Select>
           </div>
         </div>

@@ -164,6 +164,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'companies.maintenance_middleware.MaintenanceModeMiddleware',
+    'companies.platform_middleware.PlatformControlsMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # AxesMiddleware must be LAST so it can intercept failed logins

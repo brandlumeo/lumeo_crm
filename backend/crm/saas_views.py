@@ -17,7 +17,7 @@ from accounts.models import User
 from companies.models import Company, PlatformAuditLog, PlatformSettings
 from subscriptions.models import PLAN_LIMIT_KEYS, PLAN_LIMITS, Plan, Subscription, get_plan_catalog
 
-from .saas_metrics import ensure_subscriptions, month_starts, pct_change, subscription_mrr, tenant_rows
+from .saas_metrics import counts_as_on_plan, ensure_subscriptions, month_starts, pct_change, subscription_mrr, tenant_rows
 from .saas_serializers import SaasSettingsSerializer
 
 
@@ -99,6 +99,8 @@ class SaasBaseView(views.APIView):
 class SaasStatsView(SaasBaseView):
     def get(self, request):
         ensure_subscriptions()
+        from subscriptions.lifecycle import revenue_movements, run_daily, snapshot_history
+        run_daily()  # once-a-day fallback when no external cron calls the trigger URL
         now = timezone.now()
         d7, d30, d60 = now - timedelta(days=7), now - timedelta(days=30), now - timedelta(days=60)
         catalog = get_plan_catalog()
@@ -133,7 +135,7 @@ class SaasStatsView(SaasBaseView):
 
         plan_mix = []
         for key, label in Plan.choices:
-            plan_subs = [s for s in subs if s.plan == key and s.is_active]
+            plan_subs = [s for s in subs if s.plan == key and counts_as_on_plan(s)]
             plan_mix.append({"plan": key, "label": label, "tenants": len(plan_subs), "mrr": round(sum(subscription_mrr(s, catalog) for s in plan_subs), 2)})
         status_mix = defaultdict(int)
         for c in companies:
@@ -152,6 +154,12 @@ class SaasStatsView(SaasBaseView):
             for a in PlatformAuditLog.objects.order_by("-created_at")[:6]
         ]
         total_users = users.count()
+        win_back = sorted(
+            (r for r in rows if r["status"] == "suspended" or r["subscription_expired"]
+             or (r["status"] == "trial" and r["trial_ends_at"] and r["trial_ends_at"] < now)),
+            key=lambda r: (r["usage"]["leads"] + r["usage"]["deals"] + r["usage"]["invoices"]), reverse=True,
+        )
+        ps = PlatformSettings.get_settings()
         return Response({
             "kpis": {
                 "mrr": round(mrr, 2),
@@ -182,6 +190,15 @@ class SaasStatsView(SaasBaseView):
             "recent_signups": sorted(rows, key=lambda r: r["created_at"], reverse=True)[:6],
             "recent_logins": recent_logins,
             "recent_audit": recent_audit,
+            "movements": revenue_movements(30),
+            "mrr_history": snapshot_history(90),
+            "win_back": win_back[:8],
+            "lifecycle": {
+                "emails_enabled": ps.lifecycle_emails_enabled,
+                "auto_suspend_enabled": ps.auto_suspend_enabled,
+                "grace_days": ps.suspend_grace_days,
+                "last_run": ps.lifecycle_last_run,
+            },
             "generated_at": now,
         })
 
@@ -519,7 +536,7 @@ class SaasBillingView(SaasBaseView):
         now = timezone.now()
         plans = []
         for key, label in Plan.choices:
-            plan_subs = [s for s in subs if s.plan == key and s.is_active]
+            plan_subs = [s for s in subs if s.plan == key and counts_as_on_plan(s)]
             plans.append({
                 "key": key,
                 "name": label,
@@ -612,6 +629,32 @@ class SaasPlanUpdateView(SaasBaseView):
         settings_obj.save(update_fields=["plan_overrides", "updated_at"])
         audit(request, "plans.update", "Updated plan pricing/limits: " + ", ".join(changes), changes=changes)
         return Response({"ok": True, "plan_overrides": overrides})
+
+
+# ── Lifecycle automation ──────────────────────────────────────────────────────
+
+class SaasLifecycleRunView(SaasBaseView):
+    """POST: run reminders/auto-suspend now (each reminder is still sent only once)."""
+
+    def post(self, request):
+        from subscriptions.lifecycle import run_lifecycle, take_snapshot
+        take_snapshot()
+        summary = run_lifecycle()
+        audit(request, "lifecycle.run", f"Ran lifecycle automation: {summary['emails']} email(s), {len(summary['suspended'])} suspension(s)", result=summary)
+        return Response(summary)
+
+
+class SaasLifecycleEventsView(SaasBaseView):
+    def get(self, request):
+        from companies.models import LifecycleEvent
+        qs = LifecycleEvent.objects.select_related("company")
+        page = paginate(request, qs, default_size=30)
+        page["results"] = [
+            {"id": e.id, "kind": e.kind, "key": e.key, "detail": e.detail, "created_at": e.created_at,
+             "company": {"id": str(e.company_id), "name": e.company.name}}
+            for e in page["results"]
+        ]
+        return Response(page)
 
 
 # ── Audit log ─────────────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
 from .cookie_auth import COOKIE_ACCESS_TOKEN_NAME
+from companies.models import PlatformSettings
 from .models import User, TeamInvitation
 from .serializers import UserSerializer, TeamInvitationSerializer
 
@@ -34,6 +35,103 @@ class MyRefreshToken(RefreshToken):
         token['last_name'] = user.last_name
         token['username'] = user.username
         return token
+
+VERIFY_SALT = "lumeo.email-verify"
+VERIFY_MAX_AGE = 3 * 24 * 3600
+
+
+def needs_email_verification(user):
+    if user.is_superuser or getattr(user, "email_verified", True):
+        return False
+    from companies.models import PlatformSettings
+    return PlatformSettings.get_settings().require_email_verification
+
+
+def send_verification_email(user):
+    from django.core import signing
+    from accounts.emails import build_premium_email
+
+    token = signing.dumps({"u": user.pk, "e": user.email}, salt=VERIFY_SALT)
+    frontend = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    link = f"{frontend}/verify-email?token={token}"
+    name = user.first_name or user.username
+    try:
+        build_premium_email(
+            subject="Confirm your email for Lumeo CRM",
+            heading="Confirm your email",
+            body_text=f"Hi {name},\n\nConfirm your email address to activate your Lumeo workspace:\n{link}\n\nThis link expires in 3 days.",
+            body_html=f"<p>Hi <strong>{name}</strong>,</p><p>Confirm your email address to activate your Lumeo workspace. This link expires in 3 days.</p>",
+            pre_header="WELCOME",
+            action_url=link,
+            action_text="Confirm email",
+            to_email=user.email,
+        ).send(fail_silently=False)
+    except Exception as exc:
+        logger.error("Failed to send verification email to %s: %s", user.email, exc)
+
+
+def registration_message():
+    """Same text for new and already-registered emails, so sign-up can't be used to find accounts."""
+    if PlatformSettings.get_settings().require_email_verification:
+        return "Almost there! If this email is new, we've sent a confirmation link. Click it to activate your workspace, then sign in."
+    return "Registration received. If this email is new, your workspace is being created. Please check your inbox or proceed to login."
+
+
+class VerifyEmailView(APIView):
+    """POST {token} -> marks the email verified and signs the user in."""
+
+    permission_classes = [AllowAny]
+    throttle_scope = "login"
+
+    def post(self, request):
+        from django.core import signing
+
+        try:
+            data = signing.loads(request.data.get("token", ""), salt=VERIFY_SALT, max_age=VERIFY_MAX_AGE)
+        except signing.SignatureExpired:
+            return Response({"detail": "This link has expired. Request a new one from the login page.", "code": "expired"}, status=status.HTTP_400_BAD_REQUEST)
+        except signing.BadSignature:
+            return Response({"detail": "This link is invalid.", "code": "invalid"}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(pk=data.get("u"), email=data.get("e"), is_active=True).first()
+        if user is None:
+            return Response({"detail": "This link is invalid.", "code": "invalid"}, status=status.HTTP_400_BAD_REQUEST)
+        if not user.email_verified:
+            User.objects.filter(pk=user.pk).update(email_verified=True)
+        refresh = MyRefreshToken.for_user(user)
+        response = Response({"access": str(refresh.access_token), "refresh": str(refresh), "verified": True})
+        _set_auth_cookies(response, refresh)
+        return response
+
+
+class ResendVerificationView(APIView):
+    """POST {email}. Always answers the same way, so it can't be used to probe for accounts."""
+
+    permission_classes = [AllowAny]
+    throttle_scope = "login"
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        user = User.objects.filter(email__iexact=email, is_active=True, email_verified=False).first() if email else None
+        if user is not None:
+            send_verification_email(user)
+        return Response({"detail": "If that address is waiting for confirmation, a new link is on its way."})
+
+
+class PlatformFlagsView(APIView):
+    """Public, non-sensitive platform switches the frontend needs."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        from companies.models import PlatformSettings
+        ps = PlatformSettings.get_settings()
+        return Response({
+            "ai_enabled": ps.enable_ai_features,
+            "signups_open": ps.allow_new_registrations,
+            "email_verification": ps.require_email_verification,
+        })
+
 
 # ── Cookie helpers ────────────────────────────────────────────────────────────
 
@@ -134,6 +232,12 @@ class CookieTokenObtainView(APIView):
             return Response(
                 {"detail": "This account has been disabled."},
                 status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if needs_email_verification(user):
+            return Response(
+                {"detail": "Please confirm your email address first. We've sent you a link.", "code": "email_unverified"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Check if Two-Factor Authentication is enabled
@@ -340,7 +444,6 @@ class RegisterView(APIView):
     throttle_scope = "login"
 
     def post(self, request):
-        from companies.models import PlatformSettings
         if not PlatformSettings.get_settings().allow_new_registrations:
             return Response(
                 {"detail": "New sign-ups are currently closed. Please contact support."},
@@ -368,7 +471,7 @@ class RegisterView(APIView):
                 body=f"Someone (hopefully you) tried to register a Lumeo CRM account with this email address, but you already have an account! You can log in here: {frontend_url}/login"
             )
             return Response(
-                {"detail": "Registration received. If this email is new, your workspace is being created. Please check your inbox or proceed to login."},
+                {"detail": registration_message()},
                 status=status.HTTP_200_OK,
             )
 
@@ -400,6 +503,11 @@ class RegisterView(APIView):
         except Exception as e:
             return Response({"detail": f"Registration failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+        if PlatformSettings.get_settings().require_email_verification:
+            User.objects.filter(pk=user.pk).update(email_verified=False)
+            user.email_verified = False
+            send_verification_email(user)
+
         # Create welcome notification outside transaction.atomic so email/Celery errors don't rollback user creation
         from notifications.models import Notification
         from notifications.tasks import send_notification_email
@@ -422,7 +530,7 @@ class RegisterView(APIView):
 
         # Remove token and auth cookies to prevent enumeration via success vs failure paths
         return Response(
-            {"detail": "Registration received. If this email is new, your workspace is being created. Please check your inbox or proceed to login."},
+            {"detail": registration_message()},
             status=status.HTTP_200_OK
         )
 

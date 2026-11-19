@@ -7,4 +7,4 @@ class SaasSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlatformSettings
         exclude = ("id", "plan_overrides")  # plans are edited through /saas/billing/plans/
-        read_only_fields = ("updated_at",)
+        read_only_fields = ("updated_at", "lifecycle_last_run")

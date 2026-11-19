@@ -90,7 +90,41 @@ export type SaasStats = {
   recent_signups: TenantRow[];
   recent_logins: SaasUser[];
   recent_audit: AuditEntry[];
+  movements: RevenueMovements | null;
+  mrr_history: { date: string; mrr: number; paying: number; tenants: number }[];
+  win_back: TenantRow[];
+  lifecycle: { emails_enabled: boolean; auto_suspend_enabled: boolean; grace_days: number; last_run: string | null };
   generated_at: string;
+};
+
+export type RevenueMovements = {
+  from: string;
+  to: string;
+  days: number;
+  start_mrr: number;
+  end_mrr: number;
+  new: number;
+  expansion: number;
+  contraction: number;
+  churned: number;
+  net: number;
+  new_count: number;
+  expansion_count: number;
+  contraction_count: number;
+  churned_count: number;
+  churn_rate: number | null;
+  trial_conversion: number | null;
+  trials_converted: number;
+  trials_at_start: number;
+  churned_tenants: { id: string; name: string; mrr: number }[];
+};
+
+export type LifecycleSummary = {
+  emails: number;
+  reminders: { company: string; kind: string; emails: number }[];
+  suspended: string[];
+  emails_enabled: boolean;
+  auto_suspend_enabled: boolean;
 };
 
 export type TenantDetail = TenantRow & {
@@ -157,6 +191,9 @@ export const saasApi = {
   updatePlans: (body: Record<string, Partial<Record<string, number>> | null>) => api.patch("/saas/billing/plans/", body).then((r) => r.data),
   audit: (p: Params) => api.get<Page<AuditEntry>>("/saas/audit/", { params: clean(p) }).then((r) => r.data),
   settings: () => api.get("/saas/settings/").then((r) => r.data),
+  runLifecycle: () => api.post<LifecycleSummary>("/saas/lifecycle/run/").then((r) => r.data),
+  lifecycleEvents: (p: Params) =>
+    api.get<Page<{ id: number; kind: string; key: string; detail: string; created_at: string; company: { id: string; name: string } }>>("/saas/lifecycle/events/", { params: clean(p) }).then((r) => r.data),
   updateSettings: (body: Record<string, unknown>) => api.patch("/saas/settings/", body).then((r) => r.data),
 };
 

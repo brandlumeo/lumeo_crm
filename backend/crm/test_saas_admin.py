@@ -139,3 +139,16 @@ def test_login_hides_account_details_and_records_last_login(platform):
     assert ok.status_code == 200
     platform["member"].refresh_from_db()
     assert platform["member"].last_login is not None
+
+
+def test_owner_preferred_and_expired_plans_not_counted(platform):
+    from crm.saas_metrics import tenant_rows
+    acme = platform["acme"]
+    User.objects.create_user(email="early-admin@acme.test", username="earlyadmin", password="Passw0rd!x", company=acme, role="admin")
+    User.objects.filter(email="early-admin@acme.test").update(date_joined=timezone.now() - timedelta(days=400))
+    assert tenant_rows([acme])[0]["owner"]["email"] == "owner@acme.test"
+    Subscription.objects.filter(company=acme).update(expires_at=timezone.now() - timedelta(days=1))
+    stats = platform["admin"].get("/api/v1/saas/stats/").data
+    assert next(p for p in stats["plan_mix"] if p["plan"] == "pro")["tenants"] == 0
+    assert stats["kpis"]["mrr"] == 0
+    assert tenant_rows([acme])[0]["subscription_expired"] is True

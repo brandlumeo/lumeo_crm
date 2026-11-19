@@ -37,6 +37,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unverified, setUnverified] = useState(false);
+  const [resent, setResent] = useState(false);
+  async function resendVerification() {
+    try {
+      const { api } = require("@/lib/api");
+      await api.post("/accounts/verify-email/resend/", { email: username });
+    } catch {
+      /* same message either way */
+    }
+    setResent(true);
+  }
   const [rememberMe, setRememberMe] = useState(true);
 
   // 2FA state
@@ -88,7 +99,10 @@ export default function LoginPage() {
         const status = err.response.status;
         const detail = err.response.data?.detail;
         
-        if (status === 403) {
+        if (status === 403 && err.response.data?.code === "email_unverified") {
+          setUnverified(true);
+          setError(detail || "Please confirm your email address first.");
+        } else if (status === 403) {
           setError("This account is temporarily locked due to multiple failed login attempts. Please try again in 30 minutes.");
         } else if (status === 429) {
           setError("Too many login attempts. Please wait a moment and try again.");
@@ -214,6 +228,11 @@ export default function LoginPage() {
                   {error ? (
                     <div className="chip chip-warning justify-center">{error}</div>
                   ) : null}
+                  {unverified && (
+                    <button type="button" onClick={resendVerification} disabled={resent} className="w-full text-center text-[12.5px] text-muted underline hover:text-ink disabled:no-underline">
+                      {resent ? "If that address is waiting for confirmation, a new link is on its way." : "Resend confirmation email"}
+                    </button>
+                  )}
 
                   <div className="flex items-center justify-between my-2">
                     <label className="flex items-center gap-2.5 cursor-pointer group">

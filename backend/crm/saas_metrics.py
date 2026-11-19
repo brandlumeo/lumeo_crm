@@ -31,6 +31,11 @@ def ensure_subscriptions():
         )
 
 
+def counts_as_on_plan(sub):
+    """Active and, for paid plans, still within the paid period."""
+    return bool(sub and sub.is_active and (sub.plan == Plan.FREE or not sub.is_expired))
+
+
 def subscription_mrr(sub, catalog):
     if sub is None or not sub.is_active or sub.plan == Plan.FREE or sub.is_expired:
         return 0.0
@@ -91,7 +96,9 @@ def tenant_rows(companies):
             if r["latest"] and (r["company"] not in last_record or r["latest"] > last_record[r["company"]]):
                 last_record[r["company"]] = r["latest"]
     owners = {}
-    for u in User.objects.filter(company_id__in=ids, role__in=("owner", "admin")).order_by("company_id", "date_joined").values("company", "first_name", "last_name", "email", "id"):
+    # The workspace owner first; fall back to the earliest admin when there is no owner.
+    candidates = User.objects.filter(company_id__in=ids, role__in=("owner", "admin"), is_active=True).order_by("date_joined")
+    for u in sorted(candidates.values("company", "first_name", "last_name", "email", "id", "role"), key=lambda r: r["role"] != "owner"):
         owners.setdefault(u["company"], u)
     subs = {s.company_id: s for s in Subscription.objects.filter(company_id__in=ids)}
 

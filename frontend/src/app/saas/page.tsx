@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlarmClock, ArrowRight, Building2, HeartPulse, RefreshCw, ShieldAlert, Sparkles, TrendingUp, Users, Wallet } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AlarmClock, ArrowRight, Building2, HeartPulse, RefreshCw, RotateCcw, ShieldAlert, Sparkles, TrendingUp, Users, Wallet, Zap } from "lucide-react";
 import { useCurrentUser } from "@/lib/queries";
 import { daysUntil, inr, relTime, saasApi, shortDate, type TenantRow } from "@/lib/saas";
 import { Avatar, Button, ChartTooltip, Delta, Empty, HealthPill, Kpi, PageHeader, Panel, PlanBadge, Skeleton, StatusBadge, accent } from "@/components/saas/ui";
@@ -57,9 +57,14 @@ export default function SaasOverview() {
         title={<>{greeting()}, <span className="italic text-[#E9D3A3]">{firstName}</span></>}
         description={`${k.total_tenants} workspaces · ${k.total_users} people · ${inr(k.mrr)} in monthly recurring revenue.`}
         actions={
-          <Button variant="secondary" size="sm" onClick={() => refetch()} loading={isFetching}>
-            {!isFetching && <RefreshCw className="h-3.5 w-3.5" />} Refresh
-          </Button>
+          <>
+            <Link href="/saas/settings#automation" className={`inline-flex h-8 items-center gap-1.5 rounded-xl border px-3 text-[12px] ${data.lifecycle.emails_enabled ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-200" : "border-white/10 text-white/45 hover:text-white"}`}>
+              <Zap className="h-3.5 w-3.5" /> Automation {data.lifecycle.emails_enabled ? "on" : "off"}
+            </Link>
+            <Button variant="secondary" size="sm" onClick={() => refetch()} loading={isFetching}>
+              {!isFetching && <RefreshCw className="h-3.5 w-3.5" />} Refresh
+            </Button>
+          </>
         }
       />
 
@@ -73,8 +78,8 @@ export default function SaasOverview() {
           delta={<span className="flex items-center gap-1.5"><Delta value={k.new_tenants_change} /><span>{k.new_tenants_30d} new in 30d</span></span>}
           hint={`${k.active_tenants} active · ${k.trial_tenants} trial`} />
         <Kpi label="People" icon={<Users className="h-4 w-4" />} value={k.total_users}
-          delta={<span className="flex items-center gap-1.5"><Delta value={k.new_users_change} /><span>{k.new_users_30d} joined in 30d</span></span>}
-          hint={`${k.active_users_30d} active this month`} />
+          delta={<Delta value={k.new_users_change} />}
+          hint={`${k.new_users_30d} new · ${k.active_users_30d} active (30d)`} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -92,8 +97,8 @@ export default function SaasOverview() {
                 <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => inr(Number(v), true)} width={64} />
                 <Tooltip content={<ChartTooltip format={(v) => inr(v)} />} cursor={{ stroke: "rgba(255,255,255,0.1)" }} />
-                <Area type="monotone" dataKey="mrr" name="MRR" stroke={accent.gold} strokeWidth={2} fill="url(#mrrFill)" />
-                <Area type="monotone" dataKey="new_mrr" name="New MRR" stroke={accent.violet} strokeWidth={1.5} fill="transparent" strokeDasharray="4 4" />
+                <Area isAnimationActive={false} type="monotone" dataKey="mrr" name="MRR" stroke={accent.gold} strokeWidth={2} fill="url(#mrrFill)" />
+                <Area isAnimationActive={false} type="monotone" dataKey="new_mrr" name="New MRR" stroke={accent.violet} strokeWidth={1.5} fill="transparent" strokeDasharray="4 4" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -104,7 +109,7 @@ export default function SaasOverview() {
             <div className="relative h-[160px] w-[160px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.plan_mix} dataKey="tenants" nameKey="label" innerRadius={54} outerRadius={76} paddingAngle={3} stroke="none">
+                  <Pie isAnimationActive={false} data={data.plan_mix} dataKey="tenants" nameKey="label" innerRadius={54} outerRadius={76} paddingAngle={3} stroke="none">
                     {data.plan_mix.map((p) => <Cell key={p.plan} fill={PLAN_COLORS[p.plan]} />)}
                   </Pie>
                   <Tooltip content={<ChartTooltip format={(v) => `${v} tenants`} />} />
@@ -142,8 +147,8 @@ export default function SaasOverview() {
                 <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                <Bar dataKey="new_tenants" name="Workspaces" fill={accent.gold} radius={[6, 6, 0, 0]} maxBarSize={18} />
-                <Bar dataKey="new_users" name="People" fill={accent.violet} radius={[6, 6, 0, 0]} maxBarSize={18} />
+                <Bar isAnimationActive={false} dataKey="new_tenants" name="Workspaces" fill={accent.gold} radius={[6, 6, 0, 0]} maxBarSize={18} />
+                <Bar isAnimationActive={false} dataKey="new_users" name="People" fill={accent.violet} radius={[6, 6, 0, 0]} maxBarSize={18} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -176,6 +181,70 @@ export default function SaasOverview() {
               <Sparkles className="mb-1 h-3.5 w-3.5 text-[#D9B97A]" />
               {k.trial_tenants} workspaces are trialling. {data.expiring_trials.length} trial{data.expiring_trials.length === 1 ? "" : "s"} end within 14 days.
             </div>
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <Panel className="xl:col-span-2" title="Revenue movements"
+          subtitle={data.movements && data.movements.days > 0 ? `${shortDate(data.movements.from)} → ${shortDate(data.movements.to)} · from daily snapshots` : "Tracked daily from today. Movements appear once there are two snapshots."}>
+          {!data.movements || data.movements.days === 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {["New", "Expansion", "Contraction", "Churned"].map((l) => (
+                <div key={l} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-white/35">{l}</div>
+                  <div className="mt-2 font-serif text-[24px] text-white/30">—</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { l: "New", v: data.movements.new, n: data.movements.new_count, c: "text-emerald-300", sign: "+" },
+                  { l: "Expansion", v: data.movements.expansion, n: data.movements.expansion_count, c: "text-[#C9C0FF]", sign: "+" },
+                  { l: "Contraction", v: data.movements.contraction, n: data.movements.contraction_count, c: "text-amber-300", sign: "−" },
+                  { l: "Churned", v: data.movements.churned, n: data.movements.churned_count, c: "text-rose-300", sign: "−" },
+                ].map((m) => (
+                  <div key={m.l} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/35">{m.l}</div>
+                    <div className={`mt-2 font-serif text-[24px] tabular-nums ${m.v ? m.c : "text-white/40"}`}>{m.v ? `${m.sign}${inr(m.v, true)}` : "₹0"}</div>
+                    <div className="mt-1 text-[11px] text-white/35">{m.n} workspace{m.n === 1 ? "" : "s"}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/[0.06] pt-4 text-[12.5px]">
+                <div><span className="text-white/40">Net change </span><span className={`font-medium tabular-nums ${data.movements.net >= 0 ? "text-emerald-300" : "text-rose-300"}`}>{data.movements.net >= 0 ? "+" : "−"}{inr(Math.abs(data.movements.net))}</span></div>
+                <div><span className="text-white/40">Revenue churn </span><span className="tabular-nums text-white/85">{data.movements.churn_rate === null ? "—" : `${data.movements.churn_rate}%`}</span></div>
+                <div><span className="text-white/40">Trial → paid </span><span className="tabular-nums text-white/85">{data.movements.trial_conversion === null ? "—" : `${data.movements.trial_conversion}% (${data.movements.trials_converted}/${data.movements.trials_at_start})`}</span></div>
+                {data.mrr_history.length >= 2 && (
+                  <div className="ml-auto h-10 w-40">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data.mrr_history}>
+                        <Line isAnimationActive={false} type="monotone" dataKey="mrr" stroke={accent.gold} strokeWidth={1.5} dot={false} />
+                        <Tooltip content={<ChartTooltip format={(v) => inr(v)} />} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title={<span className="flex items-center gap-2"><RotateCcw className="h-4 w-4 text-[#E9D3A3]" /> Win-back</span>} subtitle="Suspended, expired or ended trials, most-used first" padded={false}>
+          <div className="p-3">
+            {data.win_back.length === 0 ? (
+              <Empty title="No lapsed workspaces" />
+            ) : (
+              data.win_back.slice(0, 6).map((t) => (
+                <TenantLine key={t.id} t={t} right={
+                  <span className="text-[11.5px] text-white/45">
+                    {t.status === "suspended" ? "Suspended" : t.subscription_expired ? "Plan expired" : "Trial ended"}
+                  </span>
+                } />
+              ))
+            )}
           </div>
         </Panel>
       </div>

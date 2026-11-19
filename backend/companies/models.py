@@ -484,6 +484,12 @@ class PlatformSettings(models.Model):
     # Admin-edited plan prices/limits, merged over subscriptions.models.PLAN_LIMITS
     plan_overrides = models.JSONField(default=dict, blank=True)
 
+    # Customer lifecycle automation (off until the platform admin turns it on)
+    lifecycle_emails_enabled = models.BooleanField(default=False, help_text="Email owners before trials end and before/after paid plans expire")
+    auto_suspend_enabled = models.BooleanField(default=False, help_text="Suspend workspaces whose trial or paid plan ended more than the grace period ago")
+    suspend_grace_days = models.PositiveIntegerField(default=7)
+    lifecycle_last_run = models.DateTimeField(null=True, blank=True)
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -515,6 +521,41 @@ class PlatformAuditLog(models.Model):
 
     def __str__(self):
         return f"{self.created_at:%Y-%m-%d %H:%M} {self.actor_email}: {self.summary}"
+
+
+class RevenueSnapshot(models.Model):
+    """One row per day: platform MRR plus each tenant's MRR and plan, for true history and MRR movements."""
+
+    date = models.DateField(unique=True)
+    mrr = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    paying_tenants = models.PositiveIntegerField(default=0)
+    total_tenants = models.PositiveIntegerField(default=0)
+    total_users = models.PositiveIntegerField(default=0)
+    tenants = models.JSONField(default=dict, help_text="{company_id: {'mrr': float, 'plan': str, 'status': str}}")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-date",)
+
+    def __str__(self):
+        return f"{self.date}: MRR {self.mrr}"
+
+
+class LifecycleEvent(models.Model):
+    """De-duplicates automated lifecycle actions (each reminder is sent once per period)."""
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="lifecycle_events")
+    kind = models.CharField(max_length=40)
+    key = models.CharField(max_length=40, help_text="e.g. the trial end date the reminder refers to")
+    detail = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [models.UniqueConstraint(fields=("company", "kind", "key"), name="uniq_lifecycle_event")]
+
+    def __str__(self):
+        return f"{self.company_id} {self.kind} {self.key}"
 
 
 class Unit(models.Model):

@@ -89,4 +89,8 @@ class TriggerCronTasksView(APIView):
         check_task_deadlines.delay()
         check_expiring_subscriptions.delay()
 
-        return Response({'status': 'Background tasks triggered successfully'})
+        # Platform: daily revenue snapshot + trial/renewal reminders and auto-suspend
+        from subscriptions.lifecycle import run_daily
+        lifecycle = run_daily()
+
+        return Response({'status': 'Background tasks triggered successfully', 'lifecycle': lifecycle})

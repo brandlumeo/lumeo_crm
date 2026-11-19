@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Server, ShieldAlert, Sparkles } from "lucide-react";
-import { saasApi } from "@/lib/saas";
+import { Mail, Play, Server, ShieldAlert, Sparkles, Zap } from "lucide-react";
+import { relTime, saasApi } from "@/lib/saas";
 import { Button, Field, PageHeader, Panel, Skeleton, inputCls } from "@/components/saas/ui";
 import { cn } from "@/lib/utils";
 
@@ -16,8 +16,68 @@ type Settings = {
   enable_custom_domains: boolean;
   stripe_public_key: string;
   support_email: string;
+  lifecycle_emails_enabled: boolean;
+  auto_suspend_enabled: boolean;
+  suspend_grace_days: number;
+  lifecycle_last_run?: string | null;
   updated_at?: string;
 };
+
+const KIND_LABELS: Record<string, string> = {
+  trial_7d: "Trial ends in 7 days",
+  trial_3d: "Trial ends in 3 days",
+  trial_1d: "Trial ends tomorrow",
+  trial_ended: "Trial ended",
+  renewal_7d: "Plan renews in 7 days",
+  renewal_1d: "Plan renews tomorrow",
+  plan_expired: "Plan expired",
+};
+
+function LifecycleActivity({ lastRun }: { lastRun?: string | null }) {
+  const qc = useQueryClient();
+  const [running, setRunning] = useState(false);
+  const { data } = useQuery({ queryKey: ["saas", "lifecycle-events"], queryFn: () => saasApi.lifecycleEvents({ page_size: 8 }) });
+  const run = async () => {
+    setRunning(true);
+    try {
+      const r = await saasApi.runLifecycle();
+      toast.success(
+        r.emails_enabled
+          ? `Done: ${r.emails} email(s) sent${r.suspended.length ? `, ${r.suspended.length} suspended` : ""}`
+          : `Checked. Emails are off${r.suspended.length ? `; ${r.suspended.length} suspended` : ""}.`,
+      );
+      void qc.invalidateQueries({ queryKey: ["saas"] });
+    } catch {
+      toast.error("Couldn't run automation");
+    } finally {
+      setRunning(false);
+    }
+  };
+  return (
+    <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[12.5px] text-white/50">
+          Runs daily automatically. Last run: <span className="text-white/80">{lastRun ? relTime(lastRun) : "never"}</span>
+        </div>
+        <Button size="sm" variant="secondary" loading={running} onClick={run}>
+          {!running && <Play className="h-3.5 w-3.5" />} Run now
+        </Button>
+      </div>
+      {data && data.results.length > 0 && (
+        <ul className="mt-3 divide-y divide-white/[0.05] text-[12.5px]">
+          {data.results.map((e) => (
+            <li key={e.id} className="flex items-center gap-3 py-2">
+              <Mail className="h-3.5 w-3.5 text-white/30" />
+              <span className="text-white/75">{e.company.name}</span>
+              <span className="text-white/40">{KIND_LABELS[e.kind] || e.kind}</span>
+              <span className="ml-auto text-[11.5px] text-white/30">{relTime(e.created_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function Toggle({ title, desc, checked, onChange, danger, pending }: { title: string; desc: string; checked: boolean; onChange: (v: boolean) => void; danger?: boolean; pending?: boolean }) {
   return (
@@ -61,10 +121,12 @@ export default function SaasSettingsPage() {
   const dirty = JSON.stringify(form) !== JSON.stringify(data);
   const save = async () => {
     if (form.maintenance_mode && !data?.maintenance_mode && !confirm("Turn on maintenance mode? Every workspace loses access until you turn it off.")) return;
+    if (form.auto_suspend_enabled && !data?.auto_suspend_enabled && !confirm(`Turn on auto-suspend? Workspaces whose trial or paid plan ended more than ${form.suspend_grace_days} days ago will be suspended on the next run.`)) return;
     setSaving(true);
     try {
-      const { updated_at, ...body } = form;
+      const { updated_at, lifecycle_last_run, ...body } = form;
       void updated_at;
+      void lifecycle_last_run;
       await saasApi.updateSettings(body);
       toast.success("Platform settings saved");
       void qc.invalidateQueries({ queryKey: ["saas"] });
@@ -94,15 +156,40 @@ export default function SaasSettingsPage() {
         <div className="divide-y divide-white/[0.05]">
           <Toggle danger title="Maintenance mode" desc="Show a maintenance page to every tenant. Super admins can still sign in." checked={form.maintenance_mode} onChange={(v) => set({ maintenance_mode: v })} />
           <Toggle title="Allow new sign-ups" desc="Let new companies create a workspace from the public sign-up page." checked={form.allow_new_registrations} onChange={(v) => set({ allow_new_registrations: v })} />
-          <Toggle title="Require email verification" desc="New accounts must confirm their email address before signing in." pending checked={form.require_email_verification} onChange={(v) => set({ require_email_verification: v })} />
+          <Toggle title="Require email verification" desc="New sign-ups get a confirmation link and can't sign in until they click it. Existing accounts aren't affected." checked={form.require_email_verification} onChange={(v) => set({ require_email_verification: v })} />
         </div>
       </Panel>
 
       <Panel title={<span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[#E9D3A3]" /> Features</span>}>
         <div className="divide-y divide-white/[0.05]">
-          <Toggle title="AI features" desc="AI assistant, smart summaries and suggestions across the CRM." pending checked={form.enable_ai_features} onChange={(v) => set({ enable_ai_features: v })} />
+          <Toggle title="AI features" desc="AI assistant, email drafts and AI performance analysis. Turning this off hides the assistant and blocks every AI request." checked={form.enable_ai_features} onChange={(v) => set({ enable_ai_features: v })} />
           <Toggle title="Custom domains" desc="Allow workspaces to use their own domain for portals." pending checked={form.enable_custom_domains} onChange={(v) => set({ enable_custom_domains: v })} />
         </div>
+      </Panel>
+
+      <div id="automation" />
+      <Panel title={<span className="flex items-center gap-2"><Zap className="h-4 w-4 text-[#E9D3A3]" /> Lifecycle automation</span>}
+        subtitle="Keeps trials converting and renewals on time. Every email is sent once per workspace and period.">
+        <div className="divide-y divide-white/[0.05]">
+          <Toggle title="Trial & renewal emails"
+            desc="Emails workspace owners when a trial ends in 7, 3 and 1 days, when it has ended, 7 and 1 days before a paid plan ends, and when it has expired."
+            checked={form.lifecycle_emails_enabled} onChange={(v) => set({ lifecycle_emails_enabled: v })} />
+          <Toggle danger title="Auto-suspend lapsed workspaces"
+            desc="Suspends workspaces whose trial or paid plan ended more than the grace period ago. Data is kept; you can reactivate anytime."
+            checked={form.auto_suspend_enabled} onChange={(v) => set({ auto_suspend_enabled: v })} />
+          <div className="flex items-center justify-between gap-6 py-4">
+            <div>
+              <div className="text-[13.5px] font-medium text-white/90">Grace period</div>
+              <div className="mt-0.5 text-[12.5px] text-white/40">Days after a trial or plan ends before auto-suspend applies.</div>
+            </div>
+            <div className="flex w-32 shrink-0 items-center gap-2">
+              <input type="number" min={0} max={90} aria-label="Grace period in days" className={`${inputCls} text-right`} value={form.suspend_grace_days}
+                onChange={(e) => set({ suspend_grace_days: Math.max(0, Math.min(90, parseInt(e.target.value, 10) || 0)) })} />
+              <span className="text-[12px] text-white/40">days</span>
+            </div>
+          </div>
+        </div>
+        <LifecycleActivity lastRun={data?.lifecycle_last_run} />
       </Panel>
 
       <Panel title="Contact & payments">

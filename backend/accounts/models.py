@@ -42,6 +42,7 @@ class User(AbstractUser):
     employee_id = models.CharField(max_length=100, blank=True, null=True, help_text="Employee ID or code.")
     prefix = models.CharField(max_length=10, blank=True, null=True)
     mobile = models.CharField(max_length=20, blank=True, null=True)
+    email_verified = models.BooleanField(default=True, help_text="False only for self-serve sign-ups awaiting email confirmation")
     country = models.CharField(max_length=100, blank=True, null=True)
     language = models.CharField(max_length=50, blank=True, null=True)
     gender = models.CharField(max_length=20, blank=True, null=True)

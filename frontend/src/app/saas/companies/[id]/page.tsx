@@ -98,9 +98,9 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                <Bar dataKey="leads" name="Leads" fill={accent.gold} radius={[5, 5, 0, 0]} maxBarSize={14} />
-                <Bar dataKey="deals" name="Deals" fill={accent.violet} radius={[5, 5, 0, 0]} maxBarSize={14} />
-                <Bar dataKey="invoices" name="Invoices" fill={accent.teal} radius={[5, 5, 0, 0]} maxBarSize={14} />
+                <Bar isAnimationActive={false} dataKey="leads" name="Leads" fill={accent.gold} radius={[5, 5, 0, 0]} maxBarSize={14} />
+                <Bar isAnimationActive={false} dataKey="deals" name="Deals" fill={accent.violet} radius={[5, 5, 0, 0]} maxBarSize={14} />
+                <Bar isAnimationActive={false} dataKey="invoices" name="Invoices" fill={accent.teal} radius={[5, 5, 0, 0]} maxBarSize={14} />
               </BarChart>
             </ResponsiveContainer>
           </div>
