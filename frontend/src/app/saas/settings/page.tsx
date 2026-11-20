@@ -96,11 +96,17 @@ function Toggle({ title, desc, checked, onChange, danger, pending }: { title: st
         aria-label={title}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full border transition",
-          checked ? (danger ? "border-rose-400/40 bg-rose-500/70" : "border-[#D9B97A]/50 bg-[#C9A35E]") : "border-white/10 bg-white/[0.06]",
+          "inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full p-0.5 ring-1 ring-inset transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D9B97A]/60",
+          checked ? (danger ? "bg-rose-500/80 ring-rose-400/40" : "bg-[#C9A35E] ring-[#E9D3A3]/40") : "bg-white/[0.08] ring-white/15",
         )}
       >
-        <span className={cn("absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "block h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-transform duration-200",
+            checked ? "translate-x-5" : "translate-x-0",
+          )}
+        />
       </button>
     </div>
   );
