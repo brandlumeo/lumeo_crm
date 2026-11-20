@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, Coffee, LogOut, Play, Building2, Home, MapPin, Briefcase, Compass } from "lucide-react";
 import { toast } from "sonner";
+import { getBestPosition, locationErrorMessage } from "@/lib/geo";
 import {
   useAttendanceStatus,
   usePunchIn,
@@ -31,13 +32,14 @@ export function AttendanceWidget() {
   const isGeofenceRequired = workLocation === "office" && Boolean(company?.clock_in_location_radius_check);
 
   const handlePunchIn = () => {
-    const executePunch = (coords?: { latitude: number; longitude: number }) => {
+    const executePunch = (coords?: { latitude: number; longitude: number; accuracy?: number }) => {
       punchInMutation(
         {
           work_location: workLocation,
           notes,
           latitude: coords?.latitude,
           longitude: coords?.longitude,
+          accuracy: coords?.accuracy,
         },
         {
           onSuccess: () => {
@@ -52,25 +54,21 @@ export function AttendanceWidget() {
       );
     };
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => executePunch({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        (err) => {
-          if (isGeofenceRequired) {
-            toast.error("Location access is required to clock in from the office. Please allow location permissions in your browser.");
-          } else {
-            executePunch();
-          }
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      if (isGeofenceRequired) {
-        toast.error("Geolocation is not supported by your browser.");
-      } else {
-        executePunch();
-      }
+    if (!(isGeofenceRequired)) {
+      // Location is optional here: record it for the log if it comes quickly, never block.
+      getBestPosition({ maxWaitMs: 5000, goodEnough: 100 }).then(executePunch, () => executePunch());
+      return;
     }
+    const locating = toast.loading("Getting your location…");
+    getBestPosition()
+      .then((pos) => {
+        toast.dismiss(locating);
+        executePunch(pos);
+      })
+      .catch((err) => {
+        toast.dismiss(locating);
+        toast.error(locationErrorMessage(err));
+      });
   };
 
   const handlePunchOut = () => {

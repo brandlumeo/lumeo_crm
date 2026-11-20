@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getBestPosition, locationErrorMessage } from "@/lib/geo";
 import {
   Clock,
   Coffee,
@@ -199,13 +200,14 @@ export default function AttendancePage() {
 
   // Punch actions
   const handlePunchIn = () => {
-    const executePunch = (coords?: { latitude: number; longitude: number }) => {
+    const executePunch = (coords?: { latitude: number; longitude: number; accuracy?: number }) => {
       punchInMutation.mutate(
         {
           work_location: workLocation,
           notes: notes || undefined,
           latitude: coords?.latitude,
           longitude: coords?.longitude,
+          accuracy: coords?.accuracy,
         },
         {
           onSuccess: () => {
@@ -219,25 +221,21 @@ export default function AttendancePage() {
       );
     };
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => executePunch({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        (err) => {
-          if (workLocation === "office") {
-            toast.error("Location access is required to clock in from the office. Please allow location access in your browser.");
-          } else {
-            executePunch();
-          }
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      if (workLocation === "office") {
-        toast.error("Geolocation is not supported by your browser.");
-      } else {
-        executePunch();
-      }
+    if (!(workLocation === "office")) {
+      // Location is optional here: record it for the log if it comes quickly, never block.
+      getBestPosition({ maxWaitMs: 5000, goodEnough: 100 }).then(executePunch, () => executePunch());
+      return;
     }
+    const locating = toast.loading("Getting your location…");
+    getBestPosition()
+      .then((pos) => {
+        toast.dismiss(locating);
+        executePunch(pos);
+      })
+      .catch((err) => {
+        toast.dismiss(locating);
+        toast.error(locationErrorMessage(err));
+      });
   };
 
   const handlePunchOut = () => {

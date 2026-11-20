@@ -9,6 +9,9 @@ from .models import TimeLog, BreakLog, LeaveRequest, ExpenseClaim, OfficeAsset, 
 from .serializers import TimeLogSerializer, BreakLogSerializer, LeaveRequestSerializer, ExpenseClaimSerializer, OfficeAssetSerializer, DailyReportSerializer
 
 
+GEOFENCE_MAX_TOLERANCE_M = 100
+
+
 def _get_client_ip(request):
     """Utility to retrieve client IP from request headers."""
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
@@ -231,17 +234,27 @@ class PunchInView(APIView):
                     distance_meters = R * c
 
                     allowed_radius = company.office_radius_meters or 100
-                    if distance_meters > allowed_radius:
+                    # Phone GPS has an error margin (reported as `accuracy`, in metres). Give the
+                    # benefit of the doubt for up to GEOFENCE_MAX_TOLERANCE_M of it, so someone
+                    # inside the building isn't rejected because of a rough indoor reading.
+                    try:
+                        accuracy = max(0.0, float(request.data.get("accuracy") or 0))
+                    except (TypeError, ValueError):
+                        accuracy = 0.0
+                    tolerance = min(accuracy, GEOFENCE_MAX_TOLERANCE_M)
+                    if distance_meters - tolerance > allowed_radius:
                         dist_int = int(round(distance_meters))
-                        return Response(
-                            {
-                                "detail": (
-                                    f"Clock-in rejected: You are {dist_int}m away from the office. "
-                                    f"Office clock-in is only permitted within {allowed_radius}m of the office."
-                                )
-                            },
-                            status=status.HTTP_400_BAD_REQUEST,
+                        detail = (
+                            f"Clock-in rejected: You are {dist_int}m away from the office. "
+                            f"Office clock-in is only permitted within {allowed_radius}m of the office."
                         )
+                        if accuracy > 50:
+                            detail += (
+                                f" Your phone's location is only accurate to about {int(round(accuracy))}m right now: "
+                                "step near a window or outside for a few seconds and try again. On iPhone, make sure "
+                                "Settings › Privacy & Security › Location Services › Safari Websites has Precise Location on."
+                            )
+                        return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
                 except (ValueError, TypeError):
                     return Response(
                         {"detail": "Invalid location coordinates received for office clock-in verification."},

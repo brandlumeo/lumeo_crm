@@ -8,6 +8,7 @@ import {
   MapPin, LocateFixed
 } from "lucide-react";
 import { toast } from "sonner";
+import { getBestPosition, locationErrorMessage } from "@/lib/geo";
 import { useCurrentCompany, useCurrentUser, useTeam } from "@/lib/queries";
 import { updateCompany } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -162,26 +163,26 @@ export function AttendanceSettingsForm() {
   });
 
   const handleCaptureCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported by your browser.");
-      return;
-    }
     setIsCapturingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsCapturingLocation(false);
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
+    getBestPosition({ goodEnough: 20, maxWaitMs: 15000 })
+      .then((pos) => {
+        const lat = pos.latitude.toFixed(6);
+        const lon = pos.longitude.toFixed(6);
         setOfficeLatitude(lat);
         setOfficeLongitude(lon);
-        toast.success(`Captured current location: ${lat}, ${lon}`);
-      },
-      (err) => {
-        setIsCapturingLocation(false);
-        toast.error("Failed to detect location. Please allow browser location access.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+        const acc = Math.round(pos.accuracy);
+        if (acc > 50) {
+          toast.warning(
+            `Captured, but this reading is only accurate to about ${acc}m. Laptops often guess location from Wi-Fi. ` +
+              "For an accurate pin, capture it from a phone while standing in the office, or paste the coordinates from Google Maps.",
+            { duration: 12000 },
+          );
+        } else {
+          toast.success(`Captured office location (accurate to ~${acc}m): ${lat}, ${lon}`);
+        }
+      })
+      .catch((err) => toast.error(locationErrorMessage(err)))
+      .finally(() => setIsCapturingLocation(false));
   };
 
   const handleSaveGeneral = () => {
@@ -563,6 +564,20 @@ export function AttendanceSettingsForm() {
                         />
                       </div>
                     </div>
+                    {officeLatitude && officeLongitude && (
+                      <p className="text-xs text-muted">
+                        Check the pin is on your office building:{" "}
+                        <a
+                          href={`https://www.google.com/maps?q=${officeLatitude},${officeLongitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline underline-offset-2"
+                        >
+                          View on map
+                        </a>
+                        . To set it exactly, long-press your office in Google Maps and paste the coordinates here.
+                      </p>
+                    )}
                   </div>
                 )}
                 <CheckboxItem 

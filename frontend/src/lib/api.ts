@@ -1259,6 +1259,7 @@ export async function punchIn(payload: {
   work_location: "office" | "wfh" | "onsite" | "field";
   latitude?: number | null;
   longitude?: number | null;
+  accuracy?: number | null;
   notes?: string;
 }) {
   const { data } = await api.post<TimeLog>(endpoints.attendancePunchIn, payload);

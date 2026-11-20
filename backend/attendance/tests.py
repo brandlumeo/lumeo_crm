@@ -83,6 +83,24 @@ class AttendanceAPITests(APITestCase):
         status_res_2 = self.client.get(self.status_url)
         self.assertFalse(status_res_2.data["is_clocked_in"])
 
+    def test_geofence_allows_for_gps_accuracy(self):
+        """An indoor reading with a wide error margin isn't rejected; a far, precise one is."""
+        self.company.clock_in_location_radius_check = True
+        self.company.office_latitude = 11.0
+        self.company.office_longitude = 75.0
+        self.company.office_radius_meters = 100
+        self.company.save()
+        lat_244m = 11.0 + 244 / 111_195  # ~244m north of the office
+        far = self.client.post(self.punch_in_url, data={"work_location": "office", "latitude": lat_244m, "longitude": 75.0, "accuracy": 8})
+        self.assertEqual(far.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("244m away", far.data["detail"])
+        rough = self.client.post(self.punch_in_url, data={"work_location": "office", "latitude": 11.0 + 400 / 111_195, "longitude": 75.0, "accuracy": 300})
+        self.assertEqual(rough.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("accurate to about 300m", rough.data["detail"])
+        # 180m away but only accurate to ±120m: could well be inside the 100m radius
+        ok = self.client.post(self.punch_in_url, data={"work_location": "office", "latitude": 11.0 + 180 / 111_195, "longitude": 75.0, "accuracy": 120})
+        self.assertIn(ok.status_code, (status.HTTP_200_OK, status.HTTP_201_CREATED))
+
     def test_punch_in_double_guard(self):
         """Verify that double punch-in is blocked by active session validation."""
         # First punch-in succeeds
