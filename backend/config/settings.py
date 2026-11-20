@@ -258,7 +258,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env_int('ACCESS_TOKEN_MINUTES', 30)),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=env_int('REFRESH_TOKEN_DAYS', 7)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=env_int('REFRESH_TOKEN_DAYS', 30)),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 

@@ -244,25 +244,33 @@ export async function clearSession(): Promise<void> {
 
 // ── Axios interceptors ────────────────────────────────────────────────────────
 
-let refreshPromise: Promise<string | null> | null = null;
+// "expired" = the server rejected the session (sign in again).
+// "offline" = network error / server waking up / 5xx: keep the session and try later.
+type RefreshResult = string | "expired" | "offline";
+let refreshPromise: Promise<RefreshResult> | null = null;
 
-async function silentTokenRefresh(): Promise<string | null> {
+const SESSION_EXPIRED: RefreshResult = "expired";
+const SESSION_OFFLINE: RefreshResult = "offline";
+
+async function refreshOnce(): Promise<RefreshResult> {
   try {
     const refreshToken = localStorage.getItem("lumeo_refresh_token") || sessionStorage.getItem("lumeo_refresh_token");
-    
+
     // Refresh endpoint reads the HttpOnly lumeo_refresh cookie OR the refresh body param
     // returns a new access and refresh token in the response body.
     const { data } = await axios.post<{ access: string; refresh?: string }>(
       `${apiBaseUrl}${endpoints.refresh}`,
       { refresh: refreshToken || undefined },
-      { withCredentials: true },
+      { withCredentials: true, timeout: 60000 },
     );
     if (data.access) {
-      if (localStorage.getItem(ACCESS_TOKEN_KEY) !== null) {
+      if (localStorage.getItem(ACCESS_TOKEN_KEY) !== null || localStorage.getItem("lumeo_refresh_token") !== null) {
         localStorage.setItem(ACCESS_TOKEN_KEY, data.access);
         if (data.refresh) {
           localStorage.setItem("lumeo_refresh_token", data.refresh);
         }
+        // "Stay signed in": keep the frontend session cookie alive as long as the session is used.
+        document.cookie = "lumeo_session=1; path=/; max-age=2592000; SameSite=Lax; Secure";
       } else {
         sessionStorage.setItem(ACCESS_TOKEN_KEY, data.access);
         if (data.refresh) {
@@ -271,10 +279,27 @@ async function silentTokenRefresh(): Promise<string | null> {
       }
       return data.access;
     }
-    return null;
-  } catch {
-    return null;
+    return SESSION_EXPIRED;
+  } catch (err) {
+    const status = (err as AxiosError)?.response?.status;
+    // Only a definite "no" from the server ends the session.
+    if (status === 400 || status === 401 || status === 403) return SESSION_EXPIRED;
+    return SESSION_OFFLINE;
   }
+}
+
+async function silentTokenRefresh(): Promise<RefreshResult> {
+  // Retry transient failures (e.g. the API server cold-starting) before giving up.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await refreshOnce();
+    if (result !== SESSION_OFFLINE) return result;
+    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+  }
+  return SESSION_OFFLINE;
+}
+
+function isUsableToken(t: RefreshResult | null | undefined): t is string {
+  return !!t && t !== SESSION_EXPIRED && t !== SESSION_OFFLINE;
 }
 
 
@@ -314,8 +339,10 @@ api.interceptors.request.use(async (config) => {
         refreshPromise = null;
       });
       const freshToken = await refreshPromise;
-      if (freshToken) {
+      if (isUsableToken(freshToken)) {
         config.headers.Authorization = `Bearer ${freshToken}`;
+      } else if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
       // If refresh failed, fall through and let the response interceptor handle the 401
     } else if (token) {
@@ -365,8 +392,12 @@ api.interceptors.response.use(
 
     const newToken = await refreshPromise;
 
-    if (!newToken) {
+    if (newToken === SESSION_EXPIRED) {
       await clearSession();
+      return Promise.reject(error);
+    }
+    if (!isUsableToken(newToken)) {
+      // Server unreachable for now: keep the user signed in; the next request will retry.
       return Promise.reject(error);
     }
 

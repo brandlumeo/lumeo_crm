@@ -394,6 +394,19 @@ class CookieTokenRefreshView(APIView):
             return response
 
         user_id = refresh.get("user_id")
+        if not User.objects.filter(pk=user_id, is_active=True).exists():
+            response = Response({"detail": "Account is no longer active."}, status=status.HTTP_401_UNAUTHORIZED)
+            _clear_auth_cookies(response)
+            return response
+
+        if not refresh.get("imp"):
+            # Sliding session: every refresh gets a fresh lifetime, so people who keep using
+            # the app ("Stay signed in") are never forced to sign in again. Impersonation
+            # tokens keep their fixed 2-hour expiry.
+            refresh.set_jti()
+            refresh.set_iat()
+            refresh.set_exp()
+
         if user_id and not refresh.get("imp"):
             # Refreshes happen every ~30 min while someone is using the app: a good "last seen".
             stale = timezone.now() - timedelta(minutes=15)

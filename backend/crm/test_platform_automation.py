@@ -170,3 +170,26 @@ def test_revenue_snapshots_and_movements(root):
     stats = a.get("/api/v1/saas/stats/").data
     assert stats["movements"]["churned"] == 599 and len(stats["mrr_history"]) == 2
     assert "lifecycle" in stats and isinstance(stats["win_back"], list)
+
+
+def test_refresh_slides_the_session_and_rejects_inactive_users(root):
+    from rest_framework_simplejwt.tokens import RefreshToken
+    admin, a = root
+    company = Company.objects.create(name="Stay Co")
+    user = User.objects.create_user(email="stay@co.test", username="stay", password="Passw0rd!x", company=company, role="owner")
+    c = APIClient()
+    first = c.post("/api/v1/accounts/token/", {"username": "stay", "password": "Passw0rd!x"}, format="json").data["refresh"]
+    old = RefreshToken(first)
+    res = c.post("/api/v1/accounts/token/refresh/", {"refresh": first}, format="json")
+    assert res.status_code == 200
+    new = RefreshToken(res.data["refresh"])
+    assert new["jti"] != old["jti"] and new["exp"] >= old["exp"]
+    assert new["username"] == "stay"  # custom claims kept
+
+    # Impersonation tokens keep their fixed expiry
+    imp = a.post(f"/api/v1/saas/users/{user.id}/impersonate/").data["refresh"]
+    imp_res = c.post("/api/v1/accounts/token/refresh/", {"refresh": imp}, format="json")
+    assert RefreshToken(imp_res.data["refresh"])["exp"] == RefreshToken(imp)["exp"]
+
+    User.objects.filter(pk=user.pk).update(is_active=False)
+    assert c.post("/api/v1/accounts/token/refresh/", {"refresh": res.data["refresh"]}, format="json").status_code == 401
