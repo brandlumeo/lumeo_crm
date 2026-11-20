@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -699,3 +700,31 @@ class InvoiceSettings(models.Model):
 
     def __str__(self):
         return f"Invoice Settings for {self.company.name}"
+
+
+class TrashedItem(models.Model):
+    """A snapshot of something deleted from the Django admin, restorable for TRASH_DAYS days.
+
+    `payload` holds the deleted rows (including everything removed by cascade) in Django's
+    JSON serialization format, ordered parents-first so they can be re-inserted in order.
+    `relinks` remembers rows whose foreign key was set to NULL by the delete.
+    """
+    TRASH_DAYS = 30
+
+    model_label = models.CharField(max_length=120)
+    object_repr = models.CharField(max_length=300)
+    object_count = models.PositiveIntegerField(default=1)
+    item_count = models.PositiveIntegerField(default=0, help_text="Rows in this snapshot, including cascaded ones.")
+    payload = models.JSONField(default=list)
+    relinks = models.JSONField(default=list, blank=True)
+    deleted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    deleted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-deleted_at"]
+        verbose_name = "Trash item"
+        verbose_name_plural = "Trash"
+
+    def __str__(self):
+        return f"{self.object_repr} ({self.model_label})"

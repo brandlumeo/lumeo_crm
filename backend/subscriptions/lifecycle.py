@@ -247,6 +247,11 @@ def run_daily(force=False):
 
     ps = PlatformSettings.get_settings()
     take_snapshot()
+    try:
+        from companies.trash import purge_expired
+        purge_expired()
+    except Exception:
+        logger.exception("Trash purge failed")
     if not force and ps.lifecycle_last_run and timezone.localdate(ps.lifecycle_last_run) == timezone.localdate():
         return None
     try:
